@@ -25,7 +25,7 @@ The pins are numbered as follows:
   4 - Chassis ground (battery negative);
   5 - Signal ground (max 1.5 Amp);
   6 - ISO-15765-4 CAN_high line;
-  7 - K-line of ISO-9141-2 and ISO-14230-4;
+  7 - K-line of ISO-9141-2 and ISO-14230-4 (data line);
   8 - Discretionary (Code|...);
 
   9 - Discretionary;
@@ -34,15 +34,15 @@ The pins are numbered as follows:
  12 - Discretionary;
  13 - Discretionary;
  14 - ISO-15765-4 CAN_low line;
- 15 - L-line of ISO-9141-2 and ISO-14230-4;
+ 15 - L-line of ISO-9141-2 and ISO-14230-4 (init only);
  16 - Positive voltage (battery positive, max 4 Amp).
 
  "Discretionary" means that the car manufacturer can use the pin
  for whatever they want (so if it's equipped, it's a "proprietary" pin).
 
  Examples (may be incorrect!):
- An ISO9141-2 car needs pins 5,15,16, and may need 7.
- An ISO14230-4 car needs pins 5,15,16, and may need 7.
+ An ISO9141-2 car needs pins 5,7,16, and may need 15.
+ An ISO14230-4 car needs pins 5,7,16, and may need 15.
  An SAE-J1850 (VPW) car needs pins 2,5,16.
  An SAE-J1850 (PWM) car needs pins 2,5,10,16.
  An ISO-15765-4 car needs pins 5,6,14,16.
