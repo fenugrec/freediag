@@ -21,3 +21,5 @@ scangui to diagnose problems with your car.
 When you are done, click on the 'EXIT' button and scangui will kill off
 scantool and then exit.
 
+ScanGUI is licensed under GPL.  Please see the file 'COPYING' for details.
+
