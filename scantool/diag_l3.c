@@ -42,15 +42,12 @@
 #include "diag_l3.h"
 #include "diag_l3_j1979.h"
 #include "diag_l3_vag.h"
+#include "diag_l3_iso14230.h"
 
 
 CVSID("$Id$");
 
 int diag_l3_debug;
-
-static const diag_l3_proto_t diag_l3_iso14230 = {
-	"ISO14230", NULL, NULL, NULL, NULL, NULL, NULL, NULL
-};
 
 static const diag_l3_proto_t * const diag_l3_protocols[] =
 {

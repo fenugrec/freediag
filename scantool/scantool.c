@@ -913,7 +913,7 @@ do_l2_14230_start(int init_type)
     flags |= (init_type & DIAG_L2_TYPE_INITMASK) ;
 
     d_conn = do_l2_common_start(DIAG_L1_ISO14230, DIAG_L2_PROT_ISO14230,
-        flags, set_speed, 0x33, set_testerid);
+        flags, set_speed, set_destaddr, set_testerid);
 
     if (d_conn == NULL)
         return(-1);

@@ -48,7 +48,7 @@ extern "C" {
 
 /* 00->0F SAE J1979 Diagnostic Test Modes */
 #define DIAG_KW2K_SI_STADS	0x10	/* startDiagnosticSession */
-#define DIAG_KW2K_SI_ER	0x11	/* ecuReset */
+#define DIAG_KW2K_SI_ER		0x11	/* ecuReset */
 #define DIAG_KW2K_SI_RDFFD	0x12	/* readFreezeFrameData */
 #define DIAG_KW2K_SI_RDTC	0x13	/* readDiagnosticTroubleCodes */
 #define DIAG_KW2K_SI_CDI	0x14	/* clearDiagnosticInformation */
@@ -65,7 +65,7 @@ extern "C" {
 
 #define DIAG_KW2K_SI_SRDT	0x25	/* stopRepeatedDataTransmission */
 #define DIAG_KW2K_SI_SDR	0x26	/* setDataRates */
-#define DIAG_KW2K_SI_SA	0x27	/* securityAccess */
+#define DIAG_KW2K_SI_SA		0x27	/* securityAccess */
 
 #define DIAG_KW2K_SI_DDLI	0x2C	/* dynamicallyDefineLocalId */
 #define DIAG_KW2K_SI_WRDBCI	0x2E	/* writeDataByCommonId */
@@ -74,9 +74,9 @@ extern "C" {
 #define DIAG_KW2K_SI_STARBLI	0x31	/* startRoutineByLocalID */
 #define DIAG_KW2K_SI_STORBLI	0x32	/* stopRoutineByLocalID */
 #define DIAG_KW2K_SI_RRRBLI	0x33	/* requestRoutineResultsByLocalId */
-#define DIAG_KW2K_SI_RD	0x34	/* requestDownload */
-#define DIAG_KW2K_SI_RU	0x35	/* requestUpload */
-#define DIAG_KW2K_SI_TD	0x36	/* transfer data */
+#define DIAG_KW2K_SI_RD		0x34	/* requestDownload */
+#define DIAG_KW2K_SI_RU		0x35	/* requestUpload */
+#define DIAG_KW2K_SI_TD		0x36	/* transfer data */
 #define DIAG_KW2K_SI_RTE	0x37	/* request transfer exit */
 #define DIAG_KW2K_SI_STARBA	0x38	/* startRoutineByAddress */
 #define DIAG_KW2K_SI_STORBA	0x39	/* stopRoutineByAddress */
@@ -96,14 +96,17 @@ extern "C" {
  *
  * Positive responses are  service ID + 0x40
  */
-#define DIAG_KW2K_RC_NR	0x7F	/* negative Response */
+#define DIAG_KW2K_RC_NR		0x7F	/* negative Response */
 
 
 /*
  * Service response codes
  * names from ISO book
  */
-#define DIAG_KW2K_RC_GR	0x10	/* generalReject */
+ 
+/* Negative Responses */
+
+#define DIAG_KW2K_RC_GR		0x10	/* generalReject */
 #define DIAG_KW2K_RC_SNS	0x11	/* serviceNotSupported */
 #define DIAG_KW2K_RC_SFNS_IF	0x12	/* subFunctionNotSupported-Invalid Format */
 #define DIAG_KW2K_RC_B_RR	0x21	/* busy-repeatRequest */
@@ -111,7 +114,7 @@ extern "C" {
 #define DIAG_KW2K_RC_RNC	0x23	/* routineNotCompleteOrServiceInProgress */
 #define DIAG_KW2K_RC_ROOT	0x31	/* requestOutOfRange */
 #define DIAG_KW2K_RC_SAD_SAR	0x33	/* securityAccessDenied-securityAccessRequested */
-#define DIAG_KW2K_RC_IK	0x35	/* invalidKey */
+#define DIAG_KW2K_RC_IK		0x35	/* invalidKey */
 #define DIAG_KW2K_RC_ENOA	0x36	/* exceedNumberOfAttempts */
 #define DIAG_KW2K_RC_RTDNE	0x37	/* requiredTimeDelayNotExpired */
 #define DIAG_KW2K_RC_DNA	0x40	/* downloadNotAccepted */
@@ -123,8 +126,8 @@ extern "C" {
 #define DIAG_KW2K_RC_IUT	0x51	/* improperUploadType */
 #define DIAG_KW2K_RC_CNUFSA	0x52	/* canNotUploadFromSpecifiedAddress */
 #define DIAG_KW2K_RC_CNUNOBR	0x53	/* canNotUploadNumberOfBytesRequested */
-#define DIAG_KW2K_RC_TS	0x71	/* transferSuspended */
-#define DIAG_KW2K_RC_TA	0x72	/* transferAborted */
+#define DIAG_KW2K_RC_TS		0x71	/* transferSuspended */
+#define DIAG_KW2K_RC_TA		0x72	/* transferAborted */
 #define DIAG_KW2K_RC_IAIBT	0x74	/* illegalAddressInBlockTransfer */
 #define DIAG_KW2K_RC_IBCIBT	0x75	/* illegalByteCountInBlockTransfer */
 #define DIAG_KW2K_RC_IBTT	0x76	/* illegalBlockTrasnferType */
@@ -133,12 +136,13 @@ extern "C" {
 #define DIAG_KW2K_RC_IBCDBT	0x79	/* incorrectByteCountDuringBlockTransfer */
 #define DIAG_KW2K_RC_SNSIADS	0x80	/* serviceNotSupportedInActiveDiagnosticMode */
 
-#define DIAG_KW2K_RC_SCRPR	0xC1	/* StartComms +ve response */
-#define DIAG_KW2K_RC_SPRPR	0xC2	/* StopComms +ve response */
-#define DIAG_KW2K_RC_ATPPR	0xC3	/* AccessTimingParams +ve response */
+/* Positive Responses */
 
 /* 81-8F	reserved */
 /* 90-F9	vehicle manufacturer specific */
+#define DIAG_KW2K_RC_SCRPR	0xC1	/* StartComms +ve response */
+#define DIAG_KW2K_RC_SPRPR	0xC2	/* StopComms +ve response */
+#define DIAG_KW2K_RC_ATPPR	0xC3	/* AccessTimingParams +ve response */
 /* FA-FE	system supplier specific */
 /* FF		reserved by document */
 
