@@ -281,7 +281,7 @@ int diag_l2_init()
 		return(0);
 	diag_l2_init_done = 1;
 
-	memset(diag_l2_conbyid, 0, sizeof(diag_l2_conbyid));
+	memset(diag_l2_conbyid, 0, 256);
 
 	/*
 	 * And go do the layer 1 init
@@ -454,15 +454,10 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 		d_l2_conn = d_l2_conn -> diag_l2_next ;
 	}
 	
-	/*
-	 * XXX Isn't there a memory leak right here?
-	 * We allocate d_l2_conn if NULL, and then allocate again
-	 * a few lines further on!
-	 */
 	if (d_l2_conn == NULL)
 	{
 		/* New connection */
-		if (diag_calloc(&d_l2_conn, 1))	/*XXX allocate here... */
+		if (diag_calloc(&d_l2_conn, 1))
 			return(0);
 
 		reusing = 0;
@@ -471,9 +466,6 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	dl2l = diag_l0_dl2_link(dl0d);
 	if (dl2l == NULL)
 		return(NULL);
-
-	if (diag_calloc(&d_l2_conn, 1)) /* XXX allocate AGAIN here? */
-		return(0);
 
 	/* Link to the L1 device info that we keep (name, type, flags, dl0d) */
 	d_l2_conn->diag_link = dl2l;
