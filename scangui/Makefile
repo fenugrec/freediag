@@ -1,7 +1,8 @@
 
 OBJFILES = scangui.o scanguiCallbacks.o scanguiInit.o
-HDRS  = -I../include -I/usr/local/include -I/usr/X11/include
-LIBS  = -L/usr/local/lib -L/usr/X11/lib -lfltk -lX11
+HDRS  = -I../include -I/usr/local/include \
+        -I/usr/X11R6/include -I/usr/X11/include
+LIBS  = -L/usr/local/lib -L/usr/X11R6/lib -L/usr/X11/lib -lfltk -lX11
 
 
 all: scangui
