@@ -39,6 +39,9 @@
 extern "C" {
 #endif
 
+// Nice to have anywhere...
+#define MIN(_a_, _b_) (((_a_) < (_b_) ? (_a_) : (_b_)))
+
 #ifdef WIN32
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
