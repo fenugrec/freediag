@@ -131,13 +131,13 @@ Vasco Nevoa
 ----------
 -car: 1998 Mercedes A140
 -pins on OBD plug: 1,4,5,7,8,9,13,15,16.
--protocol: Expressly rejects ISO14230; it's ISO9141.
+-protocol: Expressly rejects ISO14230; connects fine with ISO9141.
 -freediag version: 1.0.0
--result: "get 0x83 0xf1 0x01 0x7f 0x3e 0x10 0x42 with ISO14230", "sometimes connects with ISO9141 but times out".
+-result: always connects with slow ISO9141, but all subsequent data is lost (zeros)".
 ----------
 -car: 1998 Ford Fiesta
 -pins on OBD plug: 2,4,5,7,10,13,16.
--protocol: probably SAE-J1850(PWM).
+-protocol: probably SAE-J1850(PWM). Incompatible with present interface+software.
 -freediag version: 1.0 and 0.3
 -result: Timeout in all protocols.
 
