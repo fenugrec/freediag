@@ -37,6 +37,8 @@
 
 CVSID("$Id$");
 
+#define PROTO_NONE	"<not_used>"
+
 int 	set_speed;	/* Comms speed */
 unsigned char	set_testerid;	/* Our tester ID */
 int	set_addrtype;	/* Use virtual addressing */
@@ -166,7 +168,7 @@ const char * const l1_names[] =
 
 const char * const l2_names[] =
 {
-	"RAW", "ISO9141", "ISO14230",
+	"RAW", "ISO9141", PROTO_NONE, "ISO14230",
 	"J1850", "CAN", "VAG", "MB1", NULL
 };
 
@@ -356,7 +358,12 @@ static int cmd_set_l2protocol(int argc, char **argv)
 		for (i=0; l2_names[i] != NULL; i++)
 		{
 			if (prflag)
-				printf("%s ", l2_names[i]);
+			{
+				if (strcasecmp(l2_names[i], PROTO_NONE)) 
+				{
+					printf("%s ", l2_names[i]);
+				}
+			}
 			else
 				if (strcasecmp(argv[1], l2_names[i]) == 0)
 				{
