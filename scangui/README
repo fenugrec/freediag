@@ -1,0 +1,23 @@
+
+ScanGUI:  A Graphical front-end for freediag's Scantool.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This application uses FLTK (Fast, Light ToolKit: www.fltk.org) to create
+a basic graphical front-end for freediag's "scantool".
+
+When you start scangui, it kicks off scantool as a separate process
+and communicates with it using scantool's stdin/stdout.
+
+Select the serial port you want to use from the list that scangui
+presents you with - then click on the 'Connect to Car' button.  If
+the yellow light in that button turns on within the next few seconds
+then you have communication with the car.   If the light doesn't come
+on then there is a problem which will require you to run scantool in
+command-line mode to diagnose adequately.
+
+Once you are connected to the car, you can use any of the widgets within
+scangui to diagnose problems with your car.
+
+When you are done, click on the 'EXIT' button and scangui will kill off
+scantool and then exit.
+

@@ -9,6 +9,9 @@ all: scangui
 clean:
 	rm scangui *.o scangui.cxx scangui.h
 
+install:
+	echo "There is no install method for scangui yet"
+
 scangui: ${OBJFILES}
 	g++ -o scangui ${OBJFILES} ${LIBS}
 

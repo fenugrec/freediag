@@ -1,0 +1,69 @@
+
+FREEDIAG - Free diagnostic software for OBD-II equipped motor vehicles.
+-----------------------------------------------------------------------
+
+This package contains 'core' software (called 'scantool') which
+can be used to access your car's diagnostic system using a laptop
+and a suitable interface cable.
+
+scantool's user interface is a somewhat primitive command-line
+system - but it also has an application interface ("freediag AIF")
+that lets more sophisticated programs use the freediag core whilst
+presenting the user with a more appealing interface.
+
+Under this directory are the following sub-directories:
+
+doc      -- Documentation that applies to the package as a whole.
+scantool -- Source code for the 'scantool' core package.
+include  -- Include files that describe the interface between
+            scantool and the GUI application(s).
+scangui  -- A basic GUI interface to scantool.
+
+Other GUI applications will appear over time.
+
+
+LICENSING:
+~~~~~~~~~~
+
+scantool is licensed under GPL - but other packages found here
+may have other OpenSource licensing arrangements - which is OK
+because each is a separate program and does not link against
+scantool.  Check in each directory for details.
+
+
+AUTHORS:
+~~~~~~~~
+
+Each package contains a list of it's contributors.
+
+
+INSTALLATION:
+~~~~~~~~~~~~~
+
+If you downloaded a 'released' version of freediag:
+
+Each package has it's own installation instructions - but
+running the 'install' script in this top level directory
+should do all the work for you.  You'll likely need to run
+this as 'root' in order to get write access to the directories
+where freediag installs itself.
+
+If you checked freediag out of CVS:
+
+Each package contains a 'reconf' script that is called from
+a master 'reconf' script at this level.  This runs the 'autotools'
+to generate configure scripts and then calls 'make'.  It does not
+do a 'make install'.
+
+RUNNING:
+~~~~~~~~
+
+To run each application, you'll need an appropriate interface
+to connect the serial port on a laptop computer to the
+OBD-II port on your car.  With most available interfaces,
+it would be inadvisable to use a computer powered from
+wall socket because your car may not be adequately
+grounded.
+ 
+Check the README file in each tool directory for detailed instructions.
+

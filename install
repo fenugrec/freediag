@@ -1,0 +1,8 @@
+#!/bin/csh
+
+echo "+++ Installing ScanTool"
+( cd scantool ; ./install )
+
+echo "+++ Installing ScanGUI"
+( cd scangui ; ./install )
+
