@@ -207,7 +207,7 @@ diag_data_dump(FILE *out, const void *data, size_t len)
 	const uint8_t *p = (const uint8_t *)data;
 	size_t i;
 	for (i=0; i<len; i++)
-		fprintf(out, "0x%x ", p[i] & 0xff); 
+		fprintf(out, "0x%02x ", p[i] & 0xff); 
 }
 
 void smartcat(char *p1, const size_t s1, const char *p2 )
