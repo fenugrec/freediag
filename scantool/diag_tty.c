@@ -1,16 +1,24 @@
+#ifdef WIN32
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 
 #if defined(__linux__) && (TRY_POSIX == 0)
 #include <linux/serial.h>	/* For Linux-specific struct serial_struct */
 #endif
 
 #include <sys/types.h>
+#ifndef WIN32
 #include <sys/ioctl.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef WIN32
 #include <termios.h>	/* For struct termios */
+#endif
 
 #if !defined(__linux__) || (TRY_POSIX == 1)
 #include <time.h>		/* For POSIX timers */

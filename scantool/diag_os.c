@@ -39,9 +39,17 @@
  *
  */
 
+#ifdef WIN32
+#include <process.h>
+
+//#include <winsock.h>
+
+#else
 #include <unistd.h>
 
 #include <sys/ioctl.h>
+
+#endif
 
 #include <errno.h>
 #include <fcntl.h>
@@ -71,8 +79,13 @@ int diag_os_init_done;
 +* in the signal handlers.  Their behavior is undefined if they happen
 +* to occur during any other non-async-signal-safe function.
  */
+#ifdef WIN32
+void
+diag_os_sigalrm(int unused)
+#else
 void
 diag_os_sigalrm(int unused __attribute__((unused)))
+#endif
 {
 	diag_l3_timer();	/* Call L3 Timer */
 	diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
@@ -81,8 +94,12 @@ diag_os_sigalrm(int unused __attribute__((unused)))
 int
 diag_os_init(void)
 {
+#ifdef WIN32
+	struct sigaction_t stNew;
+#else
 	struct sigaction stNew;
 	struct itimerval tv;
+#endif
 	long tmo = 1;	/* 1 ms */
 
 	if (diag_os_init_done)
@@ -108,6 +125,7 @@ diag_os_init(void)
 #endif
 	sigaction(SIGALRM, &stNew, NULL);
 
+#ifndef WIN32
 	/* 
 	 * Start repeating timer
 	 */
@@ -117,6 +135,7 @@ diag_os_init(void)
 	tv.it_value = tv.it_interval;
 
 	setitimer(ITIMER_REAL, &tv, 0); /* Set timer */
+#endif
 
 	return(0);
 }
@@ -186,6 +205,7 @@ diag_os_millisleep(int ms)
  */
 int
 diag_os_millisleep(int ms) {
+#ifndef WIN32
 	struct timespec rqst, resp;
 
 	rqst.tv_sec = ms / 1000;
@@ -200,6 +220,9 @@ diag_os_millisleep(int ms) {
 		else
 			return -1;
 	}
+#else
+    Sleep(ms);
+#endif
 	return 0;
 }
 #endif
@@ -296,11 +319,20 @@ diag_os_sched(void)
 int
 diag_os_sched(void)
 {
+#ifdef WIN32
+
+    //
+    // Must start a callback timer. Not sure about the frequency yet.
+    //
+
+#else
+
 #if NOWARNINGS == 0
 	#warning No special scheduling support
 #endif
 	fprintf(stderr,
 		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
 	return -1;
+#endif
 }
 #endif
