@@ -76,17 +76,19 @@ struct diag_l2_conn
 
 	uint32_t diag_l2_type;		/* Type info for this L2 connection */
 
-	/* Timer values (P1->P4), See ISO 14230-2 */
+	// Message timing values.
+	// See SAE-J1979 for general usage;
+	// See ISO-14230-2, ISO-9141-2, SAE-J1850 for specific values;
 	uint16_t	diag_l2_p1min;
-	uint16_t	diag_l2_p1max;
+	uint16_t	diag_l2_p1max; // p1 = byte gap from ECU;
 	uint16_t	diag_l2_p2min;
-	uint16_t	diag_l2_p2max;
-	uint16_t	diag_l2_p2emin;	/* extended P2 timing */
-	uint16_t	diag_l2_p2emax;
+	uint16_t	diag_l2_p2max; // p2 = gap from request to response;
+	uint16_t	diag_l2_p2emin;
+	uint16_t	diag_l2_p2emax; // p2 in extended mode (ISO14230 "rspPending");
 	uint16_t	diag_l2_p3min;
-	uint16_t	diag_l2_p3max;
+	uint16_t	diag_l2_p3max; // p3 = gap from response to new request;
 	uint16_t	diag_l2_p4min;
-	uint16_t	diag_l2_p4max;
+	uint16_t	diag_l2_p4max; // p4 = byte gap from tester.
 
 	/* Protocol independent data */
 	void	*diag_l2_proto_data;
@@ -130,6 +132,10 @@ struct diag_l2_conn
 
 };
 
+// Special Timeout for so-called "Smart" interfaces;
+// Slower than any protocol, give them time to unframe 
+// and checksum the data:
+#define SMART_TIMEOUT 150
 
 /*
  * Default ISO 14230 timing values, ms, used as defaults for L2 timeouts
