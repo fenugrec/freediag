@@ -94,22 +94,22 @@ CFLAGS+= @CFLAGS@
 LDFLAGS+=@LDFLAGS@
 
 LIBOBJS=  diag_config.o \
-	diag_l0_se.o diag_l0_me.o diag_l0_vw.o diag_l0_br.o diag_l0_elm.o \
+	diag_l0_se.o diag_l0_me.o diag_l0_vw.o diag_l0_br.o diag_l0_elm.o diag_l0_sim.o \
 	diag_tty.o \
 	diag_l1.o \
 	diag_l2.o diag_l2_can.o diag_l2_raw.o \
-        diag_l2_iso9141.o diag_l2_iso9141_2.o \
+        diag_l2_iso9141.o diag_l2_iso9141.o \
         diag_l2_iso14230.o \
 	diag_l2_saej1850.o diag_l2_vag.o diag_l2_mb1.o \
 	diag_l3.o diag_l3_saej1979.o diag_l3_iso14230.o diag_l3_vag.o \
 	diag_os.o diag_general.o diag_dtc.o
 
 LIBSRCS=  diag_config.c \
-	diag_l0_se.c diag_l0_me.c diag_l0_vw.c diag_l0_br.c diag_l0_elm.c \
+	diag_l0_se.c diag_l0_me.c diag_l0_vw.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c\
 	diag_tty.c \
 	diag_l1.c \
 	diag_l2.c diag_l2_can.c diag_l2_raw.c \
-        diag_l2_iso9141.c diag_l2_iso9141_2.c diag_l2_iso14230.c \
+        diag_l2_iso9141.c diag_l2_iso9141.c diag_l2_iso14230.c \
 	diag_l2_saej1850.c diag_l2_vag.c diag_l2_mb1.c \
 	diag_l3.c diag_l3_saej1979.c diag_l3_iso14230.c diag_l3_vag.c \
 	diag_os.c diag_general.c diag_dtc.c
@@ -134,10 +134,10 @@ TESTOBJS=diag_test.o
 all:	depend scantool diag_test
 
 scantool:	libdiag.a libdyno.a $(SCANTOOLOBJS)
-	$(LD) -o $@ $(SCANTOOLOBJS) libdiag.a libdyno.a @LIBS@
+	$(LD) -o $@ $(SCANTOOLOBJS) libdiag.a libdyno.a -lm @LIBS@
 
 diag_test:	libdiag.a $(TESTOBJS)
-	$(LD) -o $@ $(TESTOBJS) libdiag.a
+	$(LD) -o $@ $(TESTOBJS) libdiag.a -lm
 
 libdiag.a:	$(LIBOBJS)
 	ar cr libdiag.a $(LIBOBJS)

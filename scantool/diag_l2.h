@@ -164,8 +164,8 @@ struct diag_l2_conn
  * for instance J1850 runs on J1850/ISO9161/ISO14230 interfaces
  */
 #define DIAG_L2_PROT_RAW	0	/* Raw send/receive, ie. L2 pass thru */
-#define DIAG_L2_PROT_ISO9141	1	/* Iso 9141 , raw data */
-#define DIAG_L2_PROT_ISO9141_2	2	/* Iso 9141, keywords 08 08 */
+#define DIAG_L2_PROT_ISO9141	1	/* Iso 9141, keywords 08 08 */
+#define DIAG_L2_PROT_NOTUSED	2	/* NOT USED */
 #define DIAG_L2_PROT_ISO14230	3	/* Iso 14230 using appropriate message
 						format */
 #define DIAG_L2_PROT_SAEJ1850	4	/* SAEJ1850 */

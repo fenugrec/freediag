@@ -73,7 +73,7 @@ int set_init(void) {
 	set_vehicle = "ODBII";	/* Vehicle */
 	set_ecu = "ODBII";	/* ECU name */
 
-	set_interface = "SE9141";	/* H/w interface to use */
+	set_interface = "CARSIM";	/* H/w interface to use */
 
 	#if 0
 	set_interface = "MET16";	/* H/w interface to use */
@@ -155,7 +155,7 @@ const struct cmd_tbl_entry set_cmd_table[] =
 
 const char * const l0_names[] =
 {
-	"MET16", "SE9141", "VAGTOOL", "BR1", "ELM", NULL
+	"MET16", "SE9141", "VAGTOOL", "BR1", "ELM", "CARSIM", NULL
 };
 
 const char * const l1_names[] =
@@ -166,7 +166,7 @@ const char * const l1_names[] =
 
 const char * const l2_names[] =
 {
-	"RAW", "ISO9141", "ISO9141-2", "ISO14230",
+	"RAW", "ISO9141", "ISO14230",
 	"J1850", "CAN", "VAG", "MB1", NULL
 };
 

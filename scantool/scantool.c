@@ -627,19 +627,15 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, int p1, int p2,
     rv = diag_l3_recv(d_conn, 300, j1979_data_rcv, handle);
     if (rv < 0)
     {
-        /* Try again */
-        if (diag_cmd_debug > 0xF8)
-        {
-            fprintf(stderr, "retry\n");
-        }
-
+        fprintf(stderr, "Request failed, retrying...\n");
         diag_l3_send(d_conn, &msg);
         rv = diag_l3_recv(d_conn, 300, j1979_data_rcv, handle);
         if (rv < 0)
         {
+            fprintf(stderr, "Retry failed, resynching...\n");
             rv = do_l3_md1pid0_rqst(global_l2_conn);
             if (rv < 0)
-                fprintf(stderr, "resync failed, connection to ECU may be lost");
+                fprintf(stderr, "Resync failed, connection to ECU may be lost!\n");
             return(rv);
         }
     }
@@ -870,10 +866,11 @@ int do_l3_md1pid0_rqst( struct diag_l2_conn *d_conn )
         {
             return(diag_iseterr(DIAG_ERR_BADDATA));    
         }
-        if (rmsg->data[0] != 0x41)
-        {
-            return(diag_iseterr(DIAG_ERR_BADDATA));    
-        }
+// What is this???
+/*         if (rmsg->data[0] != 0x41) */
+/*         { */
+/*             return(diag_iseterr(DIAG_ERR_BADDATA));     */
+/*         } */
 
         return(0);
     }
@@ -888,7 +885,7 @@ do_l2_9141_start(int destaddr)
 {
     struct diag_l2_conn *d_conn;
 
-    d_conn = do_l2_common_start(DIAG_L1_ISO9141, DIAG_L2_PROT_ISO9141_2,
+    d_conn = do_l2_common_start(DIAG_L1_ISO9141, DIAG_L2_PROT_ISO9141,
         DIAG_L2_TYPE_SLOWINIT, set_speed, (uint8_t)destaddr,
         set_testerid);
 
@@ -1033,18 +1030,19 @@ do_j1979_getdata(int interruptible)
     {
         if (merged_mode1_info[i])
         {
+	    fprintf(stderr, "Requesting Mode 1 Pid 0x%02x...\n", i);
             rv = l3_do_j1979_rqst(d_conn, 0x1, (int)i, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
             if (rv < 0)
             {
-                fprintf(stderr, "Mode 1 Pid 0x%x request failed %d\n",
+                fprintf(stderr, "Mode 1 Pid 0x%02x request failed (%d)\n",
                     i, rv);
             }
             else
             {
                 msg = find_ecu_msg(0, 0x41);
                 if (msg == NULL)
-                    fprintf(stderr, "Mode 1 Pid 0x%x request no-data %d\n",
+                    fprintf(stderr, "Mode 1 Pid 0x%02x request no-data (%d)\n",
                     i, rv);
             }
 
@@ -1057,18 +1055,19 @@ do_j1979_getdata(int interruptible)
     }
 
     /* Get mode2/pid2 (DTC that caused freezeframe) */
+    fprintf(stderr, "Requesting Mode 0x02 Pid 0x02 (Freeze frame DTCs)...\n", i);
     rv = l3_do_j1979_rqst(d_conn, 0x2, 2, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
 
     if (rv < 0) 
     {
-        fprintf(stderr, "Mode 2 Pid 2 request failed %d\n", rv);
+        fprintf(stderr, "Mode 0x02 Pid 0x02 request failed (%d)\n", rv);
         return(0);
     }
     msg = find_ecu_msg(0, 0x42);
     if (msg == NULL)
     {
-        fprintf(stderr, "Mode 2 Pid 2 request no-data %d\n", rv);
+        fprintf(stderr, "Mode 0x02 Pid 0x02 request no-data (%d)\n", rv);
         return(0);
     }
 
@@ -1083,16 +1082,17 @@ do_j1979_getdata(int interruptible)
             {
                 if (ep->mode2_info[i])
                 {
+		    fprintf(stderr, "Requesting Mode 0x02 Pid 0x%02x...\n", i);
                     rv = l3_do_j1979_rqst(d_conn, 0x2, (int)i, 0x00,
                         0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
                     if (rv < 0)
                     {
-                        fprintf(stderr, "Mode 2 Pid 0x%x request failed %d\n", i, rv);
+                        fprintf(stderr, "Mode 0x02 Pid 0x%02x request failed (%d)\n", i, rv);
                     }
                     msg = find_ecu_msg(0, 0x42);
                     if (msg == NULL)
                     {
-                        fprintf(stderr, "Mode 2 Pid 2 request no-data %d\n", rv);
+                        fprintf(stderr, "Mode 0x02 Pid 0x%02x request no-data (%d)\n", i, rv);
                         return(0);
                     }
                     
@@ -1253,11 +1253,13 @@ do_j1979_cms()
 
     d_conn = global_l3_conn;
 
+    fprintf(stderr, "Requesting Mode 7 (Current cycle emission DTCs)...\n");
     rv = l3_do_j1979_rqst(d_conn, 0x07, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
     if (rv == DIAG_ERR_TIMEOUT)
     {
         /* Didn't get a response, this is valid if there are no DTCs */
+        fprintf(stderr, "No DTCs stored.\n");
         return;
     }
     if (rv != 0)
@@ -1328,7 +1330,7 @@ do_j1979_ncms(int printall)
         if ((merged_mode6_info[i]) && ((i & 0x1f) != 0))
         {
             /* Do test */
-
+	    fprintf(stderr, "Requesting Mode 6 TestID 0x%02x...\n", i);
             rv = l3_do_j1979_rqst(d_conn, 6, (int)i, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00,
                 (void *)(printall?RQST_HANDLE_NCMS:RQST_HANDLE_NCMS2));
@@ -1369,6 +1371,7 @@ do_j1979_getmodeinfo(int mode, int response_offset)
          * Do Mode 'mode' Pid 'pid' request to find out
          * what is supported
          */
+        fprintf(stderr, "Exploring Mode 0x%02x supported PIDs (block 0x%02x)...\n", mode, pid);
         rv = l3_do_j1979_rqst(d_conn, mode, pid, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
         if (rv != 0)
@@ -1522,6 +1525,7 @@ do_j1979_getO2tests(int O2sensor)
         if ((merged_mode5_info[i]) && ((i & 0x1f) != 0))
         {
             /* Do test for of i + testID */
+	    fprintf(stderr, "Requesting Mode 0x05 TestID 0x%02x...\n", i);
             rv = l3_do_j1979_rqst(d_conn, 5, i, o2s,
                 0x00, 0x00, 0x00, 0x00, 0x00,
                     (void *)RQST_HANDLE_O2S);
@@ -1556,6 +1560,7 @@ do_j1979_getdtcs()
         return(0);
     }
 
+    fprintf(stderr, "Requesting Mode 0x01 PID 0x01 (Current DTCs)...\n", i);
     rv = l3_do_j1979_rqst(d_conn, 1, 1, 0,
             0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
 
@@ -1599,6 +1604,7 @@ do_j1979_getdtcs()
          * Do Mode3 command to get DTCs
          */
 
+        fprintf(stderr, "Requesting Mode 0x03 (Emission DTCs)...\n");
         rv = l3_do_j1979_rqst(d_conn, 3, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
         if ((rv < 0) || (find_ecu_msg(0, 0x43)==NULL))
@@ -1640,7 +1646,7 @@ do_j1979_getO2sensors()
     global_O2_sensors = 0;
     num_sensors = 0;
 
-    /* Pid 1 is "number of O2 sensors" */
+    fprintf(stderr, "Requesting Mode 0x01 PID 0x13 (O2 sensors location)...\n");
     rv = l3_do_j1979_rqst(d_conn, 1, 0x13, 0,
                 0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
 
@@ -1679,6 +1685,7 @@ diag_cleardtc(void)
     struct diag_msg    *rxmsg;
 
     d_conn = global_l3_conn;
+    fprintf(stderr, "Requesting Mode 0x04 (Clear DTCs)...\n");
     rv = l3_do_j1979_rqst(d_conn, 0x04, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
 
@@ -1707,8 +1714,8 @@ const struct protocol protocols[] = {
     {"SAEJ1850-VPW",  do_l2_j1850_start, DIAG_L1_J1850_VPW,     PROTOCOL_SAEJ1850, 0},
     {"SAEJ1850-PWM",  do_l2_j1850_start, DIAG_L1_J1850_PWM,     PROTOCOL_SAEJ1850, 0},
     {"ISO14230_FAST", do_l2_14230_start, DIAG_L2_TYPE_FASTINIT, PROTOCOL_ISO14230, DIAG_L2_TYPE_FASTINIT},
-    {"ISO9141-2",     do_l2_9141_start,  0x33,                  PROTOCOL_ISO9141_2, DIAG_L2_TYPE_SLOWINIT},
-    {"ISO14230_SLOW", do_l2_14230_start, DIAG_L2_TYPE_SLOWINIT, PROTOCOL_ISO14230,  DIAG_L2_TYPE_SLOWINIT},
+    {"ISO9141",       do_l2_9141_start,  0x33,                  PROTOCOL_ISO9141,  DIAG_L2_TYPE_SLOWINIT},
+    {"ISO14230_SLOW", do_l2_14230_start, DIAG_L2_TYPE_SLOWINIT, PROTOCOL_ISO14230, DIAG_L2_TYPE_SLOWINIT},
 };
 
 /*
@@ -1738,6 +1745,8 @@ ecu_connect(void)
         }
         else
                 fprintf(stderr, "%s Failed!\n", p->desc);
+
+	fprintf(stderr, "\n");
     }
 
     fprintf(stderr, "\n");

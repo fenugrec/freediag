@@ -110,7 +110,7 @@ extern int		global_protocol;
 extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
 
 #define	PROTOCOL_NOTFOUND	0
-#define	PROTOCOL_ISO9141_2	1
+#define	PROTOCOL_ISO9141	1
 #define	PROTOCOL_ISO14230	2
 #define	PROTOCOL_SAEJ1850	3
 

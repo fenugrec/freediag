@@ -1,0 +1,71 @@
+###################################################################
+# Freediag Simulator Database File - ISO-9141 version.
+# Here you hold the message bytes exchanged between the Tester and
+# a simulated car ECU (Electronic Controller Unit).
+# This file, together with the "CARSIM" type of interface, makes
+# freediag independent of a car connection, allowing you to test
+# "libdiag", "scantool", and any other client application offline.
+# Customize this file at your will for your test needs.
+#
+# Mandatory Syntax:
+# One Request line (starting with "RQ") can be followed by
+# zero, one, or more Response lines (starting with "RP").
+# All other lines must be commented out with "# ".
+# Both Request and Response lines are composed of 4-character-long
+# elements, separated by one space character ("R* **** **** ...").
+# In the Requests, these elements can only be hexadecimal values
+# from "0x00" to "0xFF"; in the Responses, they can be hex values
+# or a function token. Available tokens are:
+# "swt1" = replaced by a sawtooth(t) signal, period = 1 second;
+# "sin1" = replaced by sin(t) signal, period = 1 second;
+# "cks1" = replaced by the ISO9141 checksum of all previous bytes.
+# If in doubt, see the CVS/sourceforge examples.
+###################################################################
+
+# L2 frame - set this to 1 and you won't need header bytes in this file:
+CFG SIM_NOL2FRAME 0
+
+# L2 checksum - set this to 1 and you won't need checksums in this file:
+CFG SIM_NOL2CKSUM 0
+
+# ISO-9141-2 slow init:
+RQ 0x33
+RP 0x55
+RP 0x08
+RP 0x08
+RQ 0xF7
+RP 0xCC
+
+# What SID-1 PIDs are supported?
+RQ 0x68 0x6a 0xf1 0x01 0x00 0xc4
+RP 0x48 0x6b 0x01 0x01 0x00 0x00 0x00 0x00 0x00 0x00 cks1
+
+# What SID-2 PIDs are supported?
+RQ 0x68 0x6a 0xf1 0x02 0x00 0x00 0xc5
+RP 0x48 0x6b 0x01 0x02 0x00 0x00 0x00 0x00 0x00 0x00 cks1
+
+# What SID-5 (O2 monitors) TestIDs are supported?
+RQ 0x68 0x6a 0xf1 0x05 0x00 0x00 0xc8
+RP 0x48 0x6b 0x01 0x05 0x00 0x00 0x00 0x00 0x00 0x00 cks1
+
+# What SID-6 (other monitors) TestIDs are supported?
+RQ 0x68 0x6a 0xf1 0x06 0x00 0xc9
+RP 0x48 0x6b 0x01 0x06 0x00 0x00 0x00 0x00 0x00 0x00 cks1
+
+# What SID-8 Controls/Tests are supported?
+RQ 0x68 0x6a 0xf1 0x08 0x00 0x00 0x00 0x00 0x00 0x00 0xcb
+RP 0x48 0x6b 0x01 0x08 0x00 0x00 0x00 0x00 0x00 0x00 cks1
+
+# What SID-9 InfoTypes are supported?
+RQ 0x68 0x6a 0xf1 0x09 0x00 0xcc
+RP 0x48 0x6b 0x01 0x09 0x00 0x00 0x00 0x00 0x00 0x00 cks1
+
+# What DTC caused Stored Freeze Frame 0?
+RQ 0x68 0x6a 0xf1 0x02 0x02 0x00 0xc7
+
+# What O2 sensors do you have?
+RQ 0x68 0x6a 0xf1 0x01 0x13 0xd7
+
+# What emission DTCs are stored?
+RQ 0x68 0x6a 0xf1 0x07 0xca
+

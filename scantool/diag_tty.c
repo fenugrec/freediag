@@ -29,44 +29,6 @@
 #include "diag_err.h"
 #include "diag_tty.h"
 
-struct diag_ttystate
-{
-	/*
-	 * For recording state before we mess with the interface:
-	 */
-#if defined(__linux__) && (TRY_POSIX == 0)
-	struct serial_struct dt_osinfo;
-#endif
-	struct termios dt_otinfo;
-	int dt_modemflags;
-
-	/* For recording state after/as we mess with the interface */
-#if defined(__linux__) && (TRY_POSIX == 0)
-	struct serial_struct dt_sinfo;
-#endif
-	struct termios dt_tinfo;
-
-};
-
-struct diag_l0_device
-{
-	void *dl0_handle;					/* Handle for the L0 switch */
-	const struct diag_l0 *dl0;		/* The L0 switch */
-	struct diag_l2_link *dl2_link;	/* The L2 link */
-
-	int fd;						/* File descriptor */
-	char *name;					/* device name */
-	struct diag_ttystate *ttystate;	/* Holds OS specific tty info */
-
-#if !defined(__linux__) || (TRY_POSIX == 1)
-	volatile int expired;		/* Timer expiration */
-#if defined(_POSIX_TIMERS)
-	/* POSIX timers: */
-	timer_t timerid;			/* Posix timer */
-#endif
-#endif
-};
-
 const struct diag_l0 *diag_l0_device_dl0(struct diag_l0_device *dl0d) {
 	return dl0d->dl0;
 }

@@ -29,6 +29,12 @@
 extern "C" {
 #endif
 
+#if defined(__linux__) && (TRY_POSIX == 0)
+#include <linux/serial.h>	/* For Linux-specific struct serial_struct */
+#include <fcntl.h>
+#endif
+#include <termios.h>	/* For struct termios */
+
 #ifdef WIN32
 #include <Basetsd.h>
 typedef SSIZE_T ssize_t;
@@ -43,7 +49,45 @@ typedef SSIZE_T ssize_t;
  */
 
 struct diag_l1_initbus_args;
-struct diag_l0_device;
+
+struct diag_ttystate
+{
+	/*
+	 * For recording state before we mess with the interface:
+	 */
+#if defined(__linux__) && (TRY_POSIX == 0)
+	struct serial_struct dt_osinfo;
+#endif
+	struct termios dt_otinfo;
+	int dt_modemflags;
+
+	/* For recording state after/as we mess with the interface */
+#if defined(__linux__) && (TRY_POSIX == 0)
+	struct serial_struct dt_sinfo;
+#endif
+	struct termios dt_tinfo;
+
+};
+
+struct diag_l0_device
+{
+	void *dl0_handle;					/* Handle for the L0 switch */
+	const struct diag_l0 *dl0;		/* The L0 switch */
+	struct diag_l2_link *dl2_link;	/* The L2 link */
+
+	int fd;						/* File descriptor */
+	char *name;					/* device name */
+	struct diag_ttystate *ttystate;	/* Holds OS specific tty info */
+
+#if !defined(__linux__) || (TRY_POSIX == 1)
+	volatile int expired;		/* Timer expiration */
+#if defined(_POSIX_TIMERS)
+	/* POSIX timers: */
+	timer_t timerid;			/* Posix timer */
+#endif
+#endif
+};
+
 struct diag_serial_settings;
 
 struct diag_l0
