@@ -1,0 +1,18 @@
+A way to find out if your car complies to OBD would be to request (Service 0x00, PID 0x1C).
+This will get you a response frame in which the first payload byte is a code that describes
+what "flavor" of OBD the car actually complies to.
+Possible responses are (hexadecimal, as stated by SAE-J1979):
+0x01 - OBDII (California CARB)
+0x02 - OBD (Federal EPA)
+0x03 - OBD and OBDII
+0x04 - OBDI
+0x05 - Not OBD compliant!
+0x06 - EOBD
+0x07 - EOBD and OBDII
+0x08 - EOBD and OBD
+0x09 - EOBD, OBD, and OBDII
+0x0A - JOBD
+0x0B - JOBD and OBDII
+0x0C - JOBD and EOBD
+0x0D - JOBD, EOBD, and OBDII
+0x0E to 0XFF - reserved.

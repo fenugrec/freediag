@@ -1,0 +1,144 @@
+#############################
+
+Kevin Valentine
+-interface: Multiplex Engineering T16-002
+----------
+-car:1999 Ford Ranger
+-pins on OBD plug: ???
+-protocol: SAE-J1850(PWM)
+-freediag version: v0.3
+-result: "fails to detect VPW, PWM, and then searches forever on the third one"
+----------
+-car: 2000 Toyota Echo
+-pins on OBD plug: ???
+-protocol: SAE-J1850(PWM)
+-freediag version: v0.3
+-result: ???
+
+#############################
+
+Colin Helliwell
+-interface: Andy Whittaker
+----------
+-car: Alfa
+-pins on OBD plug: 3,4,5,7,8,9,11,16.
+-protocol: KWP2000 (almost)
+-freediag version:
+-result: "eventually got basic communication"
+
+#############################
+
+Isaac Gerg
+-interface: B.Roadman BR3
+----------
+-car: 1996 Chevy Lumina
+-pins on OBD plug: ???
+-protocol: SAE-J1850(VPW)
+-freediag version:
+-result:
+
+#############################
+
+Steve Baker
+-interface: X-Two (ELM323)
+----------
+-car: 2003 MINI Cooper S; 
+-pins on OBD plug: 1,4,5,7,8,9,16.
+-protocol: ISO1941_2
+-freediag version: 0.3
+-results: "Failed to clear fault code for loose filler cap - otherwise OK"
+----------
+-car: 2001 Mazda Protege 5;
+-pins on OBD plug: ???
+-protocol: ISO1941_2
+-freediag version: 0.3
+-results: "Worked OK"
+----------
+-car: 2003 Pontiac Grand Prix
+-pins on OBD plug: ???
+-protocol: ???
+-freediag version: 0.3
+-results: "No Communication (I think GM cars need VPW interfaces)"
+----------
+-car: 2003 MINI Cooper S; 
+-pins on OBD plug: ???
+-protocol: ISO1941_2
+-freediag version: CVS dated 5/27/04.
+-results: "Worked - albeit with MANY timeout warnings."
+
+#############################
+
+Ken Bantoft
+-interface: ELM323
+----------
+-car: 2004 MINI Cooper S
+-pins on OBD plug: ???
+-protocol: ???
+-freediag version: CVS
+-result: "Nothing yet, still writing ELM323 driver"
+
+#############################
+
+Roy-Magne Mo
+-interface: Multiplex Engineering T16-003
+----------
+-car: 99 Volvo V70R AWD
+-pins on OBD plug: ???
+-protocol: looks like ISO9141-2
+-freediag version: 1.0.0
+-result: "read the error codes once","interior lights flashed","got kb1=0x8 kb2=0x8".
+----------
+-car: 99 BMW 320i
+-pins on OBD plug: ???
+-protocol: ???
+-freediag version: ???
+-result: "failed".
+
+#############################
+
+Sagar Behere
+-interface: SE9141/VAGTOOL compatible
+----------
+-car: Skoda Octavia
+-pins on OBD plug: ???
+-protocol: 9141-2
+-freediag version: v0.3
+-result: "can see throttle position, engine rpm etc"
+----------
+-car: Mahindra Scorpio
+-pins on OBD plug: ???
+-protocol: ISO 14230
+-freediag version: v0.3 | 1.0
+-result: "getting ECU connection to Scorpio"
+----------
+unable to connect to Scorpio AND skoda with 1.0
+
+#############################
+
+Dave Blune
+-interface: B.Roadman BR2
+----------
+-car: 2001 Nissan Exterra
+-pins on OBD plug: ???
+-protocol: ???
+-freediag version: ???
+-result: ???
+
+#############################
+
+Vasco Nevoa
+-interface: Andy Whittaker (VAGTOOL compatible)
+----------
+-car: 1998 Mercedes A140
+-pins on OBD plug: 1,4,5,7,8,9,13,15,16.
+-protocol: Expressly rejects ISO14230; it's ISO9141.
+-freediag version: 1.0.0
+-result: "get 0x83 0xf1 0x01 0x7f 0x3e 0x10 0x42 with ISO14230", "sometimes connects with ISO9141 but times out".
+----------
+-car: 1998 Ford Fiesta
+-pins on OBD plug: 2,4,5,7,10,13,16.
+-protocol: probably SAE-J1850(PWM).
+-freediag version: 1.0 and 0.3
+-result: Timeout in all protocols.
+
+#############################

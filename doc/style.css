@@ -1,0 +1,20 @@
+body { background-color: #f0f0f0; }
+body,font,th,td,p,div,a,ol { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12; }
+
+a:link,a:active,a:visited { color : #006699; }
+a:hover		{ text-decoration: underline; color : #DD6900; }
+
+div.title    { background-color: #006699; color: white; font-weight: bold; font-size: 24; text-align: center }
+div.subtitle { background-color: #006699; color: white; font-weight: bold; font-size: 16; text-align: center }
+div.section  { background-color: #006699; color: white; font-weight: bold; font-size: 13; padding-left: 10; }
+div.subsection { font-weight: bold; font-size: 12; padding-left: 10; }
+
+p     { padding-left: 20; padding-right: 20; text-align: justify }
+ul,ol { padding-left: 60; }
+code  { font-size: 14; }
+
+table { background-color: #FFFFFF; border: 1px #000000 solid; }
+th    { background-color: #c0c0c0; color: black; text-align: left; font-weight: bold; }
+td    { background-color: #F0F0F0; }
+
+hr { background-color: #006699; border: 0px #000000 solid; }

@@ -1,0 +1,207 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html">
+  <title>Freediag - Supported Interfaces</title>
+  <link href="style.css" type="text/css" rel="stylesheet">
+</head>
+
+<body>
+
+  <div class="title">FREEDIAG</div>
+  
+  <div class="subtitle">Supported Hardware Interfaces</div>
+
+  <p>CVSID $Id$
+  
+  <p>This manual applies to Version 0.3 of Freediag
+
+  <p>Table of contents:
+  <ul>
+    <li><a href="#interfaces">Electrical Interface Types</a>
+    <li><a href="#supported">Freediag Supported Interfaces</a>
+    <li><a href="#matrix">Compatibility Matrix</a>
+  </ul>
+
+  <br>
+  <a name="interfaces"></a>
+  <div class="section">Electrical Interface Types</div>
+
+  <p>There are various common hardware interfaces used for diagnostic
+  interfaces to vehicle electronic control units (ecus). Most manufacturers use
+  one or two such interfaces for all systems on a vehicle. These include:
+
+  <p><ul>
+    <li>ISO9141
+    <li>ISO14230
+    <li>SAEJ1850-VPW
+    <li>SAEJ1850-PWM
+    <li>CAN
+  </ul>
+
+  <p>ISO9141 and ISO14230 are essentially compatible at an electrical level
+  (with the exception that the latter will work on 24 volt vehicles).
+
+  <p>The freediag protocol stack supports the above list with the exception of
+  the CAN. The US OBDII standard and the European EOBD standard for
+  communicating with emissions related ECUs do not mandate CAN support.
+  
+  <p>The ISO protocols are generally used by European Vehicles, and the two
+  SAEJ1850 types by Ford and GM.
+  
+  <p>At a software level, ISO14230 is a vastly extended ISO9141-2 protocol that
+  supports much longer data frames and much quicker communications startup with
+  the ECU.
+  
+  <p>Further information can be obtained from:
+  
+  <p><ul>
+    <li>ISO: <a href="http://www.iso.ch/">http://www.iso.ch</a>
+    <li>SAE: <a href="http://www.sae.org/">http://www.sae.org</a>
+  </ul>
+  
+  <br>
+  <a name="supported"></a>
+  <div class="section">Freediag Supported Interfaces</div>
+
+  <p>Freediag contains various drivers for different adapters that connect the
+  PC serial port to a vehicle. Certain interfaces support more protocol types
+  than have been implemented/tested within a driver, and some interfaces need
+  to be ordered with special attributes (such as their address) to work without
+  recompiling the freediag software library.
+
+  <p><ol>
+    <li>Andy Whittaker's OBD-II ISO9141 interface:<br>
+    <a href="http://www.andywhittaker.com/ecu/obdii_hardware.htm">http://www.andywhittaker.com/ecu/obdii_hardware.htm</a>
+    Freediag Driver: SE9141<br>
+    <br>
+    This is a generic serial to ISO9141 interface available in small
+    quantities at a sensible price from Andy Whittaker in the UK.<br>
+    <br>
+    <li>Jeff's OBD-II ISO 9141 interface:<br>
+    <a href="http://www.planetfall.com/~jeff/obdii">http://www.planetfall.com/~jeff/obdii</a>
+    Freediag Driver: SE9141<br>
+    <br>
+    This site shows you how to build a generic serial to ISO9141 interface.<br>
+    <br>
+    <li>Silicon Engines ISO 9141 interface:<br>
+    <a href="http://www.siliconengines-ltd.com/products/9141-232.html">http://www.siliconengines-ltd.com/products/9141-232.html</a><br>
+    Freediag Driver: SE9141<br>
+    <br>
+    This is a commercially available generic serial to ISO9141 interface. It is
+    supplied in a robust box with lots of lights. This interface was used to
+    develop the first bits of the freediag project. It is functionally the same
+    as the above two interfaces (with the exception of all the lights and the
+    box).<br>
+    <br>
+    <li>B.Roadman ISO9141/VPW/PWM interface:<br>
+    <a href="http://obddiagnostics.com/">http://obddiagnostics.com/</a><br>
+    Freediag Driver: BR1<br>
+    <br>
+    Another commercially available interface, we haven’t yet tested the ISO9141
+    side of the interface, and it does not support ISO14230. Future versions
+    will support ISO14230 and we used this interface to develop the
+    J1850-VPW/PWM support in Freediag. Thanks to B. Roadman for the donation of
+    hardware to the project.<br>
+    <br>
+    <li>Multiplex Engineering VPW, PWM, and ISO 9141-2 interface:<br>
+    <a href="http://www.multiplex-engineering.com/products.htm">http://www.multiplex-engineering.com/products.htm</a><br>
+    Freediag Driver: MET16<br>
+    <br>
+    When ordering this interface you must order a T16 type interface.
+    Multiplex Engineering produce two varieties of the T16 interface:<br>
+    <br>
+    <ul>
+      <li>T16-002: opto-isolated interface that requires power from the PC's
+          serial port and uses a straight through male-female DB9 cable.
+      
+      <li>T16-003: Non-opto isolated interface, uses a null-modem female-female
+          DB9 cable, doesn't require (much) power from the PC.
+    </ul>
+    <br>
+    Many PC's do not provide enough power to drive the T16-002 interface and
+    thus errors will occur (and "checksum error" messages will be printed by
+    the freediag software). As the T16-003 has no opto-isolation there is a
+    slight risk of damage to the PC. According to the manufacturer the risk is
+    low and is negligible unless the vehicle is connected to a battery
+    charger.<br>
+    <br>
+    When ordering an interface an interface that operates at 19200 baud and
+    uses address 0x38 should be specified, or simple modifications to
+    <i>diag_l0_me.c</i> and recompilation will be needed.<br>
+    <br>
+    The T16-002 interface was used to develop support for smart interfaces in
+    freediag, it worked on a modern Sony Laptop but not on various branded PCs
+    tested.
+  </ol>
+  
+  <br><br>
+  <a name="matrix"></a>
+  <div class="section">Compatibility Matrix</div>
+
+  <ul>
+    <table width="70%">
+      <tr>
+        <th width="100">Interface</th>
+        <th width="50">ISO9141</th>
+        <th width="50">ISO14230&nbsp;(*)</th>
+        <th width="50">J1850-VPW</th>
+        <th width="50">J1850-PWM</th>
+        <th width="50">CAN</th>
+      </tr>
+      <tr>
+        <th>Andy</th>
+        <td><b>YES</b></td>
+        <td><b>YES</b></td>
+        <td>No</td>
+        <td>No</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <th>Jeff</th>
+        <td><b>YES</b></td>
+        <td><b>YES</b></td>
+        <td>No</td>
+        <td>No</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <th>Silicon Engines</th>
+        <td><b>YES</b></td>
+        <td><b>YES</b></td>
+        <td>No</td>
+        <td>No</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <th>B Roadman</th>
+        <td><b>YES</b> (1)</td>
+        <td>No (3)</td>
+        <td><b>YES</b> (1)</td>
+        <td><b>YES</b></td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <th>Multiplex</th>
+        <td><b>YES</b></td>
+        <td><b>YES</b> (2)</td>
+        <td><b>YES</b> (1)</td>
+        <td><b>YES</b> (1)</td>
+        <td>No</td>
+      </tr>
+    </table>
+    <br>
+    (<b>*</b>) Support for ISO14230 software layer, not for 24V vehicles.<br>
+    
+    (<b>1</b>) Should work, but not tested.<br>
+    
+    (<b>2</b>) Will work in some applications [including OBDII] but h/w doesn't
+    support all of the features of the protocol.<br>
+  
+    (<b>3</b>) Support planned by h/w manufacturer.<br>
+  </ul>
+
+</div>
+
+</body>
+
+</html>

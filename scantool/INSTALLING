@@ -1,0 +1,18 @@
+
+If you have downloaded the freediag source code, then you need to run:
+
+  ./configure ; make install
+
+If you have checked out the latest development release from CVS, then run:
+
+  ./reconf ; make install
+
+NOTES:
+
+1) The first time you run make, you should ignore the message
+   about a missing ".depend" file, it will be created then.
+
+2) If you alter the configure.ac file, you will need autoconf
+   version 2.52 or later.
+
+

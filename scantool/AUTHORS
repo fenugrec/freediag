@@ -1,0 +1,30 @@
+
+Freediag was originally written by Richard Almeida - he looked after the
+package up to version 0.3a and provided sporadic CVS updates until August 2003.
+
+Andy Whittaker did work in tidying up the code - and looked at making a
+Windows version.
+
+Bjorn Helgaas added logging and some other functionalith.
+ 
+Guilhem Valentin is believed to have written the dynamometer package (I'm not
+certain of this).
+
+                               --ooOoo--
+
+As of March 2004, there has been a complete break between the original
+developers and the present maintainers - so I cannot tell precisely who
+contributed what before August 2003.  If you were a contributor and would
+like to be credited here - please let me know.
+
+Steve Baker is the current maintainer of the package.
+
+Peter Dufault has undertaken a radical cleanup of the code and is responsible
+for a large fraction of the present code-base.
+
+
+                               --ooOoo--
+
+Steve Baker.
+
+

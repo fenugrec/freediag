@@ -1,0 +1,69 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0105 
+header_name {.h} 
+code_name {.cxx}
+decl {extern void initFreediag(void);} {} 
+
+Function {} {open
+} {
+  code {initFreediag();} {}
+  Fl_Window {} {open
+    xywh {148 132 365 210} type Double color 46 visible
+  } {
+    Fl_Group {} {open
+      xywh {5 10 150 65} box EMBOSSED_BOX color 42 selection_color 45
+    } {
+      Fl_Light_Button {} {
+        label {Connect to Car}
+        callback connectToCarButtonCB
+        tooltip {Make sure car is turned on!} xywh {15 40 130 25} align 16
+      }
+      Fl_Choice {} {
+        label {Device:}
+        callback deviceChoiceCB open
+        tooltip {Select which serial port to use.} xywh {65 15 80 20} down_box BORDER_BOX selection_color 3 labelfont 1 labelcolor 33 textfont 9 textsize 12
+      } {
+        menuitem {} {
+          label obdII0
+          xywh {0 0 100 20} labelfont 5
+        }
+        menuitem {} {
+          label obdII1
+          xywh {10 10 100 20} value 1 labelfont 5
+        }
+        menuitem {} {
+          label obdII2
+          xywh {20 20 100 20} value 1 labelfont 5
+        }
+        menuitem {} {
+          label obdII3
+          xywh {30 30 100 20} value 1 labelfont 5
+        }
+      }
+    }
+    Fl_Choice {} {
+      label {Units:}
+      callback unitsChoiceCB open
+      tooltip {Select which serial port to use.} xywh {280 10 80 25} down_box BORDER_BOX selection_color 3 labelfont 1 labelcolor 33 textfont 9 textsize 12
+    } {
+      menuitem {} {
+        label Metric
+        xywh {10 10 100 20} labelfont 5
+      }
+      menuitem {} {
+        label US
+        xywh {20 20 100 20} value 1 labelfont 5
+      }
+    }
+    Fl_Light_Button {} {
+      label Debug
+      callback enableDebugCB selected
+      xywh {165 10 65 25}
+    }
+    Fl_Button {} {
+      label Exit
+      callback exitCB
+      tooltip {Exit scangui} xywh {5 180 50 25} color 81 labelfont 1 labelcolor 55
+    }
+  }
+} 

@@ -1,0 +1,12 @@
+#!/bin/csh
+aclocal
+autoheader configure.ac
+autoconf 
+echo "Configuring"
+./configure
+echo "Make"
+\make  |& tee config.errors
+echo "============================================="
+echo "Now you need to run 'make' or 'make install'"
+echo "============================================="
+

@@ -1,0 +1,66 @@
+
+ The OnBoard Diagnostics vehicle plug has 16 pins.
+ Normally this female plug is only equipped with the 
+ metal pins that the car needs in order to satisfy 
+ the protocols that it's Electronic Controller Units
+ (ECUs) "speak".
+
+ Therefore, it is possible (within a reasonable limit),
+ to "guess" which protocol(s) a car complies to, just
+ by looking at those pins.
+
+The pins are numbered as follows:
+
+  ____________________________________
+  \  1   2   3   4   5   6   7   8   /  (Seen from the side of
+   \ 9   10  11  12  13  14  15  16 /    the connector where
+    \______________________________/     you push in the plug)
+ 
+ The following information was extracted from a few specifications:
+ (format is: Pin number - Pin usage)
+
+  1 - Discretionary;
+  2 - SAE-J1850 (VPW/PWM) positive bus line;
+  3 - Discretionary (airbag|...);
+  4 - Chassis ground (battery negative);
+  5 - Signal ground (max 1.5 Amp);
+  6 - ISO-15765-4 CAN_high line;
+  7 - K-line of ISO-9141-2 and ISO-14230-4;
+  8 - Discretionary (Code|...);
+
+  9 - Discretionary;
+ 10 - SAE-J1850 (PWM) negative bus line;
+ 11 - Discretionary(alarm|remote|...);
+ 12 - Discretionary;
+ 13 - Discretionary;
+ 14 - ISO-15765-4 CAN_low line;
+ 15 - L-line of ISO-9141-2 and ISO-14230-4;
+ 16 - Positive voltage (battery positive, max 4 Amp).
+
+ "Discretionary" means that the car manufacturer can use the pin
+ for whatever they want (so if it's equipped, it's a "proprietary" pin).
+
+ Examples (may be incorrect!):
+ An ISO9141-2 car needs pins 5,15,16, and may need 7.
+ An ISO14230-4 car needs pins 5,15,16, and may need 7.
+ An SAE-J1850 (VPW) car needs pins 2,5,16.
+ An SAE-J1850 (PWM) car needs pins 2,5,10,16.
+ An ISO-15765-4 car needs pins 5,6,14,16.
+
+ NOTE-1: It seems the L-line is "optional" for both ISO9141-2 and ISO14230-4,
+ and that probably only older cars will need it...
+
+ NOTE-2: It is possible that a car suports more than one "official" protocol,
+ and so it will have a combination of these options. They normally will
+ also sport a few of those "discretionary" pins... (there's a lot to hack:)
+
+ NOTE-3: Be advised that ALL the pins (except 4,5,16) can have non-standard
+ allocation!!! This means that (for example) an ISO9141-2/ISO14230-4 car can
+ use the SAE-J1850 pins for whatever they want (and vice-versa)!!!! The only
+ rule stated in the specs is that when this happens, those pins cannot confuse
+ or damage a specification-compliant tool!...
+
+ NOTE-4: You may or may not use pin 4 (chassis ground). If you draw power from
+ the plug, then it's a good idea to use it (max power = 12Vx4A = 48W).
+
+Enjoy!

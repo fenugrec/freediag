@@ -1,0 +1,30 @@
+$Id$
+
+FREEDIAG - Free diagnostic software for OBD-II equipped motor vehicles.
+-----------------------------------------------------------------------
+
+LICENSING    : Freediag is licensed under the GNU General Public
+               License (GPL) - details of which can be found in
+               the file 'COPYING'.
+
+AUTHORS      : A list of the various authors and contributors can
+               be found in the file: 'AUTHORS'
+
+INSTALLATION : Installation instructions can be found in the
+                file 'INSTALLING'.
+
+RUNNING      : To run the tool, you'll need an appropriate interface
+               to connect the serial port on a laptop computer to the
+               OBD-II port on your car.  With most available interfaces,
+               it would be inadvisable to use a computer powered from
+               wall socket because your car may not be adequately
+               grounded.
+ 
+               Run the program 'scantool' - which will need to be run
+               as root on ISO vehicles, although it will work as normal
+               users on J1850 vehicles.
+
+
+     -- Steve Baker.
+
+

@@ -1,0 +1,104 @@
+<H1>More about Supported Interfaces.</H1>
+
+Vasco Nevoa wrote:
+<p>
+To clarify once and for all - in freediag:
+<p>
+Supported PC<->Car Interfaces (comments taken from the source,
+my opinion remarked with "vnevoa"):
+
+<H2>-- diag_l0_br.c:</H2>
+<ul>
+    <li> B. Roadman BR-1 Interface
+    <li> Semi intelligent interface, supports only J1979 properly, and does not
+         support ISO14230 (KWP2000). In ISO9141-2 mode, only supports the
+         ISO9141-2 address (0x33h)
+</ul>
+    vnevoa: I don't know this one, but looks like it's related to
+    ALDL.  This is an active interface (implemented with
+    a PIC microcontroller) which simplifies life A LOT for the SW
+    programmers... too easy for us!.. ;)  we like the complication of
+    timing issues in our SW! :))
+
+<H2>-- diag_l0_elm.c:</H2>
+<ul>
+   <li>/* Empty for the moment */
+</ul>
+   vnevoa: I know this is also a PIC implementation, like the BR-x interfaces.
+
+<H2>-- diag_l0_me.c:</H2>
+<ul>
+    <li> Interface for Multiplex Engineering interface.
+    <li> Supports #T16 interface only. Other interfaces need special
+         code to read multi-frame messages with > 3 frames (and don't
+         support all interface types).
+</ul>
+   vnevoa: never heard of it. From their web page I can see that it is
+   also an Active interface, but it looks like they are using something
+   better than a PIC, which will probably result in a higher-quality,
+   more-featured protocol.
+
+<H2>-- diag_l0_se.c:</H2>
+<ul>
+    <li> Interface for Silicon Engines generic ISO 9141 interface.
+    <li> We purposely haven't defined an structure that is used externally by this
+       interface, just a file descriptor because it's not so easy to do for
+       different devices, and potentially different operating systems.
+</ul>
+    vnevoa: don't know it. Another Active interface, like it is obvious
+    on their web page. Expensive, too!
+
+<H2>-- diag_l0_vw.c:</H2>
+<ul>
+    <li> interface for VAGTool compatible interface
+     such as Jeff Noxon's opendiag interface.
+    <li> This is also tested with the Silicon Engines K line only interface, but
+     has some of the startup ECU checking removed. Dunno if it's worth keeping
+     the separate SE drivers.
+</ul>
+   vnevoa: This is my baby :)...  This  supports any Passive interface,
+   that is, this file does not really deal with any dreamed-up protocol,
+   it deals directly with the car's protocol, just like it was defined
+   by ISO(international) and SAE(USA). The fact that VAGtool is(was)
+   the most well-known comercial name around at the time, and that
+   VAG is for VolksWagen too, gave it the name we are using (vw) - but
+   this is an unfortunate name, as you can see. This file is the one we
+   REALLY need to be carefull and pay attention to timing issues... it
+   involves kernel tweaks and everything... so this is the difficult
+   one to port between OSs...  My personal interface is a very cheap
+   "Andy-Whittaker", and it can do any protocol (all OBD2 flavours,
+   plus ALDL!)... provided the PC SW knows what it's doing!!! ;)
+</pre>
+<p>
+So, when it comes to interfaces (IFCs), we can draw the following conclusions:
+<ol>
+
+<li> There are 2 classes of interfaces, which I call "active"(with
+a microprocessor unit - mpu) and "passive" (no mpu, only electrical
+voltage protection).
+<p>
+
+<li> "Active" IFCs are very friendly for the programmers, because
+they take care of all the car protocol timing issues, and turn the
+very strange and demanding signals into a simple PC serial port flow
+of characters. This is like using the "AT"modem commands, so you can
+see how easy it is. So timing is not critical and can be left to the
+interface HW, and logical results are garanteed at the SW level. However,
+the protocol is interface-proprietary.
+<p>
+
+<li> "Passive" IFCs have very little electronics on them, because they
+only try to protect the PC serial port and adapt the voltage levels (with
+optical isolation) . This means that the PC is dealing directly with the
+car's ECU signals, and therefore the timing must be VERY precise. But
+these IFCs have one BIG advantage: they are Open-Source and Future
+friendly!!! What I mean is that we can implement any kind of logical
+protocol we want with them, because they are protocol-ignorant! If
+you try using an Active IFC on a car with a protocol that it doesn't
+"speak", you are dependent upon the IFC manufacturer to update the IFC's
+firmware...  This is why I prefer Passive IFCs.... the future protocol
+implementations depend only upon us! Same with the car's brand-specific
+protocol extensions. Neat.
+</ol>
+<p>
+

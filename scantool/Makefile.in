@@ -1,0 +1,182 @@
+# @configure_input@
+#
+# CVSID $Id$
+#
+#	freediag - Vehicle Diagnostic Utility
+#
+#
+# Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+
+# XXX I don't know WHY I'm getting unreachable-code issues in
+# the br-1 implementation.
+
+CCUNUSEDWARNS= \
+	-Wswitch-default \
+	-Wunreachable-code
+
+# These can only be used for gcc.
+CCONLYWARNS=\
+	-Wall \
+	-Wbad-function-cast \
+	-Wimplicit \
+	-Wmissing-declarations \
+	-Wnested-externs \
+	-Wunused
+
+# These warnings can only be used in GCC3.
+GCC3WARNS+=\
+	-Wfloat-equal \
+	-Wswitch-enum
+
+GCC3CCONLYWARNS+=\
+	-Wsequence-point
+
+# On Linux the system headers have defines that prevent
+# you from using -Wconversion:
+
+NOTLINUXWARNS+=\
+	-Wconversion
+
+# Readline has redundant declarations.
+NOTREADLINEWARNS+=\
+	-Wredundant-decls
+
+CCWARNS+= \
+	-Wcast-align \
+	-Wcast-qual \
+	-Wpointer-arith \
+	-Wchar-subscripts \
+	-Wcomment \
+	-Wmissing-braces \
+	-Wparentheses \
+	-Wreturn-type \
+	-Wswitch \
+	-Wuninitialized \
+	-W \
+	-Wshadow \
+	-Wwrite-strings \
+	-Wsign-compare \
+	-Wstrict-prototypes \
+	-Wmissing-prototypes
+
+#CC=g++
+#LD=g++
+#CPPFLAGS+=-D"__attribute__(FOO)=" -fno-exceptions
+
+CC=gcc
+LD=gcc
+##CCWARNS+=$(CCONLYWARNS)
+
+CPPFLAGS+=-DUSE_INIFILE
+CPPFLAGS+=-DNOWARNINGS=1
+CPPFLAGS+=-I. -I../include @CPPFLAGS@
+
+CFLAGS+=-Werror
+
+CFLAGS+= @CFLAGS@
+
+LDFLAGS+=@LDFLAGS@
+
+LIBOBJS=  diag_config.o \
+	diag_l0_se.o diag_l0_me.o diag_l0_vw.o diag_l0_br.o diag_l0_elm.o \
+	diag_tty.o \
+	diag_l1.o \
+	diag_l2.o diag_l2_can.o diag_l2_raw.o \
+        diag_l2_iso9141.o diag_l2_iso9141_2.o \
+        diag_l2_iso14230.o \
+	diag_l2_saej1850.o diag_l2_vag.o diag_l2_mb1.o \
+	diag_l3.o diag_l3_saej1979.o diag_l3_iso14230.o diag_l3_vag.o \
+	diag_os.o diag_general.o diag_dtc.o
+
+LIBSRCS=  diag_config.c \
+	diag_l0_se.c diag_l0_me.c diag_l0_vw.c diag_l0_br.c diag_l0_elm.c \
+	diag_tty.c \
+	diag_l1.c \
+	diag_l2.c diag_l2_can.c diag_l2_raw.c \
+        diag_l2_iso9141.c diag_l2_iso9141_2.c diag_l2_iso14230.c \
+	diag_l2_saej1850.c diag_l2_vag.c diag_l2_mb1.c \
+	diag_l3.c diag_l3_saej1979.c diag_l3_iso14230.c diag_l3_vag.c \
+	diag_os.c diag_general.c diag_dtc.c
+
+DYNOOBJS=  dyno.o
+DYNOSRCS=  dyno.c
+
+HDRS= diag_err.h diag_iso14230.h diag_l1.h diag_l2.h \
+      diag_l3.h diag_l2_mb1.h
+
+SCANTOOLSRCS= scantool.c scantool_cli.c scantool_debug.c scantool_set.c \
+              scantool_test.c scantool_diag.c scantool_vag.c scantool_dyno.c \
+              scantool_aif.c
+
+SCANTOOLOBJS= scantool.o scantool_cli.o scantool_debug.o scantool_set.o \
+              scantool_test.o scantool_diag.o scantool_vag.o scantool_dyno.o \
+              scantool_aif.o
+
+TESTSRCS=diag_test.c
+TESTOBJS=diag_test.o
+
+all:	depend scantool diag_test
+
+scantool:	libdiag.a libdyno.a $(SCANTOOLOBJS)
+	$(LD) -o $@ $(SCANTOOLOBJS) libdiag.a libdyno.a @LIBS@
+
+diag_test:	libdiag.a $(TESTOBJS)
+	$(LD) -o $@ $(TESTOBJS) libdiag.a
+
+libdiag.a:	$(LIBOBJS)
+	ar cr libdiag.a $(LIBOBJS)
+	ranlib libdiag.a
+
+libdyno.a:	$(DYNOOBJS)
+	ar cr libdyno.a $(DYNOOBJS)
+	ranlib libdyno.a
+
+diag_config.c : l0config l2config genconfig.sh
+	./genconfig.sh > diag_config.c
+
+strip: all
+	strip scantool diag_test
+
+clean:
+	rm -f $(LIBOBJS) $(DYNOOBJS) $(TESTOBJS) $(SCANTOOLOBJS) libdiag.a libdyno.a scantool diag_test diag_config.c 
+
+clobber:
+	make clean
+	rm -f tags .depend config.log config.cache mkdep
+
+tags:   $(SCANTOOLSRCS) $(TESTSRCS) $(MAINS) $(LIBSRCS) $(DYNOSRCS)
+	ctags $(SCANTOOLSRCS) $(TESTSRCS) $(HDRS) $(MAINS) $(LIBSRCS) $(DYNOSRCS)
+
+.depend: mkdep $(SCANTOOLSRCS) $(TESTSRCS) $(LIBSRCS) $(DYNOSRCS)
+	./mkdep $(CPPFLAGS) $(SCANTOOLSRCS) $(TESTSRCS) $(LIBSRCS) $(DYNOSRCS)
+
+depend: .depend
+
+configure: configure.ac
+	autoconf $<
+
+Makefile: Makefile.in config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
+
+
+# Dependencies - Do not remove this line
+include .depend
