@@ -457,7 +457,11 @@ int dyno_get_nb_results()
 /*
  * Get dyno results
  */
+#ifdef WIN32
+int dyno_get_results(dyno_result * results, int size)
+#else
 int dyno_get_results(dyno_result * results, int size __attribute__((unused)))
+#endif
 {
   if ((dyno_mass == 0) || (dyno_gear == 0))
     return DYNO_USAGE;

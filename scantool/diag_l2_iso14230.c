@@ -26,7 +26,11 @@
  *
  */
 
+#ifdef WIN32
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -737,8 +741,13 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	return(0);
 }
 
+#ifdef WIN32
+static int
+diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
+#else
 static int
 diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX __attribute__((unused)))
+#endif
 {
 	/*
 	 * Send a stopcomms message, and wait for the +ve response, for upto

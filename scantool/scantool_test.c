@@ -106,9 +106,15 @@ get_vit_info(struct diag_l3_conn *d_conn, int rqst, const char *descr)
 
 
 /* Request Vehicle Info */
+#ifdef WIN32
+static int
+cmd_test_rvi(int argc,
+char **argv)
+#else
 static int
 cmd_test_rvi(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
 	struct diag_l3_conn *d_conn;
 	int rv;
@@ -168,9 +174,15 @@ char **argv __attribute__((unused)))
 
 
 
+#ifdef WIN32
+static int
+cmd_test_cms(int argc,
+char **argv)
+#else
 static int
 cmd_test_cms(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
 	if (global_state < STATE_SCANDONE)
 	{
@@ -181,9 +193,15 @@ char **argv __attribute__((unused)))
 	return(CMD_OK);
 }
 
+#ifdef WIN32
+static int
+cmd_test_ncms(int argc,
+char **argv)
+#else
 static int
 cmd_test_ncms(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
 	if (global_state < STATE_SCANDONE)
 	{
@@ -194,9 +212,15 @@ char **argv __attribute__((unused)))
 	return(CMD_OK);
 }
 
+#ifdef WIN32
+static int
+cmd_test_readiness(int argc,
+char **argv)
+#else
 static int
 cmd_test_readiness(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
 	int rv;
 	struct diag_l3_conn *d_conn;

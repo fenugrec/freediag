@@ -175,9 +175,15 @@ const char * const l2_initmodes[] =
 	"5BAUD", "FAST", "CARB", NULL
 };
 
+#ifdef WIN32
+static int
+cmd_set_show(int argc,
+char **argv)
+#else
 static int
 cmd_set_show(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
 	/* Show stuff */
 	int offset;

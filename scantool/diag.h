@@ -27,12 +27,56 @@
  * Library user header file
  */
 #include <sys/types.h>
+#ifdef WIN32
+#include <time.h>
+#else
 #include <sys/time.h>	/* For timeval */
 #include <stdint.h>		/* For uint8_t, etc */
+#endif
 #include <stdio.h>		/* For FILE */
 
 #if defined(__cplusplus)
 extern "C" {
+#endif
+
+#ifdef WIN32
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+
+struct timeval {
+        long    tv_sec;         /* seconds */
+        long    tv_usec;        /* and microseconds */
+};
+
+#define timercmp(tvp, uvp, cmp) \
+        ((tvp)->tv_sec cmp (uvp)->tv_sec || \
+         (tvp)->tv_sec == (uvp)->tv_sec && (tvp)->tv_usec cmp (uvp)->tv_usec)
+
+typedef unsigned int    u_int;
+typedef _W64 unsigned int UINT_PTR, *PUINT_PTR;
+typedef UINT_PTR        SOCKET;
+
+#ifndef FD_SETSIZE
+#define FD_SETSIZE      64
+#endif /* FD_SETSIZE */
+
+typedef struct fd_set {
+        u_int fd_count;               /* how many are SET? */
+        SOCKET  fd_array[FD_SETSIZE];   /* an array of SOCKETs */
+} fd_set;
+
+#define SIGALRM 14
+
+typedef int  sigset_t;
+
+typedef struct sigaction_t {
+    void (*sa_handler)();
+    sigset_t sa_mask;
+    int sa_flags;
+    void (*sa_restorer)(void);
+} sigaction_t;
+
 #endif
 
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))

@@ -250,8 +250,13 @@ int dyno_loss_done;
 /*
  * Determine power lost by aerodynamic and friction forces
  */
+#ifdef WIN32
+static int cmd_dyno_loss(int argc,
+char **argv)
+#else
 static int cmd_dyno_loss(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
   ecu_data_t *ep;
   
@@ -391,8 +396,13 @@ static int cmd_dyno_setloss(int argc, char **argv)
 /*
  * Run dyno
  */
+#ifdef WIN32
+static int cmd_dyno_run(int argc,
+char **argv)
+#else
 static int cmd_dyno_run(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
   ecu_data_t *ep;
   
@@ -526,8 +536,13 @@ static void display_measures(dyno_measure * measures, int nb_measures)
 }
 
 /* Display all measures */
+#ifdef WIN32
+static int cmd_dyno_measures(int argc,
+char **argv)
+#else
 static int cmd_dyno_measures(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
   dyno_measure * measures = NULL;
   int nb_measures = 0;
@@ -680,8 +695,13 @@ void reset_results(void)
 /*
  * Display dyno results
  */
+#ifdef WIN32
+static int cmd_dyno_result(int argc,
+char **argv)
+#else
 static int cmd_dyno_result(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
   get_results();
   
@@ -699,8 +719,13 @@ char **argv __attribute__((unused)))
 /*
  * Display dyno graphs
  */
+#ifdef WIN32
+static int cmd_dyno_graph(int argc,
+char **argv)
+#else
 static int cmd_dyno_graph(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
   get_results();
   

@@ -27,7 +27,11 @@
  *
  */
 
+#ifdef WIN32
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 #include <string.h>
 
 #include "diag.h"
@@ -45,12 +49,21 @@ static int
 diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	uint8_t *data, int len);
 
+#ifdef WIN32
+static int
+diag_l2_proto_mb1_startcomms( struct diag_l2_conn *d_l2_conn,
+flag_type flags,
+int bitrate,
+target_type target,
+source_type source)
+#else
 static int
 diag_l2_proto_mb1_startcomms( struct diag_l2_conn *d_l2_conn,
 flag_type flags __attribute__((unused)),
 int bitrate,
 target_type target,
 source_type source __attribute__((unused)))
+#endif
 {
 	struct diag_l1_initbus_args in;
 	uint8_t cbuf[2];

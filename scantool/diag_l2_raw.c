@@ -42,12 +42,21 @@ CVSID("$Id$");
 
 /*
 */
+#ifdef WIN32
+int
+diag_l2_proto_raw_startcomms( struct diag_l2_conn *d_l2_conn, 
+flag_type flags,
+int bitrate,
+target_type target,
+source_type source)
+#else
 int
 diag_l2_proto_raw_startcomms( struct diag_l2_conn *d_l2_conn, 
 flag_type flags __attribute__((unused)),
 int bitrate,
 target_type target __attribute__((unused)),
 source_type source __attribute__((unused)))
+#endif
 {
 	struct diag_serial_settings set;
 
@@ -62,8 +71,13 @@ source_type source __attribute__((unused)))
 
 /*
 */
+#ifdef WIN32
+int
+diag_l2_proto_raw_stopcomms(struct diag_l2_conn* pX)
+#else
 int
 diag_l2_proto_raw_stopcomms(struct diag_l2_conn* pX __attribute__((unused)))
+#endif
 {
 	return (0);
 }

@@ -26,7 +26,11 @@
  * NOTE: this is only slimline wrapper - most of the code is in diag_l2_iso9141.c
  */
 
+#ifdef WIN32
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 #include <string.h>
 
 #include "diag.h"

@@ -65,12 +65,21 @@ struct diag_msg *diag_l2_proto_9141_request (
         struct diag_msg *msg,
         int *errval ) ;
 
+#ifdef WIN32
+int diag_l2_proto_9141_sc_common (
+        struct diag_l2_conn *d_l2_conn,
+        int bitrate,
+        target_type target,
+        source_type source,
+        int kb1, int kb2 ) ;
+#else
 int diag_l2_proto_9141_sc_common (
         struct diag_l2_conn *d_l2_conn,
         int bitrate,
         target_type target,
         source_type source __attribute__((unused)),
         int kb1, int kb2 ) ;
+#endif
 
 #if defined(__cplusplus)
 }

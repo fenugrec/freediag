@@ -33,6 +33,15 @@
 extern "C" {
 #endif
 
+#ifdef WIN32
+typedef enum {
+	dtc_proto_j2012	=	1,	/* SAE J2012 */
+	dtc_proto_int8	=	2,	/* 8 bit integer */
+	dtc_proto_int16	=	3,	/* 16 bit integer */
+	dtc_proto_int32	=	4,	/* 32 bit integer */
+	dtc_proto_text	=	5	/* Text String */
+} diag_dtc_protocol;
+#else
 enum diag_dtc_protocol {
 	dtc_proto_j2012	=	1,	/* SAE J2012 */
 	dtc_proto_int8	=	2,	/* 8 bit integer */
@@ -40,12 +49,19 @@ enum diag_dtc_protocol {
 	dtc_proto_int32	=	4,	/* 32 bit integer */
 	dtc_proto_text	=	5	/* Text String */
 };
+#endif
+
 
 void diag_dtc_init(void);
+#ifdef WIN32
+char* diag_dtc_decode(uint8_t *data, int len,
+	const char *vehicle, const char *ecu, diag_dtc_protocol protocol,
+	char *buf, const size_t bufsize);
+#else
 char* diag_dtc_decode(uint8_t *data, int len,
 	const char *vehicle, const char *ecu, enum diag_dtc_protocol protocol,
 	char *buf, const size_t bufsize);
-
+#endif
 #if defined(__cplusplus)
 }
 #endif

@@ -23,7 +23,12 @@
  * Diag library test harness
  */
 
+#ifdef WIN32
+#include <process.h>
+#include "pthread.h"
+#else
 #include <unistd.h>
+#endif
 
 #include <signal.h>
 #include <stdlib.h>
@@ -52,14 +57,24 @@ int global_datalen;
 
 uint8_t	global_pids[0x100];	/* Pids supported by ECU */
 
+#ifdef WIN32
+static void
+alarm_handler(int sig)
+#else
 static void
 alarm_handler(int sig __attribute__((unused)))
+#endif
 {
 	alarm(1);
 }
 
+#ifdef WIN32
+int
+main(int argc,  char **argv)
+#else
 int
 main(int argc __attribute__((unused)),  char **argv __attribute__((unused)))
+#endif
 {
 	struct sigaction stNew;
 
@@ -89,8 +104,13 @@ main(int argc __attribute__((unused)),  char **argv __attribute__((unused)))
 	return 0;
 }
 
+#ifdef WIN32
+static void
+l2_rcv(void *handle, struct diag_msg *msg)
+#else
 static void
 l2_rcv(void *handle __attribute__((unused)), struct diag_msg *msg)
+#endif
 {
 	size_t len = msg->len;
 	uint8_t *data = msg->data;
@@ -242,7 +262,11 @@ printf("For %d %d\n", funcaddr, destecu);
 	return 0;
 }
 
+#ifdef WIN32
+static int do_l1_test(void);
+#else
 static int do_l1_test(void) __attribute__((unused));
+#endif
 
 static int
 do_l1_test(void)

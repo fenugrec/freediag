@@ -292,9 +292,15 @@ cmd_diag_fastprobe(int argc, char **argv)
 	return(cmd_diag_probe_common(argc, argv, 1));
 }
 
+#ifdef WIN32
+static int
+cmd_diag_connect(int argc,
+char **argv)
+#else
 static int
 cmd_diag_connect(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
 	int rv;
 
@@ -315,9 +321,15 @@ char **argv __attribute__((unused)))
 	return (CMD_OK);
 }
 
+#ifdef WIN32
+static int
+cmd_diag_disconnect(int argc,
+char **argv)
+#else
 static int
 cmd_diag_disconnect(int argc __attribute__((unused)),
 char **argv __attribute__((unused)))
+#endif
 {
 	if (global_state < STATE_CONNECTED)
 	{

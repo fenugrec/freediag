@@ -29,6 +29,11 @@
 extern "C" {
 #endif
 
+#ifdef WIN32
+#include <Basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 #include "diag_l1.h"
 
 /*

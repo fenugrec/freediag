@@ -191,11 +191,19 @@ diag_l2_proto_vag_decode(char *data, int len,
  * us a complete message, and we will wait a little bit longer than the normal
  * timeout to detect "end of all responses"
  */
+#ifdef WIN32
+static int
+diag_l2_proto_vag_int_recv(struct diag_l2_conn *d_l2_conn, 
+int timeout,
+uint8_t *data, 
+int *datalen)
+#else
 static int
 diag_l2_proto_vag_int_recv(struct diag_l2_conn *d_l2_conn, 
 int timeout __attribute__((unused)),
 uint8_t *data __attribute__((unused)), 
 int *datalen __attribute__((unused)))
+#endif
 {
 	struct diag_l2_vag *dp;
 	int rv = 0;
@@ -378,10 +386,17 @@ struct diag_l2_conn *d_l2_conn,
  * and physical addressing. The ISOvag spec describes CARB initialisation
  * which is done in the ISO9141 code
  */
+#ifdef WIN32
+static int
+diag_l2_proto_vag_startcomms( struct diag_l2_conn *d_l2_conn,
+flag_type flags,
+int bitrate, target_type target, source_type source)
+#else
 static int
 diag_l2_proto_vag_startcomms( struct diag_l2_conn *d_l2_conn,
 flag_type flags __attribute__((unused)),
 int bitrate, target_type target, source_type source __attribute__((unused)))
+#endif
 {
 	struct diag_serial_settings set;
 	struct diag_l2_vag *dp;

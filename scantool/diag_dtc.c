@@ -47,12 +47,21 @@ void diag_dtc_init(void)
  *	int protocol	:-	Protocol (see include file)
  */
 
+#ifdef WIN32
+char *
+diag_dtc_decode(uint8_t *data, int len, 
+const char *vehicle,
+const char *ecu,
+diag_dtc_protocol protocol,
+char *buf, const size_t bufsize)
+#else
 char *
 diag_dtc_decode(uint8_t *data, int len, 
 const char *vehicle __attribute__((unused)),
 const char *ecu __attribute__((unused)),
 enum diag_dtc_protocol protocol,
 char *buf, const size_t bufsize)
+#endif
 {
 	char area;
 

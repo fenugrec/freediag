@@ -32,7 +32,11 @@
  *
  */
 
+#ifdef WIN32
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 
 #include <errno.h>
 #include <string.h>
@@ -672,10 +676,17 @@ diag_l0_br_writemsg(struct diag_l0_device *dl0d, int type,
  * This routine will do a fastinit if needed, but all 5 baud inits
  * will have been done by the slowinit() code
  */
+#ifdef WIN32
+static int
+diag_l0_br_send(struct diag_l0_device *dl0d,
+const char *subinterface,
+const void *data, size_t len)
+#else
 static int
 diag_l0_br_send(struct diag_l0_device *dl0d,
 const char *subinterface __attribute__((unused)),
 const void *data, size_t len)
+#endif
 {
 	int rv = 0;
 
@@ -756,10 +767,17 @@ const void *data, size_t len)
  * <control_byte><data ..>
  * If control byte is < 16, it's a length byte, else it's a error descriptor
  */
+#ifdef WIN32
+static int
+diag_l0_br_recv(struct diag_l0_device *dl0d,
+const char *subinterface,
+void *data, size_t len, int timeout)
+#else
 static int
 diag_l0_br_recv(struct diag_l0_device *dl0d,
 const char *subinterface __attribute__((unused)),
 void *data, size_t len, int timeout)
+#endif
 {
 	int xferd, rv, retrycnt;
 	uint8_t *pdata = (uint8_t *)data;
