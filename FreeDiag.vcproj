@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;include;..\pthreads\include"
+				AdditionalIncludeDirectories=".;include;pthreads\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -35,7 +35,7 @@
 				AdditionalDependencies="pthreadVC.lib"
 				OutputFile="$(OutDir)/FreeDiag.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\pthreads\lib"
+				AdditionalLibraryDirectories="pthreads\lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/FreeDiag.pdb"
 				SubSystem="1"
