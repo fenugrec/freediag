@@ -28,13 +28,18 @@ CFG SIM_NOL2FRAME 1
 # L2 checksum - set this to 1 and you won't need checksums in this file:
 CFG SIM_NOL2CKSUM 1
 
-# ISO-9141-2 slow init:
-RQ 0x33
-RP 0x55
-RP 0x08
-RP 0x08
-RQ 0xF7
-RP 0xCC
+# ISO-14230 fast init (functional addressing):
+# RQ 0x00
+# RQ 0xC1 0x33 0xF1 0x81 0x66
+# RP 0xC0 0xF1 0x01 0x03 0xC1 0xEA 0x8F cks1
+
+# ISO-9141 slow init:
+# RQ 0x33
+# RP 0x55
+# RP 0x08
+# RP 0x08
+# RQ 0xF7
+# RP 0xCC
 
 # What SID-1 PIDs are supported? (this is also used as a "resynch" msg by freediag)
 RQ 0x01 0x00
