@@ -227,8 +227,11 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 
 				if (c != *dp)
 				{
-					fprintf(stderr,"buserror got 0x%x expected 0x%x\n",
-						c&0xff, *dp & 0xff);
+				        if (c == *dp - 1)
+					    fprintf(stderr,"Half duplex interface not echoing!\n");
+					else
+					    fprintf(stderr,"Bus Error: got 0x%x expected 0x%x\n",
+						    c&0xff, *dp & 0xff);
 					rv = DIAG_ERR_BUSERROR;
 					break;
 				}
