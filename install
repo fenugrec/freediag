@@ -4,5 +4,7 @@ echo "+++ Installing ScanTool"
 ( cd scantool ; ./install )
 
 echo "+++ Installing ScanGUI"
+# Kludge - because I can't get CVS to change the permissions.
+chmod ug+x scangui/reconf scangui/install
 ( cd scangui ; ./install )
 
