@@ -42,10 +42,12 @@ const struct cmd_tbl_entry vag_cmd_table[] =
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_vag_help, 0, NULL},
 
-	{ "quit", "quit", "Return to previous menu level",
-		cmd_quit, 0, NULL},
-	{ "exit", "exit", "Return to previous menu level",
-		cmd_quit, FLAG_HIDDEN, NULL},
+	{ "up", "up", "Return to previous menu level",
+		cmd_up, 0, NULL},
+	{ "quit","quit", "Return to previous menu level",
+		cmd_up, FLAG_HIDDEN, NULL},
+	{ "exit", "exit", "Exit program",
+		cmd_exit, 0, NULL},
 
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };

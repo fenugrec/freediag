@@ -59,7 +59,7 @@ int diag_init(void)
 	if ((rv = diag_os_init()) < 0)
 		return(rv);
 
-	(void)diag_dtc_init();	/* XXX Why can't this fail? */
+	(void)diag_dtc_init();
 
 	return(0);
 }
@@ -252,16 +252,17 @@ static const struct {
 const char *
 diag_errlookup(const int code) {
 	unsigned i;
+	static char ill_str[30];		//...
 	for (i = 0; i < ARRAY_SIZE(edesc); i++)
 		if (edesc[i].code == code)
 			return edesc[i].desc;
 
-	return "Illegal error code";
+	sprintf(ill_str,"Illegal error code: 0x%.2X\n",code);
+	return ill_str;
 }
 
 void *
 diag_pflseterr(const char *name, const int line, const int code) {
-//if ( code == -8 ) return (void *)0;
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
 	if (latchedCode == 0)
 		latchedCode = code;
@@ -271,7 +272,6 @@ diag_pflseterr(const char *name, const int line, const int code) {
 
 int
 diag_iflseterr(const char *name, const int line, const int code) {
-//if ( code == -8 ) return code;
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
 	if (latchedCode == 0)
 		latchedCode = code;

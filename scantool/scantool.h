@@ -45,7 +45,8 @@ extern int diag_cmd_debug;
 extern char *progname;
 
 int htoi(char *buf);
-int cmd_quit(int argc, char **argv);
+int cmd_up(int argc, char **argv);
+int cmd_exit(int argc, char **argv);
 
 /* Structure to hold responses */
 typedef struct response

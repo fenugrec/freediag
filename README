@@ -1,5 +1,5 @@
 
-FREEDIAG - Free diagnostic software for OBD-II equipped motor vehicles.
+FREEDIAG - Free diagnostic software for OBD-II compliant motor vehicles.
 -----------------------------------------------------------------------
 
 This package contains 'core' software (called 'scantool') which
@@ -40,20 +40,20 @@ Each package contains a list of it's contributors.
 INSTALLATION:
 ~~~~~~~~~~~~~
 
-If you downloaded a 'released' version of freediag:
+freediag uses a standard GNU autotools installation process:
+./configure && make
 
-Each package has it's own installation instructions - but
-running the 'install' script in this top level directory
-should do all the work for you.  You'll likely need to run
-this as 'root' in order to get write access to the directories
-where freediag installs itself.
+For the moment, you should not run make install as it is
+100% untested.
 
 If you checked freediag out of CVS:
+you may need to run automake+autoconf from the root source
+directory to create the ./configure script.
 
-Each package contains a 'reconf' script that is called from
-a master 'reconf' script at this level.  This runs the 'autotools'
-to generate configure scripts and then calls 'make'.  It does not
-do a 'make install'.
+./configure options:
+--enable-scangui if you wish to build the gui (disabled by
+default). This will require the fltk package & libraries.
+
 
 RUNNING:
 ~~~~~~~~

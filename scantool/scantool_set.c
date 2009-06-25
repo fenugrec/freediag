@@ -75,14 +75,9 @@ int set_init(void) {
 	set_vehicle = "ODBII";	/* Vehicle */
 	set_ecu = "ODBII";	/* ECU name */
 
-	set_interface = "CARSIM";	/* H/w interface to use */
-
-	#if 0
-	set_interface = "MET16";	/* H/w interface to use */
-	set_interface = "VAGTOOL";	/* H/w interface to use */
-	#endif
-
-	memset(set_subinterface, 0, sizeof(set_subinterface));
+	set_interface = "CARSIM";	/* Default H/w interface to use */
+	strncpy(set_subinterface,"/dev/null",sizeof(set_subinterface));
+					/*Default device. will need to be set*/
 
 	return 0;
 }
@@ -99,6 +94,7 @@ int set_init(void) {
 
 /* SET sub menu */
 static int cmd_set_help(int argc, char **argv);
+//static int cmd_exit(int argc, char **argv);
 static int cmd_set_show(int argc, char **argv);
 static int cmd_set_speed(int argc, char **argv);
 static int cmd_set_testerid(int argc, char **argv);
@@ -147,10 +143,12 @@ const struct cmd_tbl_entry set_cmd_table[] =
 	{ "show", "show", "Shows all set'able values",
 		cmd_set_show, 0, NULL},
 
-	{ "quit", "quit", "Return to previous menu level",
-		cmd_quit, 0, NULL},
-	{ "exit", "exit", "Return to previous menu level",
-		cmd_quit, FLAG_HIDDEN, NULL},
+	{ "up", "up", "Return to previous menu level",
+		cmd_up, 0, NULL},
+	{ "quit","quit", "Return to previous menu level",
+		cmd_up, FLAG_HIDDEN, NULL},
+	{ "exit", "exit", "Exit program",
+		cmd_exit, 0, NULL},
 
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
@@ -222,7 +220,9 @@ static int cmd_set_interface(int argc, char **argv)
 		if (strcmp(argv[1], "?") == 0)
 		{
 			prflag = 1;
-			printf("interface protocol: valid names are ");
+			printf("hardware interface: use \"set interface NAME [id]\" .\n"
+			"[id] is either /dev/obdII[id] or a complete device name such as \"/dev/ttyS0\".\n"
+			"Valid interface names are: \n");
 		}
 		for (i=0; l0_names[i] != NULL; i++)
 		{
@@ -235,22 +235,25 @@ static int cmd_set_interface(int argc, char **argv)
 					set_interface = l0_names[i];
 				}
 		}
-		if (prflag)
+		if (prflag)		//"?" was entered
 			printf("\n");
-		if (! found)
+		else if (! found)
 		{
 			printf("interface: invalid interface %s\n", argv[1]);
 			printf("interface: use \"set interface ?\" to see list of names\n");
-		} else {
+		}
+		else
+		{
 			if (argc > 2)
 				strncpy(set_subinterface, argv[2], sizeof(set_subinterface));
-			else
-				strncpy(set_subinterface, "0", sizeof(set_subinterface));
+			printf("interface is now %s on %s\n",
+					set_interface, set_subinterface);
+
 		}
 	}
 	else
 	{
-		printf("interface: interface to use: %s subinterface %s\n",
+		printf("interface: using %s on %s\n",
 			set_interface, set_subinterface);
 	}
 	return (CMD_OK);

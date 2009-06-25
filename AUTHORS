@@ -1,11 +1,10 @@
-
 Freediag was originally written by Richard Almeida - he looked after the
 package up to version 0.3a and provided sporadic CVS updates until August 2003.
 
 Andy Whittaker did work in tidying up the code - and looked at making a
 Windows version.
 
-Bjorn Helgaas added logging and some other functionalith.
+Bjorn Helgaas added logging and some other functionality.
  
 Guilhem Valentin is believed to have written the dynamometer package (I'm not
 certain of this).

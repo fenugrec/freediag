@@ -1,5 +1,0 @@
-#!/bin/csh
-
-./configure
-make install
-

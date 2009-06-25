@@ -54,7 +54,7 @@ FILE		*instream;
 /* Main menu commands */
 
 static int cmd_help(int argc, char **argv);
-static int cmd_exit(int argc, char **argv);
+//static int cmd_exit(int argc, char **argv);
 static int cmd_monitor(int argc, char **argv);
 static int cmd_watch(int argc, char **argv);
 static int cmd_cleardtc(int argc, char **argv);
@@ -123,8 +123,8 @@ static const struct cmd_tbl_entry root_cmd_table[]=
 
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_help, 0, NULL },
-	{ "quit", "quit", "Exits program", cmd_exit, 0, NULL},
-	{ "exit", "exit", "Exits program", cmd_exit, FLAG_HIDDEN, NULL},
+	{ "exit", "exit", "Exits program", cmd_exit, 0, NULL},
+	{ "quit", "quit", "Exits program", cmd_exit, FLAG_HIDDEN, NULL},
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
 
@@ -220,17 +220,6 @@ command_line_input(const char *prompt)
 
 	/* Reading from init or command file; no prompting or history */
 	return basic_get_input(NULL);
-}
-
-#ifdef WIN32
-static int
-cmd_exit(int argc, char **argv)
-#else
-static int
-cmd_exit(int argc __attribute__((unused)), char **argv __attribute__((unused)))
-#endif
-{
-	return (CMD_EXIT);
 }
 
 int 
@@ -865,7 +854,7 @@ cmd_ecus(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 static int
 do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char **argv)
 {
-	/* Built up argc/argv */
+	/* Build up argc/argv */
 	const struct cmd_tbl_entry *ctp;
 	int cmd_argc;
 	char *cmd_argv[20];
@@ -938,6 +927,8 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 							promptbuf,
 							cmd_argc-1,
 							&cmd_argv[1]);
+						if (rv==CMD_EXIT)	//allow exiting prog. from a submenu
+							done=1;
 						snprintf(promptbuf, sizeof(promptbuf), "%s> ", prompt);
 					}
 					else

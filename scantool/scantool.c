@@ -2036,12 +2036,23 @@ main(int argc __attribute__((unused)), char **argv)
 
 #ifdef WIN32
 int
-cmd_quit(int argc, char **argv)
+cmd_up(int argc, char **argv)
 #else
 int
-cmd_quit(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+cmd_up(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 #endif
 {
     return (CMD_UP);
+}
+
+#ifdef WIN32
+int
+cmd_exit(int argc, char **argv)
+#else
+int
+cmd_exit(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+#endif
+{
+	return (CMD_EXIT);
 }
 

@@ -77,10 +77,12 @@ const struct cmd_tbl_entry diag_cmd_table[] =
 
 	{ "probe", "probe start_addr stop_addr", "Scan bus using ISO9141 5 baud init [slow!]", cmd_diag_probe, 0, NULL},
 	{ "fastprobe", "fastprobe start_addr stop_addr [func]", "Scan bus using ISO14230 fast init with physical or functional addressing", cmd_diag_fastprobe, 0, NULL},
-	{ "quit", "quit", "Return to previous menu level",
-		cmd_quit, 0, NULL},
-	{ "exit", "exit", "Return to previous menu level",
-		cmd_quit, FLAG_HIDDEN, NULL},
+	{ "up", "up", "Return to previous menu level",
+		cmd_up, 0, NULL},
+	{ "quit","quit", "Return to previous menu level",
+		cmd_up, FLAG_HIDDEN, NULL},
+	{ "exit", "exit", "Exit program",
+		cmd_exit, 0, NULL},
 
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
@@ -116,19 +118,15 @@ cmd_diag_addl3(int argc, char **argv)
 	if (strcmp(argv[1], "?") == 0)
 	{
 		printf("Valid protocols are: ");
-		for (i=0; i<100; i++)
+		for (i=0; l3_protos[i] != NULL; i++)
 		{
-			if (l3_protos[i] == NULL)
-				break;
 			printf("%s ", l3_protos[i]);
 		}
 		printf("\n");
 		return(CMD_OK);
 	}
-	for (i=0, proto = NULL; i<100; i++)
+	for (i=0, proto = NULL; l3_protos[i] != NULL; i++)
 	{
-		if (l3_protos[i] == NULL)
-			break;
 		if (strcasecmp(l3_protos[i], argv[1]) == 0)
 		{
 			proto = l3_protos[i];
@@ -211,7 +209,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	if (dl0d == 0)
 	{
 		rv = diag_geterr();
-		printf("Failed to open hardware interface ");
+		printf("Failed to open hardware interface, error 0x%X",rv);
 		if (rv == DIAG_ERR_PROTO_NOTSUPP)
 			printf(", does not support requested L1 protocol\n");
 		else if (rv == DIAG_ERR_BADIFADAPTER)
