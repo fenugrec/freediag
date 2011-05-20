@@ -215,14 +215,14 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
         "Time between sensor transitions"
         };
 
-    if (diag_cmd_debug > 0x80)
+    if (diag_cmd_debug > DIAG_DEBUG_DATA)
     {
         fprintf(stderr, "scantool: Got handle %p %d bytes of data, src %x, dest %x msgcnt %d\n",
             handle, len, msg->src, msg->dest, msg->mcnt);
     }
 
     /* Debug level for showing received data */
-    if (diag_cmd_debug & 0x80)
+    if (diag_cmd_debug & DIAG_DEBUG_DATA)
     {
             print_msg(stdout, msg, 0);
         data = msg->data;
@@ -234,7 +234,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
     /* There is no difference between watch and decode ... */
     case RQST_HANDLE_WATCH:
     case RQST_HANDLE_DECODE:
-        if ((diag_cmd_debug & 0x80) == 0)
+        if (!(diag_cmd_debug & DIAG_DEBUG_DATA))
         {
             /* Print data (unless done already) */
                 print_msg(stdout, msg, 0);
@@ -594,7 +594,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, int p1, int p2,
     char mode_lengths[] = { 0, 2, 3, 1, 1, 3, 2, 1, 7, 2 };
 #define J1979_MODE_MAX 9
 
-    if (diag_cmd_debug > 0x80)
+    if (diag_cmd_debug > DIAG_DEBUG_DATA)
     {
         fprintf(stderr, "j1979_rqst: handle %p conn %p mode %x\n",
             handle, d_conn, mode);

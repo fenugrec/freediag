@@ -61,7 +61,7 @@ void *dl0_handle)
 	*ppdl0d = dl0d;
 
 	/*
-	 * For historical compatability, if the subinterface decodes cleanly
+	 * For historical compatibility, if the subinterface decodes cleanly
 	 * as an integer we will write it into a string to get the name.
 	 * You can create a symlink to "/dev/obdII<NUMBER>" if you want to,
          * or just set the subinterface to a valid device name.
@@ -69,7 +69,7 @@ void *dl0_handle)
 
 	iInterface = strtol(subinterface, &endptr, 10);
 	if (*endptr == 0) {
-		/* Entire string is a valid number: Provide compatability.  */
+		/* Entire string is a valid number: Provide compatibility.  */
 		size_t n = strlen(tty_template) + 32;
 
 		if (diag_malloc(&dl0d->name, n)) {

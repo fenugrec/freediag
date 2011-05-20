@@ -200,6 +200,7 @@ static int
 cmd_debug_cli(int argc, char **argv)
 {
 	return(cmd_debug_common("CLI", &diag_cmd_debug, argc, argv));
+	//for now, value > 0x80 will enable all debugging info.
 }
 
 static int

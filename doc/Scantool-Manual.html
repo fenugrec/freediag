@@ -380,6 +380,21 @@ rge </a> ]
       <td><code>dumpdata</code></td>
       <td>Show received data for mode 1/2 tests</td>
     </tr>
+    <tr>
+      <td><code>[<i>val</i>]</code></td>
+      <td>Available debug levels (combine by adding values) :<br>
+	<pre>
+	DIAG_DEBUG_OPEN		0x01	/* Open events */
+	DIAG_DEBUG_CLOSE	0x02	/* Close events */
+	DIAG_DEBUG_READ		0x04	/* Read events */
+	DIAG_DEBUG_WRITE	0x08	/* Write events */
+	DIAG_DEBUG_IOCTL	0x10	/* Ioctl stuff (setspeed etc) */
+	DIAG_DEBUG_PROTO	0x20	/* Other protocol stuff */
+	DIAG_DEBUG_INIT		0x40	/* Initialisation stuff */
+	DIAG_DEBUG_DATA		0x80	/* Dump data depending on other flags */
+	DIAG_DEBUG_TIMER	0x100	/* Timer stuff */</pre></td>
+    </tr>
+
 
     <tr><th colspan="2">Dyno Sub-Menu</th></tr>
     <tr>
