@@ -338,7 +338,10 @@ log_command(int argc, char **argv)
 static int
 cmd_log(int argc, char **argv)
 {
-    	char *file;
+	printf("%d",argc);
+	char autofilename[20]="";
+	char *file;
+	file=autofilename;
 	struct stat buf;
 	time_t now;
 	int i;
@@ -351,26 +354,19 @@ cmd_log(int argc, char **argv)
 
 	/* Turn on logging */
 	if (argc > 1)
-	    	file = argv[1];
-	else
+	    	file = argv[1];	//if a file name was specified, use that
+	else				//else, generate an auto log file
 	{
-    	if (diag_malloc(&file, 20))
-		{
-		    	printf("Can't allocate space for filename\n");
-		    	return(CMD_FAILED);
-		}
-
 		for (i = 0; i < 99; i++)
 		{
-			sprintf(file, "log.%02d", i);
+			sprintf(autofilename,"log.%02d",i);
 			if (stat(file, &buf) == -1
 			    && errno == ENOENT)
 			    	break;
 		}
 		if (i > 99)
 		{
-		    	printf("Can't create log.<nn>\n");
-			free(file);
+		    	printf("Can't create log.<nn>; remember to clean old auto log files\n");
 			return(CMD_FAILED);
 		}
 	}
@@ -380,7 +376,6 @@ cmd_log(int argc, char **argv)
 	if (global_logfp == NULL)
 	{
 		printf("Failed to create log file %s\n", file);
-		free(file);
 		return(CMD_FAILED);
 	}
 
@@ -392,7 +387,6 @@ cmd_log(int argc, char **argv)
 		asctime(localtime(&now)));
 
 	printf("Logging to file %s\n", file);
-	if (argc <= 1) free(file);
 	return (CMD_OK);
 }
 

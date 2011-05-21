@@ -131,12 +131,9 @@ void *dl0_handle)
                         FLFMT "Open of device interface \"%s\" failed: %s\n", 
 			FL, dl0d->name, strerror(errno));
 		fprintf(stderr, FLFMT
-                        "(You may need to create a symbolic link from\n", FL ) ;
+                        "(Make sure the device specified corresponds to the\n", FL ) ;
 		fprintf(stderr,
-                        FLFMT "\"%s\" to the serial device you have your\n",
-                        FL, dl0d->name ) ;
-		fprintf(stderr,
-                        FLFMT "interface connected to).\n", FL ) ;
+                        FLFMT "serial device your interface is connected to.\n", FL) ;
 
 		(void)diag_tty_close(ppdl0d);
 		return -1;

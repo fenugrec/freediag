@@ -221,7 +221,8 @@ static int cmd_set_interface(int argc, char **argv)
 		{
 			prflag = 1;
 			printf("hardware interface: use \"set interface NAME [id]\" .\n"
-			"[id] is either /dev/obdII[id] or a complete device name such as \"/dev/ttyS0\".\n"
+			"[id] is either an integer to be appended as /dev/obdII[id] or\n"
+			"a complete device name such as \"/dev/ttyS0\".\n"
 			"Valid interface names are: \n");
 		}
 		for (i=0; l0_names[i] != NULL; i++)

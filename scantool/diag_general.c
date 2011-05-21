@@ -306,6 +306,8 @@ void **pp, size_t n, size_t s) {
 	return 0;
 }
 
+
+//flmalloc = malloc with logging (filename+line)
 int diag_flmalloc(const char *name, const int line, void **pp, size_t s) {
 	void *p = malloc(s);
 	*pp = p;
