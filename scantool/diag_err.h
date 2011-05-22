@@ -32,12 +32,12 @@ extern "C" {
 #endif
 
 
-#define	DIAG_ERR_GENERAL	-1	/* Unspecified */
+#define	DIAG_ERR_GENERAL	-1	/* Unspecified  Error*/
 #define	DIAG_ERR_BADFD		-2	/* Invalid FileDescriptor passed to routine */
 #define	DIAG_ERR_NOMEM		-3	/* Malloc/Calloc/Strdup/etc failed - ran out of memory  */
 
 #define DIAG_ERR_INIT_NOTSUPP	-4	/* Initbus type not supported by H/W */
-#define DIAG_ERR_PROTO_NOTSUPP	-5	/* Initbus type not supported by H/W */
+#define DIAG_ERR_PROTO_NOTSUPP	-5	/* Protocol not supported by H/W */
 #define DIAG_ERR_IOCTL_NOTSUPP	-6	/* Ioctl type not supported */
 #define DIAG_ERR_BADIFADAPTER	-7	/* L0 adapter comms failed */
 
@@ -52,6 +52,9 @@ extern "C" {
 #define DIAG_ERR_BADRATE	-22	/* Bit rate specified doesn't match ECU */
 
 #define DIAG_ERR_ECUSAIDNO	-32	/* Ecu returned negative */
+
+#define DIAG_ERR_RCFILE -40 /*trouble with rc/ini file*/
+#define DIAG_ERR_CMDFILE -41 /*trouble with sourcing commands*/
 
 #if defined(__cplusplus)
 }

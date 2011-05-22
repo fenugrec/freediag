@@ -34,7 +34,7 @@
  * one or more responses for each OBDII request. Feel free to enlarge
  * that file with valid information for your case, customise it at will
  * for your own tests. The format is pretty raw (message bytes in hexadecimal),
- * with alowance for comments (lines started with "#") and a very small and
+ * with allowance for comments (lines started with "#") and a very small and
  * rigid syntax (check the comments in the file).
  * 
  */
@@ -448,6 +448,7 @@ diag_l0_sim_init(void)
 static struct diag_l0_device *
 diag_l0_sim_open(const char *subinterface, int iProtocol)
 {
+    int rv;
     struct diag_l0_device *dl0d;
     struct diag_l0_sim_device *dev;
 
@@ -458,28 +459,28 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
     diag_l0_sim_init();
 
     // Create diag_l0_sim_device:
-    if (diag_calloc(&dev, 1))
-	return (0);
+    if (rv=diag_calloc(&dev, 1))
+	return (struct diag_l0_device *)diag_pseterr(rv);
 
     dev->protocol = iProtocol;
 
     // Create diag_l0_device:
-    if (diag_calloc(&dl0d, 1))
-	return(0);
+    if (rv=diag_calloc(&dl0d, 1))
+	return (struct diag_l0_device *)diag_pseterr(rv);
 
     dl0d->fd = -1;
     dl0d->dl0_handle = dev;
     dl0d->dl0 = &diag_l0_sim;
-    if (diag_calloc(&dl0d->name, strlen(DB_FILE)+1)) 
+    if (rv=diag_calloc(&dl0d->name, strlen(DB_FILE)+1)) 
     {
 	free(dl0d);
-	return(0);
-    }
+	return (struct diag_l0_device *)diag_pseterr(rv);
+	}
     strncpy(dl0d->name, DB_FILE, strlen(DB_FILE));
-    if (diag_calloc(&dl0d->ttystate, 1)) 
+    if (rv=diag_calloc(&dl0d->ttystate, 1)) 
     {
 	free(dl0d);
-	return(0);
+	return (struct diag_l0_device *)diag_pseterr(rv);
     }
 
     // Open the DB file:
@@ -487,7 +488,7 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
     {
 	fprintf(stderr, FLFMT "Unable to open file \"%s\"\n", FL, dl0d->name);
 	free(dl0d);
-	return(0);
+	return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
     }
 
     dl0d->fd = 1;
@@ -535,7 +536,6 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 static int
 diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
-    int rv = DIAG_ERR_INIT_NOTSUPP;
     struct diag_l0_sim_device *dev;
     uint8_t synch_patt[1];
 
@@ -547,7 +547,7 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 	fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n", FL, dl0d, dev, in->type);
 
     if (!dev)
-	return(-1);
+	return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
 
     switch (in->type)
     {
@@ -568,12 +568,11 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 	break;
 	
     default:
-	rv = DIAG_ERR_INIT_NOTSUPP;
+	return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
 	break;
     }
     
-    rv = 0;
-    return(rv);
+    return 0;
 }
 
 
@@ -592,7 +591,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
     if(sim_last_ecu_responses != NULL)
     {
 	fprintf(stderr, FLFMT "AAAHHH!!! You're sending a new request before reading all previous responses!!! \n", FL);
-	return -1;
+	return diag_iseterr(DIAG_ERR_GENERAL);
     }
 
     if (diag_l0_debug & DIAG_DEBUG_WRITE)
@@ -614,7 +613,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
     if (diag_l0_debug & DIAG_DEBUG_DATA)
 	sim_dump_ecu_responses(sim_last_ecu_responses);
 
-    return(0);
+    return 0;
 }
 
 

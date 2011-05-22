@@ -220,7 +220,8 @@ int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 	((void **)(P)), (S))
 
 /*
- * Auto generated config functions
+ * Auto generated config functions (see genconfig.sh)
+ * Return 0 if normal exit; other exit codes are OR'ed from diag_l*_*_add()
  */
 int diag_l0_config(void);
 int diag_l2_config(void);

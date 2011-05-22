@@ -206,7 +206,7 @@ diag_l2_rmconn(struct diag_l2_conn *d)
  * Note: This is called from a signal handler.
  *
  * XXX Uses functions not async-signal-safe.
- * XXX Note that this does nothing now except handle the timeouts.
+ * Note that this does nothing now except handle the timeouts.
  * Thus, it is now easy to eliminate "diag_l2_timer" and replace it
  * with posix timers.
  */
@@ -337,6 +337,7 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
 struct diag_l0_device *
 diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 {
+	int rv;
 	struct diag_l0_device *dl0d;
 	struct diag_l2_link *dl2l;
 
@@ -355,23 +356,24 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 			/* Wrong L1 protocol, close link */
 			diag_l2_closelink(&dl2l);
 		}
+		else
+		{
+			/* Device was already open, with correct protocol  */
+		return(dl2l->diag_l2_dl0d);
+		}
 	}
 
-	if (dl2l)
-	{
-		/* Device was already open, with correct protocol  */
-		return(dl2l->diag_l2_dl0d);
-	}
 
 	/* Else, create the link */
-	if (diag_calloc(&dl2l, 1))
-		return 0;
+	if ((rv=diag_calloc(&dl2l, 1)))
+		return (struct diag_l0_device *)diag_pseterr(rv);
 
 	dl0d = diag_l1_open(dev_name, subinterface, L1protocol);
-	if (dl0d == 0)
+	if (dl0d == 0)	//pointer to 0 => failure
 	{
+		rv=diag_geterr();
 		free(dl2l);
-		return 0;
+		return (struct diag_l0_device *)diag_pseterr(rv);	//forward error to next level
 	}
 
 	diag_l0_set_dl2_link(dl0d, dl2l);	/* Associate ourselves with this */

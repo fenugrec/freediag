@@ -303,14 +303,14 @@ char **argv __attribute__((unused)))
 	int rv;
 
 	rv = do_l2_generic_start();
-	if (rv == 0)
+	if (rv==0)
 	{
 		printf("Connection to ECU established\n");
 		global_state = STATE_CONNECTED;
 	}
 	else
 	{
-		printf("Connection to ECU failed\n");
+		printf("\nConnection to ECU failed\n");
 		printf("Please check :-\n");
 		printf("	Adapter is connected to PC\n");
 		printf("	Cable is connected to Vehicle\n");

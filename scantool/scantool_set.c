@@ -62,7 +62,7 @@ char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
 int set_init(void) {
 	/* Reset parameters to defaults. */
 
-	set_speed = 10400;	/* Comms speed */
+	set_speed = 10400;	/* Comms speed; ECUs will probably send at 10416 bps (96us per bit) */
 	set_testerid = 0xf1;	/* Our tester ID */
 	set_addrtype = 1;	/* Use virtual addressing */
 	set_destaddr = 0x33;	/* Dest ECU address */
@@ -77,8 +77,8 @@ int set_init(void) {
 
 	set_interface = "CARSIM";	/* Default H/w interface to use */
 	strncpy(set_subinterface,"/dev/null",sizeof(set_subinterface));
-					/*Default device. will need to be set*/
-
+	printf( "%s: Interface set to default: %s on %s\n", progname, set_interface, set_subinterface);
+					/*Default device. User needs to set correct intf*/
 	return 0;
 }
 

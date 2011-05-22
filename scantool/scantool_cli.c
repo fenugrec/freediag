@@ -880,9 +880,13 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 
 			/* Parse it */
 			inptr = input;
-			if (*inptr == '#') 
+			if (*inptr == '@') 	//printing comment
 			{
 				printf("%s\n", inptr);
+				continue;
+			}
+			if (*inptr == '#')		//non-printing comment
+			{
 				continue;
 			}
 			cmd_argc = 0;
@@ -974,21 +978,17 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 static int
 command_file(char *filename)
 {
-    	FILE *prev_instream = instream;
-	int status = 0;
+    	FILE *prev_instream = instream;	//assume it was already initted...
 
-	instream = fopen(filename, "r");
-	if (!instream)
-	    	goto out;
-
-	do_cli(root_cmd_table, progname, 0, NULL);
-
-	fclose(instream);
-	status = 1;
-
-out:
-	instream = prev_instream;
-	return status;
+	if (instream=fopen(filename, "r"))
+	{
+		do_cli(root_cmd_table, progname, 0, NULL);
+		fclose(instream);
+		instream=prev_instream;
+		return 0;
+	}
+	instream=prev_instream;
+	return diag_iseterr(DIAG_ERR_CMDFILE);
 }
 
 static int
@@ -1003,7 +1003,7 @@ cmd_source(int argc, char **argv)
 	}
 
 	file = argv[1];
-	if (!command_file(file))
+	if (command_file(file))
 	{
 	    	printf("Couldn't read %s\n", file);
 		return (CMD_FAILED);
@@ -1012,50 +1012,81 @@ cmd_source(int argc, char **argv)
     	return (CMD_OK);
 }
 
-static void
+static int
 rc_file(void)
 {
+//	FILE *newrcfile
 	char *homeinit;
+	//this loads either a $home/.<progname>.rc or ./<progname>.ini (in order of preference)
+	//to load general settings. For now, only set_interface and set_subinterface can be specified
 
 	/*
 	 * "." files don't play that well on some systems.
 	 * You can turn it off and turn on a .ini file by setting both
-	 *  "DONT_USE_RCFILE" and "USE_INIFILE" to 1,
-	 * or support both by setting USE_INIFILE to 1.
+	 *  "DONT_USE_RCFILE" and "USE_INIFILE",
+	 * or support both by setting USE_INIFILE.
+	* as set by ./configure
 	 */
 
-#if DONT_USE_RCFILE == 0
+#ifndef DONT_USE_RCFILE
 	char *homedir;
 	homedir = getenv("HOME");
 
 	if (homedir) {
-
 		/* we add "/." and "rc" ... 4 characters */
 		if (diag_malloc(&homeinit, strlen(homedir) + strlen(progname) + 5)) {
-			return;
+			return diag_iseterr(DIAG_ERR_RCFILE);
 		}
-
 		strcpy(homeinit, homedir);
 		strcat(homeinit, "/.");
 		strcat(homeinit, progname);
 		strcat(homeinit, "rc");
-		command_file(homeinit);
+		if (command_file(homeinit))	//should return 0 with a success
+		{
+/* 			if (newrcfile=fopen(homeinit,"a"))	//create the file if it didn't exist
+ * 			{
+ * 				fprintf(newrcfile, "\n#empty rcfile auto created by %s\n",progname);
+ * 				fclose(newrcfile);
+ * 				printf("%s not found, empty file created\n",homeinit);
+ * 			}
+ * 			else	//could not create empty rcfile
+ * 			{
+ * 				fprintf(stderr, FLFMT "%s not found, could not create empty file", FL, homeinit);
+ * 				free(homeinit);
+ * 				return diag_iseterr(DIAG_ERR_GENERAL);
+ * 			}
+ */
+		}
+		else	//command_file was at least partly successful (rc file exists)
+		{
+			free(homeinit);
+			return 0;
+		}
+		//fall here  if command_file failed
+		fprintf(stderr, FLFMT "Could not load rc file %s\n", FL, homeinit);
 		free(homeinit);
 	}
 #endif
 
-#if USE_INIFILE == 1
+
+#ifdef USE_INIFILE
 	if (diag_malloc(&homeinit, strlen(progname) + strlen(".ini") + 1)) {
-		return;
+		return diag_iseterr(DIAG_ERR_RCFILE);
 	}
 
 	strcpy(homeinit, progname);
 	strcat(homeinit, ".ini");
-	command_file(homeinit);
+	if (command_file(homeinit))
+	{
+		fprintf(stderr, FLFMT "%s not found, no configuration loaded\n", FL, homeinit);
+		free(homeinit);
+		return diag_iseterr(DIAG_ERR_RCFILE);
+	}
+	printf("%s: %s succesfully loaded\n", progname, homeinit);
 	free(homeinit);
+	return 0;
 #endif
 
-	return;
 }
 
 void
@@ -1071,9 +1102,8 @@ enter_cli(char *name)
 
 	readline_init();
 	set_init();
-
 	rc_file();
-
+	printf("\n");
 	/* And go start CLI */
 	instream = stdin;
 	(void)do_cli(root_cmd_table, progname, 0, NULL);

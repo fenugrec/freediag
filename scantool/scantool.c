@@ -963,18 +963,17 @@ do_l2_generic_start(void)
     if (rv != 0)
     {
         fprintf(stderr, "diag_init failed\n");
-        return(-1);
+        return diag_iseterr(rv);
     }
 
     /* Open interface using hardware type ISO14230 */
     dl0d = diag_l2_open(set_interface, set_subinterface, set_L1protocol);
-    if (dl0d == 0)
+    if (dl0d == 0)		//indicating an error
     {
         rv = diag_geterr();
-        if ((rv != DIAG_ERR_BADIFADAPTER) &&
-            (rv != DIAG_ERR_PROTO_NOTSUPP))
-            fprintf(stderr, "Failed to open hardware interface protocol %d\n",
-                set_L1protocol);
+        //if ((rv != DIAG_ERR_BADIFADAPTER) && (rv != DIAG_ERR_PROTO_NOTSUPP))
+            fprintf(stderr, "Failed to open hardware interface protocol %d with %s on %s\n",
+                set_L1protocol,set_interface,set_subinterface);
         return diag_iseterr(rv);
     }
 
@@ -990,8 +989,9 @@ do_l2_generic_start(void)
 
     if (d_conn == NULL)
     {
+	rv=diag_geterr();
         diag_l2_close(dl0d);
-        return(-1);
+        return diag_iseterr(rv);
     }
 
     /* Connected ! */
@@ -1725,12 +1725,11 @@ const struct protocol protocols[] = {
 int
 ecu_connect(void)
 {
-    int connected;
+    int connected=0;
     int rv = -1;
     const struct protocol *p;
 
     fprintf(stderr, "\n");
-    connected = 0;
 
     for (p = protocols; !connected && p < &protocols[ARRAY_SIZE(protocols)]; p++)
     {

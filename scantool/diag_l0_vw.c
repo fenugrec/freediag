@@ -86,6 +86,7 @@ diag_l0_vwtool_init(void)
 static struct diag_l0_device *
 diag_l0_vwtool_open(const char *subinterface, int iProtocol)
 {
+	int rv;
 	struct diag_l0_device *dl0d;
 	struct diag_l0_vwtool_device *dev;
 
@@ -97,13 +98,13 @@ diag_l0_vwtool_open(const char *subinterface, int iProtocol)
 
 	diag_l0_vwtool_init();
 
-	if (diag_calloc(&dev, 1))
-		return (0);
+	if ((rv=diag_calloc(&dev, 1)))
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_NOMEM);
 
 	dev->protocol = iProtocol;
-	if (diag_tty_open(&dl0d, subinterface, &diag_l0_vwtool, (void *)dev) < 0)
+	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_vwtool, (void *)dev)))
 	{
-		return(0);
+		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 
 	/*
@@ -113,7 +114,7 @@ diag_l0_vwtool_open(const char *subinterface, int iProtocol)
 	if (diag_tty_control(dl0d, 1, 0) < 0)
 	{
 		diag_tty_close(&dl0d);
-		return 0;
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	(void)diag_tty_iflush(dl0d);	/* Flush unread input */

@@ -39,7 +39,7 @@ CVSID("$Id$");
 
 static int diag_initialized;
 
-int diag_init(void)
+int diag_init(void)	//returns 0 if normal exit
 {
 	int rv;
 
@@ -49,19 +49,22 @@ int diag_init(void)
 
 	/* Add the supported protocols and links */
 
-	diag_l0_config();
-	diag_l2_config();
-
-	if ((rv = diag_l1_init()) < 0)
+	rv=diag_l0_config();
+	
+	rv=diag_l2_config();
+	
+	//XXX This is interesting: the following functions only ever return 0...
+	
+	if ((rv = diag_l1_init()) != 0)
 		return(rv);
-	if ((rv = diag_l2_init()) < 0)
+	if ((rv = diag_l2_init()) != 0)
 		return(rv);
-	if ((rv = diag_os_init()) < 0)
+	if ((rv = diag_os_init()) != 0)
 		return(rv);
 
 	(void)diag_dtc_init();
 
-	return(0);
+	return 0;
 }
 
 
@@ -227,7 +230,7 @@ static const struct {
 	const int code;
 	const char *desc;
 } edesc[] = {
-	{ DIAG_ERR_GENERAL, "Unspecified" },
+	{ DIAG_ERR_GENERAL, "Unspecified Error" },
 	{ DIAG_ERR_BADFD, "Invalid FileDescriptor passed to routine" },
 	{ DIAG_ERR_NOMEM, "Malloc/Calloc/Strdup/etc failed - ran out of memory " },
 
@@ -247,6 +250,8 @@ static const struct {
 	{ DIAG_ERR_BADRATE, "Bit rate specified doesn't match ECU" },
 
 	{ DIAG_ERR_ECUSAIDNO, "Ecu returned negative" },
+	{ DIAG_ERR_RCFILE, "Trouble loading rc or ini file" },
+	{ DIAG_ERR_CMDFILE, "Trouble with sourcing commands" },
 };
 
 const char *

@@ -38,6 +38,7 @@ const char *subinterface,
 const struct diag_l0 *dl0,
 void *dl0_handle)
 {
+	int rv;
 	struct diag_ttystate	*dt;
 	struct diag_l0_device *dl0d;
 
@@ -46,16 +47,16 @@ void *dl0_handle)
 
 	const char *tty_template ="/dev/obdII%d";
 
-	if (diag_calloc(&dl0d, 1))
-		return(DIAG_ERR_NOMEM);
+	if ((rv=diag_calloc(&dl0d, 1)))
+		return diag_iseterr(rv);
 
 	dl0d->fd = -1;
 	dl0d->dl0_handle = dl0_handle;
 	dl0d->dl0 = dl0;
 
-	if (diag_calloc(&dl0d->ttystate, 1)) {
+	if ((rv=diag_calloc(&dl0d->ttystate, 1))) {
 		free(dl0d);
-		return DIAG_ERR_NOMEM;
+		return diag_iseterr(rv);
 	}
 
 	*ppdl0d = dl0d;
@@ -72,17 +73,17 @@ void *dl0_handle)
 		/* Entire string is a valid number: Provide compatibility.  */
 		size_t n = strlen(tty_template) + 32;
 
-		if (diag_malloc(&dl0d->name, n)) {
+		if ((rv=diag_malloc(&dl0d->name, n))) {
 			(void)diag_tty_close(ppdl0d);;
-			return DIAG_ERR_NOMEM;
+			return diag_iseterr(rv);
 		}
 		(void)snprintf(dl0d->name, n, tty_template, iInterface);
 	} else {
 		size_t n = strlen(subinterface) + 1;
 
-		if (diag_malloc(&dl0d->name, n)) {
+		if ((rv=diag_malloc(&dl0d->name, n))) {
 			(void)diag_tty_close(ppdl0d);;
-			return DIAG_ERR_NOMEM;
+			return diag_iseterr(rv);
 		}
 		strncpy(dl0d->name, subinterface, n);
 	}
@@ -107,7 +108,7 @@ void *dl0_handle)
 					FLFMT "Can't get flags with fcntl on fd %d: %s.\n",
 					FL, dl0d->fd, strerror(errno));
 				(void)diag_tty_close(ppdl0d);;
-				return -1;
+				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 			fl &= ~O_NONBLOCK;
 			errno = 0;
@@ -116,7 +117,7 @@ void *dl0_handle)
 					FLFMT "Can't set flags with fcntl on fd %d: %s.\n",
 					FL, dl0d->fd, strerror(errno));
 				(void)diag_tty_close(ppdl0d);
-				return -1;
+				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 		}
 	}
@@ -136,7 +137,7 @@ void *dl0_handle)
                         FLFMT "serial device your interface is connected to.\n", FL) ;
 
 		(void)diag_tty_close(ppdl0d);
-		return -1;
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	dt = dl0d->ttystate;
 
@@ -152,7 +153,7 @@ void *dl0_handle)
 		fprintf(stderr,
 			FLFMT "open: Ioctl TIOCGSERIAL failed %d\n", FL, errno);
 		(void)diag_tty_close(ppdl0d);
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	dt->dt_sinfo = dt->dt_osinfo;
 #endif
@@ -162,7 +163,7 @@ void *dl0_handle)
 		fprintf(stderr,
 			FLFMT "open: Ioctl TIOCMGET failed: %s\n", FL, strerror(errno));
 		(void)diag_tty_close(ppdl0d);
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	if (tcgetattr(dl0d->fd, &dt->dt_otinfo) < 0)
@@ -170,7 +171,7 @@ void *dl0_handle)
 		fprintf(stderr, FLFMT "open: tcgetattr failed %s\n",
 			FL, strerror(errno));
 		(void)diag_tty_close(ppdl0d);
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	dt->dt_tinfo = dt->dt_otinfo;
 
@@ -245,7 +246,7 @@ const struct diag_serial_settings *pset)
 	dt = dl0d->ttystate;
 	if (fd == -1 || dt == 0) {
 		fprintf(stderr, FLFMT "setup: something is not right\n", FL);
-		return -1;
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* Copy original settings to "current" settings */
@@ -295,7 +296,7 @@ const struct diag_serial_settings *pset)
 	{
 		fprintf(stderr,
 			FLFMT "Ioctl TIOCSSERIAL failed %s\n", FL, strerror(errno));
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	/*
@@ -329,12 +330,12 @@ const struct diag_serial_settings *pset)
 	if (cfsetispeed(&dt->dt_tinfo, (speed_t)pset->speed) < 0) {
 		fprintf(stderr,
 			FLFMT "cfsetispeed failed: %s\n", FL, strerror(errno));
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	if (cfsetospeed(&dt->dt_tinfo, (speed_t)pset->speed) < 0) {
 		fprintf(stderr,
 			FLFMT "cfsetospeed failed: %s\n", FL, strerror(errno));
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 #endif
 	errno = 0;
@@ -356,7 +357,7 @@ const struct diag_serial_settings *pset)
 			fprintf(stderr, 
 				FLFMT "Can't set baud rate to %d.\n"
 				"tcsetattr returned \"%s\".\n", FL, pset->speed, strerror(errno));
-			return (-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
 
@@ -377,7 +378,7 @@ const struct diag_serial_settings *pset)
 	dt->dt_tinfo.c_oflag &= ~(OPOST) ;
 
 	/* Clear canonical input and disable keyboard signals.
-	+* There is no need to also clear the many ECHOXXX flags, both because
+	+* There is no need to also clear the many ECHOXX flags, both because
 	+* many systems have non-POSIX flags and also because the ECHO
 	+* flags don't don't matter when ICANON is clear.
 	 */
@@ -409,7 +410,7 @@ const struct diag_serial_settings *pset)
 		break;
 	default:
 		fprintf(stderr, FLFMT "bad bit setting used (%d)\n", FL, pset->databits);
-		return(-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	switch (pset->stopbits)
 	{
@@ -422,7 +423,7 @@ const struct diag_serial_settings *pset)
 	default:
 		fprintf(stderr, FLFMT "bad stopbit setting used (%d)\n",
 			FL, pset->stopbits);
-		return(-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	switch (pset->parflag)
@@ -452,7 +453,7 @@ const struct diag_serial_settings *pset)
 			"tcsetattr returned \"%s\".\n",
 			FL, pset->databits, pset->stopbits, pset->parflag,
 			strerror(errno));
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	
 	return (0);
@@ -483,7 +484,7 @@ int rts)
 	{
 		fprintf(stderr, 
 			FLFMT "open: Ioctl TIOCMGET failed %s\n", FL, strerror(errno));
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	flags |= setflags;
 	flags &= ~clearflags;
@@ -492,7 +493,7 @@ int rts)
 	{
 		fprintf(stderr, 
 			FLFMT "open: Ioctl TIOCMSET failed %s\n", FL, strerror(errno));
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	return(0);
 }
@@ -555,7 +556,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	{
 	case 0:
 		/* Timeout */
-		return (DIAG_ERR_TIMEOUT);
+		return diag_iseterr(DIAG_ERR_TIMEOUT);
 	case 1:
 		/* Ready for read */
 		rv = 0;
@@ -573,7 +574,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 			FL, dl0d->fd, strerror(errno));
 
 		/* Unspecific Error */
-		return (diag_iseterr(DIAG_ERR_GENERAL));
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 }
 #else
@@ -617,7 +618,7 @@ const void *buf, const size_t count)
 		FL, dl0d->fd, strerror(errno));
 
 	/* Unspecific Error */
-	return (diag_iseterr(DIAG_ERR_GENERAL));
+	return diag_iseterr(DIAG_ERR_GENERAL);
 }
 
 /*
@@ -711,7 +712,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		FL, dl0d->fd, strerror(errno));
 
 	/* Unspecific Error */
-	return (diag_iseterr(DIAG_ERR_GENERAL));
+	return diag_iseterr(DIAG_ERR_GENERAL);
 }
 #endif
 
@@ -747,7 +748,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 		fprintf(stderr, FLFMT "TCIFLUSH on fd %d returned %s.\n",
 			FL, dl0d->fd, strerror(errno));
 
-		return -1;
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	return 0;
 }
@@ -798,14 +799,14 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF.\n", FL);
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		if (errno != EINTR)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned error %s.\n", FL,
 				strerror(errno));
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
 
@@ -822,13 +823,13 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	if (tcdrain(dl0d->fd)) {
 			fprintf(stderr, FLFMT "tcdrain returned %s.\n",
 				FL, strerror(errno));
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 
 	if (ioctl(dl0d->fd, TIOCSBRK, 0) < 0) {
 		fprintf(stderr, 
 			FLFMT "open: Ioctl TIOCSBRK failed %s\n", FL, strerror(errno));
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	diag_os_millisleep(ms);
@@ -836,7 +837,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	if (ioctl(dl0d->fd, TIOCCBRK, 0) < 0) {
 		fprintf(stderr, 
 			FLFMT "open: Ioctl TIOCCBRK failed %s\n", FL, strerror(errno));
-		return (-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	return 0;
@@ -867,7 +868,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	if (tcdrain(dl0d->fd)) {
 			fprintf(stderr, FLFMT "tcdrain returned %s.\n",
 				FL, strerror(errno));
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 
 	SetCommBreak(hd);

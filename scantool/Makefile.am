@@ -34,6 +34,7 @@ libdiag_a_SOURCES=diag_config.c \
 	diag_l2_raw.h diag_l2_mb1.h diag_l2_saej1850.h diag_vag.h diag_l2_vag.h \
 	diag_l3_j1979.h diag_mb1.h
 nodist_libdiag_a_SOURCES=diag_config.c
+
 #do not distribute diag_config.c as it will be build (see below)
 BUILT_SOURCES=diag_config.c
 DISTCLEANFILES=diag_config.c

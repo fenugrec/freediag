@@ -1,7 +1,10 @@
 #!/bin/sh
+#This script uses l0config and l2config to generate diag_config.c
+#automatically invoked during Make
+
 set -e
 
-# Generate the L0 config:
+# Generate the L0 and L2 lists
 l0=`sed -e '/^#.*/d' -e '/^$/d' < l0config`
 l2=`sed -e '/^#.*/d' -e '/^$/d' < l2config`
 

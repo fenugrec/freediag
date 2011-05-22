@@ -1,4 +1,5 @@
 # L2 protocols to configure:
+# Any of these may be commented out before running make
 
 can
 14230
