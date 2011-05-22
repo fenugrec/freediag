@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Disable loading of .rc file */
+#undef DONT_USE_RCFILE
+
 /* Define to 1 if you have the `alarm' function. */
 #undef HAVE_ALARM
 
@@ -117,6 +120,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Enable loading of .ini file */
+#undef USE_INIFILE
 
 /* Version number of package */
 #undef VERSION

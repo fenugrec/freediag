@@ -1,7 +1,7 @@
 #Process this with autoconf for magic.
 
 AC_PREREQ(2.62)		#But would probably work with earlier versions
-AC_INIT(freediag, 1.0.0, freediag-discuss@lists.sourceforge.net)
+AC_INIT(freediag, 1.0.0, freediag-discuss@lists.sourceforge.net,,freediag.sourceforge.net)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
@@ -37,6 +37,17 @@ AC_ARG_ENABLE(scangui,
 	[AS_HELP_STRING([--enable-scangui],[Enable scangui (default=no)])],
 	[buildgui=yes],[buildgui=no]
 	)
+	
+AC_ARG_ENABLE(rcfile,
+	[AS_HELP_STRING([--enable-rcfile],[Enable use of rc file in $home/ (default=disabled)])],
+	,AC_DEFINE(DONT_USE_RCFILE,,[Disable loading of .rc file])
+	)
+	
+AC_ARG_ENABLE(inifile,
+	[AS_HELP_STRING([--enable-inifile],[Enable ini file in ./ (default=disabled)])],
+	AC_DEFINE(USE_INIFILE,,[Enable loading of .ini file]),
+	)
+	
 AS_IF([test "x$buildgui" = xyes],
 		[
 #		AC_PROG_CXX		#invoking this conditionally will not work (...)
@@ -56,6 +67,7 @@ AS_IF([test "x$buildgui" = xyes],
 		AC_MSG_NOTICE([scangui will be built])],
 		[AC_MSG_NOTICE([scangui will not be built])]
 	)
+
 
 AM_CONDITIONAL([BUILDSCANGUI], [test "x$buildgui" = xyes])
 
