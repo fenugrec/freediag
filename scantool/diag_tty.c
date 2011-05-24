@@ -195,7 +195,7 @@ int diag_tty_close(struct diag_l0_device **ppdl0d)
 						TCSADRAIN, &dl0d->ttystate->dt_otinfo);
 					(void)ioctl(dl0d->fd,
 						TIOCMSET, &dl0d->ttystate->dt_modemflags);
-				}return 0
+				}
 				free(dl0d->ttystate);
 				dl0d->ttystate = 0;
 			}

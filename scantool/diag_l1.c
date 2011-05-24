@@ -147,7 +147,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 	}
 
 	/* Not found */
-	return struct (diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+	return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 }
 
 int
