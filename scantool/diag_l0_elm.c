@@ -20,7 +20,7 @@
  *
  *************************************************************************
  *
- * Diag, Layer 0, interface for Scantool.net's ELM32x Interface 
+ * Diag, Layer 0, interface for Scantool.net's ELM32x Interface
  * Ken Bantoft <ken@bantoft.org>
  *
  * This is currently just cut/copy/pasted from the sileng driver, and
@@ -57,8 +57,7 @@ CVSID("$Id$");
  *
  */
 
-struct diag_l0_elm_device
-{
+struct diag_l0_elm_device {
 	int protocol;
 	struct diag_serial_settings serial;
 };
@@ -71,14 +70,11 @@ extern const struct diag_l0 diag_l0_elm;
 /*
  * Init must be callable even if no physical interface is
  * present, it's just here for the code here to initialise its
- * variables etc 
+ * variables etc
  */
 static int
 diag_l0_elm_init(void)
 {
-
-	fprintf(stderr,"diag_l0_elm_init() called\n");
-
 	if (diag_l0_elm_initdone)
 		return 0;
 	diag_l0_elm_initdone = 1;
@@ -100,8 +96,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	struct diag_l0_device *dl0d;
 	struct diag_l0_elm_device *dev;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
 			FL, subinterface, iProtocol);
 	}
@@ -128,7 +123,7 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 {
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_elm_device *dev = 
+		struct diag_l0_elm_device *dev =
 			(struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 
 		/* If debugging, print to strerr */
@@ -162,52 +157,35 @@ struct diag_l1_initbus_args *in __attribute__((unused)))
 		fprintf(stderr, FLFMT "device link %p fastinit\n",
 			FL, dl0d);
 
-	// XXX insert ELM fast init command
+	// XXX insert ELM fast init command : "AT FI" ?
 	return 0;
 }
 
 /*
  * Slowinit:
- *	We need to send a byte (the address) at 5 baud, then
- *	switch back to 10400 baud
- *	and then wait 25ms. We must have waited Tidle (300ms) first
- *
+ * ELM takes care of the details & timing.
  */
 static int
 diag_l0_elm_slowinit(struct diag_l0_device *dl0d,
-struct diag_l1_initbus_args *in,
-struct diag_l0_elm_device *dev)
+struct diag_l1_initbus_args *in, struct diag_l0_elm_device *dev)
 {
 	char cbuf[MAXRBUF];
 	int xferd, rv;
 	int tout;
 	struct diag_serial_settings set;
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "slowinit link %p address 0x%x\n",
 			FL, dl0d, in->addr);
 	}
 
-	/* Set to 5 baud, 8 N 1 */
-/*
-	set.speed = 5;
-	set.databits = diag_databits_8;
-	set.stopbits = diag_stopbits_1;
-	set.parflag = diag_par_n;
-
-*/
-
-        /* Send 25 ms break as initialisation pattern (TiniL) */
-        diag_tty_break(dl0d, 25); 
-
-        /* Now let the caller send a startCommunications message */
-        return 0;
+	//XXX insert ELM commands here
+	return 0;
 
 }
 
 /*
- * Do wakeup on the bus 
+ * Do wakeup on the bus
  */
 static int
 diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
@@ -230,16 +208,13 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 	diag_tty_iflush(dl0d);	/* Flush unread input */
 	diag_os_millisleep(300);
 
-	switch (in->type)
-	{
+	switch (in->type) 	{
 	case DIAG_L1_INITBUS_FAST:
 		rv = diag_l0_elm_fastinit(dl0d, in);
 		break;
-
 	case DIAG_L1_INITBUS_5BAUD:
 		rv = diag_l0_elm_slowinit(dl0d, in, dev);
 		break;
-
 	default:
 		rv = DIAG_ERR_INIT_NOTSUPP;
 		break;
@@ -285,24 +260,19 @@ const void *data, size_t len)
 	 */
 	ssize_t xferd;
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "device link %p send %d bytes ",
 			FL, dl0d, (int)len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA)
-		{
+		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 		}
 	}
 
-	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len)
-	{
+	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
 		/* Partial write */
-		if (xferd <  0)	//write error
-		{
+		if (xferd <  0) {	//write error
 			/* error */
-			if (errno != EINTR)	//not an interruption
-			{
+			if (errno != EINTR) {	//not an interruption
 				perror("write");
 				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
 				return diag_iseterr(DIAG_ERR_GENERAL);
@@ -310,7 +280,7 @@ const void *data, size_t len)
 			xferd = 0; /* Interrupted write, nothing transferred. */
 		}
 		/*
-		 * Successfully wrote xferd bytes (or 0 && EINTR), 
+		 * Successfully wrote xferd bytes (or 0 && EINTR),
 		 * so inc pointers and continue
 		 */
 		len -= xferd;
@@ -320,8 +290,7 @@ const void *data, size_t len)
 //			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) )
 	//what if diag_debug_write and _data are both cleared ?
 	//XXX not sure of the goal here.
-	if (diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA))
-	{
+	if (diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) {
 		fprintf(stderr, "\n");
 	}
 
@@ -354,29 +323,24 @@ void *data, size_t len, int timeout)
 			FLFMT "link %p recv upto %d bytes timeout %d",
 			FL, dl0d, (int)len, timeout);
 
-	while ( (xferd = diag_tty_read(dl0d, data, len, timeout)) <= 0)
-	{
-		if (xferd == DIAG_ERR_TIMEOUT)
-		{
+	while ( (xferd = diag_tty_read(dl0d, data, len, timeout)) <= 0) {
+		if (xferd == DIAG_ERR_TIMEOUT) {
 			if (diag_l0_debug & DIAG_DEBUG_READ)
 				fprintf(stderr, "\n");
 			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		}
-		if (xferd == 0)
-		{
+		if (xferd == 0) {
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
 			return -1;
 		}
-		if (errno != EINTR)
-		{
+		if (errno != EINTR) {
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
 			return -1;
 		}
 	}
-	if (diag_l0_debug & DIAG_DEBUG_READ)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
 		diag_data_dump(stderr, data, (size_t)xferd);
 		fprintf(stderr, "\n");
 	}
@@ -389,7 +353,8 @@ void *data, size_t len, int timeout)
  */
 static int
 diag_l0_elm_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pss) {
+const struct diag_serial_settings *pss)
+{
 	fprintf(stderr, FLFMT "Warning: attempted to override serial settings. 9600;8N1 maintained\n", FL);
 	struct diag_serial_settings sset;
 	sset.speed=9600;
@@ -406,40 +371,40 @@ const struct diag_serial_settings *pss) {
 }
 
 static int
-diag_l0_elm_getflags(struct diag_l0_device *dl0d) {
+diag_l0_elm_getflags(struct diag_l0_device *dl0d)
+{
 
-        struct diag_l0_elm_device *dev;
-        int flags=0;
+	struct diag_l0_elm_device *dev;
+	int flags=0;
 
-        dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
+	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 
 	//XXX will have to add specific 323 vs 327 handling. For now, only 323 features are included.
-        switch (dev->protocol)
-        {
-        case DIAG_L1_J1850_VPW:
-        case DIAG_L1_J1850_PWM:
-                        break;
-        case DIAG_L1_ISO9141:
-                        flags = DIAG_L1_SLOW;
-                        flags |= DIAG_L1_DOESP4WAIT;
-                        break;
-        case DIAG_L1_ISO14230:
-                        flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
-                        flags |= DIAG_L1_DOESP4WAIT;
-                        break;
-        }
+	switch (dev->protocol) {
+	case DIAG_L1_J1850_VPW:
+	case DIAG_L1_J1850_PWM:
+			break;
+	case DIAG_L1_ISO9141:
+			flags = DIAG_L1_SLOW;
+			flags |= DIAG_L1_DOESP4WAIT;
+			break;
+	case DIAG_L1_ISO14230:
+			flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
+			flags |= DIAG_L1_DOESP4WAIT;
+			break;
+	}
 
-        if (diag_l0_debug & DIAG_DEBUG_PROTO)
-                fprintf(stderr,
-                        FLFMT "getflags link %p proto %d flags 0x%x\n",
-                        FL, dl0d, dev->protocol, flags);
+	if (diag_l0_debug & DIAG_DEBUG_PROTO)
+		fprintf(stderr,
+			FLFMT "getflags link %p proto %d flags 0x%x\n",
+			FL, dl0d, dev->protocol, flags);
 
-        return flags;
+	return flags;
 
 }
 
 const struct diag_l0 diag_l0_elm = {
-	"Scantool.net ELM32x Chipset Device", 
+	"Scantool.net ELM32x Chipset Device",
 	"ELM",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
 	diag_l0_elm_init,
@@ -461,6 +426,7 @@ extern int diag_l0_elm_add(void);
 #endif
 
 int
-diag_l0_elm_add(void) {
+diag_l0_elm_add(void)
+{
 	return diag_l1_add_l0dev(&diag_l0_elm);
 }

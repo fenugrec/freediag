@@ -11,7 +11,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -64,19 +64,19 @@ extern const struct diag_l0 diag_l0_vwtool;
 /*
  * Init must be callable even if no physical interface is
  * present, it's just here for the code here to initialise its
- * variables etc 
+ * variables etc
  */
 static int
 diag_l0_vwtool_init(void)
 {
 	if (diag_l0_vwtool_initdone)
-		return (0);
+		return 0;
 	diag_l0_vwtool_initdone = 1;
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -119,7 +119,7 @@ diag_l0_vwtool_open(const char *subinterface, int iProtocol)
 
 	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
 
-	return (dl0d) ;
+	return dl0d;
 }
 
 static int
@@ -127,7 +127,7 @@ diag_l0_vwtool_close(struct diag_l0_device **pdl0d)
 {
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_vwtool_device *dev = 
+		struct diag_l0_vwtool_device *dev =
 			(struct diag_l0_vwtool_device *)diag_l0_dl0_handle(dl0d);
 
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
@@ -140,7 +140,7 @@ diag_l0_vwtool_close(struct diag_l0_device **pdl0d)
 		(void) diag_tty_close(pdl0d);
 	}
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -152,7 +152,7 @@ diag_l0_vwtool_fastinit(struct diag_l0_device *dl0d)
 	/* Send 25 ms break as initialisation pattern (TiniL) */
 	diag_tty_break(dl0d, 25);
 
-	return (0);
+	return 0;
 }
 
 #if notdef
@@ -295,7 +295,7 @@ diag_l0_vwtool_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args
 			if (diag_l0_debug & DIAG_DEBUG_PROTO)
 				fprintf(stderr, FLFMT "slowinit link %p echo read timeout\n",
 					FL, dl0d);
-			return (diag_iseterr(DIAG_ERR_TIMEOUT));
+			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		}
 		if (xferd == 0)
 		{
@@ -332,11 +332,11 @@ diag_l0_vwtool_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args
 				FL, dl0d);
 		return diag_iseterr(rv);
 	}
-	return (0);
+	return 0;
 }
 
 /*
- * Do wakeup on the bus 
+ * Do wakeup on the bus
  */
 static int
 diag_l0_vwtool_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
@@ -423,7 +423,7 @@ const void *data, size_t len)
 	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len)
 	{
 		/* Partial write */
-		if (xferd <  0)
+		if (xferd < 0)
 		{
 			/* error */
 			if (errno != EINTR)
@@ -435,7 +435,7 @@ const void *data, size_t len)
 			xferd = 0; /* Interrupted read, nothing transferred. */
 		}
 		/*
-		 * Successfully wrote xferd bytes (or 0 && EINTR), 
+		 * Successfully wrote xferd bytes (or 0 && EINTR),
 		 * so inc pointers and continue
 		 */
 		len -= xferd;
@@ -447,7 +447,7 @@ const void *data, size_t len)
 		fprintf(stderr, "\n");
 	}
 
-	return(0);
+	return 0;
 }
 
 /*
@@ -479,7 +479,7 @@ void *data, size_t len, int timeout)
 	while ( (xferd = diag_tty_read(dl0d, data, len, timeout)) <= 0)
 	{
 		if (xferd == DIAG_ERR_TIMEOUT)
-			return (diag_iseterr(DIAG_ERR_TIMEOUT));
+			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		if (xferd == 0)
 		{
 			/* Error, EOF */
@@ -493,7 +493,7 @@ void *data, size_t len, int timeout)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
-	return(xferd);
+	return xferd;
 }
 
 /*
@@ -528,7 +528,7 @@ diag_l0_vwtool_getflags(struct diag_l0_device *dl0d __attribute__((unused)))
 }
 
 const struct diag_l0 diag_l0_vwtool = {
- 	"VAGTool Compatible interface", 
+ 	"VAGTool Compatible interface",
 	"VAGTOOL",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
 	diag_l0_vwtool_init,

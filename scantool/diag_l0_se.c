@@ -11,7 +11,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -81,19 +81,19 @@ extern const struct diag_l0 diag_l0_sileng;
 /*
  * Init must be callable even if no physical interface is
  * present, it's just here for the code here to initialise its
- * variables etc 
+ * variables etc
  */
 static int
 diag_l0_sileng_init(void)
 {
 	if (diag_l0_sileng_initdone)
-		return (0);
+		return 0;
 	diag_l0_sileng_initdone = 1;
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -103,6 +103,7 @@ diag_l0_sileng_init(void)
 static struct diag_l0_device *
 diag_l0_sileng_open(const char *subinterface, int iProtocol)
 {
+	int rv;
 	struct diag_l0_device *dl0d;
 	struct diag_l0_sileng_device *dev;
 
@@ -114,13 +115,14 @@ diag_l0_sileng_open(const char *subinterface, int iProtocol)
 
 	diag_l0_sileng_init();
 
-	if (diag_calloc(&dev, 1))
-		return (0);
+	if ((rv=diag_calloc(&dev, 1)))
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_NOMEM);
 
 	dev->protocol = iProtocol;
-
-	if (diag_tty_open(&dl0d, subinterface, &diag_l0_sileng, (void *)dev) < 0)
-		return(0);
+	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_sileng, (void *)dev)))
+	{
+		return (struct diag_l0_device *)diag_pseterr(rv);
+	}
 
 	/*
 	 * We need to ensure that DTR is high, or interface thinks it's in
@@ -131,12 +133,12 @@ diag_l0_sileng_open(const char *subinterface, int iProtocol)
 	 */
 	if (diag_tty_control(dl0d, 1, 0) < 0) {
 		diag_tty_close(&dl0d);
-		return 0;
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
-	diag_tty_iflush(dl0d);	/* Flush unread input */
+	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
 
-	return (dl0d) ;
+	return dl0d;
 }
 
 static int
@@ -144,7 +146,7 @@ diag_l0_sileng_close(struct diag_l0_device **pdl0d)
 {
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_sileng_device *dev = 
+		struct diag_l0_sileng_device *dev =
 			(struct diag_l0_sileng_device *)diag_l0_dl0_handle(dl0d);
 
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
@@ -157,7 +159,7 @@ diag_l0_sileng_close(struct diag_l0_device **pdl0d)
 		(void) diag_tty_close(pdl0d);
 	}
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -181,7 +183,7 @@ struct diag_l1_initbus_args *in __attribute__((unused)))
 	diag_tty_break(dl0d, 25);
 
 	/* Now let the caller send a startCommunications message */
-	return (0);
+	return 0;
 }
 
 /*
@@ -222,6 +224,11 @@ struct diag_l0_sileng_device *dev)
 	/* Send the address as a single byte message */
 	diag_tty_write(dl0d, &in->addr, 1);
 
+#if notdef
+	/* Do the L line stuff */
+	diag_l0_sileng_Lline(dl0d, in->addr);
+#endif
+
 	/*
 	 * And read back the single byte echo, which shows TX completes
 	 * - At 5 baud, it takes 2 seconds to send a byte ..
@@ -234,20 +241,20 @@ struct diag_l0_sileng_device *dev)
 			if (diag_l0_debug & DIAG_DEBUG_PROTO)
 				fprintf(stderr, FLFMT "slowinit link %p echo read timeout\n",
 					FL, dl0d);
-			return (diag_iseterr(DIAG_ERR_TIMEOUT));
+			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		}
 		if (xferd == 0)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		if (errno != EINTR)
 		{
 			/* Error, EOF */
 			perror("read");
 			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
 
@@ -269,13 +276,13 @@ struct diag_l0_sileng_device *dev)
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit link %p read timeout\n",
 				FL, dl0d);
-		return(rv);
+		return diag_iseterr(rv);
 	}
-	return (0);
+	return 0;
 }
 
 /*
- * Do wakeup on the bus 
+ * Do wakeup on the bus
  */
 static int
 diag_l0_sileng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
@@ -291,11 +298,11 @@ diag_l0_sileng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 			FL, dl0d, dev, in->type);
 
 	if (!dev)
-		return(-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	
+	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
 	/* Wait the idle time (Tidle > 300ms) */
-	diag_tty_iflush(dl0d);	/* Flush unread input */
 	diag_os_millisleep(300);
 
 	switch (in->type)
@@ -323,7 +330,7 @@ diag_l0_sileng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 		fprintf(stderr, FLFMT "initbus device link %p returning %d\n",
 			FL, dl0d, rv);
 	
-	return(rv);
+	return rv;
 
 }
 
@@ -355,8 +362,8 @@ const void *data, size_t len)
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE)
 	{
-		fprintf(stderr, FLFMT "device link %p send %d bytes ",
-			FL, dl0d, (int)len);
+		fprintf(stderr, FLFMT "device link %p send %ld bytes ",
+			FL, dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 		{
 			diag_data_dump(stderr, data, len);
@@ -366,19 +373,19 @@ const void *data, size_t len)
 	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len)
 	{
 		/* Partial write */
-		if (xferd <  0)
+		if (xferd < 0)
 		{
 			/* error */
 			if (errno != EINTR)
 			{
 				perror("write");
 				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
-				return(-1);
+				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 			xferd = 0; /* Interrupted read, nothing transferred. */
 		}
 		/*
-		 * Successfully wrote xferd bytes (or 0 && EINTR), 
+		 * Successfully wrote xferd bytes (or 0 && EINTR),
 		 * so inc pointers and continue
 		 */
 		len -= xferd;
@@ -390,7 +397,7 @@ const void *data, size_t len)
 		fprintf(stderr, "\n");
 	}
 
-	return(0);
+	return 0;
 }
 
 /*
@@ -416,28 +423,24 @@ void *data, size_t len, int timeout)
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "link %p recv upto %d bytes timeout %d",
-			FL, dl0d, (int)len, timeout);
+			FLFMT "link %p recv upto %ld bytes timeout %d\n",
+			FL, dl0d, (long)len, timeout);
 
 	while ( (xferd = diag_tty_read(dl0d, data, len, timeout)) <= 0)
 	{
 		if (xferd == DIAG_ERR_TIMEOUT)
-		{
-			if (diag_l0_debug & DIAG_DEBUG_READ)
-				fprintf(stderr, "\n");
-			return ((DIAG_ERR_TIMEOUT));
-		}
+			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		if (xferd == 0)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		if (errno != EINTR)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
 	if (diag_l0_debug & DIAG_DEBUG_READ)
@@ -445,7 +448,7 @@ void *data, size_t len, int timeout)
 		diag_data_dump(stderr, data, (size_t)xferd);
 		fprintf(stderr, "\n");
 	}
-	return(xferd);
+	return xferd;
 }
 
 /*
@@ -453,15 +456,15 @@ void *data, size_t len, int timeout)
  */
 static int
 diag_l0_sileng_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pss)
+const struct diag_serial_settings *pset)
 {
 	struct diag_l0_sileng_device *dev;
 
 	dev = (struct diag_l0_sileng_device *)diag_l0_dl0_handle(dl0d);
 
-	dev->serial = *pss;
+	dev->serial = *pset;
 
-	return diag_tty_setup(dl0d, pss);
+	return diag_tty_setup(dl0d, &dev->serial);
 }
 
 #ifdef WIN32
@@ -480,7 +483,7 @@ diag_l0_sileng_getflags(struct diag_l0_device *dl0d __attribute__((unused)))
 }
 
 const struct diag_l0 diag_l0_sileng = {
-	"Silicon Engines 9141 Converter", 
+	"Silicon Engines 9141 Converter",
 	"SE9141",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
 	diag_l0_sileng_init,
