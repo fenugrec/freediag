@@ -301,14 +301,14 @@ diag_l0_vwtool_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		if (errno != EINTR)
 		{
 			/* Error, EOF */
 			perror("read");
 			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
 
@@ -330,7 +330,7 @@ diag_l0_vwtool_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit link %p read timeout\n",
 				FL, dl0d);
-		return(rv);
+		return diag_iseterr(rv);
 	}
 	return (0);
 }
@@ -352,7 +352,7 @@ diag_l0_vwtool_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 			FL, dl0d, dev, in->type);
 
 	if (!dev)
-		return(-1);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	
 	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
@@ -380,7 +380,7 @@ diag_l0_vwtool_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 	 */
 	(void)diag_tty_setup(dl0d, &dev->serial);
 	
-	return(rv);
+	return diag_iseterr(rv);
 
 }
 
@@ -430,7 +430,7 @@ const void *data, size_t len)
 			{
 				perror("write");
 				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
-				return(-1);
+				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 			xferd = 0; /* Interrupted read, nothing transferred. */
 		}
@@ -484,13 +484,13 @@ void *data, size_t len, int timeout)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		if (errno != EINTR)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
 	return(xferd);

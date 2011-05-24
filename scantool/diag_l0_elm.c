@@ -75,7 +75,7 @@ static int
 diag_l0_elm_init(void)
 {
 
-	fprintf(stderr,"diag_l0_elm_init() called ");
+	fprintf(stderr,"diag_l0_elm_init() called\n");
 
 	if (diag_l0_elm_initdone)
 		return (0);
@@ -94,32 +94,29 @@ diag_l0_elm_init(void)
 static struct diag_l0_device *
 diag_l0_elm_open(const char *subinterface, int iProtocol)
 {
+	int rv;
 	struct diag_l0_device *dl0d;
 	struct diag_l0_elm_device *dev;
 
-	/* If we're doing debugging, print to stderr */
-/*	if (diag_l0_debug & DIAG_DEBUG_OPEN)
+	if (diag_l0_debug & DIAG_DEBUG_OPEN)
 	{
-*/		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
+		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
 			FL, subinterface, iProtocol);
-/*	}
-*/
+	}
+
 	diag_l0_elm_init();
 
-	if (diag_calloc(&dev, 1))
-		return (0);
+	if (rv=diag_calloc(&dev, 1))
+		return diag_iseterr(rv);
 
 	dev->protocol = iProtocol;
 
-	if (diag_tty_open(&dl0d, subinterface, &diag_l0_elm, (void *)dev) < 0)
-		return(0);
-
-	if (diag_tty_control(dl0d, 1, 0) < 0) {
-		diag_tty_close(&dl0d);
-		return 0;
-	}
+	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_elm, (void *)dev))
+		return diag_iseterr(rv);
 
 	diag_tty_iflush(dl0d);	/* Flush unread input */
+	
+	//XXX insert ELM init commands here
 
 	return (dl0d) ;
 }
@@ -163,10 +160,7 @@ struct diag_l1_initbus_args *in __attribute__((unused)))
 		fprintf(stderr, FLFMT "device link %p fastinit\n",
 			FL, dl0d);
 
-	/* Send 25 ms break as initialisation pattern (TiniL) */
-	diag_tty_break(dl0d, 25); 
-
-	/* Now let the caller send a startCommunications message */
+	// XXX insert ELM fast init command
 	return (0);
 }
 
@@ -302,16 +296,16 @@ const void *data, size_t len)
 	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len)
 	{
 		/* Partial write */
-		if (xferd <  0)
+		if (xferd <  0)	//write error
 		{
 			/* error */
-			if (errno != EINTR)
+			if (errno != EINTR)	//not an interruption
 			{
 				perror("write");
 				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
-				return(-1);
+				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
-			xferd = 0; /* Interrupted read, nothing transferred. */
+			xferd = 0; /* Interrupted write, nothing transferred. */
 		}
 		/*
 		 * Successfully wrote xferd bytes (or 0 && EINTR), 
@@ -320,8 +314,11 @@ const void *data, size_t len)
 		len -= xferd;
 		data = (const void *)((const char *)data + xferd);
 	}
-	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) )
+//	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
+//			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) )
+	//what if diag_debug_write and _data are both cleared ?
+	//XXX not sure of the goal here.
+	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA))
 	{
 		fprintf(stderr, "\n");
 	}

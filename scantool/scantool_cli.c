@@ -338,7 +338,6 @@ log_command(int argc, char **argv)
 static int
 cmd_log(int argc, char **argv)
 {
-	printf("%d",argc);
 	char autofilename[20]="";
 	char *file;
 	file=autofilename;
@@ -366,12 +365,12 @@ cmd_log(int argc, char **argv)
 		}
 		if (i > 99)
 		{
-		    	printf("Can't create log.<nn>; remember to clean old auto log files\n");
+		    	printf("Can't create log.%02d; remember to clean old auto log files\n",i);
 			return(CMD_FAILED);
 		}
 	}
 
-	global_logfp = fopen(file, "w");
+	global_logfp = fopen(file, "a");	//add to end of log or create file
 
 	if (global_logfp == NULL)
 	{
@@ -682,7 +681,7 @@ cmd_monitor(int argc, char **argv)
 	if (global_state < STATE_SCANDONE)
 	{
 		printf("SCAN has not been done, please do a scan\n");
-		return(CMD_OK);
+		return(CMD_FAILED);
 	}
 
 	// If user states English or Metric, use that, else use config item
@@ -1015,7 +1014,6 @@ cmd_source(int argc, char **argv)
 static int
 rc_file(void)
 {
-//	FILE *newrcfile
 	char *homeinit;
 	//this loads either a $home/.<progname>.rc or ./<progname>.ini (in order of preference)
 	//to load general settings. For now, only set_interface and set_subinterface can be specified
@@ -1059,6 +1057,7 @@ rc_file(void)
 		}
 		else	//command_file was at least partly successful (rc file exists)
 		{
+			printf("%s: Settings loaded succesfully from %s\n",progname,homeinit);
 			free(homeinit);
 			return 0;
 		}
@@ -1082,7 +1081,7 @@ rc_file(void)
 		free(homeinit);
 		return diag_iseterr(DIAG_ERR_RCFILE);
 	}
-	printf("%s: %s succesfully loaded\n", progname, homeinit);
+	printf("%s: Settings loaded succesfully from %s\n", progname, homeinit);
 	free(homeinit);
 	return 0;
 #endif
