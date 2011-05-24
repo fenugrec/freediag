@@ -139,7 +139,7 @@ struct diag_l1_initbus_args
 
 /*
  * init(), returns 0 on success (always succeeds)
- * open(), returns a fd on success, < 0 on failure
+ * open(), returns a fd on success, 0 on failure (pseterr)
  * close(), always succeeds and returns 0
  * send() Send data, same args as Unix write() + the sub interface,
  * 	returns 0 on OK, -1 on success

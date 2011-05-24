@@ -20,12 +20,14 @@
  *
  *************************************************************************
  *
- * Diag, Layer 0, interface for Scantool.net's ELM323 Interface 
+ * Diag, Layer 0, interface for Scantool.net's ELM32x Interface 
  * Ken Bantoft <ken@bantoft.org>
  *
  * This is currently just cut/copy/pasted from the sileng driver, and
- * probably won't work yet.
+ * will not work yet.
  *
+ *This is meant to support ELM323 & 327 devices. For now, only 9600 comms
+ *will be supported. See diag_l0_elm_setspeed
  */
 
 
@@ -78,13 +80,13 @@ diag_l0_elm_init(void)
 	fprintf(stderr,"diag_l0_elm_init() called\n");
 
 	if (diag_l0_elm_initdone)
-		return (0);
+		return 0;
 	diag_l0_elm_initdone = 1;
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -107,18 +109,18 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	diag_l0_elm_init();
 
 	if (rv=diag_calloc(&dev, 1))
-		return diag_iseterr(rv);
+		return (struct diag_l0_device *)diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 
 	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_elm, (void *)dev))
-		return diag_iseterr(rv);
+		return (struct diag_l0_device *)diag_pseterr(rv);
 
 	diag_tty_iflush(dl0d);	/* Flush unread input */
 	
 	//XXX insert ELM init commands here
 
-	return (dl0d) ;
+	return dl0d;
 }
 
 static int
@@ -140,7 +142,7 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 		(void) diag_tty_close(pdl0d);
 	}
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -161,7 +163,7 @@ struct diag_l1_initbus_args *in __attribute__((unused)))
 			FL, dl0d);
 
 	// XXX insert ELM fast init command
-	return (0);
+	return 0;
 }
 
 /*
@@ -200,7 +202,7 @@ struct diag_l0_elm_device *dev)
         diag_tty_break(dl0d, 25); 
 
         /* Now let the caller send a startCommunications message */
-        return (0);
+        return 0;
 
 }
 
@@ -221,7 +223,7 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 			FL, dl0d, dev, in->type);
 
 	if (!dev)
-		return(-1);
+		return -1;
 
 	
 	/* Wait the idle time (Tidle > 300ms) */
@@ -253,7 +255,7 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 		fprintf(stderr, FLFMT "initbus device link %p returning %d\n",
 			FL, dl0d, rv);
 	
-	return(rv);
+	return rv;
 
 }
 
@@ -323,7 +325,7 @@ const void *data, size_t len)
 		fprintf(stderr, "\n");
 	}
 
-	return(0);
+	return 0;
 }
 
 /*
@@ -358,19 +360,19 @@ void *data, size_t len, int timeout)
 		{
 			if (diag_l0_debug & DIAG_DEBUG_READ)
 				fprintf(stderr, "\n");
-			return (diag_iseterr(DIAG_ERR_TIMEOUT));
+			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		}
 		if (xferd == 0)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return(-1);
+			return -1;
 		}
 		if (errno != EINTR)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-			return(-1);
+			return -1;
 		}
 	}
 	if (diag_l0_debug & DIAG_DEBUG_READ)
@@ -378,43 +380,47 @@ void *data, size_t len, int timeout)
 		diag_data_dump(stderr, data, (size_t)xferd);
 		fprintf(stderr, "\n");
 	}
-	return(xferd);
+	return xferd;
 }
 
 /*
- * Set speed/parity etc
+ * Set speed/parity
+* but upper levels shouldn't be doing this. This function will force 9600;8N1
  */
 static int
 diag_l0_elm_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pss)
-{
+const struct diag_serial_settings *pss) {
+	fprintf(stderr, FLFMT "Warning: attempted to override serial settings. 9600;8N1 maintained\n", FL);
+	struct diag_serial_settings sset;
+	sset.speed=9600;
+	sset.databits = diag_databits_8;
+	sset.stopbits = diag_stopbits_1;
+	sset.parflag = diag_par_n;
 	struct diag_l0_elm_device *dev;
 
 	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 
-	dev->serial = *pss;
+	dev->serial = sset;
 
-	return diag_tty_setup(dl0d, pss);
+	return diag_iseterr(diag_tty_setup(dl0d, &sset));
 }
 
 static int
-diag_l0_elm_getflags(struct diag_l0_device *dl0d)
-{
+diag_l0_elm_getflags(struct diag_l0_device *dl0d) {
 
         struct diag_l0_elm_device *dev;
-        int flags;
+        int flags=0;
 
         dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 
-        flags = 0;
+	//XXX will have to add specific 323 vs 327 handling. For now, only 323 features are included.
         switch (dev->protocol)
         {
         case DIAG_L1_J1850_VPW:
         case DIAG_L1_J1850_PWM:
-                        flags = DIAG_L1_DOESL2FRAME;
                         break;
         case DIAG_L1_ISO9141:
-                        flags = DIAG_L1_SLOW ;
+                        flags = DIAG_L1_SLOW;
                         flags |= DIAG_L1_DOESP4WAIT;
                         break;
         case DIAG_L1_ISO14230:
@@ -428,12 +434,12 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
                         FLFMT "getflags link %p proto %d flags 0x%x\n",
                         FL, dl0d, dev->protocol, flags);
 
-        return( flags );
+        return flags;
 
 }
 
 const struct diag_l0 diag_l0_elm = {
-	"Scantool.net ELM323 Chipset Device", 
+	"Scantool.net ELM32x Chipset Device", 
 	"ELM",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
 	diag_l0_elm_init,

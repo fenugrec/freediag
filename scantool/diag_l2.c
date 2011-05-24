@@ -129,10 +129,10 @@ diag_l2_findlink(const char *dev_name)
 	while (dl2l)
 	{
 		if ( strcmp(dl2l -> diag_l2_name , dev_name) == 0)
-			return(dl2l);
+			return dl2l;
 		dl2l = dl2l -> next;
 	}
-	return (NULL);
+	return NULL;
 }
 
 /*
@@ -159,7 +159,7 @@ diag_l2_rmlink(struct diag_l2_link *d)
 		d_l2_last = dl2l;
 		dl2l = dl2l -> next;
 	}
-	return (0);
+	return 0;
 }
 
 /*
@@ -197,7 +197,7 @@ diag_l2_rmconn(struct diag_l2_conn *d)
 		d_l2_last_conn = d_l2_conn;
 		d_l2_conn = d_l2_conn->next;
 	}
-	return (0);
+	return 0;
 }
 
 /*
@@ -283,7 +283,7 @@ int diag_l2_init()
 		fprintf(stderr,FLFMT "diag_l2_init called\n", FL);
 
 	if ( diag_l2_init_done )
-		return(0);
+		return 0;
 	diag_l2_init_done = 1;
 
 	memset(diag_l2_conbyid, 0, 256);
@@ -291,7 +291,7 @@ int diag_l2_init()
 	/*
 	 * And go do the layer 1 init
 	 */
-	return(diag_l1_init());
+	return diag_l1_init();
 }
 
 /*
@@ -319,7 +319,7 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
 	}
 
 
-	return(0);
+	return 0;
 }
 
 /*
@@ -359,7 +359,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 		else
 		{
 			/* Device was already open, with correct protocol  */
-		return(dl2l->diag_l2_dl0d);
+		return dl2l->diag_l2_dl0d;
 		}
 	}
 
@@ -391,7 +391,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 	dl2l->next = diag_l2_links;
 	diag_l2_links = dl2l;
 		
-	return(dl2l->diag_l2_dl0d);
+	return dl2l->diag_l2_dl0d;
 }
 
 /*
@@ -415,7 +415,7 @@ diag_l2_close(struct diag_l0_device *dl0d)
 
 	/* XXX */
 
-	return(0);
+	return 0;
 }
 
 /*
@@ -465,14 +465,14 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	{
 		/* New connection */
 		if (diag_calloc(&d_l2_conn, 1))
-			return(0);
+			return 0;
 
 		reusing = 0;
 	}
 
 	dl2l = diag_l0_dl2_link(dl0d);
 	if (dl2l == NULL)
-		return(NULL);
+		return NULL;
 
 	/* Link to the L1 device info that we keep (name, type, flags, dl0d) */
 	d_l2_conn->diag_link = dl2l;
@@ -491,7 +491,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	if (d_l2_conn->l2proto == 0) {
 		fprintf(stderr,
 			FLFMT "Protocol %d not installed.\n", FL, L2protocol);
-		return(NULL);
+		return NULL;
 	}
 
 	d_l2_conn->diag_l2_type = type ;
@@ -560,7 +560,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 			FLFMT "diag_l2_StartComms returns %p\n",
 				FL, d_l2_conn);
 
-	return (d_l2_conn);
+	return d_l2_conn;
 }
 
 /*
@@ -580,7 +580,7 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 		(void)d_l2_conn->l2proto->diag_l2_proto_stopcomms(d_l2_conn);
 
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSED;
-	return(0);
+	return 0;
 }
 
 /*
@@ -634,7 +634,7 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		fprintf(stderr, FLFMT "diag_l2_send returns %d\n",
 				FL, rv);
 
-	return(rv);
+	return rv;
 }
 
 /*
@@ -659,7 +659,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 		fprintf(stderr, FLFMT "diag_l2_request returns %p, err %d\n",
 				FL, rv, *errval);
 
-	return(rv);
+	return rv;
 }
 
 
@@ -689,7 +689,7 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "diag_l2_recv returns %d\n",
 				FL, rv);
-	return(rv);
+	return rv;
 }
 
 /*
@@ -741,5 +741,5 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, int cmd, void *data)
 		break;
 	}
 
-	return(rv);
+	return rv;
 }

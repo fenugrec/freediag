@@ -132,9 +132,9 @@ void *dl0_handle)
                         FLFMT "Open of device interface \"%s\" failed: %s\n", 
 			FL, dl0d->name, strerror(errno));
 		fprintf(stderr, FLFMT
-                        "(Make sure the device specified corresponds to the\n", FL ) ;
+                        "(Make sure the device specified corresponds to the\n", FL );
 		fprintf(stderr,
-                        FLFMT "serial device your interface is connected to.\n", FL) ;
+                        FLFMT "serial device your interface is connected to.\n", FL);
 
 		(void)diag_tty_close(ppdl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -175,7 +175,7 @@ void *dl0_handle)
 	}
 	dt->dt_tinfo = dt->dt_otinfo;
 
-	return(0);
+	return 0;
 }
 
 /* Close up the TTY and restore. */
@@ -195,7 +195,7 @@ int diag_tty_close(struct diag_l0_device **ppdl0d)
 						TCSADRAIN, &dl0d->ttystate->dt_otinfo);
 					(void)ioctl(dl0d->fd,
 						TIOCMSET, &dl0d->ttystate->dt_modemflags);
-				}
+				}return 0
 				free(dl0d->ttystate);
 				dl0d->ttystate = 0;
 			}
@@ -212,7 +212,7 @@ int diag_tty_close(struct diag_l0_device **ppdl0d)
 			*ppdl0d = 0;
 		}
 	}
-	return(0);
+	return 0;
 }
 
 void *
@@ -282,7 +282,7 @@ const struct diag_serial_settings *pset)
 	dt->dt_sinfo = dt->dt_osinfo;
 
 	/* Now, mod the "current" settings */
-	dt->dt_sinfo.custom_divisor = dt->dt_sinfo.baud_base  / pset->speed ;
+	dt->dt_sinfo.custom_divisor = dt->dt_sinfo.baud_base  / pset->speed;
 
 	/* Turn of other speed flags */
 	dt->dt_sinfo.flags &= ~ASYNC_SPD_MASK;
@@ -304,7 +304,7 @@ const struct diag_serial_settings *pset)
 	 * custom baud rate stuff set above works
 	 */
 	dt->dt_tinfo.c_cflag &= ~CBAUD;
-	dt->dt_tinfo.c_cflag |= B38400;
+	dt->dt_tinfo.c_cflag |= B38400;	//see termios.h
 #else
 	/* "POSIXY" version of setting non-standard baud rates.
 	 * This works at least for FreeBSD.
@@ -370,12 +370,12 @@ const struct diag_serial_settings *pset)
 		| INPCK | ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXOFF
 		| IXANY | IMAXBEL);
 #ifdef __linux__
-	iflag  &= ~(IUCLC) ;   /* Not in Posix */
+	iflag  &= ~(IUCLC);   /* Not in Posix */
 #endif
 
 	dt->dt_tinfo.c_iflag  = iflag;
 
-	dt->dt_tinfo.c_oflag &= ~(OPOST) ;
+	dt->dt_tinfo.c_oflag &= ~(OPOST);
 
 	/* Clear canonical input and disable keyboard signals.
 	+* There is no need to also clear the many ECHOXX flags, both because
@@ -389,7 +389,7 @@ const struct diag_serial_settings *pset)
 	dt->dt_tinfo.c_lflag &= ~ECHO;
 
 	/* Turn off RTS/CTS, and loads of others, similar to "stty raw" */
-	dt->dt_tinfo.c_cflag &= ~( CRTSCTS ) ;
+	dt->dt_tinfo.c_cflag &= ~( CRTSCTS );
 	/* Turn on ... */
 	dt->dt_tinfo.c_cflag |= (CLOCAL);
 
@@ -441,7 +441,7 @@ const struct diag_serial_settings *pset)
 	default:
 		fprintf(stderr,
 			FLFMT "bad parity setting used (%d)\n", FL, pset->parflag);
-		return(-1);
+		return -1;
 	}
 
 	errno = 0;
@@ -456,7 +456,7 @@ const struct diag_serial_settings *pset)
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	
-	return (0);
+	return 0;
 }
 
 /*
@@ -495,7 +495,7 @@ int rts)
 			FLFMT "open: Ioctl TIOCMSET failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	return(0);
+	return 0;
 }
 
 /*
@@ -543,13 +543,13 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	 	FD_ZERO(&set);
 		FD_SET(dl0d->fd, &set);
 
-	        rv = select ( dl0d->fd + 1,  &set, NULL, NULL, &tv ) ;
+	        rv = select ( dl0d->fd + 1,  &set, NULL, NULL, &tv );
 
-                if ( rv >= 0 ) break ;
+                if ( rv >= 0 ) break;
 
 		if (errno != EINTR) break;
 
-		errno = 0 ;
+		errno = 0;
 	}
 
 	switch (rv)
@@ -567,7 +567,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		 */
 		if (count)
 			rv = read(dl0d->fd, buf, count);
-		return (rv);
+		return rv;
 
 	default:
 		fprintf(stderr, FLFMT "select on fd %d returned %s.\n",
@@ -794,7 +794,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, 1000)) <= 0)
 	{
 		if (xferd == DIAG_ERR_TIMEOUT)
-			return (diag_iseterr(DIAG_ERR_TIMEOUT));
+			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		if (xferd == 0)
 		{
 			/* Error, EOF */

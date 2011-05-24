@@ -90,7 +90,7 @@ struct diag_l0_device
 
 struct diag_serial_settings;
 
-struct diag_l0
+struct diag_l0	//XXX Why is this in here ??
 {
 	const char	*diag_l0_textname;	/* Useful textual name */
 	const char	*diag_l0_name;	/* Short, unique text name for user interface */

@@ -325,7 +325,7 @@ uint8_t sawtooth1(uint8_t *data, uint8_t pos)
 {
     struct timeval now;
     (void)gettimeofday(&now, NULL);
-    return  0xFF * now.tv_usec / 1000000;
+    return 0xFF * now.tv_usec / 1000000;
 }
 
 // Parses a response's text to data.

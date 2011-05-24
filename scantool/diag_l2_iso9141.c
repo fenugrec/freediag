@@ -105,7 +105,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
     in.addr = address;
     rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
     if (rv < 0)
-	return(rv);
+	return rv;
 
     // The L1 device has read the 0x55, and may have changed the
     // speed that we are talking to the ECU at (NOT!!!).
@@ -113,16 +113,16 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
     // Receive the first KeyByte:
     rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0, &kb1, 1, W2max);
     if (rv < 0)
-	return(rv);
+	return rv;
 
     // Receive the second KeyByte:
     rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0, &kb2, 1, W3max);
     if (rv < 0)
-	return(rv);
+	return rv;
 
     // Check keybytes, these can be 0x08 0x08 or 0x94 0x94:
     if ( (kb1 != kb2) || ( (kb1 != 0x08) && (kb1 != 0x94) ) )
-	return(diag_iseterr(DIAG_ERR_WRONGKB));
+	return diag_iseterr(DIAG_ERR_WRONGKB);
 
     // Copy KeyBytes to protocol session data:
     d_l2_conn->diag_l2_kb1 = kb1;
@@ -148,7 +148,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 			   &inv_kb2, 1, 0);
 	if (rv < 0)
-	    return(rv);
+	    return rv;
 	
 	// Wait for the address byte inverted:
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
@@ -159,7 +159,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 		fprintf(stderr,
 			FLFMT "startcomms con %p rx error %d\n",
 			FL, d_l2_conn, rv);
-	    return(rv);
+	    return rv;
 	}
 
 	// Check the received inverted address:
@@ -170,7 +170,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 			FLFMT "startcomms 0x%02x != 0x%02x\n",
 			FL, inv_address,
 			~address);
-	    return(diag_iseterr(DIAG_ERR_WRONGKB));
+	    return diag_iseterr(DIAG_ERR_WRONGKB);
 	}
     }
 
@@ -182,7 +182,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 		FL, d_l2_conn, 
 		kb1, kb2);
 
-    return(0);
+    return 0;
 }
 
 
@@ -205,7 +205,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 		FL, d_l2_conn);
 
     if (diag_calloc(&dp, 1))
-	return(DIAG_ERR_NOMEM);
+	return DIAG_ERR_NOMEM;
 
     dp->srcaddr = source;
     dp->target = target;
@@ -227,7 +227,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
     set.parflag = diag_par_n;
     rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set);
     if (rv < 0)
-	return (rv);
+	return rv;
 
     // Initialize ECU (unless if in monitor mode):
     if ( (flags & DIAG_L2_TYPE_INITMASK) ==  DIAG_L2_TYPE_MONINIT)
@@ -242,7 +242,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 
     dp->state = STATE_ESTABLISHED;
     
-    return (rv);
+    return rv;
 }
 
 
@@ -258,7 +258,7 @@ diag_l2_proto_iso9141_stopcomms(struct diag_l2_conn* d_l2_conn)
     if (dp)	free(dp);
 
     //Always OK for now.
-    return (0);
+    return 0;
 }
 
 
@@ -288,7 +288,7 @@ diag_l2_proto_iso9141_decode(uint8_t *data, int len,
 
     //Check header bytes:
     if(data[0] != 0x48 || data[1] != 0x6B )
-	return(diag_iseterr(DIAG_ERR_BADDATA));
+	return diag_iseterr(DIAG_ERR_BADDATA);
 
     // The data length will depend only on the content of the message,
     // and is not present in it; therefore, only L3 / application
@@ -301,7 +301,7 @@ diag_l2_proto_iso9141_decode(uint8_t *data, int len,
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
 	    fprintf(stderr, FLFMT "decode len short \n", FL);
 
-	return(diag_iseterr(DIAG_ERR_INCDATA));
+	return diag_iseterr(DIAG_ERR_INCDATA);
     }
 
     //Set header length (always the same):
@@ -315,7 +315,7 @@ diag_l2_proto_iso9141_decode(uint8_t *data, int len,
 	fprintf(stderr, FLFMT "decode hdrlen = %d, datalen = %d, cksum = 1\n",
 		FL, *hdrlen, *datalen);
 
-    return(*hdrlen + *datalen + 1);
+    return (*hdrlen + *datalen + 1);
 }
 
 /*
@@ -519,7 +519,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 						   &hdrlen, &datalen, &source, &dest);
 
 		if (rv < 0) // decode failure!
-		    return(rv);
+		    return rv;
 
 		//It is possible we have misframed this message and it is infact
 		//more than one message, so see if we can decode it.
@@ -567,7 +567,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	}
     }
 
-    return(rv);
+    return rv;
 }
 
 
@@ -595,7 +595,7 @@ diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	d_l2_conn->diag_msg = NULL;
     }
 
-    return(rv);
+    return rv;
 }
 
 /*
@@ -677,7 +677,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	fprintf(stderr, FLFMT "about to return %d\n", FL, rv);
     }
 
-    return(rv);
+    return rv;
 }
 
 
@@ -692,7 +692,7 @@ diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *m
     if (rv < 0)
     {
 	*errval = rv;
-	return(NULL);
+	return NULL;
     }
 
     /* And wait for response */
@@ -711,7 +711,7 @@ diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *m
 	rmsg = NULL;
     }
 
-    return(rmsg);
+    return rmsg;
 }
 
 static const struct diag_l2_proto diag_l2_proto_iso9141 = 

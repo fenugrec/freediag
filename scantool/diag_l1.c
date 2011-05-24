@@ -78,15 +78,15 @@ diag_l1_add_l0dev(const struct diag_l0 *l0dev) {
 		return 0;
 	}
 
-	for (last_node = l0dev_list; last_node != NULL ; last_node = last_node->next)
+	for (last_node = l0dev_list; last_node != NULL; last_node = last_node->next)
 		if (last_node->l0dev == l0dev)
 			return diag_iseterr(DIAG_ERR_GENERAL);	/* Already there. */
 
 	if ( (rv = diag_calloc(&new_node, 1)) ) 
 		return rv;
 
-	for (last_node = l0dev_list; last_node->next != NULL ; last_node = last_node->next)
-          /* Search for the next-to-last node */ ;
+	for (last_node = l0dev_list; last_node->next != NULL; last_node = last_node->next)
+          /* Search for the next-to-last node */;
 
 	new_node->l0dev = l0dev;
 	last_node->next = new_node;
@@ -103,7 +103,7 @@ diag_l1_init(void)
 	struct diag_l0_node *node;
 
 	if (diag_l1_initdone)
-		return (0);
+		return 0;
 	diag_l1_initdone = 1;
 
 	/* Now call the init routines for the L0 devices */
@@ -113,7 +113,7 @@ diag_l1_init(void)
 			(node->l0dev->diag_l0_init)();
 	}
 
-	return (0);
+	return 0;
 }
 
 /*
@@ -147,13 +147,13 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 	}
 
 	/* Not found */
-	return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+	return struct (diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 }
 
 int
 diag_l1_close(struct diag_l0_device **pdl0d)
 {
-	return (pdl0d) ?
+	return pdl0d ?
 		(diag_l0_device_dl0(*pdl0d)->diag_l0_close)(pdl0d) : 0;
 }
 
@@ -163,7 +163,7 @@ diag_l1_close(struct diag_l0_device **pdl0d)
 int
 diag_l1_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
-	return ((diag_l0_device_dl0(dl0d)->diag_l0_initbus)(dl0d, in));
+	return (diag_l0_device_dl0(dl0d)->diag_l0_initbus)(dl0d, in);
 }
 
 /*
@@ -243,7 +243,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 		}
 	}
 
-	return(rv);
+	return rv;
 }
 
 /*
@@ -253,8 +253,7 @@ int
 diag_l1_recv(struct diag_l0_device *dl0d,
 	const char *subinterface, void *data, size_t len, int timeout)
 {
-	return (diag_l0_device_dl0(dl0d)->diag_l0_recv)(dl0d,
-		subinterface, data, len, timeout);
+	return diag_l0_device_dl0(dl0d)->diag_l0_recv(dl0d, subinterface, data, len, timeout);
 }
 
 /*
@@ -270,12 +269,12 @@ const struct diag_serial_settings *pset)
 
 int diag_l1_getflags(struct diag_l0_device *dl0d)
 {
-	return ((diag_l0_device_dl0(dl0d)->diag_l0_getflags)(dl0d) );
+	return (diag_l0_device_dl0(dl0d)->diag_l0_getflags)(dl0d);
 }
 
 int diag_l1_gettype(struct diag_l0_device *dl0d)
 {
-	return(diag_l0_device_dl0(dl0d)->diag_l0_type);
+	return diag_l0_device_dl0(dl0d)->diag_l0_type;
 }
 
 /*
@@ -291,9 +290,9 @@ diag_l1_saferead(struct diag_l0_device *dl0d, char *buf, size_t bufsiz, int time
 	while ( (xferd = diag_tty_read(dl0d, buf, bufsiz, timeout)) < 0)
 	{
 		if (errno != EINTR)
-			return(-1);
+			return -1;
 		xferd = 0; /* Interrupted read, nothing transferred. */
 	}
 
-	return(xferd);
+	return xferd;
 }
