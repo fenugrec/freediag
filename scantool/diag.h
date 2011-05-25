@@ -83,7 +83,7 @@ typedef struct sigaction_t {
 #endif
 
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
-
+#define DB_FILE "./freediag_carsim.db"	//default simfile for CARSIM interface
 #define DIAG_NAMELEN	256
 
 /* For diagnostics */

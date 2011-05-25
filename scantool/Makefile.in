@@ -226,7 +226,7 @@ libdiag_a_SOURCES = diag_config.c \
 
 nodist_libdiag_a_SOURCES = diag_config.c
 
-#do not distribute diag_config.c as it will be build (see below)
+#do not distribute diag_config.c as it will be built (see below)
 BUILT_SOURCES = diag_config.c
 DISTCLEANFILES = diag_config.c
 libdyno_a_SOURCES = dyno.c diag.h diag_os.h diag_err.h dyno.h

@@ -235,6 +235,7 @@ static void aif_exit ( void *data )
 {
   OkToApp () ;
   fprintf ( stderr, "scantool: Exiting.\n" ) ;
+  set_close;
   exit ( 0 ) ;
 }
 

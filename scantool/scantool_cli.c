@@ -1106,6 +1106,7 @@ enter_cli(char *name)
 	/* And go start CLI */
 	instream = stdin;
 	(void)do_cli(root_cmd_table, progname, 0, NULL);
+	set_close();
 
 }
 

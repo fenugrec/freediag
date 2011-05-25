@@ -65,6 +65,7 @@ void enter_cli(char *pname);
 
 extern const struct cmd_tbl_entry set_cmd_table[];
 extern int set_init(void);
+extern void set_close(void);
 
 extern const struct cmd_tbl_entry debug_cmd_table[];
 extern const struct cmd_tbl_entry test_cmd_table[];

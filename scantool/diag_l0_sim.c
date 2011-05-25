@@ -50,7 +50,6 @@
 #include "diag_tty.h"
 #include "diag_l1.h"
 
-#define DB_FILE "./freediag_carsim.db"
 
 
 /**************************************************/
@@ -59,6 +58,9 @@
 
 
 extern const struct diag_l0 diag_l0_sim;
+const char *simfile=NULL;	//pointer to remote filename.
+const char *simfile_default=DB_FILE;	//default filename
+
 
 struct diag_l0_sim_device
 {
@@ -106,6 +108,8 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		 const char *subinterface __attribute__((unused)),
 		 void *data, size_t len, int timeout);
 
+extern int
+diag_l0_sim_setfile(char * fname);
 
 /**************************************************/
 // LOCAL FUNCTIONS:
@@ -439,6 +443,9 @@ diag_l0_sim_init(void)
 	return 0;
 	
 	diag_l0_sim_initdone = 1;
+	if (!simfile)
+		//not filled in yet : use default DB_FILE.
+		simfile=simfile_default;
 
 	return 0;
 }
@@ -471,16 +478,16 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
 	dl0d->fd = -1;
 	dl0d->dl0_handle = dev;
 	dl0d->dl0 = &diag_l0_sim;
-	if (rv=diag_calloc(&dl0d->name, strlen(DB_FILE)+1)) {
+	if (rv=diag_calloc(&dl0d->name, strlen(simfile)+1)) {
 		free(dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
-	strncpy(dl0d->name, DB_FILE, strlen(DB_FILE));
+	strcpy(dl0d->name, simfile);
 	if (rv=diag_calloc(&dl0d->ttystate, 1))  {
 		free(dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
-
+	printf("XXX debug dl0d->name = %s\n",dl0d->name);
 	// Open the DB file:
 	if ((dev->fp = fopen(dl0d->name, "r")) == NULL) {
 		fprintf(stderr, FLFMT "Unable to open file \"%s\"\n", FL, dl0d->name);
@@ -503,7 +510,7 @@ static int
 diag_l0_sim_close(struct diag_l0_device **pdl0d)
 {
 	sim_free_ecu_responses(&sim_last_ecu_responses);
-
+	
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
 		struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);
@@ -698,6 +705,19 @@ diag_l0_sim_getflags(struct diag_l0_device *dl0d __attribute__((unused)))
 	return ret;
 }
 
+extern int
+diag_l0_sim_setfile(char * fname)
+{
+	//called from outside to update local filename pointer.
+	//~ if (simfile)
+		//~ free(simfile);
+	//~ if (diag_calloc(&simfile, strlen(fname)+1))
+		//~ return diag_iseterr(DIAG_ERR_GENERAL);
+	//~ strcpy(simfile, fname);
+	simfile=fname;
+	return 0;
+}
+	
 
 // Declares the interface's protocol flags
 // and pointers to functions.
