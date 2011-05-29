@@ -281,6 +281,8 @@ do_l1_test(void)
 	printf("init rv = 0x%x\n", rv);
 
 	dl0d = diag_l1_open("SE9141", 0, 0);
+	if (dl0d==0)
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	printf("open dl0d = %p\n", dl0d);
 
 	set.speed = BAUD;

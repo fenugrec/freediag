@@ -157,6 +157,7 @@ diag_l0_vwtool_fastinit(struct diag_l0_device *dl0d)
 
 #if notdef
 /* Do the 5 BAUD L line stuff while the K line is twiddling */
+#define USDELAY 120
 static void
 diag_l0_vwtool_Lline(struct diag_l0_device *dl0d, struct diag_l0_vwtool_device *dev,
 	uint8_t ecuaddr)
@@ -213,7 +214,7 @@ diag_l0_vwtool_Lline(struct diag_l0_device *dl0d, struct diag_l0_vwtool_device *
 				FL);
 			return;
 		}
-		diag_os_millisleep(190);		/* 200ms -5% */
+		diag_os_millisleep(USDELAY);		    /* 200ms -5% */
 	}
 	/* And set high for the stop bit */
 	if (diag_tty_control(dl0d, 0, 1) < 0)
@@ -222,7 +223,7 @@ diag_l0_vwtool_Lline(struct diag_l0_device *dl0d, struct diag_l0_vwtool_device *
 			FL);
 		return;
 	}
-	diag_os_millisleep(190);		/* 200ms -5% */
+	diag_os_millisleep(USDELAY);		    /* 200ms -5% */
 
 	/* Now put DTR/RTS back correctly so RX side is enabled */
 	if (diag_tty_control(dl0d, 1, 0) < 0)
@@ -331,6 +332,13 @@ diag_l0_vwtool_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args
 			fprintf(stderr, FLFMT "slowinit link %p read timeout\n",
 				FL, dl0d);
 		return diag_iseterr(rv);
+	}
+	else
+	{
+		if (diag_l0_debug & DIAG_DEBUG_PROTO)
+			fprintf(stderr, FLFMT "slowinit link %p read 0x%x\n",
+				FL, dl0d, cbuf[0]);
+
 	}
 	return 0;
 }
@@ -468,6 +476,8 @@ void *data, size_t len, int timeout)
 {
 	int xferd;
 
+	errno = EINTR;
+
 	struct diag_l0_vwtool_device *dev;
 	dev = (struct diag_l0_vwtool_device *)diag_l0_dl0_handle(dl0d);
 
@@ -480,7 +490,7 @@ void *data, size_t len, int timeout)
 	{
 		if (xferd == DIAG_ERR_TIMEOUT)
 			return diag_iseterr(DIAG_ERR_TIMEOUT);
-		if (xferd == 0)
+		if (xferd == 0 && len != 0)
 		{
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
@@ -493,6 +503,7 @@ void *data, size_t len, int timeout)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
+
 	return xferd;
 }
 

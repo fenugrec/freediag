@@ -49,20 +49,22 @@ int diag_init(void)	//returns 0 if normal exit
 
 	/* Add the supported protocols and links */
 
-	rv=diag_l0_config();
+	if (rv=diag_l0_config())
+		return diag_iseterr(rv);
 	
-	rv=diag_l2_config();
+	if (rv=diag_l2_config())
+		return diag_iseterr(rv);
 	
 	//XXX This is interesting: the following functions only ever return 0...
 	
-	if ((rv = diag_l1_init()) != 0)
-		return(rv);
-	if ((rv = diag_l2_init()) != 0)
-		return(rv);
-	if ((rv = diag_os_init()) != 0)
-		return(rv);
+	if (rv = diag_l1_init())
+		return diag_iseterr(rv);
+	if (rv = diag_l2_init())
+		return diag_iseterr(rv);
+	if (rv = diag_os_init())
+		return diag_iseterr(rv);
 
-	(void)diag_dtc_init();
+	diag_dtc_init();
 
 	return 0;
 }
@@ -94,7 +96,7 @@ diag_allocmsg(size_t datalen)
 
 	newmsg->idata = newmsg->data;	/* Keep tab as users change newmsg->data */
 
-	return(newmsg);
+	return newmsg;
 }
 
 /* Duplicate a message, and its contents */
@@ -130,7 +132,7 @@ diag_dupmsg(struct diag_msg *msg)
 	{
 		tmsg = diag_allocmsg(msg->len);
 		if (tmsg == NULL)
-			return(NULL);	/* Out of memory */
+			return NULL;	/* Out of memory */
 
 		tmsg->fmt = msg->fmt;
 		tmsg->type = msg->type;
@@ -150,7 +152,7 @@ diag_dupmsg(struct diag_msg *msg)
 		msg = msg->next;
 	}
 
-	return(newmsg);
+	return newmsg;
 }
 
 /* Duplicate a single message, don't follow the chain */
@@ -175,7 +177,7 @@ diag_dupsinglemsg(struct diag_msg *msg)
 	/* Dup data */
 	memcpy(newmsg->data, msg->data, msg->len);
 
-	return(newmsg);
+	return newmsg;
 }
 
 /* Free a msg that we dup'd */
