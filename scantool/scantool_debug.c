@@ -156,7 +156,7 @@ char **argv __attribute__((unused)))
 		}
 	}
 
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 static int
@@ -173,33 +173,33 @@ cmd_debug_common( const char *txt, int *val, int argc, char **argv)
 		r = htoi(argv[1]);
 		*val = r;
 	}
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int
 cmd_debug_l0(int argc, char **argv)
 {
-	return(cmd_debug_common("L0", &diag_l0_debug, argc, argv));
+	return cmd_debug_common("L0", &diag_l0_debug, argc, argv);
 }
 static int
 cmd_debug_l1(int argc, char **argv)
 {
-	return(cmd_debug_common("L1", &diag_l1_debug, argc, argv));
+	return cmd_debug_common("L1", &diag_l1_debug, argc, argv);
 }
 static int
 cmd_debug_l2(int argc, char **argv)
 {
-	return(cmd_debug_common("L2", &diag_l2_debug, argc, argv));
+	return cmd_debug_common("L2", &diag_l2_debug, argc, argv);
 }
 static int
 cmd_debug_l3(int argc, char **argv)
 {
-	return(cmd_debug_common("L3", &diag_l3_debug, argc, argv));
+	return cmd_debug_common("L3", &diag_l3_debug, argc, argv);
 }
 static int
 cmd_debug_cli(int argc, char **argv)
 {
-	return(cmd_debug_common("CLI", &diag_cmd_debug, argc, argv));
+	return cmd_debug_common("CLI", &diag_cmd_debug, argc, argv);
 	//for now, value > 0x80 will enable all debugging info.
 }
 
@@ -210,7 +210,7 @@ cmd_debug_all(int argc, char **argv)
 
 	if (argc == 1)
 	{
-		return(cmd_debug_show(1, NULL));
+		return cmd_debug_show(1, NULL);
 	}
 	else
 	{
@@ -221,7 +221,7 @@ cmd_debug_all(int argc, char **argv)
 		diag_l3_debug = val;
 		diag_cmd_debug = val;
 	}
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 #ifdef WIN32
@@ -239,7 +239,7 @@ char **argv __attribute__((unused)))
 	printf("Debug values: L0 0x%x, L1 0x%x, L2 0x%x L3 0x%x CLI 0x%x\n",
 		diag_l0_debug, diag_l1_debug, diag_l2_debug, diag_l3_debug,
 		diag_cmd_debug);
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static void
@@ -279,7 +279,7 @@ char **argv __attribute__((unused)))
 	if (global_state < STATE_SCANDONE)
 	{
 		printf("SCAN has not been done, please do a scan\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++)
@@ -298,5 +298,5 @@ char **argv __attribute__((unused)))
 	}
 	printf("\n");
 
-	return (CMD_OK);
+	return CMD_OK;
 }

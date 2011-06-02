@@ -15,7 +15,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -123,7 +123,7 @@ void diag_l3_timer(void);	/* Regular timer routine */
 int diag_l3_ioctl(struct diag_l3_conn *connection, int cmd, void *data);
 
 extern int diag_l3_debug;
-extern struct diag_l3_conn  *global_l3_conn;
+extern struct diag_l3_conn *global_l3_conn;
 
 #if defined(__cplusplus)
 }

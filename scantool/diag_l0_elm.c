@@ -286,11 +286,8 @@ const void *data, size_t len)
 		len -= xferd;
 		data = (const void *)((const char *)data + xferd);
 	}
-//	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-//			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) )
-	//what if diag_debug_write and _data are both cleared ?
-	//XXX not sure of the goal here.
-	if (diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) {
+	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
+			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
 		fprintf(stderr, "\n");
 	}
 

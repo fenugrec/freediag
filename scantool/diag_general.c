@@ -252,7 +252,7 @@ static const struct {
 	{ DIAG_ERR_BADRATE, "Bit rate specified doesn't match ECU" },
 
 	{ DIAG_ERR_ECUSAIDNO, "Ecu returned negative" },
-	{ DIAG_ERR_RCFILE, "Trouble loading rc or ini file" },
+	{ DIAG_ERR_RCFILE, "Trouble loading .rc or .ini file" },
 	{ DIAG_ERR_CMDFILE, "Trouble with sourcing commands" },
 };
 

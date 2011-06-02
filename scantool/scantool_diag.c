@@ -104,16 +104,16 @@ cmd_diag_addl3(int argc, char **argv)
 	if (global_state < STATE_CONNECTED)
 	{
 		printf("Not connected to ECU\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 	if (global_state > STATE_CONNECTED)
 	{
 		printf("L3 protocol already connected\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 	if (argc == 1)
 	{
-		return(CMD_USAGE);
+		return CMD_USAGE;
 	}
 	if (strcmp(argv[1], "?") == 0)
 	{
@@ -123,7 +123,7 @@ cmd_diag_addl3(int argc, char **argv)
 			printf("%s ", l3_protos[i]);
 		}
 		printf("\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 	for (i=0, proto = NULL; l3_protos[i] != NULL; i++)
 	{
@@ -137,7 +137,7 @@ cmd_diag_addl3(int argc, char **argv)
 	{
 		printf("No such protocol, use %s ? for list of protocols\n",
 			argv[0]);
-		return(CMD_OK);
+		return CMD_OK;
 	}
 	else
 	{
@@ -153,7 +153,7 @@ cmd_diag_addl3(int argc, char **argv)
 		}
 	}
 
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -167,7 +167,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	uint32_t funcmode = 0;
 
 	if (argc < 2)
-		return(CMD_USAGE);
+		return CMD_USAGE;
 
 	start = htoi(argv[1]);
 	if (argc == 2) 
@@ -189,19 +189,19 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	if ((start > 255) || (end > 255))
 	{
 		printf("Values must be between 0 and 255\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 	if (end < start)
 	{
 		printf("Start must not be greater than End address\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	rv = diag_init();
 	if (rv < 0)
 	{
 		printf("Failed to initialise diagnostic layer\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 	/* Open interface using hardware type ISO9141 */
 	dl0d = diag_l2_open(set_interface, set_subinterface,
@@ -216,7 +216,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			printf(", adapter probably not connected\n");
 		else
 			printf("\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	printf("Scanning address : ");
@@ -270,24 +270,24 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 				printf("- read failed %d\n", rv);
 
 			/* XXX until we can disconnect from an ECU */
-			return(CMD_OK);
+			return CMD_OK;
 		}
 	}
 	diag_l2_close(dl0d);
 	printf("\n");
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 static int
 cmd_diag_probe(int argc, char **argv)
 {
-	return(cmd_diag_probe_common(argc, argv, 0));
+	return cmd_diag_probe_common(argc, argv, 0);
 }
 
 static int
 cmd_diag_fastprobe(int argc, char **argv)
 {
-	return(cmd_diag_probe_common(argc, argv, 1));
+	return cmd_diag_probe_common(argc, argv, 1);
 }
 
 #ifdef WIN32
@@ -316,7 +316,7 @@ char **argv __attribute__((unused)))
 		printf("	Cable is connected to Vehicle\n");
 		printf("	Vehicle is switched on\n");
 	}
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 #ifdef WIN32
@@ -332,7 +332,7 @@ char **argv __attribute__((unused)))
 	if (global_state < STATE_CONNECTED)
 	{
 		printf("Not connected to ECU\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	if (global_state >= STATE_L3ADDED)
@@ -346,7 +346,7 @@ char **argv __attribute__((unused)))
 	global_l2_conn = NULL;
 	global_state = STATE_IDLE;
 
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -358,7 +358,7 @@ cmd_diag_read(int argc, char **argv)
 	if (global_state < STATE_CONNECTED)
 	{
 		printf("Not connected to ECU\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	if (argc > 1)
@@ -376,7 +376,7 @@ cmd_diag_read(int argc, char **argv)
 		(void)diag_l3_recv(global_l3_conn, timeout, j1979_data_rcv,
 			(void *)RQST_HANDLE_WATCH);
 	}
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 /*
@@ -392,13 +392,13 @@ cmd_diag_sendreq(int argc, char **argv)
 	if (global_state < STATE_CONNECTED)
 	{
 		printf("Not connected to ECU\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	if (argc < 2)
 	{
 		printf("Too few arguments\n");
-		return(CMD_USAGE);
+		return CMD_USAGE;
 	}
 
 	memset(data, 0, sizeof(data));
@@ -427,7 +427,7 @@ cmd_diag_sendreq(int argc, char **argv)
 		else
 			printf("sendreq: failed error %d\n", rv);
 	}
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 

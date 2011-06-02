@@ -264,7 +264,7 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
 
 	}
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int
@@ -288,7 +288,7 @@ cmd_date(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 	tm = localtime(&now);
 	printf("%s", asctime(tm));
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 #ifdef WIN32
@@ -299,7 +299,7 @@ static int
 cmd_rem(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 #endif
 {
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 struct timeval log_start;
@@ -348,7 +348,7 @@ cmd_log(int argc, char **argv)
 	if (global_logfp != NULL)
 	{
 		printf("Already logging\n");
-		return(CMD_FAILED);
+		return CMD_FAILED;
 	}
 
 	/* Turn on logging */
@@ -366,7 +366,7 @@ cmd_log(int argc, char **argv)
 		if (i > 99)
 		{
 		    	printf("Can't create log.%02d; remember to clean old auto log files\n",i);
-			return(CMD_FAILED);
+			return CMD_FAILED;
 		}
 	}
 
@@ -375,7 +375,7 @@ cmd_log(int argc, char **argv)
 	if (global_logfp == NULL)
 	{
 		printf("Failed to create log file %s\n", file);
-		return(CMD_FAILED);
+		return CMD_FAILED;
 	}
 
 	now = time(NULL);
@@ -386,7 +386,7 @@ cmd_log(int argc, char **argv)
 		asctime(localtime(&now)));
 
 	printf("Logging to file %s\n", file);
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 #ifdef WIN32
@@ -401,13 +401,13 @@ cmd_stoplog(int argc __attribute__((unused)), char **argv __attribute__((unused)
 	if (global_logfp == NULL)
 	{
 		printf("Logging was not on\n");
-		return(CMD_FAILED);
+		return CMD_FAILED;
 	}
 
 	fclose(global_logfp);
 	global_logfp = NULL;
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int
@@ -418,14 +418,14 @@ cmd_play(int argc, char **argv)
 
 	/* Turn on logging for monitor mode */
 	if (argc < 2)
-		return(CMD_USAGE);
+		return CMD_USAGE;
 
 	fp = fopen(argv[1], "r");
 
 	if (fp == NULL)
 	{
 		printf("Failed to open log file %s\n", argv[1]);
-		return(CMD_FAILED);
+		return CMD_FAILED;
 	}
 
 	linenr = 0;
@@ -456,7 +456,7 @@ cmd_play(int argc, char **argv)
 	}
 	fclose(fp);
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int
@@ -481,7 +481,7 @@ cmd_watch(int argc, char **argv)
 		else
 		{
 			printf("Don't understand \"%s\"\n", argv[1]);
-			return(CMD_USAGE);
+			return CMD_USAGE;
 		}
 	}
 
@@ -489,7 +489,7 @@ cmd_watch(int argc, char **argv)
 	if (rv != 0)
 	{
 		fprintf(stderr, "diag_init failed\n");
-		return(-1);
+		return -1;
 	}
 	dl0d = diag_l2_open(set_interface, set_subinterface, set_L1protocol);
 	if (dl0d == 0)
@@ -502,7 +502,7 @@ cmd_watch(int argc, char **argv)
 			printf(", adapter probably not connected\n");
 		else
 			printf("\n");
-		return(CMD_FAILED);
+		return CMD_FAILED;
 	}
 	if (rawmode)
 		d_l2_conn = diag_l2_StartCommunications(dl0d, DIAG_L2_PROT_RAW,
@@ -516,7 +516,7 @@ cmd_watch(int argc, char **argv)
 	if (d_l2_conn == 0)
 	{
 		printf("Failed to connect to hardware in monitor mode\n");
-		return(CMD_FAILED);
+		return CMD_FAILED;
 	}
 
 	if (rawmode == 0) 
@@ -529,7 +529,7 @@ cmd_watch(int argc, char **argv)
 			if (d_l3_conn == NULL)
 			{
 				printf("Failed to enable SAEJ1979 mode\n");
-				return(CMD_FAILED);
+				return CMD_FAILED;
 			}
 		}
 		else
@@ -570,7 +570,7 @@ cmd_watch(int argc, char **argv)
 		}
 	}
 
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -681,7 +681,7 @@ cmd_monitor(int argc, char **argv)
 	if (global_state < STATE_SCANDONE)
 	{
 		printf("SCAN has not been done, please do a scan\n");
-		return(CMD_FAILED);
+		return CMD_FAILED;
 	}
 
 	// If user states English or Metric, use that, else use config item
@@ -692,7 +692,7 @@ cmd_monitor(int argc, char **argv)
 		else if (strcasecmp(argv[1], "metric") == 0)
 			english = 0;
 		else
-			return (CMD_USAGE);
+			return CMD_USAGE;
 	}
 	else
 		english = set_display;
@@ -724,7 +724,7 @@ cmd_monitor(int argc, char **argv)
 		/* Get/Print current DTCs */
 		do_j1979_cms();
 	}
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 #ifdef WIN32
@@ -740,7 +740,7 @@ cmd_scan(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 	if (global_state >= STATE_CONNECTED)
 	{
 		printf("Already connected, please disconnect first\n");
-		return(CMD_FAILED);
+		return CMD_FAILED;
 	}
 
 	rv = ecu_connect();
@@ -765,9 +765,9 @@ cmd_scan(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 		printf("	Cable is connected to Vehicle\n");
 		printf("	Vehicle is switched on\n");
 		printf("	Vehicle is OBDII compliant\n");
-		return (CMD_FAILED);
+		return CMD_FAILED;
 	}
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -786,13 +786,13 @@ char **argv __attribute__((unused)))
 	if (global_state < STATE_CONNECTED)
 	{
 		printf("Not connected to ECU\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	input = basic_get_input("Are you sure you wish to clear the Diagnostic "
 			"Trouble Codes (y/n) ? ");
 	if (!input)
-		return(CMD_OK);
+		return CMD_OK;
 
 	if ((strcasecmp(input, "yes") == 0) || (strcasecmp(input, "y")==0))
 	{
@@ -805,7 +805,7 @@ char **argv __attribute__((unused)))
 	}
 
 	free(input);
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -823,7 +823,7 @@ cmd_ecus(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 	if (global_state < STATE_SCANDONE)
 	{
 		printf("SCAN has not been done, please do a scan\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	printf("%d ECUs found\n", ecu_count);
@@ -836,7 +836,7 @@ cmd_ecus(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 		else
 			printf("\n");
 	}
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -970,8 +970,8 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	if (input)
 	    	free(input);
 	if (rv == CMD_UP)
-		return(CMD_OK);
-	return(rv);
+		return CMD_OK;
+	return rv;
 }
 
 static int
@@ -998,17 +998,17 @@ cmd_source(int argc, char **argv)
     	if (argc < 2)
 	{
 	    	printf("No filename\n");
-		return (CMD_USAGE);
+		return CMD_USAGE;
 	}
 
 	file = argv[1];
 	if (command_file(file))
 	{
 	    	printf("Couldn't read %s\n", file);
-		return (CMD_FAILED);
+		return CMD_FAILED;
 	}
 
-    	return (CMD_OK);
+    	return CMD_OK;
 }
 
 static int
@@ -1156,16 +1156,16 @@ int htoi(char *buf)
 		}
 		else
 		{
-			return(-1);
+			return -1;
 		}
 		if (val >= base)	/* Value too big for this base */
-			return(0);
+			return 0;
 		rv *= base;
 		rv += val;
 		
 		buf++;
 	}
-	return(rv);
+	return rv;
 }
 
 /*

@@ -516,7 +516,8 @@ const void *buf, const size_t count)
 +* and is used both to read from a TTY and to check for input available
 +* at stdin.  I've split things out to separate the TTY reads from the
 +* check for available input.
- */
+ * returns either 0 on succes, <0 on error, or # of bytes read on success. pah.
+*/
 ssize_t
 diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 {

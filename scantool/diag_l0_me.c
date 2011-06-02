@@ -11,7 +11,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -58,34 +58,34 @@ extern const struct diag_l0 diag_l0_muleng;
  * receiving a bit of the 0x55
  */
 static const int me_baud_table[] = { 0, 400000, 200000, 133333, 100000, 80000,
-			66666, 57142, 50000, 44444, 
-	/* 10  */ 40000, 36363, 33333, 30769, 28571, 26666,
-			25000, 23529, 22222, 21052, 
-	/* 20  */ 19200, 19200, 18181, 17391, 16666, 16000,
-			15384, 14814, 14285, 13793, 
-	/* 30  */ 13333, 12903, 12500, 12121, 11764, 11428,
-			11111, 10400, 10400, 10400, 
-	/* 40  */ 10400, 9600, 9600, 9600, 9600, 8888, 8695, 8510, 8333, 8163, 
-	/* 50  */ 8000, 7843, 7692, 7547, 7407, 7272, 7142, 7017, 6896, 6779, 
-	/* 60  */ 6666, 6557, 6451, 6349, 0, 6153, 6060, 5970, 5882, 5797, 
-	/* 70  */ 5714, 5633, 5555, 5479, 5405, 5333, 5263, 5194, 5128, 5063, 
-	/* 80  */ 5000, 4800, 4800, 4800, 4800, 4800, 4800, 4597, 4545, 4494, 
-	/* 90  */ 4444, 4395, 4347, 4301, 4255, 4210, 4166, 4123, 4081, 4040, 
-	/* 100 */ 4000, 3960, 3921, 3883, 3846, 3809, 3600, 3600, 3600, 3600, 
-	/* 110 */ 3600, 3600, 3600, 3600, 3600, 3478, 3448, 3418, 3389, 3361, 
-	/* 120 */ 3333, 3305, 3278, 3252, 3225, 3200, 3174, 3149, 3125, 3100, 
-	/* 130 */ 3076, 3053, 3030, 3007, 2985, 2962, 2941, 2919, 2898, 2877, 
-	/* 140 */ 2857, 2836, 2816, 2797, 2777, 2758, 2739, 2721, 2702, 2684, 
-	/* 150 */ 2666, 2649, 2631, 2614, 2597, 2580, 2564, 2547, 2531, 2515, 
-	/* 160 */ 2500, 2400, 2400, 2400, 2400, 2400, 2400, 2400, 2400, 2400, 
-	/* 170 */ 2400, 2400, 2400, 2400, 2298, 2285, 2272, 2259, 2247, 2234, 
-	/* 180 */ 2222, 2209, 2197, 2185, 2173, 2162, 2150, 2139, 2127, 2116, 
-	/* 190 */ 2105, 2094, 2083, 2072, 2061, 2051, 2040, 2030, 2020, 2010, 
-	/* 200 */ 2000, 1990, 1980, 1970, 1960, 1951, 1941, 1932, 1923, 1913, 
-	/* 210 */ 1904, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 
-	/* 220 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 
-	/* 230 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 
-	/* 240 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 
+			66666, 57142, 50000, 44444,
+	/* 10 */ 40000, 36363, 33333, 30769, 28571, 26666,
+			25000, 23529, 22222, 21052,
+	/* 20 */ 19200, 19200, 18181, 17391, 16666, 16000,
+			15384, 14814, 14285, 13793,
+	/* 30 */ 13333, 12903, 12500, 12121, 11764, 11428,
+			11111, 10400, 10400, 10400,
+	/* 40 */ 10400, 9600, 9600, 9600, 9600, 8888, 8695, 8510, 8333, 8163,
+	/* 50 */ 8000, 7843, 7692, 7547, 7407, 7272, 7142, 7017, 6896, 6779,
+	/* 60 */ 6666, 6557, 6451, 6349, 0, 6153, 6060, 5970, 5882, 5797,
+	/* 70 */ 5714, 5633, 5555, 5479, 5405, 5333, 5263, 5194, 5128, 5063,
+	/* 80 */ 5000, 4800, 4800, 4800, 4800, 4800, 4800, 4597, 4545, 4494,
+	/* 90 */ 4444, 4395, 4347, 4301, 4255, 4210, 4166, 4123, 4081, 4040,
+	/* 100 */ 4000, 3960, 3921, 3883, 3846, 3809, 3600, 3600, 3600, 3600,
+	/* 110 */ 3600, 3600, 3600, 3600, 3600, 3478, 3448, 3418, 3389, 3361,
+	/* 120 */ 3333, 3305, 3278, 3252, 3225, 3200, 3174, 3149, 3125, 3100,
+	/* 130 */ 3076, 3053, 3030, 3007, 2985, 2962, 2941, 2919, 2898, 2877,
+	/* 140 */ 2857, 2836, 2816, 2797, 2777, 2758, 2739, 2721, 2702, 2684,
+	/* 150 */ 2666, 2649, 2631, 2614, 2597, 2580, 2564, 2547, 2531, 2515,
+	/* 160 */ 2500, 2400, 2400, 2400, 2400, 2400, 2400, 2400, 2400, 2400,
+	/* 170 */ 2400, 2400, 2400, 2400, 2298, 2285, 2272, 2259, 2247, 2234,
+	/* 180 */ 2222, 2209, 2197, 2185, 2173, 2162, 2150, 2139, 2127, 2116,
+	/* 190 */ 2105, 2094, 2083, 2072, 2061, 2051, 2040, 2030, 2020, 2010,
+	/* 200 */ 2000, 1990, 1980, 1970, 1960, 1951, 1941, 1932, 1923, 1913,
+	/* 210 */ 1904, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
+	/* 220 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
+	/* 230 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
+	/* 240 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
 	/* 250 */ 1600, 1593, 1587, 1581, 1574, 1568, } ;
 
 struct diag_l0_muleng_device
@@ -121,19 +121,19 @@ static int diag_l0_muleng_getmsg(struct diag_l0_device *dl0d, uint8_t *dp);
 /*
  * Init must be callable even if no physical interface is
  * present, it's just here for the code here to initialise its
- * variables etc 
+ * variables etc
  */
 static int
 diag_l0_muleng_init(void)
 {
 	if (diag_l0_muleng_initdone)
-		return (0);
+		return 0;
 	diag_l0_muleng_initdone = 1;
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
 
-	return (0);
+	return 0;
 }
 
 /* Put in the ME checksum at the correct place */
@@ -145,7 +145,7 @@ diag_l0_muleng_txcksum(uint8_t *data)
 	for (i=1, cksum = 0; i < 14; i++)
 		cksum += data[i];
 	data[14] = (uint8_t)cksum;
-	return (cksum);
+	return cksum;
 }
 
 /*
@@ -155,26 +155,25 @@ diag_l0_muleng_txcksum(uint8_t *data)
 static struct diag_l0_device *
 diag_l0_muleng_open(const char *subinterface, int iProtocol)
 {
+	int rv;
 	struct diag_l0_device *dl0d;
 	struct diag_l0_muleng_device *dev;
 	struct diag_serial_settings set;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
 			FL, subinterface, iProtocol);
 	}
 
 	diag_l0_muleng_init();
 
-	if (diag_calloc(&dev, 1))
-		return (0);
+	if (rv=diag_calloc(&dev, 1))
+		return (struct diag_l0_device *)diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 
-	if (diag_tty_open(&dl0d, subinterface, &diag_l0_muleng, (void *)dev) < 0)
-	{
-		return(0);
+	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_muleng, (void *)dev)) {
+		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 
 	/* And set to 19200 baud , 8N1 */
@@ -184,22 +183,20 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
 
-	if (diag_tty_setup(dl0d, &set) < 0)
-	{
+	if (rv=diag_tty_setup(dl0d, &set)) {
 		diag_tty_close(&dl0d);
-		return (0);
+		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 
 	/* And set DTR high and RTS low to power the device */
-	if (diag_tty_control(dl0d, 1, 0) < 0)
-	{
+	if (rv=diag_tty_control(dl0d, 1, 0)) {
 		diag_tty_close(&dl0d);
-		return(0);
+		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 
 	diag_tty_iflush(dl0d);	/* Flush unread input */
 
-	return (dl0d) ;
+	return dl0d ;
 }
 
 static int
@@ -207,7 +204,7 @@ diag_l0_muleng_close(struct diag_l0_device **pdl0d)
 {
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_muleng_device *dev = 
+		struct diag_l0_muleng_device *dev =
 			(struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);
 
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
@@ -220,11 +217,11 @@ diag_l0_muleng_close(struct diag_l0_device **pdl0d)
 		(void) diag_tty_close(pdl0d);
 	}
 
-	return (0);
+	return 0;
 }
 
-/* 
- * Safe write routine
+/*
+ * Safe write routine; return 0 on success
  */
 static int
 diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
@@ -246,14 +243,14 @@ diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 	while ((size_t)(xferd = diag_tty_write(dl0d, dp, txlen)) != txlen)
 	{
 		/* Partial write */
-		if (xferd <  0)
+		if (xferd < 0)
 		{
 			/* error */
 			if (errno != EINTR)
 			{
 				perror("write");
 				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
-				return(-1);
+				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 			xferd = 0; /* Interrupted read, nothing transferred. */
 		}
@@ -264,7 +261,7 @@ diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 		txlen -= xferd;
 		dp = (const void *)((const char *)dp + xferd);
 	}
-	return(0);
+	return 0;
 }
 
 
@@ -291,13 +288,11 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 	memset(txbuf, 0, sizeof(txbuf));
 	txbuf[0] = INTERFACE_ADDRESS;
 
-	switch (dev->protocol)
-	{
+	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:
 		txbuf[1] = 0x20;	/* Raw mode 5 baud init */
 		txbuf[2] = in->addr;
 		break;
-
 	case DIAG_L1_ISO14230:
 		txbuf[1] = 0x85;
 		txbuf[2] = 0x01;		/* One byte message */
@@ -310,16 +305,13 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 	 * Calculate the checksum, and send the request
 	 */
 	(void)diag_l0_muleng_txcksum(txbuf);
-	rv = diag_l0_muleng_write(dl0d, txbuf, 15);
-
-	if (rv < 0)
-		return(rv);
+	if (rv = diag_l0_muleng_write(dl0d, txbuf, 15))
+		return diag_iseterr(rv);
 
 	/*
 	 * Get answer
 	 */
-	switch (dev->protocol)
-	{
+	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:
 		/*
 		 * This is raw mode, we should get a single byte back
@@ -329,15 +321,14 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		 */
 		rv = diag_tty_read(dl0d, rxbuf, 1, 2350);
 		if (rv < 1)
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 
-		if (rxbuf[0] == 0x40)
-		{
+		if (rxbuf[0] == 0x40) {
 			/* Problem ..., got an error message */
 
 			diag_tty_iflush(dl0d); /* Empty the receive buffer */
 
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		baud = me_baud_table[rxbuf[0]];
 
@@ -359,17 +350,15 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		dev->dev_state = MULENG_STATE_RAW;
 
 		break;
-
 	case DIAG_L1_ISO14230:
-/* XX */
-		/*
+		/* XXX
 		 * Should get an ack back, rather than an error response
 		 */
 		if ((rv = diag_l0_muleng_getmsg(dl0d, rxbuf)) < 0)
-			return(rv);
+			return diag_iseterr(rv);
 
 		if (rxbuf[1] == 0x80)
-			return(-1);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 
 		/*
  		 * Now send the "get keybyte" request, and wait for
@@ -381,13 +370,13 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		(void)diag_l0_muleng_txcksum(txbuf);
 		rv = diag_l0_muleng_write(dl0d, txbuf, 15);
 		if (rv < 0)
-			return(rv);
+			return diag_iseterr(rv);
 
 		if ((rv = diag_l0_muleng_getmsg(dl0d, rxbuf)) < 0)
-			return(rv);
+			return diag_iseterr(rv);
 
 		if (rxbuf[1] == 0x80)	/* Error */
-			return(-1);
+			return diag_iseterr(rv);
 		/*
 		 * Store the keybytes
 		 */
@@ -401,12 +390,12 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 	}
 
 
-	return (rv);
+	return rv;
 }
 
 /*
- * Do wakeup on the bus 
- * 
+ * Do wakeup on the bus
+ *
  * We do this by noting a wakeup needs to be done for the next packet for
  * fastinit, and doing slowinit now
  */
@@ -424,7 +413,7 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 			dev ? dev->protocol : -1);
 
 	if (!dev)
-		return(-1);
+		return -1;
 
 	diag_tty_iflush(dl0d); /* Empty the receive buffer, wait for idle bus */
 	diag_os_millisleep(300);
@@ -438,7 +427,7 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 		dev->dev_state = MULENG_STATE_FASTSTART;
 	}
 
-	return(rv);
+	return rv;
 }
 
 /*
@@ -487,10 +476,10 @@ diag_l0_muleng_getmsg(struct diag_l0_device *dl0d, uint8_t *dp)
 	{
 		xferd = diag_tty_read(dl0d, &dp[offset], 14 - offset, 200);
 		if (xferd < 0)
-			return(xferd);
+			return xferd;
 		offset += xferd;
 	}
-	return(offset);
+	return offset;
 }
 
 
@@ -536,7 +525,7 @@ const void *data, size_t len)
 	{
 		/* Raw mode, no pretty processing */
 		rv = diag_l0_muleng_write(dl0d, data, len);
-		return (rv);
+		return rv;
 	}
 	
 	/*
@@ -587,7 +576,7 @@ const void *data, size_t len)
 	(void)diag_l0_muleng_txcksum(txbuf);
 	rv = diag_l0_muleng_write(dl0d, txbuf, 15);
 
-	return(rv);
+	return rv;
 }
 
 /*
@@ -637,26 +626,26 @@ void *data, size_t len, int timeout)
 		{
 			pdata[0] = dev->dev_kb1;
 			pdata[1] = dev->dev_kb2;
-			dev->dev_state =  MULENG_STATE_OPEN;
-			return (2);
+			dev->dev_state = MULENG_STATE_OPEN;
+			return 2;
 		}
 		else if (len == 1)
 		{
 			*pdata = dev->dev_kb1;
 			dev->dev_state = MULENG_STATE_KWP_SENDKB2;
-			return (1);
+			return 1;
 		}
-		return(0);	/* Strange, user asked for 0 bytes */
+		return 0;	/* Strange, user asked for 0 bytes */
 		
 
 	case MULENG_STATE_KWP_SENDKB2:
 		if (len >= 1)
 		{
 			*pdata = dev->dev_kb2;
-			dev->dev_state =  MULENG_STATE_OPEN;
-			return (1);
+			dev->dev_state = MULENG_STATE_OPEN;
+			return 1;
 		}
-		return(0);	/* Strange, user asked for 0 bytes */
+		return 0;	/* Strange, user asked for 0 bytes */
 
 
 	case MULENG_STATE_RAW:
@@ -664,7 +653,7 @@ void *data, size_t len, int timeout)
 		if (diag_l0_debug & DIAG_DEBUG_READ)
 			fprintf(stderr, FLFMT "link %p read %ld bytes\n", FL,
 				dl0d, (long)xferd);
-		return (xferd);
+		return xferd;
 
 	case MULENG_STATE_FASTSTART:
 		/* Extend timeout for 1st recv */
@@ -692,13 +681,13 @@ void *data, size_t len, int timeout)
 		{
 			memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], bufbytes);
 			dev->dev_rxlen = dev->dev_rdoffset = 0;
-			return(bufbytes);
+			return bufbytes;
 		}
 		else
 		{
 			memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], len);
 			dev->dev_rdoffset += len;
-			return(len);
+			return len;
 		}
 	}
 
@@ -713,18 +702,18 @@ void *data, size_t len, int timeout)
 			(size_t)(14 - dev->dev_rxlen), timeout)) <= 0)
 		{
 			if (xferd == DIAG_ERR_TIMEOUT)
-				return (diag_iseterr(DIAG_ERR_TIMEOUT));
+				return diag_iseterr(DIAG_ERR_TIMEOUT);
 			if (xferd == 0)
 			{
 				/* Error, EOF */
 				fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-				return(-1);
+				return -1;
 			}
 			if (errno != EINTR)
 			{
 				/* Error, EOF */
 				fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-				return(-1);
+				return -1;
 			}
 		}
 		dev->dev_rxlen += xferd;
@@ -737,7 +726,7 @@ void *data, size_t len, int timeout)
 			FLFMT "link %p received from ME: ", FL, dl0d);
 		for (i=0; i < dev->dev_rxlen; i++)
 				fprintf(stderr, "0x%x ",
-					dev->dev_rxbuf[i] & 0xff); 
+					dev->dev_rxbuf[i] & 0xff);
 		fprintf(stderr, "\n");
 	}
 	/*
@@ -754,7 +743,7 @@ void *data, size_t len, int timeout)
 		fprintf(stderr,"RX Data: ");
 		for (i=0; i < dev->dev_rxlen; i++)
 				fprintf(stderr, "0x%x ",
-					dev->dev_rxbuf[i] & 0xff); 
+					dev->dev_rxbuf[i] & 0xff);
 		fprintf(stderr, "\n");
 	}
 
@@ -779,10 +768,10 @@ void *data, size_t len, int timeout)
 		case 0x05:	/* No ISO response to request */
 		case 0x07:	/* No J1850 response to request */
 		case 0x0c:	/* No KWP response to request */
-			return(diag_iseterr(DIAG_ERR_TIMEOUT));
+			return diag_iseterr(DIAG_ERR_TIMEOUT);
 
 		default:
-			return(-1);
+			return -1;
 		}
 		/* NOTREACHED */
 	}
@@ -801,7 +790,7 @@ void *data, size_t len, int timeout)
 		dev->dev_rxlen = 0;
 		dev->dev_rdoffset = 0;
 	}
-	return(xferd);
+	return xferd;
 }
 
 static int
@@ -842,7 +831,7 @@ diag_l0_muleng_getflags(struct diag_l0_device *dl0d)
 			FLFMT "getflags link %p proto %d flags 0x%x\n",
 			FL, dl0d, dev->protocol, flags);
 
-	return( flags );
+	return flags ;
 }
 
 const struct diag_l0 diag_l0_muleng = {
