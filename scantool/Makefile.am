@@ -32,7 +32,7 @@ libdiag_a_SOURCES=diag_config.c \
 	diag.h diag_os.h diag_dtc.h diag_err.h diag_l1.h diag_l2.h \
 	diag_iso14230.h diag_tty.h diag_l2_can.h diag_l2_iso14230.h \
 	diag_l2_raw.h diag_l2_mb1.h diag_l2_saej1850.h diag_vag.h diag_l2_vag.h \
-	diag_l3_j1979.h diag_mb1.h
+	diag_l3_saej1979.h diag_mb1.h
 nodist_libdiag_a_SOURCES=diag_config.c
 
 #do not distribute diag_config.c as it will be built (see below)

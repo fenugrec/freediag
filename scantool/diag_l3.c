@@ -40,7 +40,7 @@
 #include "diag_l2.h"
 
 #include "diag_l3.h"
-#include "diag_l3_j1979.h"
+#include "diag_l3_saej1979.h"
 #include "diag_l3_vag.h"
 #include "diag_l3_iso14230.h"
 
