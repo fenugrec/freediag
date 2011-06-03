@@ -1604,7 +1604,7 @@ int
 ecu_connect(void)
 {
 	int connected=0;
-	int rv = -1;
+	int rv = DIAG_ERR_GENERAL;
 	const struct protocol *p;
 
 	fprintf(stderr, "\n");
@@ -1647,7 +1647,7 @@ ecu_connect(void)
 		fprintf(stderr, "debug: L2 connection ID %p, L3 ID %p\n",
 			global_l2_conn, global_l3_conn);
 
-	return diag_iseterr(rv);
+	return rv;
 }
 
 /*

@@ -11,7 +11,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -37,9 +37,10 @@ CVSID("$Id$");
 
 /*
  * Return the expected J1979 packet length for a given mode byte
- * This includes the 3 header bytes, up to 8 data bytes, 1 ERR byte
+ * This includes the 3 header bytes, up to 7 data bytes, 1 ERR byte
  *
  * XXX DOESN'T COPE WITH in-frame-response - will break check routine as well
+ * Also doesn't support 15765 (CAN) which has more modes.
  *
  * Get this wrong and all will fail, it's used to frame the incoming messages
  * properly
@@ -51,73 +52,91 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 	uint8_t mode;
 
 	if (len < 5)	/* Need 3 header bytes and 1 data byte, and 1 cksum*/
-		return( diag_iseterr(DIAG_ERR_INCDATA));
+		return diag_iseterr(DIAG_ERR_INCDATA);
 
-	mode  = data[3];
+	mode = data[3];
+
+	//J1979 specifies 9 modes (0x01 - 0x09) except with iso15765 (CAN) which has 0x0A modes.
 
 	if (mode > 0x49)
-		return(diag_iseterr(DIAG_ERR_BADDATA));
-
-	if (mode <= 9)
-		return(rqst_lengths[mode]);
+		return diag_iseterr(DIAG_ERR_BADDATA);
 
 	/* Mode 8 messages vary in length dependent on request */
-	if ((mode == 8) && ((data[4]&0x1f) == 0))
-		len = 6;
+	//XXX what ? J1979 section 6.8.1 : "Service $08 ... fixed message length"
+	// There is a filler byte inserted when using TID 00 to request supported TIDs. But length is still 7+4
+	//if ((mode == 8) && ((data[4]&0x1f) == 0))
+	//	len = 6;
 
-	if (mode < 0x41)
-		return(diag_iseterr(DIAG_ERR_BADDATA));
+	if (mode < 0x41) {
+		if (mode <= 9)
+			return rqst_lengths[mode];
+		return diag_iseterr(DIAG_ERR_BADDATA);
+	}
 
 	rv = DIAG_ERR_BADDATA;
 
-	switch (mode)
-	{
+	//Here, all modes < 0x0A are taken care of.
+	//Modes > 0x40 are responses and therefore need specific treatment
+	//data[4] contains the PID / TID number.
+	switch (mode) {
 	case 0x41:
-		if (len < 5)
-		{
+	case 0x42:		//almost identical modes except PIDS 1,2
+		//len<5 already covered at top of function
+		//if (len < 5) {
 			/* Need 1st 2 bytes of data to find length */
-			rv = DIAG_ERR_INCDATA;
-			break;
-		}
-		if ((data[4] & 0x1f) == 0)
-		{	
-			/* supported PID message */
+		//	rv = DIAG_ERR_INCDATA;
+		//	break;
+		// }
+		if ((data[4] & 0x1f) == 0) {	
+			/* PID 00 or 0x20 : return supported PIDs */
 			rv = 10;
 			break;
 		}
-		if (data[4] > 0x20)
-		{
-			/* Sometime add J2190 support */
-			rv = DIAG_ERR_BADDATA;
+
+		switch (data[4]) {
+		case 1:	//Status. Only with service 01 (mode 0x41)
+			rv=10;
+			if (mode==0x42)
+				rv=DIAG_ERR_BADDATA;
 			break;
-		}
-		switch (data[4])
-		{
-		case 1:
-			rv = 10;
-			break;
-		case 2:
-			rv = DIAG_ERR_BADDATA;
+		case 2:	//request freeze DTC. Only with Service 02 (mode=0x42)
+			rv=8;
+			if (mode==0x41)
+				rv = DIAG_ERR_BADDATA;
 			break;
 		case 3:
 			rv = 8;
 			break;
-
 		case 0x04:
 		case 0x05:
+			rv=7;
+			break;
 		case 0x06:
 		case 0x07:
 		case 0x08:
 		case 0x09:
+			//XXX For PIDs 0x06 thru 0x09, there may be an additional data byte based on PID 0x13 / 0x1D results
+			//XXX (presence of a bank3 O2 sensor. Not implemented... it's complicated enough like this
+			rv=7;
+			break;
 		case 0x0A:
 		case 0x0B:
+			rv=7;
+			break;
 		case 0x0C:
+			rv=8;	
+			break;
 		case 0x0D:
 		case 0x0E:
 		case 0x0F:
+			rv=7;
+			break;
 		case 0x10:
+			rv=8;
+			break;
 		case 0x11:
 		case 0x12:
+		case 0x13:
 			rv = 7;
 			break;
 		case 0x14:
@@ -130,109 +149,51 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		case 0x1B:
 			rv = 8;
 			break;
-
-		case 0x13:
 		case 0x1C:
 		case 0x1D:
 		case 0x1E:
 			rv = 7;
 			break;
 		case 0x1F:
-			rv = 5;
-			break;
-		}
-		break;
-	case 0x42:
-		if (len < 5)
-		{
-			rv = DIAG_ERR_INCDATA;
-			break;
-		}
-		if ((data[4] & 0x1f) == 0)
-		{
-			rv = 11;
-			break;
-		}
-		if (data[4] > 0x20)
-		{
-			/* Sometime add J2190 support (0x21->0x3F) */
-			rv = DIAG_ERR_BADDATA;
-			break;
-		}
-		switch (data[4])
-		{
-		case 2:
-		case 3:
 			rv = 8;
 			break;
-
-		case 0x04:
-		case 0x05:
-		case 0x06:
-		case 0x07:
-		case 0x08:
-		case 0x09:
-		case 0x0A:
-		case 0x0B:
-		case 0x0C:
-		case 0x0D:
-			rv = 5;
-			break;
-
 		default:
+			/* Sometime add J2190 support (PID>0x1F) */
 			rv = DIAG_ERR_BADDATA;
 			break;
 		}
 		break;
-	case 0x45:
-		if (len < 5)
-		{
-			rv = DIAG_ERR_INCDATA;
-			break;
-		}
-		if ((data[4] & 0x1f) == 0)
-			rv = 11;
-		else
-			rv = 10;
+	case 0x43:
+		rv=11;
 		break;
 	case 0x44:
 		rv = 5;
 		break;
-	case 0x43:
+	case 0x45:
+		//if len>=5
+		if ((data[4] & 0x1f) == 0)
+			rv = 11;		// Read supported TIDs
+		else
+			rv = 10;		//Request TID result
+		break;
 	case 0x46:
 	case 0x47:
 	case 0x48:
 		rv = 11;
 		break;
 	case 0x49:
-		if (len < 5)
-		{
-			rv = DIAG_ERR_INCDATA;
+		//if (len < 5)
+		if ((data[4] & 0x01) ==0) {
+			rv=11;	//7+4 bytes if even
+			break;
+		} else {
+			rv=7;		//else just 3+4
 			break;
 		}
-		switch (data[4])
-		{
-		case 1:
-		case 3:
-		case 5:
-			rv = 7;
-			break;
-		case 0:
-		case 2:
-		case 4:
-		case 6:
-			rv = 11;
-			break;
-		default:
-			rv = DIAG_ERR_BADDATA;
-			break;
-		}
-		break;
 	default:
-		rv = DIAG_ERR_BADDATA;
 		break;
 	}
-	return(rv);
+	return rv;
 }
 
 
@@ -254,7 +215,7 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 
 	if (diag_l3_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,FLFMT "send %d bytes, l2 flags 0x%x\n",
-			FL, msg->len,  d_l3_conn->d_l3l2_flags);
+			FL, msg->len, d_l3_conn->d_l3l2_flags);
 
 	/* Note source address on 1st send */
 	if (d_l3_conn->src == 0)
@@ -313,7 +274,7 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 		/* And send message */
 		rv = diag_l2_send(d_conn, &newmsg);
 	}
-	return(rv);
+	return rv;
 }
 
 /*
@@ -349,9 +310,9 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
 			{
 				tmsg->fmt |= DIAG_FMT_ISO_FUNCADDR;
 				tmsg->fmt |= DIAG_FMT_DATAONLY;
-				tmsg->type =  tmsg->data[0];
+				tmsg->type = tmsg->data[0];
 				tmsg->dest = tmsg->data[1];
-				tmsg->src =  tmsg->data[2];
+				tmsg->src = tmsg->data[2];
 				/* Length sanity check */
 				if (tmsg->len >= 4)
 				{
@@ -464,9 +425,9 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			else
 			{
 				msg->fmt = DIAG_FMT_ISO_FUNCADDR;
-				msg->type =  d_l3_conn->rxbuf[0];
+				msg->type = d_l3_conn->rxbuf[0];
 				msg->dest = d_l3_conn->rxbuf[1];
-				msg->src =  d_l3_conn->rxbuf[2];
+				msg->src = d_l3_conn->rxbuf[2];
 /* XXX check checksum */
 				/* Copy in J1979 part of message */
 				memcpy(data, &d_l3_conn->rxbuf[3], (size_t)(sae_msglen - 4));
@@ -534,17 +495,14 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 
 /* XXX stuff do do here */
 
-	if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_FRAMED)
-	{
+	if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_FRAMED) {
 		/*
 		 * L2 does framing stuff , which means we get one message
 		 * with nicely formed frames
 		 */
 		state = ST_STATE4;
 		tout = timeout;
-	}
-	else
-	{
+	} else {
 		state = ST_STATE1;
 		tout = 0;
 	}
@@ -560,17 +518,24 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 	 * of p4max ms until no more data is left (or timeout), then call
 	 * the callback routine (if there is a message complete)
 	 */
-	while (1)
-	{
+	while (1) {
 		/* State machine for setting timeout values */
-		if (state == ST_STATE1)
+		switch (state) {
+		case ST_STATE1:
 			tout = 0;
-		else if (state == ST_STATE2)
+			break;
+		case	ST_STATE2:
 			tout = timeout;
-		else if (state == ST_STATE3)
+			break;
+		case ST_STATE3:
 			tout = 5; /* XXX should be p4max */
-		else if (state == ST_STATE4)
+			break;
+		case ST_STATE4:
 			tout = timeout;
+			break;
+		default:
+			break;
+		}
 
 		if (diag_l3_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr,FLFMT "recv state %d tout %d\n",
@@ -591,15 +556,12 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 		if ((rv < 0) && (rv != DIAG_ERR_TIMEOUT))
 			break;		/* Some nasty failure */
 
-		if (rv == DIAG_ERR_TIMEOUT)
-		{
-			if ( (state == ST_STATE3) || (state == ST_STATE4) )
-			{
+		if (rv == DIAG_ERR_TIMEOUT) {
+			if ( (state == ST_STATE3) || (state == ST_STATE4) ) {
 				/* Finished */
 				break;
 			}
-			if ( (state == ST_STATE1) && (d_l3_conn->msg == NULL) )
-			{
+			if ( (state == ST_STATE1) && (d_l3_conn->msg == NULL) ) {
 				/*
 				 * Try again, with real timeout
 				 * (and thus sleep)
@@ -610,8 +572,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 			}
 		}
 
-		if (state != ST_STATE4)
-		{
+		if (state != ST_STATE4) {
 			/* Process the data into messages */
 			diag_l3_j1979_process_data(d_l3_conn);
 
@@ -625,12 +586,10 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 			 * the user call back routine with it, and free it
 			 */
 			msg = d_l3_conn->msg;
-			if (msg)
-			{
+			if (msg) {
 				d_l3_conn->msg = msg->next;
 
-				if ( (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_DATA_ONLY) == 0)
-				{
+				if ( (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_DATA_ONLY) == 0) {
 					/* Strip hdr/checksum */
 					msg->data += 3;
 					msg->len -= 4;
@@ -645,24 +604,21 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 			}
 		}
 		/* We do not have a complete message (yet) */
-		if (state == ST_STATE2)
-		{
+		if (state == ST_STATE2) {
 			/* Part message, see if we get some more */
 			state = ST_STATE3;
 		}
-		if (state == ST_STATE1)
-		{
+		if (state == ST_STATE1) {
 			/* Ok, try again with proper timeout */
 			state = ST_STATE2;
 		}
-		if ((state == ST_STATE3) || (state == ST_STATE4))
-		{
+		if ((state == ST_STATE3) || (state == ST_STATE4)) {
 			/* Finished, we only do read once in this state */
 			break;
 		}
 	}
 
-	return(rv);
+	return rv;
 }
 
 /*
@@ -797,7 +753,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 			smartcat(buf, bufsize, buf2);
 		}
 	}
-	return(buf);
+	return buf;
 }
 
 
