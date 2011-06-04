@@ -52,12 +52,23 @@ int set_display;		/* English (1), or Metric (0) */
 const char *	set_vehicle;	/* Vehicle */
 const char *	set_ecu;	/* ECU name */
 
-const char  *	set_interface;	/* H/w interface to use */
+//const char  *	set_interface;	/* H/w interface to use */
+#define DEFAULT_INTERFACE 5	//XXX index into l0_names
+const struct l0_name l0_names[] = { {"MET16", MET16}, {"SE9141", SE9141}, {"VAGTOOL", VAGTOOL},
+			{"BR1", BR1}, {"ELM", ELM}, {"CARSIM", CARSIM}, {"DUMB", DUMB}, NULL};
+
+enum l0_nameindex set_interface;	//hw interface to use
 
 char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
 
 char *set_simfile;	//source for simulation data
 extern int diag_l0_sim_setfile(char * fname);
+
+//~ const char * const l0_names[] =
+//~ {
+	//~ "MET16", "SE9141", "VAGTOOL", "BR1", "ELM", "CARSIM", "DUMB", NULL
+//~ };
+
 
 /*
  * XXX All commands should probably have optional "init" hooks.
@@ -79,9 +90,11 @@ int set_init(void)
 	set_vehicle = "ODBII";	/* Vehicle */
 	set_ecu = "ODBII";	/* ECU name */
 
-	set_interface = "CARSIM";	/* Default H/w interface to use */
+	set_interface_idx= DEFAULT_INTERFACE;
+	set_interface = l0_names[DEFAULT_INTERFACE].code;	/* Default H/w interface to use */
+
 	strncpy(set_subinterface,"/dev/null",sizeof(set_subinterface));
-	printf( "%s: Interface set to default: %s on %s\n", progname, set_interface, set_subinterface);
+	printf( "%s: Interface set to default: %s on %s\n", progname, l0_names[set_interface_idx].longname, set_subinterface);
 					/*Default device. User needs to set correct intf*/
 	if (diag_calloc(&set_simfile, strlen(DB_FILE)+1))
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -174,11 +187,6 @@ const struct cmd_tbl_entry set_cmd_table[] =
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
 
-const char * const l0_names[] =
-{
-	"MET16", "SE9141", "VAGTOOL", "BR1", "ELM", "CARSIM", NULL
-};
-
 const char * const l1_names[] =
 {
 	"ISO9141", "ISO14230",
@@ -214,8 +222,9 @@ char **argv __attribute__((unused)))
 			break;
 	}
 
-	printf("interface: %s id %s\n", set_interface, set_subinterface);
-	printf("simfile: %s\n", set_simfile);
+	printf("interface: %s on %s\n", l0_names[set_interface_idx].longname, set_subinterface);
+	if (set_interface==CARSIM)
+		printf("simfile: %s\n", set_simfile);
 	printf("speed:    Connect speed: %d\n", set_speed);
 	printf("display:  %s units\n", set_display?"english":"metric");
 	printf("testerid: Source ID to use: 0x%x\n", set_testerid);
@@ -236,52 +245,48 @@ char **argv __attribute__((unused)))
 
 static int cmd_set_interface(int argc, char **argv)
 {
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		int i, prflag = 0, found = 0;
-		if (strcmp(argv[1], "?") == 0)
-		{
+		if (strcmp(argv[1], "?") == 0) {
 			prflag = 1;
 			printf("hardware interface: use \"set interface NAME [id]\" .\n"
 			"[id] is either an integer to be appended as /dev/obdII[id] or\n"
 			"a complete device name such as \"/dev/ttyS0\".\n"
 			"Valid interface names are: \n");
 		}
-		for (i=0; l0_names[i] != NULL; i++)
-		{
+		for (i=0; l0_names[i].longname != NULL; i++) {
 			if (prflag)
 				printf("%s ", l0_names[i]);
 			else
-				if (strcasecmp(argv[1], l0_names[i]) == 0)
-				{
+				if (strcasecmp(argv[1], l0_names[i].longname) == 0) {
+					set_interface = l0_names[i].code;
+					set_interface_idx=i;
 					found = 1;
-					set_interface = l0_names[i];
 				}
 		}
-		if (prflag)		//"?" was entered
+		if (prflag) {
+			//"?" was entered
 			printf("\n");
-		else if (! found)
-		{
+		} else if (!found) {
 			printf("interface: invalid interface %s\n", argv[1]);
 			printf("interface: use \"set interface ?\" to see list of names\n");
-		}
-		else
-		{
+		} else {
 			if (argc > 2)
 				strncpy(set_subinterface, argv[2], sizeof(set_subinterface));
 			printf("interface is now %s on %s\n",
-					set_interface, set_subinterface);
+					l0_names[set_interface_idx].longname, set_subinterface);
 
 		}
-	}
-	else
-	{
+	} else {
 		printf("interface: using %s on %s\n",
-			set_interface, set_subinterface);
+			l0_names[set_interface_idx].longname, set_subinterface);
 	}
 	return (CMD_OK);
 }
 
+
+//Update simfile name to be used.
+//Current behaviour : updates the simfile even if the interface isn't set to CARSIM.
 static int cmd_set_simfile(int argc, char **argv)
 {
 	if (argc > 1) {
@@ -291,20 +296,25 @@ static int cmd_set_simfile(int argc, char **argv)
 			"Defaults to " DB_FILE "\n");
 			return CMD_OK;
 		}
+
 		if (set_simfile)
 			free(set_simfile);		//free old simfile
 		if (diag_calloc(&set_simfile, strlen(argv[1])+1))
 			return CMD_FAILED;
-		
 		strcpy(set_simfile, argv[1]);
+		
+		if (diag_l0_sim_setfile(set_simfile)) {
+			return CMD_FAILED;
+		} else {
+			printf("Simulation file: now using %s\n", set_simfile);
+		}
+		if (set_interface!=CARSIM) {
+			printf("Note: simfile only needed with CARSIM interface.\n");
+		}
 	} else {
+		//no arguments
 		printf("Simulation file: using %s\n", set_simfile);
 	}
-	if (!strcmp(set_interface, "CARSIM")) {
-		if (diag_l0_sim_setfile(set_simfile))
-			return CMD_FAILED;
-	}
-	printf("Now using %s .\n",set_simfile);
 	return CMD_OK;
 }
 

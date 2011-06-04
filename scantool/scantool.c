@@ -720,7 +720,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 		return NULL;
 	}
 
-	dl0d = diag_l2_open(set_interface, set_subinterface, L1protocol);
+	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, L1protocol);
 	if (dl0d == 0) {
 		rv = diag_geterr();
 		if ((rv != DIAG_ERR_BADIFADAPTER) &&
@@ -901,13 +901,13 @@ do_l2_generic_start(void)
 	}
 
 	/* Open interface using hardware type ISO14230 */
-	dl0d = diag_l2_open(set_interface, set_subinterface, set_L1protocol);
+	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);
 	if (dl0d == 0) {
 		//indicating an error
 		rv = diag_geterr();
 		//if ((rv != DIAG_ERR_BADIFADAPTER) && (rv != DIAG_ERR_PROTO_NOTSUPP))
 		fprintf(stderr, "Failed to open hardware interface protocol %d with %s on %s\n",
-			set_L1protocol,set_interface,set_subinterface);
+			set_L1protocol,l0_names[set_interface_idx].longname,set_subinterface);
 		return diag_iseterr(rv);
 	}
 

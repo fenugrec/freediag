@@ -491,7 +491,7 @@ cmd_watch(int argc, char **argv)
 		fprintf(stderr, "diag_init failed\n");
 		return -1;
 	}
-	dl0d = diag_l2_open(set_interface, set_subinterface, set_L1protocol);
+	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);
 	if (dl0d == 0)
 	{
 		rv = diag_geterr();

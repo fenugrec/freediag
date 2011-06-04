@@ -115,6 +115,14 @@ extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
 #define	PROTOCOL_ISO14230	2
 #define	PROTOCOL_SAEJ1850	3
 
+//XXX The following defs should probably go in an auto-generated l0_list.h file
+enum l0_nameindex {MET16, SE9141, VAGTOOL, BR1, ELM, CARSIM, DUMB};
+struct l0_name
+{
+	char * longname;
+	enum l0_nameindex code;
+};
+
 struct diag_l2_conn;
 struct diag_l3_conn;
 
@@ -188,7 +196,9 @@ extern int 	set_display ;	/* English (1) or Metric (0) display */
 extern const char*	set_vehicle;	/* Vehicle name */
 extern const char*	set_ecu;	/* ECU name */
 
-extern const char*	set_interface;	/* Physical interface name to use */
+extern enum l0_nameindex set_interface;	/* Physical interface name to use */
+int set_interface_idx;	//index into l0_names
+extern const struct l0_name l0_names[];
 
 #define SUBINTERFACE_MAX 256
 extern char	set_subinterface[SUBINTERFACE_MAX];	/* Sub interface ID */

@@ -204,7 +204,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 		return CMD_OK;
 	}
 	/* Open interface using hardware type ISO9141 */
-	dl0d = diag_l2_open(set_interface, set_subinterface,
+	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface,
 		DIAG_L1_ISO9141);
 	if (dl0d == 0)
 	{
