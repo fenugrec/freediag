@@ -771,7 +771,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		offset = 3;
 	} else {
 //#if NOWARNINGS==0
-//	/* silly hack to get around compiler warning */
+//	/* silly hack to get around compiler warning */ XXX what ?
 //	/* msg->len is an unsigned byte, this is a NOP */
 //#endif
 		len = msg->len;

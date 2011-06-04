@@ -166,7 +166,7 @@ diag_l2_rmlink(struct diag_l2_link *d)
  *
  * remove a L2 connection from our list
  * - up to the caller to have shut it down properly first
- * XXX Currently not used.
+ * diag_l2_rmconn XXX Currently not used.
  */
 #ifdef WIN32
 static int

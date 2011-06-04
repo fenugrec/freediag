@@ -32,6 +32,7 @@ extern "C" {
 #endif
 
 //Note : update diag_general.c when modifying error codes
+//Values should be <0, as many functions return a positive int on success
 #define DIAG_ERR_GENERAL	-1	/* Unspecified  Error*/
 #define DIAG_ERR_BADFD	-2	/* Invalid FileDescriptor passed to routine */
 #define DIAG_ERR_NOMEM	-3	/* Malloc/Calloc/Strdup/etc failed - ran out of memory  */

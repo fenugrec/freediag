@@ -61,8 +61,9 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 	if (mode > 0x49)
 		return diag_iseterr(DIAG_ERR_BADDATA);
 
-	/* Mode 8 messages vary in length dependent on request */
-	//XXX what ? J1979 section 6.8.1 : "Service $08 ... fixed message length"
+	/* Mode 8 responses vary in length dependent on request */
+	//J1979 section 6.8+ 
+	//the requests, however, are fixed length
 	// There is a filler byte inserted when using TID 00 to request supported TIDs. But length is still 7+4
 	//if ((mode == 8) && ((data[4]&0x1f) == 0))
 	//	len = 6;
@@ -116,7 +117,7 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		case 0x08:
 		case 0x09:
 			//XXX For PIDs 0x06 thru 0x09, there may be an additional data byte based on PID 0x13 / 0x1D results
-			//XXX (presence of a bank3 O2 sensor. Not implemented... it's complicated enough like this
+			// (presence of a bank3 O2 sensor. Not implemented...
 			rv=7;
 			break;
 		case 0x0A:
@@ -174,12 +175,12 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		if ((data[4] & 0x1f) == 0)
 			rv = 11;		// Read supported TIDs
 		else if (data[4]<4)
-			rv=8;			//J1979 sec 6.5.2.4 : conditional TIDs. XXX not sure bout the implications
+			rv=8;			//J1979 sec 6.5.2.4 : conditional TIDs.
 		else
 			rv = 10;		//Request TID result
 		break;
 	case 0x46:
-		//XXX J1979 sec6.6 : response length depends on one of the data bytes. Screwed.
+		//J1979 sec6.6 : response length should depend on one of the data bytes. Screwed.
 	case 0x47:
 	case 0x48:
 		rv = 11;
@@ -462,8 +463,6 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 #define ST_STATE2 2
 #define ST_STATE3 3
 #define ST_STATE4 4
-
-/* XXX stuff do do here */
 
 	if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_FRAMED) {
 		/*
@@ -778,8 +777,7 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
 
 	/* OK, do keep alive on this connection */
 
-	if (diag_l3_debug & DIAG_DEBUG_TIMER)
-	{
+	if (diag_l3_debug & DIAG_DEBUG_TIMER) {
 		/* XXX Not async-signal-safe */
 		fprintf(stderr, FLFMT "timeout impending for %p %d ms\n",
 				FL, d_l3_conn, ms);

@@ -487,7 +487,6 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
 		free(dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
-	printf("XXX debug dl0d->name = %s\n",dl0d->name);
 	// Open the DB file:
 	if ((dev->fp = fopen(dl0d->name, "r")) == NULL) {
 		fprintf(stderr, FLFMT "Unable to open file \"%s\"\n", FL, dl0d->name);

@@ -223,7 +223,9 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 				uint8_t c;
 
 				c = *dp - 1; /* set it with wrong val */
-				(void)diag_l1_saferead(dl0d, &c, 1, 1000);
+				if (diag_l1_saferead(dl0d, &c, 1, 1000) < 0)
+					rv=DIAG_ERR_GENERAL;
+					break;
 
 				if (c != *dp)
 				{
@@ -277,20 +279,15 @@ int diag_l1_gettype(struct diag_l0_device *dl0d)
 	return diag_l0_device_dl0(dl0d)->diag_l0_type;
 }
 
-/*
- * XXX What's the difference between this and regular read?  Maybe it
- * used to be here, but seems to be gone.
- */
 static int
 diag_l1_saferead(struct diag_l0_device *dl0d, char *buf, size_t bufsiz, int timeout)
 {
 	int xferd;
 
 	/* And read back the single byte echo, which shows TX completes */
-	while ( (xferd = diag_tty_read(dl0d, buf, bufsiz, timeout)) < 0)
-	{
+	while ( (xferd = diag_tty_read(dl0d, buf, bufsiz, timeout)) < 0) {
 		if (errno != EINTR)
-			return -1;
+			return diag_iseterr(DIAG_ERR_BUSERROR);
 		xferd = 0; /* Interrupted read, nothing transferred. */
 	}
 

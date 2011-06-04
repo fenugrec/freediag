@@ -169,10 +169,10 @@ int dyno_get_speed_from_rpm(int rpm)
  *****************************************************************************/
 
 /*
- * XXX How can "dyno_loss_needs_calculation" default to false?
+ * How can "dyno_loss_needs_calculation" default to false?
  * How come when we reset it it still doesn't need calculation?
  */
-int dyno_loss_needs_calculation;
+int dyno_loss_needs_calculation=0;
 
 /* Add loss measure */
 int dyno_loss_add_measure(int millis, int speed)

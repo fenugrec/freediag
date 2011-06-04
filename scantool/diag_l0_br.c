@@ -51,11 +51,18 @@ CVSID("$Id$");
 
 extern const struct diag_l0 diag_l0_br;
 
+/*
+ * States
+ */
+enum BR_STATE {BR_STATE_CLOSED, BR_STATE_KWP_SENDKB1,
+	BR_STATE_KWP_SENDKB2, BR_STATE_KWP_FASTINIT,
+	BR_STATE_OPEN };
+
 struct diag_l0_br_device
 {
 	int protocol;
 	int dev_features;	/* Device features */
-	int dev_state;		/* State for 5 baud startup stuff */
+	enum BR_STATE dev_state;		/* State for 5 baud startup stuff */
 	uint8_t dev_kb1;	/* KB1/KB2 for 5 baud startup stuff */
 	uint8_t dev_kb2;
 
@@ -76,16 +83,6 @@ struct diag_l0_br_device
 #define BR_FEATURE_2BYTE	0x01	/* 2 byte initialisation responses */
 #define BR_FEATURE_SETADDR	0x02	/* User can specifiy ISO address */
 #define BR_FEATURE_FASTINIT	0x04	/* ISO14230 fast init supported */
-
-/*
- * States
- * XXX Should be an enum.
- */
-#define BR_STATE_CLOSED		0x00
-#define BR_STATE_KWP_SENDKB1	0x01
-#define BR_STATE_KWP_SENDKB2	0x02
-#define BR_STATE_KWP_FASTINIT	0x03	/* Fast init needed */
-#define BR_STATE_OPEN		0x20	/* Open and working */
 
 
 /* Global init flag */
@@ -372,7 +369,7 @@ diag_l0_br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
 	 * Slow init
 	 * Build message into send buffer, and calculate checksum
 	 */
-	uint8_t buf[16];	/* XXX Was MAXRBUF. We use at most 15! */
+	uint8_t buf[16];	//limited by diag_l0_br_writemsg
 	int rv;
 
 	buf[0] = 0x02;
@@ -577,6 +574,7 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, int timeout)
  * of the control byte
  *
  * Returns 0 on success, <0 on error
+ * txlen must be <= 15
  */
 static int
 diag_l0_br_writemsg(struct diag_l0_device *dl0d, int type,
@@ -897,7 +895,7 @@ diag_l0_br_getflags(struct diag_l0_device *dl0d)
 			flags = DIAG_L1_SLOW;
 			flags |= DIAG_L1_DOESP4WAIT;
 			break;
- 	case DIAG_L1_ISO14230:
+	case DIAG_L1_ISO14230:
 			flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
 			flags |= DIAG_L1_DOESP4WAIT;
 			break;
@@ -912,7 +910,7 @@ diag_l0_br_getflags(struct diag_l0_device *dl0d)
 }
 
 const struct diag_l0 diag_l0_br = {
- 	"B. Roadman BR-1 interface",
+	"B. Roadman BR-1 interface",
 	"BR1",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
 		DIAG_L1_ISO9141 | DIAG_L1_ISO14230,

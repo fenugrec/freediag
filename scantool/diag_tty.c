@@ -844,7 +844,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	return 0;
 }
 #elif defined(__CYGWIN__)
-/* XXX I really should submit patches to implement TIO[SC]BRK */
+/* I really should submit patches to implement TIO[SC]BRK */
 
 #include <io.h>
 #include <w32api/windows.h>

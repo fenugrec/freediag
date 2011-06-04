@@ -114,7 +114,7 @@ extern "C" {
  * For interfaces with muxes (such as to talk to a MB 33 way diagnostic port)
  * the subinterface flag is used for read and write purposes
  *
- * XXX - this makes "un-duplexing" a half duplex interface hard work...
+ * This makes "un-duplexing" a half duplex interface hard work...
  *  and not yet supported in this code
  */
 #define DIAG_L1_MAXINTF		16

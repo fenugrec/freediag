@@ -530,8 +530,8 @@ l2_check_pid_bits(uint8_t *data, int pid)
  * Send a SAE J1979 request, and get a response, and part process it
  */
 int
-l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, int p1, int p2,
-	int p3, int p4, int p5, int p6, int p7, void *handle)
+l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
+	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, uint8_t p7, void *handle)
 {
 	struct diag_msg	msg;
 	uint8_t data[256];

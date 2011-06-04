@@ -230,8 +230,8 @@ diag_os_millisleep(int ms) {
 /*
  * diag_os_ipending: Is input avilable at the given file descriptor?
  *
-+* XXX This is what is left of the read function that was used both
-+* for the TTY read and to check for input at a file descriptor.
+ * This is what is left of the read function that was used both
+ * for the TTY read and to check for input at a file descriptor.
  */
 int
 diag_os_ipending(int fd)

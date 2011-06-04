@@ -121,8 +121,8 @@ struct diag_l3_conn;
 /*
  * Do a J1979 request
  */
-int l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, int p1, int p2,
-	int p3, int p4, int p5, int p6, int p7, void *handle);
+int l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
+	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, uint8_t p7, void *handle);
 
 /*
  * Send some data on the connection
