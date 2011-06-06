@@ -59,6 +59,8 @@
 
 extern const struct diag_l0 diag_l0_sim;
 const char *simfile=NULL;	//pointer to remote filename.
+//this must be set externally either through "set simfile" from the scantool cli, or
+//by calling _set_simfile thru libdiag.
 const char *simfile_default=DB_FILE;	//default filename
 
 
@@ -108,7 +110,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		 const char *subinterface __attribute__((unused)),
 		 void *data, size_t len, int timeout);
 
-extern int
+extern void
 diag_l0_sim_setfile(char * fname);
 
 /**************************************************/
@@ -704,17 +706,13 @@ diag_l0_sim_getflags(struct diag_l0_device *dl0d __attribute__((unused)))
 	return ret;
 }
 
-extern int
+
+//called from outside to update local filename pointer.
+extern void
 diag_l0_sim_setfile(char * fname)
 {
-	//called from outside to update local filename pointer.
-	//~ if (simfile)
-		//~ free(simfile);
-	//~ if (diag_calloc(&simfile, strlen(fname)+1))
-		//~ return diag_iseterr(DIAG_ERR_GENERAL);
-	//~ strcpy(simfile, fname);
 	simfile=fname;
-	return 0;
+	return;
 }
 	
 

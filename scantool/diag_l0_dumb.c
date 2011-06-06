@@ -56,8 +56,8 @@ struct diag_l0_dumb_device
 static int diag_l0_dumb_initdone;
 
 // flags set according to particular interface type (VAGtool vs SE etc.)
-static int dumb_flags;
-#define DUMB_RTS_L	0x01		//interface has maps L line to RTS
+static int dumb_flags=0;
+#define DUMB_RTS_L	0x01		//interface maps L line to RTS
 
 extern const struct diag_l0 diag_l0_dumb;
 
@@ -90,8 +90,7 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 	struct diag_l0_device *dl0d;
 	struct diag_l0_dumb_device *dev;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
 			FL, subinterface, iProtocol);
 	}
@@ -102,8 +101,7 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_NOMEM);
 
 	dev->protocol = iProtocol;
-	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dumb, (void *)dev)))
-	{
+	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dumb, (void *)dev)) {
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 
@@ -143,7 +141,7 @@ diag_l0_dumb_close(struct diag_l0_device **pdl0d)
 }
 
 /*
- * Fastinit: XXX missing initbus_fastinit_args ?
+ * Fastinit: ISO14230-2 sec 5.2.4.2.3
  */
 static int
 diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
@@ -151,8 +149,11 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p fastinit\n",
 			FL, dl0d);
-
-	/* Send 25 ms break as initialisation pattern (TiniL) */
+	//Tidle before break : W5 (>300ms) on poweron; P3 (>55ms) after a StopCommunication; or 0ms after a P3 timeout.
+	//Using at least 300ms to be safe here.
+	diag_os_millisleep(350);
+	/* Send 25/25 ms break as initialisation pattern (TiniL) */
+	//ISO14230-2 says we should send the same sync pattern on both L and K together. XXX _tty_break should be modified
 	diag_tty_break(dl0d, 25);
 
 	/* Now let the caller send a startCommunications message */
@@ -161,11 +162,11 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 
 
 /* Do the 5 BAUD L line stuff while the K line is twiddling */
-// XXX dumb_Lline : not sure when this is needed (VAGtool only ?)
-#define USDELAY 120
+// Only called when DUMB_RTS_L is set in dumb_flags (VAGTOOL, Jeff Noxon, other K+L interfaces)
+// Exits after stop bit is finished.
+#define MSDELAY 180	//length of 5bps bits. Nominally 200ms, less a small margin.
 static void
-diag_l0_dumb_Lline(struct diag_l0_device *dl0d, struct diag_l0_dumb_device *dev,
-	uint8_t ecuaddr)
+diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 {
 	/*
 	 * The bus has been high for w0 ms already, now send the
@@ -197,7 +198,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, struct diag_l0_dumb_device *dev,
 			FL);
 		return;
 	}
-	diag_os_millisleep(USDELAY);		/* 200ms -5% */
+	diag_os_millisleep(MSDELAY);		/* 200ms -5% */
 
 	for (i=0; i<8; i++) {
 		if (ecuaddr & (1<<i)) {
@@ -213,7 +214,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, struct diag_l0_dumb_device *dev,
 				FL);
 			return;
 		}
-		diag_os_millisleep(USDELAY);		    /* 200ms -5% */
+		diag_os_millisleep(MSDELAY);		/* 200ms -5% */
 	}
 	/* And set high for the stop bit */
 	if (diag_tty_control(dl0d, 0, 1) < 0) {
@@ -221,7 +222,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, struct diag_l0_dumb_device *dev,
 			FL);
 		return;
 	}
-	diag_os_millisleep(USDELAY);		    /* 200ms -5% */
+	diag_os_millisleep(MSDELAY);		/* 200ms -5% */
 
 	/* Now put DTR/RTS back correctly so RX side is enabled */
 	if (diag_tty_control(dl0d, 1, 0) < 0) {
@@ -230,7 +231,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, struct diag_l0_dumb_device *dev,
 	}
 
 	/* And clear out the break */
-	(void) diag_tty_read(dl0d, &cbuf, 1, 20);
+	diag_tty_read(dl0d, &cbuf, 1, 20);
 
 	return;
 }
@@ -239,7 +240,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, struct diag_l0_dumb_device *dev,
  * Slowinit:
  *	We need to send a byte (the address) at 5 baud, then
  *	switch back to 10400 baud
- *	and then wait 25ms. We must have waited Tidle (300ms) first
+ *	and then wait W1 (60-300ms). We must have waited Tidle (300ms) before
  *
  * We can use the main chip to do this on the K line but on VAGtool interfaces
  * we also need to do this on the L line which is done by twiddling the RTS
@@ -249,13 +250,12 @@ static int
 diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 	struct diag_l0_dumb_device *dev)
 {
-	char cbuf[MAXRBUF];
+	char cbuf;
 	int xferd, rv;
 	int tout;
 	struct diag_serial_settings set;
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "slowinit link %p address 0x%x\n",
 			FL, dl0d, in->addr);
 	}
@@ -275,53 +275,59 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	/* Send the address as a single byte message */
 	diag_tty_write(dl0d, &in->addr, 1);
 
-#if notdef	//XXX SE vs VW
-	/* Do the L line stuff */
-	diag_l0_dumb_Lline(dl0d, in->addr);
-#endif
+	/* Do the L line stuff as required*/
+	if (dumb_flags & DUMB_RTS_L) {
+		diag_l0_dumb_Lline(dl0d, in->addr);
+		tout=400;	//Shorter timeout to get back echo, as dumb_Lline exits after 5bps stopbit.
+	} else {
+		// If there's no manual L line to do, timeout needs to be longer to receive echo
+		tout=2400;
+	}
 
 	/*
 	 * And read back the single byte echo, which shows TX completes
 	 * - At 5 baud, it takes 2 seconds to send a byte ..
+	 * - ECU responds within W1 = [60,300]ms after stop bit.
 	 */
 	
-	while ( (xferd = diag_tty_read(dl0d, &cbuf[0], 1, 2750)) <= 0)
-	{
-		if (xferd == DIAG_ERR_TIMEOUT)
-		{
+	while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, tout)) <= 0) {
+		if (xferd == DIAG_ERR_TIMEOUT) {
 			if (diag_l0_debug & DIAG_DEBUG_PROTO)
 				fprintf(stderr, FLFMT "slowinit link %p echo read timeout\n",
 					FL, dl0d);
 			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		}
-		if (xferd == 0)
-		{
+		if (xferd == 0) {
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
-		if (errno != EINTR)
-		{
+		if (errno != EINTR) {
 			/* Error, EOF */
 			perror("read");
 			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
-
+	if (diag_l0_debug & DIAG_DEBUG_PROTO)
+		fprintf(stderr, FLFMT "slowinit 5bps address echo 0x%x\n",
+				FL, xferd);
+	diag_os_millisleep(60);		//W1 minimum
+	//At this point the ECU is about to, or already, sending the sync byte 0x55.
 	/*
 	 * Ideally we would now measure the length of the received
 	 * 0x55 sync character to work out the baud rate.
 	 * However, we cant do that yet, so we just set the
 	 * baud rate to what the user requested and read the 0x55
 	 */
-	(void)diag_tty_setup(dl0d, &dev->serial);
+	diag_tty_setup(dl0d, &dev->serial);
 
 	if (dev->protocol == DIAG_L1_ISO9141)
-		tout = 750;		/* 2s is too long */
+		tout = 400;		/* maximum W1 + sync byte@10kbps = >241ms */
 	else
-		tout = 300;		/* 300ms according to ISO14230-2 */
-	rv = diag_tty_read(dl0d, cbuf, 1, tout);
+		tout = 400;		/* 300ms according to ISO14230-2 ?? sec 5.2.4.2.2 */
+
+	rv = diag_tty_read(dl0d, &cbuf, 1, tout);
 	if (rv < 0) {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit link %p read timeout\n",
@@ -329,16 +335,15 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		return diag_iseterr(rv);
 	} else {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "slowinit link %p read 0x%x\n",
-				FL, dl0d, cbuf[0]);
-
+			fprintf(stderr, FLFMT "slowinit link %p sync byte 0x%x\n",
+				FL, dl0d, cbuf);
 	}
 	return 0;
 }
 
 /*
  * Do wakeup on the bus
- * XXX retval ?
+ * return 0 on success, after reading of a sync byte, before receiving any keyword.
  */
 static int
 diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
@@ -358,18 +363,17 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
 
 	
 	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
-	/* Wait the idle time (Tidle > 300ms) */
+	/* Wait the idle time (W5 > 300ms) */
 	diag_os_millisleep(300);
 
 	switch (in->type) {
 		case DIAG_L1_INITBUS_FAST:
 			rv = diag_l0_dumb_fastinit(dl0d);
 			break;
-
 		case DIAG_L1_INITBUS_5BAUD:
 			rv = diag_l0_dumb_slowinit(dl0d, in, dev);
 			break;
-
+		case DIAG_L1_INITBUS_2SLOW:
 		default:
 			rv = DIAG_ERR_INIT_NOTSUPP;
 			break;
@@ -385,7 +389,6 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
 		fprintf(stderr, FLFMT "initbus device link %p returning %d\n",
 			FL, dl0d, rv);
 
-	
 	return diag_iseterr(rv);
 
 }
@@ -416,24 +419,18 @@ const void *data, size_t len)
 	 */
 	ssize_t xferd;
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "device link %p send %ld bytes ",
 			FL, dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
-		{
 			diag_data_dump(stderr, data, len);
-		}
 	}
 
-	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len)
-	{
+	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
 		/* Partial write */
-		if (xferd < 0)
-		{
+		if (xferd < 0) {
 			/* error */
-			if (errno != EINTR)
-			{
+			if (errno != EINTR) {
 				perror("write");
 				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
 				return diag_iseterr(DIAG_ERR_GENERAL);
@@ -448,8 +445,7 @@ const void *data, size_t len)
 		data = (const void *)((const char *)data + xferd);
 	}
 	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) )
-	{
+			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
 		fprintf(stderr, "\n");
 	}
 
@@ -523,6 +519,15 @@ const struct diag_serial_settings *pset)
 	return diag_tty_setup(dl0d, &dev->serial);
 }
 
+// Update interface flags to customize particular interface type (K-line only or K&L)
+// Not related to the "getflags" function which returns the interface capabilities.
+void
+diag_l0_dumb_setflags(int newflags)
+{
+	dumb_flags=newflags;
+}
+
+
 #ifdef WIN32
 static int
 diag_l0_dumb_getflags(struct diag_l0_device *dl0d)
@@ -531,11 +536,8 @@ static int
 diag_l0_dumb_getflags(struct diag_l0_device *dl0d __attribute__((unused)))
 #endif
 {
-	/* All interface types here use same flags */
-	return(
-		DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST |
-			DIAG_L1_HALFDUPLEX
-		);
+	return DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST |
+			DIAG_L1_HALFDUPLEX;
 }
 
 const struct diag_l0 diag_l0_dumb = {

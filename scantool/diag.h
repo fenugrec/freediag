@@ -48,36 +48,36 @@ typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 
 struct timeval {
-        long    tv_sec;         /* seconds */
-        long    tv_usec;        /* and microseconds */
+	long tv_sec;	/* seconds */
+	long tv_usec;	/* and microseconds */
 };
 
 #define timercmp(tvp, uvp, cmp) \
-        ((tvp)->tv_sec cmp (uvp)->tv_sec || \
-         (tvp)->tv_sec == (uvp)->tv_sec && (tvp)->tv_usec cmp (uvp)->tv_usec)
+	((tvp)->tv_sec cmp (uvp)->tv_sec || \
+	(tvp)->tv_sec == (uvp)->tv_sec && (tvp)->tv_usec cmp (uvp)->tv_usec)
 
-typedef unsigned int    u_int;
+typedef unsigned int u_int;
 typedef _W64 unsigned int UINT_PTR, *PUINT_PTR;
-typedef UINT_PTR        SOCKET;
+typedef UINT_PTR SOCKET;
 
 #ifndef FD_SETSIZE
-#define FD_SETSIZE      64
+#define FD_SETSIZE 64
 #endif /* FD_SETSIZE */
 
 typedef struct fd_set {
-        u_int fd_count;               /* how many are SET? */
-        SOCKET  fd_array[FD_SETSIZE];   /* an array of SOCKETs */
+	u_int fd_count;	/* how many are SET? */
+	SOCKET fd_array[FD_SETSIZE];	/* an array of SOCKETs */
 } fd_set;
 
 #define SIGALRM 14
 
-typedef int  sigset_t;
+typedef int sigset_t;
 
 typedef struct sigaction_t {
-    void (*sa_handler)();
-    sigset_t sa_mask;
-    int sa_flags;
-    void (*sa_restorer)(void);
+	void (*sa_handler)();
+	sigset_t sa_mask;
+	int sa_flags;
+	void (*sa_restorer)(void);
 } sigaction_t;
 
 #endif
@@ -92,7 +92,7 @@ typedef struct sigaction_t {
 #define FL __FILE__, __LINE__
 
 /*
- * Many receive buffers are set to 1024, which seems large.  At least
+ * Many receive buffers are set to 1024, which seems large. At least
  * now it is defined in one place.
  */
 #define MAXRBUF 1024
@@ -115,7 +115,7 @@ typedef uint16_t flag_type;
 #define DIAG_IOCTL_GET_L2_DATA	0x2023	/* Get the L2 Keybytes etc into
 										 * diag_l2_data passed to us
 										 */
-#define DIAG_IOCTL_SETSPEED	0x2101	/* Set speed, bits etc  */
+#define DIAG_IOCTL_SETSPEED	0x2101	/* Set speed, bits etc */
 					/* Struct diag_serial_settings is passed */
 #define DIAG_IOCTL_INITBUS	0x2201	/* Initialise the ecu bus, data is diag_l1_init */
 
@@ -137,7 +137,7 @@ typedef uint16_t flag_type;
  * These are messages passed to or from the layer 2 and layer 3 code
  * which cause data to be transmitted to layer 1
  *
- * The receiver of the message *must* copy the data if it wants it  !!!
+ * The receiver of the message *must* copy the data if it wants it !!!
  */
 struct diag_msg
 {
@@ -179,7 +179,7 @@ void smartcat(char *p1, const size_t s1, const char *p2 );
  * Error functions.
  * "pflseterr" and "iflseterr" aren't intended to be called directly.
  * Use "diag_pseterr" (returns a NULL pointer) or
- *     "diag_iseterr" (returns the passed in error code),
+ * "diag_iseterr" (returns the passed in error code),
  * which will save where the error took place and optionally log it.
  */
 
@@ -205,11 +205,11 @@ const char *diag_errlookup(const int code);
  * called directly.
  *
  * Note that diag_calloc is NOT passed in the size - it gets it directly
- * using sizeof.  This makes it a little unusual, but reduces potential errors.
+ * using sizeof. This makes it a little unusual, but reduces potential errors.
  */
 
 int diag_flcalloc(const char *name, const int line, 
-	void **p, size_t n,  size_t s);
+	void **p, size_t n, size_t s);
 
 int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 

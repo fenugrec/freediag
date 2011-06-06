@@ -198,7 +198,7 @@ extern const char*	set_ecu;	/* ECU name */
 
 extern enum l0_nameindex set_interface;	/* Physical interface name to use */
 int set_interface_idx;	//index into l0_names
-extern const struct l0_name l0_names[];
+extern const struct l0_name l0_names[];	//filled in scantool_set.c
 
 #define SUBINTERFACE_MAX 256
 extern char	set_subinterface[SUBINTERFACE_MAX];	/* Sub interface ID */
@@ -208,25 +208,25 @@ typedef void (formatter)(char *, int, const struct pid *, response_t *, int);
 
 struct pid
 {
-  int         pidID   ;
-  const char *desc    ;
-  formatter  *sprintf ;
-  int         bytes   ;
-  const char *fmt1    ;   // SI
-  double      scale1  ;
-  double      offset1 ;
-  const char *fmt2    ;   // English (typically)
-  double      scale2  ;
-  double      offset2 ;
+	int pidID ;
+	const char *desc ;
+	formatter *sprintf ;
+	int bytes ;
+	const char *fmt1 ; // SI
+	double scale1 ;
+	double offset1 ;
+	const char *fmt2 ; // English (typically)
+	double scale2 ;
+	double offset2 ;
 };
 
-#define DATA_VALID(p, d)        (d[p->pidID].type == TYPE_GOOD)
-#define DATA_1(p, n, d)         (d[p->pidID].data[n])
-#define DATA_2(p, n, d)         (DATA_1(p, n, d) * 256 + DATA_1(p, n+1, d))
-#define DATA_RAW(p, n, d)       (p->bytes == 1 ? DATA_1(p, n, d) : \
-                                                 DATA_2(p, n, d))
-#define DATA_SCALED(p, v)       (v * p->scale1 + p->offset1)
-#define DATA_ENGLISH(p, v)      (v * p->scale2 + p->offset2)
+#define DATA_VALID(p, d)	(d[p->pidID].type == TYPE_GOOD)
+#define DATA_1(p, n, d)	(d[p->pidID].data[n])
+#define DATA_2(p, n, d)	(DATA_1(p, n, d) * 256 + DATA_1(p, n+1, d))
+#define DATA_RAW(p, n, d)	(p->bytes == 1 ? DATA_1(p, n, d) : DATA_2(p, n, d))
+
+#define DATA_SCALED(p, v)	(v * p->scale1 + p->offset1)
+#define DATA_ENGLISH(p, v)	(v * p->scale2 + p->offset2)
 
 
 const struct pid *get_pid ( int i ) ;

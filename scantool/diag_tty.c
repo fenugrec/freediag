@@ -65,7 +65,7 @@ void *dl0_handle)
 	 * For historical compatibility, if the subinterface decodes cleanly
 	 * as an integer we will write it into a string to get the name.
 	 * You can create a symlink to "/dev/obdII<NUMBER>" if you want to,
-         * or just set the subinterface to a valid device name.
+	 * or just set the subinterface to a valid device name.
 	 */
 
 	iInterface = strtol(subinterface, &endptr, 10);
@@ -129,12 +129,12 @@ void *dl0_handle)
 				FL, dl0d->name, dl0d->fd);
 	} else {
 		fprintf(stderr,
-                        FLFMT "Open of device interface \"%s\" failed: %s\n", 
+			FLFMT "Open of device interface \"%s\" failed: %s\n", 
 			FL, dl0d->name, strerror(errno));
 		fprintf(stderr, FLFMT
-                        "(Make sure the device specified corresponds to the\n", FL );
+			"(Make sure the device specified corresponds to the\n", FL );
 		fprintf(stderr,
-                        FLFMT "serial device your interface is connected to.\n", FL);
+			FLFMT "serial device your interface is connected to.\n", FL);
 
 		(void)diag_tty_close(ppdl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -235,8 +235,9 @@ diag_l0_set_dl2_link(struct diag_l0_device *dl0d,
 /*
  * Set speed/parity etc
  */
-int diag_tty_setup(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pset)
+int
+diag_tty_setup(struct diag_l0_device *dl0d,
+	const struct diag_serial_settings *pset)
 {
 	int iflag;
 	int fd;
@@ -364,7 +365,7 @@ const struct diag_serial_settings *pset)
 	/* "stty raw"-like iflag settings: */
 	iflag = dt->dt_tinfo.c_iflag;
 
-        /* Clear a bunch of un-needed flags */
+	/* Clear a bunch of un-needed flags */
 
 	iflag  &= ~ (IGNBRK | BRKINT | IGNPAR | PARMRK
 		| INPCK | ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXOFF
@@ -394,59 +395,55 @@ const struct diag_serial_settings *pset)
 	dt->dt_tinfo.c_cflag |= (CLOCAL);
 
 	dt->dt_tinfo.c_cflag &= ~CSIZE;
-	switch (pset->databits)
-	{
-	case diag_databits_8:
-		dt->dt_tinfo.c_cflag |= CS8;
-		break;
-	case diag_databits_7:
-		dt->dt_tinfo.c_cflag |= CS7;
-		break;
-	case diag_databits_6:
-		dt->dt_tinfo.c_cflag |= CS6;
-		break;
-	case diag_databits_5:
-		dt->dt_tinfo.c_cflag |= CS5;
-		break;
-	default:
-		fprintf(stderr, FLFMT "bad bit setting used (%d)\n", FL, pset->databits);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+	switch (pset->databits) {
+		case diag_databits_8:
+			dt->dt_tinfo.c_cflag |= CS8;
+			break;
+		case diag_databits_7:
+			dt->dt_tinfo.c_cflag |= CS7;
+			break;
+		case diag_databits_6:
+			dt->dt_tinfo.c_cflag |= CS6;
+			break;
+		case diag_databits_5:
+			dt->dt_tinfo.c_cflag |= CS5;
+			break;
+		default:
+			fprintf(stderr, FLFMT "bad bit setting used (%d)\n", FL, pset->databits);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	switch (pset->stopbits)
-	{
-	case diag_stopbits_2:
-		dt->dt_tinfo.c_cflag |= CSTOPB;
-		break;
-	case diag_stopbits_1:
-		dt->dt_tinfo.c_cflag &= ~CSTOPB;
-		break;
-	default:
-		fprintf(stderr, FLFMT "bad stopbit setting used (%d)\n",
-			FL, pset->stopbits);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+	switch (pset->stopbits) {
+		case diag_stopbits_2:
+			dt->dt_tinfo.c_cflag |= CSTOPB;
+			break;
+		case diag_stopbits_1:
+			dt->dt_tinfo.c_cflag &= ~CSTOPB;
+			break;
+		default:
+			fprintf(stderr, FLFMT "bad stopbit setting used (%d)\n",
+				FL, pset->stopbits);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	switch (pset->parflag)
-	{
-	case diag_par_e:
-		dt->dt_tinfo.c_cflag |= PARENB;
-		dt->dt_tinfo.c_cflag &= ~PARODD;
-		break;
-	case diag_par_o:
-		dt->dt_tinfo.c_cflag |= (PARENB | PARODD);
-		break;
-	case diag_par_n:
-		dt->dt_tinfo.c_cflag &= ~PARENB;
-		break;
-	default:
-		fprintf(stderr,
-			FLFMT "bad parity setting used (%d)\n", FL, pset->parflag);
-		return -1;
+	switch (pset->parflag) {
+		case diag_par_e:
+			dt->dt_tinfo.c_cflag |= PARENB;
+			dt->dt_tinfo.c_cflag &= ~PARODD;
+			break;
+		case diag_par_o:
+			dt->dt_tinfo.c_cflag |= (PARENB | PARODD);
+			break;
+		case diag_par_n:
+			dt->dt_tinfo.c_cflag &= ~PARENB;
+			break;
+		default:
+			fprintf(stderr,
+				FLFMT "bad parity setting used (%d)\n", FL, pset->parflag);
+			return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	errno = 0;
-	if (tcsetattr(fd, TCSAFLUSH, &dt->dt_tinfo) < 0)
-	{
+	if (tcsetattr(fd, TCSAFLUSH, &dt->dt_tinfo) < 0) {
 		fprintf(stderr, 
 			FLFMT
 			"Can't set input flags (databits %d, stop bits %d, parity %d).\n"
@@ -463,9 +460,7 @@ const struct diag_serial_settings *pset)
  * Set/Clear DTR and RTS lines, as specified
  */
 int
-diag_tty_control(struct diag_l0_device *dl0d, 
-int dtr,
-int rts)
+diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 {
 	int flags;	/* Current flag values. */
 	int setflags = 0, clearflags = 0;
@@ -474,14 +469,14 @@ int rts)
 		setflags = TIOCM_DTR;
 	else
 		clearflags = TIOCM_DTR;
+	
 	if (rts)
 		setflags = TIOCM_RTS;
 	else
 		clearflags = TIOCM_RTS;
 
 	errno = 0;
-	if (ioctl(dl0d->fd, TIOCMGET, &flags) < 0)
-	{
+	if (ioctl(dl0d->fd, TIOCMGET, &flags) < 0) {
 		fprintf(stderr, 
 			FLFMT "open: Ioctl TIOCMGET failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -489,8 +484,7 @@ int rts)
 	flags |= setflags;
 	flags &= ~clearflags;
 
-	if (ioctl(dl0d->fd, TIOCMSET, &flags) < 0)
-	{
+	if (ioctl(dl0d->fd, TIOCMSET, &flags) < 0) {
 		fprintf(stderr, 
 			FLFMT "open: Ioctl TIOCMSET failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -530,10 +524,10 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 	errno = 0;
 
-	 /*
-          * Portability :- select on linux updates the timeout when
-	  * it is interrupted.
-	  */
+	/*
+	 * Portability :- select on linux updates the timeout when
+	 * it is interrupted.
+	 */
 
 	tv.tv_sec = timeout / 1000;
 	tv.tv_usec = (timeout % 1000) * 1000;
@@ -546,36 +540,33 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 	        rv = select ( dl0d->fd + 1,  &set, NULL, NULL, &tv );
 
-                if ( rv >= 0 ) break;
+		if ( rv >= 0 ) break;
 
 		if (errno != EINTR) break;
 
 		errno = 0;
 	}
 
-	switch (rv)
-	{
-	case 0:
-		/* Timeout */
-		return diag_iseterr(DIAG_ERR_TIMEOUT);
-	case 1:
-		/* Ready for read */
-		rv = 0;
-		/*
-		 * XXX Won't you hang here if "count" bytes don't arrive?
-		 * We've enabled SA_RESTART in the alarm handler, so this could
-		 * never return.
-		 */
-		if (count)
-			rv = read(dl0d->fd, buf, count);
-		return rv;
-
-	default:
-		fprintf(stderr, FLFMT "select on fd %d returned %s.\n",
-			FL, dl0d->fd, strerror(errno));
-
-		/* Unspecific Error */
-		return diag_iseterr(DIAG_ERR_GENERAL);
+	switch (rv) {
+		case 0:
+			/* Timeout */
+			return diag_iseterr(DIAG_ERR_TIMEOUT);
+		case 1:
+			/* Ready for read */
+			rv = 0;
+			/*
+			 * XXX Won't you hang here if "count" bytes don't arrive?
+			 * We've enabled SA_RESTART in the alarm handler, so this could
+			 * never return.
+			 */
+			if (count)
+				rv = read(dl0d->fd, buf, count);
+			return rv;
+		default:
+			fprintf(stderr, FLFMT "select on fd %d returned %s.\n",
+				FL, dl0d->fd, strerror(errno));
+			/* Unspecific Error */
+			return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 }
 #else

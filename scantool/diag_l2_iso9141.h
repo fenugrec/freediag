@@ -65,19 +65,19 @@ extern "C" {
  */
 struct diag_l2_iso9141
 {
-    uint8_t srcaddr;	// Src address used, normally 0xF1 (tester)
-    uint8_t target;	// Target address used, normally 0x33 (ISO9141)
+	uint8_t srcaddr;	// Src address used, normally 0xF1 (tester)
+	uint8_t target;	// Target address used, normally 0x33 (ISO9141)
 
-    // These should be only in specific protocol structs, but
-    // someone put them in the generic L2 struct, and there seem to be
-    //a lot of protocols that expect them to be there... :(
-//    uint8_t kb1;      // key Byte 1
-//    uint8_t kb2;	// key Byte 2
+	// These should be only in specific protocol structs, but
+	// someone put them in the generic L2 struct, and there seem to be
+	//a lot of protocols that expect them to be there... :(
+//	uint8_t kb1;	  // key Byte 1
+//	uint8_t kb2;	// key Byte 2
 
-    uint8_t rxbuf[MAXLEN_ISO9141]; // Receive buffer, for building message in.
-    uint8_t rxoffset;
+	uint8_t rxbuf[MAXLEN_ISO9141]; // Receive buffer, for building message in.
+	uint8_t rxoffset;
 
-    uint8_t state;
+	uint8_t state;
 #define STATE_CLOSED	  0	// Closed connection.
 #define STATE_CONNECTING  1	// Connecting.
 #define STATE_ESTABLISHED 2	// Established.
@@ -89,34 +89,34 @@ struct diag_l2_iso9141
 int diag_l2_iso9141_add(void);
 
 static int diag_l2_proto_iso9141_send ( 
-        struct diag_l2_conn *d_l2_conn, 
-        struct diag_msg *msg ) ;
+		struct diag_l2_conn *d_l2_conn, 
+		struct diag_msg *msg ) ;
 
 static int diag_l2_proto_iso9141_recv (
-        struct diag_l2_conn *d_l2_conn,
-        int timeout,
-        void (*callback)(void *handle, struct diag_msg *msg),
-        void *handle ) ;
+		struct diag_l2_conn *d_l2_conn,
+		int timeout,
+		void (*callback)(void *handle, struct diag_msg *msg),
+		void *handle ) ;
 
 static struct diag_msg *diag_l2_proto_iso9141_request ( 
-        struct diag_l2_conn *d_l2_conn, 
-        struct diag_msg *msg,
-        int *errval ) ;
+		struct diag_l2_conn *d_l2_conn, 
+		struct diag_msg *msg,
+		int *errval ) ;
 
 #ifdef WIN32
 int diag_l2_proto_9141_sc_common (
-        struct diag_l2_conn *d_l2_conn,
-        int bitrate,
-        target_type target,
-        source_type source,
-        int kb1, int kb2 ) ;
+		struct diag_l2_conn *d_l2_conn,
+		int bitrate,
+		target_type target,
+		source_type source,
+		int kb1, int kb2 ) ;
 #else
 int diag_l2_proto_9141_sc_common (
-        struct diag_l2_conn *d_l2_conn,
-        int bitrate,
-        target_type target,
-        source_type source __attribute__((unused)),
-        int kb1, int kb2 ) ;
+		struct diag_l2_conn *d_l2_conn,
+		int bitrate,
+		target_type target,
+		source_type source __attribute__((unused)),
+		int kb1, int kb2 ) ;
 #endif
 
 #if defined(__cplusplus)

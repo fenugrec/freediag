@@ -53,7 +53,7 @@ const char *	set_vehicle;	/* Vehicle */
 const char *	set_ecu;	/* ECU name */
 
 //const char  *	set_interface;	/* H/w interface to use */
-#define DEFAULT_INTERFACE 5	//XXX index into l0_names
+#define DEFAULT_INTERFACE 5	//index into l0_names below
 const struct l0_name l0_names[] = { {"MET16", MET16}, {"SE9141", SE9141}, {"VAGTOOL", VAGTOOL},
 			{"BR1", BR1}, {"ELM", ELM}, {"CARSIM", CARSIM}, {"DUMB", DUMB}, NULL};
 
@@ -62,13 +62,7 @@ enum l0_nameindex set_interface;	//hw interface to use
 char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
 
 char *set_simfile;	//source for simulation data
-extern int diag_l0_sim_setfile(char * fname);
-
-//~ const char * const l0_names[] =
-//~ {
-	//~ "MET16", "SE9141", "VAGTOOL", "BR1", "ELM", "CARSIM", "DUMB", NULL
-//~ };
-
+extern void diag_l0_sim_setfile(char * fname);
 
 /*
  * XXX All commands should probably have optional "init" hooks.
@@ -95,13 +89,11 @@ int set_init(void)
 
 	strncpy(set_subinterface,"/dev/null",sizeof(set_subinterface));
 	printf( "%s: Interface set to default: %s on %s\n", progname, l0_names[set_interface_idx].longname, set_subinterface);
-					/*Default device. User needs to set correct intf*/
+
 	if (diag_calloc(&set_simfile, strlen(DB_FILE)+1))
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	strcpy(set_simfile, DB_FILE);
+		return diag_iseterr(DIAG_ERR_GENERAL);	
+	strcpy(set_simfile, DB_FILE);			//default simfile for use with CARSIM
 	diag_l0_sim_setfile(set_simfile);
-	//~ if (diag_l0_sim_setfile(set_simfile))
-		//~ return diag_iseterr(DIAG_ERR_GENERAL);
 	
 	return 0;
 }
@@ -275,7 +267,10 @@ static int cmd_set_interface(int argc, char **argv)
 				strncpy(set_subinterface, argv[2], sizeof(set_subinterface));
 			printf("interface is now %s on %s\n",
 					l0_names[set_interface_idx].longname, set_subinterface);
-
+			if (set_interface==VAGTOOL)
+				diag_l0_dumb_setflags(1);
+			else
+				diag_l0_dumb_setflags(0);	//not strictly correct usage, but will do for hack.
 		}
 	} else {
 		printf("interface: using %s on %s\n",
@@ -302,12 +297,9 @@ static int cmd_set_simfile(int argc, char **argv)
 		if (diag_calloc(&set_simfile, strlen(argv[1])+1))
 			return CMD_FAILED;
 		strcpy(set_simfile, argv[1]);
-		
-		if (diag_l0_sim_setfile(set_simfile)) {
-			return CMD_FAILED;
-		} else {
-			printf("Simulation file: now using %s\n", set_simfile);
-		}
+		diag_l0_sim_setfile(set_simfile);
+		printf("Simulation file: now using %s\n", set_simfile);
+
 		if (set_interface!=CARSIM) {
 			printf("Note: simfile only needed with CARSIM interface.\n");
 		}

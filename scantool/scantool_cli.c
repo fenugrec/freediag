@@ -131,7 +131,7 @@ static const struct cmd_tbl_entry root_cmd_table[]=
 #define INPUT_MAX 1024
 
 /*
- * Caller must free returned buffer.  Used if we don't
+ * Caller must free returned buffer. Used if we don't
  * have readline, and when reading init or command files.
  * No line editing or history.
  */
@@ -142,20 +142,18 @@ basic_get_input(const char *prompt)
 	int do_prompt;
 
 	if (diag_malloc(&input, INPUT_MAX))
-	    	return NULL;
+			return NULL;
 
 	do_prompt = 1;
 	while (1) {
-    	if (do_prompt && prompt)
-		{
+		if (do_prompt && prompt) {
 			printf("%s", prompt);
 			fflush(stdout);
 		}
 		do_prompt = 1;
-		if (fgets(input, INPUT_MAX, instream))
+		if (fgets(input, INPUT_MAX, instream)) {
 			break;
-		else
-		{
+		} else {
 			if (feof(instream)) {
 				free(input);
 				return NULL;
@@ -166,7 +164,7 @@ basic_get_input(const char *prompt)
 			}
 		}
 	}
-	input[strlen(input)-1] = '\0';  /* Remove trailing CR */
+	input[strlen(input)-1] = '\0';	/* Remove trailing CR */
 	return input;
 }
 
@@ -186,8 +184,8 @@ get_input(const char *prompt)
 
 	input = readline(localprompt);
 	if (input && *input)
-	    	add_history(input);
-    	return input;
+		add_history(input);
+	return input;
 }
 
 static void
@@ -205,7 +203,7 @@ readline_init(void)
 static char *
 get_input(const char *prompt)
 {
-    	return basic_get_input(prompt);
+	return basic_get_input(prompt);
 }
 
 static void readline_init(void) {}
@@ -215,7 +213,7 @@ static void readline_init(void) {}
 static char *
 command_line_input(const char *prompt)
 {
-    	if (instream == stdin)
+	if (instream == stdin)
 		return get_input(prompt);
 
 	/* Reading from init or command file; no prompting or history */
@@ -228,15 +226,12 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
 /*	int i;*/
 	const struct cmd_tbl_entry *ctp;
 
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		/* Single command help */
 		int found = 0;
 		ctp = cmd_table;
-		while (ctp->command)
-		{
-			if (strcasecmp(ctp->command, argv[1]) == 0)
-			{
+		while (ctp->command) {
+			if (strcasecmp(ctp->command, argv[1]) == 0) {
 				printf("%s: %s\n", ctp->command, ctp->help);
 				printf("Usage: %s\n", ctp->usage);
 				found++;
@@ -245,17 +240,13 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
 			ctp++;
 		}
 		if (!found)
-		{
 			printf("help: %s: no such command\n", argv[1]);
-		}
-	}
-	else
-	{	
+		
+	} else {	
 		/* Print help */
 		printf("Available commands are :-\n");
 		ctp = cmd_table;
-		while (ctp->command)
-		{
+		while (ctp->command) {
 			if ((ctp->flags & FLAG_HIDDEN) == 0)
 				printf("	%s\n", ctp->usage);
 			ctp++;
@@ -307,13 +298,12 @@ struct timeval log_start;
 static void
 log_timestamp(const char *prefix)
 {
-    	struct timeval tv;
+	struct timeval tv;
 	long sec, usec;
 
 	gettimeofday(&tv, NULL);
-	if (tv.tv_usec < log_start.tv_usec)
-	{
-	    	tv.tv_usec += 1000*1000;
+	if (tv.tv_usec < log_start.tv_usec) {
+			tv.tv_usec += 1000*1000;
 		tv.tv_sec--;
 	}
 	sec = tv.tv_sec - log_start.tv_sec;
@@ -324,14 +314,14 @@ log_timestamp(const char *prefix)
 static void
 log_command(int argc, char **argv)
 {
-    	int i;
+	int i;
 
-    	if (!global_logfp)
-	    	return;
+	if (!global_logfp)
+		return;
 
 	log_timestamp(">");
 	for (i = 0; i < argc; i++)
-	    	fprintf(global_logfp, " %s", argv[i]);
+			fprintf(global_logfp, " %s", argv[i]);
 	fprintf(global_logfp, "\n");
 }
 
@@ -345,35 +335,30 @@ cmd_log(int argc, char **argv)
 	time_t now;
 	int i;
 
-	if (global_logfp != NULL)
-	{
+	if (global_logfp != NULL) {
 		printf("Already logging\n");
 		return CMD_FAILED;
 	}
 
 	/* Turn on logging */
-	if (argc > 1)
-	    	file = argv[1];	//if a file name was specified, use that
-	else				//else, generate an auto log file
-	{
-		for (i = 0; i < 99; i++)
-		{
+	if (argc > 1) {
+			file = argv[1];	//if a file name was specified, use that
+	} else {
+		//else, generate an auto log file
+		for (i = 0; i < 99; i++) {
 			sprintf(autofilename,"log.%02d",i);
-			if (stat(file, &buf) == -1
-			    && errno == ENOENT)
-			    	break;
+			if (stat(file, &buf) == -1 && errno == ENOENT)
+				break;
 		}
-		if (i > 99)
-		{
-		    	printf("Can't create log.%02d; remember to clean old auto log files\n",i);
+		if (i > 99) {
+			printf("Can't create log.%02d; remember to clean old auto log files\n",i);
 			return CMD_FAILED;
 		}
 	}
 
 	global_logfp = fopen(file, "a");	//add to end of log or create file
 
-	if (global_logfp == NULL)
-	{
+	if (global_logfp == NULL) {
 		printf("Failed to create log file %s\n", file);
 		return CMD_FAILED;
 	}
@@ -398,8 +383,7 @@ cmd_stoplog(int argc __attribute__((unused)), char **argv __attribute__((unused)
 #endif
 {
 	/* Turn off logging */
-	if (global_logfp == NULL)
-	{
+	if (global_logfp == NULL) {
 		printf("Logging was not on\n");
 		return CMD_FAILED;
 	}
@@ -422,8 +406,7 @@ cmd_play(int argc, char **argv)
 
 	fp = fopen(argv[1], "r");
 
-	if (fp == NULL)
-	{
+	if (fp == NULL) {
 		printf("Failed to open log file %s\n", argv[1]);
 		return CMD_FAILED;
 	}
@@ -434,23 +417,21 @@ cmd_play(int argc, char **argv)
 	/* XXX logging */
 
 	/* Loop and call display routines */
-	while (1)
-	{	
+	while (1) {	
 		int ch;
+		printf("Warning : incomplete code");
 		printf("DATE:	+/- to step, S/E to goto start or end, Q to quit\n");
 		ch = getc(stdin);
-		switch (ch)
-		{
-		case '-':
-		case '+':
-		case 'E':
-		case 'e':
-		case 'S':
-		case 's':
-
-		case 'Q':
-		case 'q':
-			break;
+		switch (ch) {
+			case '-':
+			case '+':
+			case 'E':
+			case 'e':
+			case 'S':
+			case 's':
+			case 'Q':
+			case 'q':
+				break;
 		}
 		
 	}
@@ -470,30 +451,26 @@ cmd_watch(int argc, char **argv)
 	int nodecode = 0;
 	int nol3 = 0;
 
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		if (strcasecmp(argv[1], "raw") == 0)
 			rawmode = 1;
 		else if (strcasecmp(argv[1], "nodecode") == 0)
 			nodecode = 1;
 		else if (strcasecmp(argv[1], "nol3") == 0)
 			nol3 = 1;
-		else
-		{
+		else {
 			printf("Don't understand \"%s\"\n", argv[1]);
 			return CMD_USAGE;
 		}
 	}
 
 	rv = diag_init();
-	if (rv != 0)
-	{
+	if (rv != 0) {
 		fprintf(stderr, "diag_init failed\n");
 		return -1;
 	}
 	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);
-	if (dl0d == 0)
-	{
+	if (dl0d == 0) {
 		rv = diag_geterr();
 		printf("Failed to open hardware interface ");
 		if (rv == DIAG_ERR_PROTO_NOTSUPP)
@@ -513,31 +490,26 @@ cmd_watch(int argc, char **argv)
 		d_l2_conn = diag_l2_StartCommunications(dl0d, set_L2protocol,
 			DIAG_L2_TYPE_MONINIT, set_speed, set_destaddr, set_testerid);
 
-	if (d_l2_conn == 0)
-	{
+	if (d_l2_conn == 0) {
 		printf("Failed to connect to hardware in monitor mode\n");
 		return CMD_FAILED;
 	}
 
-	if (rawmode == 0) 
-	{
+	if (rawmode == 0) {
 		/* Put the SAE J1979 stack on top of the ISO device */
 
-		if (nol3 == 0)
-		{
+		if (nol3 == 0) {
 			d_l3_conn = diag_l3_start("SAEJ1979", d_l2_conn);
-			if (d_l3_conn == NULL)
-			{
+			if (d_l3_conn == NULL) {
 				printf("Failed to enable SAEJ1979 mode\n");
 				return CMD_FAILED;
 			}
-		}
-		else
+		} else {
 			d_l3_conn = NULL;
+		}
 
 		printf("Waiting for data to be received\n");
-		while (1)
-		{
+		while (1) {
 			if (d_l3_conn)
 				rv = diag_l3_recv(d_l3_conn, 10000,
 					j1979_watch_rcv,
@@ -550,15 +522,12 @@ cmd_watch(int argc, char **argv)
 			if (rv == DIAG_ERR_TIMEOUT)
 				continue;
 		}
-	}
-	else
-	{
+	} else {
 		/*
 		 * And just read stuff, callback routine will print out the data
 		 */
 		printf("Waiting for data to be received\n");
-		while (1)
-		{
+		while (1) {
 			rv = diag_l2_recv(d_l2_conn, 10000,
 				j1979_data_rcv, (void *)RQST_HANDLE_WATCH);
 			if (rv == 0)
@@ -590,15 +559,12 @@ print_current_data(int english)
 	printf("%-30.30s %-15.15s FreezeFrame\n",
 		"Parameter", "Current");
 
-	for (j = 0 ; get_pid ( j ) != NULL ; j++)
-	{
-	        const struct pid *p = get_pid ( j ) ;
+	for (j = 0 ; get_pid ( j ) != NULL ; j++) {
+		const struct pid *p = get_pid ( j ) ;
 
-		for (i=0, ep=ecu_info; i<ecu_count; i++, ep++)
-		{
+		for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 			if (DATA_VALID(p, ep->mode1_data) ||
-			   DATA_VALID(p, ep->mode2_data))
-			{
+				DATA_VALID(p, ep->mode2_data)) {
 				printf("%-30.30s ", p->desc);
 
 				if (DATA_VALID(p, ep->mode1_data))
@@ -606,6 +572,7 @@ print_current_data(int english)
 						ep->mode1_data, 2);
 				else
 					sprintf(buf, "-----");
+				
 				printf("%-15.15s ", buf);
 
 				if (DATA_VALID(p, ep->mode2_data))
@@ -613,6 +580,7 @@ print_current_data(int english)
 						ep->mode2_data, 3);
 				else
 					sprintf(buf, "-----");
+				
 				printf("%-15.15s\n", buf);
 			}
 		}
@@ -622,15 +590,14 @@ print_current_data(int english)
 static void
 log_response(int ecu, response_t *r)
 {
-    	int i;
+	int i;
 
 	/* Only print good records */
 	if (r->type != TYPE_GOOD)
 		return;
 
 	printf("%d: ", ecu);
-	for (i = 0; i < r->len; i++)
-	{
+	for (i = 0; i < r->len; i++) {
 		fprintf(global_logfp, "%02x ", r->data[i]);
 	}
 	fprintf(global_logfp, "\n");
@@ -643,28 +610,24 @@ log_current_data(void)
 	ecu_data_t *ep;
 	unsigned int i;
 
-    	if (!global_logfp)
-	    	return;
+	if (!global_logfp)
+		return;
 
 	log_timestamp("D");
 	fprintf(global_logfp, "MODE 1 DATA\n");
-	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++)
-	{
+	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		for (r = ep->mode1_data;
-			r < &ep->mode1_data[ARRAY_SIZE(ep->mode1_data)]; r++)
-		{
-	    		log_response((int)i, r);
+			r < &ep->mode1_data[ARRAY_SIZE(ep->mode1_data)]; r++) {
+				log_response((int)i, r);
 		}
 	}
 
 	log_timestamp("D");
 	fprintf(global_logfp, "MODE 2 DATA\n");
-	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++)
-	{
+	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		for (r = ep->mode2_data;
-			r < &ep->mode2_data[ARRAY_SIZE(ep->mode2_data)]; r++)
-		{
-	    		log_response((int)i, r);
+			r < &ep->mode2_data[ARRAY_SIZE(ep->mode2_data)]; r++) {
+			log_response((int)i, r);
 		}
 	}
 }
@@ -678,24 +641,22 @@ cmd_monitor(int argc, char **argv)
 
 	d_conn = global_l3_conn;
 
-	if (global_state < STATE_SCANDONE)
-	{
+	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
 		return CMD_FAILED;
 	}
 
 	// If user states English or Metric, use that, else use config item
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		if (strcasecmp(argv[1], "english") == 0)
 			english = 1;
 		else if (strcasecmp(argv[1], "metric") == 0)
 			english = 0;
 		else
 			return CMD_USAGE;
-	}
-	else
+	} else {
 		english = set_display;
+	}
 
 	printf("Please wait\n");
 
@@ -703,12 +664,10 @@ cmd_monitor(int argc, char **argv)
 	 * Now just receive data and log it for ever
 	 */
 
-	while (1)
-	{
+	while (1) {
 		rv = do_j1979_getdata(1);
 		/* Key pressed */
-		if (rv == 1)
-		{
+		if (rv == 1) {
 			/*
 			 * XX, if ' ' then this is a mark,
 			 * if return, then quit
@@ -737,16 +696,14 @@ cmd_scan(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 {
 	int rv;
 
-	if (global_state >= STATE_CONNECTED)
-	{
+	if (global_state >= STATE_CONNECTED) {
 		printf("Already connected, please disconnect first\n");
 		return CMD_FAILED;
 	}
 
 	rv = ecu_connect();
 
-	if (rv == 0)
-	{
+	if (rv == 0) {
 		printf("Connection to ECU established\n");
 
 		/* Now ask basic info from ECU */
@@ -756,9 +713,7 @@ cmd_scan(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 		/* And the non continuously monitored tests */
 		printf("Non-continuously monitored system tests (failures only): -\n");
 		do_j1979_ncms(0);
-	}
-	else
-	{
+	} else {
 		printf("Connection to ECU failed\n");
 		printf("Please check :-\n");
 		printf("	Adapter is connected to PC\n");
@@ -783,8 +738,7 @@ char **argv __attribute__((unused)))
 {
 	char *input;
 
-	if (global_state < STATE_CONNECTED)
-	{
+	if (global_state < STATE_CONNECTED) {
 		printf("Not connected to ECU\n");
 		return CMD_OK;
 	}
@@ -794,8 +748,7 @@ char **argv __attribute__((unused)))
 	if (!input)
 		return CMD_OK;
 
-	if ((strcasecmp(input, "yes") == 0) || (strcasecmp(input, "y")==0))
-	{
+	if ((strcasecmp(input, "yes") == 0) || (strcasecmp(input, "y")==0)) {
 		if (diag_cleardtc() == 0)
 			printf("Done\n");
 		else
@@ -820,16 +773,14 @@ cmd_ecus(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 	ecu_data_t *ep;
 	unsigned int i;
 
-	if (global_state < STATE_SCANDONE)
-	{
+	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
 		return CMD_OK;
 	}
 
 	printf("%d ECUs found\n", ecu_count);
 
-	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++)
-	{
+	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		printf("ECU %d: Address 0x%02x ", i, ep->ecu_addr & 0xff);
 		if (ep->supress)
 			printf("output supressed for monitor mode\n");
@@ -860,21 +811,18 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 
 	rv = 0, done = 0;
 	snprintf(promptbuf, sizeof(promptbuf), "%s> ", prompt);
-	while (!done)
-	{
+	while (!done) {
 		char *inptr, *s;
 
-		if (argc == 0)
-		{
+		if (argc == 0) {
 			/* Get Input */
-		    	if (input)
-			    	free(input);
+			if (input)
+				free(input);
 			input = command_line_input(promptbuf);
-			if (!input)
-			{
-			    	if (instream == stdin)
+			if (!input) {
+					if (instream == stdin)
 						printf("\n");
-			    	break;
+					break;
 			}
 
 			/* Parse it */
@@ -889,8 +837,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 				continue;
 			}
 			cmd_argc = 0;
-			while ( (s = strtok(inptr, " 	")) != NULL )
-			{
+			while ( (s = strtok(inptr, " 	")) != NULL ) {
 				cmd_argv[cmd_argc] = s;
 				cmd_argc++;
 				inptr = NULL;
@@ -898,24 +845,18 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 			nullstr[0] = 0;
 			nullstr[1] = 0;
 			cmd_argv[cmd_argc] = nullstr;
-		}
-		else	/* Use supplied argc */
-		{
+		} else {
+			/* Use supplied argc */
 			cmd_argc = argc;
 			for (i=0; i<=argc; i++)
 				cmd_argv[i] = argv[i];
 		}
 
-		if (cmd_argc != 0)
-		{
+		if (cmd_argc != 0) {
 			ctp = cmd_tbl;
-			while (ctp->command)
-			{
-				if (strcasecmp(ctp->command, cmd_argv[0]) == 0)
-				{
-
-					if (ctp->sub_cmd_tbl)
-					{
+			while (ctp->command) {
+				if (strcasecmp(ctp->command, cmd_argv[0]) == 0) {
+					if (ctp->sub_cmd_tbl) {
 						log_command(1, cmd_argv);
 						snprintf(promptbuf, sizeof(promptbuf),"%s/%s",
 							prompt, ctp->command);
@@ -927,25 +868,22 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 						if (rv==CMD_EXIT)	//allow exiting prog. from a submenu
 							done=1;
 						snprintf(promptbuf, sizeof(promptbuf), "%s> ", prompt);
-					}
-					else
-					{
+					} else {
 						/* Found command */
 						log_command(cmd_argc, cmd_argv);
 						rv = ctp->routine(cmd_argc, cmd_argv);
-						switch (rv)
-						{
-						case CMD_USAGE:
-							printf("Usage: %s\n", ctp->usage);
-							break;
-						case CMD_EXIT:
-							rv = CMD_EXIT;
-							done = 1;
-							break;
-						case CMD_UP:
-							rv = CMD_UP;
-							done = 1;
-							break;
+						switch (rv) {
+							case CMD_USAGE:
+								printf("Usage: %s\n", ctp->usage);
+								break;
+							case CMD_EXIT:
+								rv = CMD_EXIT;
+								done = 1;
+								break;
+							case CMD_UP:
+								rv = CMD_UP;
+								done = 1;
+								break;
 						}
 					}
 					break;
@@ -953,12 +891,10 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 				if (!done)
 					ctp++;
 			}
-			if (ctp->command == NULL) 
-			{
+			if (ctp->command == NULL) {
 				printf("Huh? Try \"help\"\n");
 			}
-			if (argc)
-			{	
+			if (argc) {	
 				/* Single command */
 				done = 1;
 				break;
@@ -968,7 +904,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 			break;
 	}
 	if (input)
-	    	free(input);
+			free(input);
 	if (rv == CMD_UP)
 		return CMD_OK;
 	return rv;
@@ -977,10 +913,9 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 static int
 command_file(char *filename)
 {
-    	FILE *prev_instream = instream;	//assume it was already initted...
+		FILE *prev_instream = instream;	//assume it was already initted...
 
-	if (instream=fopen(filename, "r"))
-	{
+	if (instream=fopen(filename, "r")) {
 		do_cli(root_cmd_table, progname, 0, NULL);
 		fclose(instream);
 		instream=prev_instream;
@@ -993,22 +928,20 @@ command_file(char *filename)
 static int
 cmd_source(int argc, char **argv)
 {
-    	char *file;
+	char *file;
 
-    	if (argc < 2)
-	{
-	    	printf("No filename\n");
+	if (argc < 2) {
+			printf("No filename\n");
 		return CMD_USAGE;
 	}
 
 	file = argv[1];
-	if (command_file(file))
-	{
-	    	printf("Couldn't read %s\n", file);
+	if (command_file(file)) {
+			printf("Couldn't read %s\n", file);
 		return CMD_FAILED;
 	}
 
-    	return CMD_OK;
+		return CMD_OK;
 }
 
 static int
@@ -1021,7 +954,7 @@ rc_file(void)
 	/*
 	 * "." files don't play that well on some systems.
 	 * You can turn it off and turn on a .ini file by setting both
-	 *  "DONT_USE_RCFILE" and "USE_INIFILE",
+	 *	"DONT_USE_RCFILE" and "USE_INIFILE",
 	 * or support both by setting USE_INIFILE.
 	* as set by ./configure
 	 */
@@ -1039,8 +972,8 @@ rc_file(void)
 		strcat(homeinit, "/.");
 		strcat(homeinit, progname);
 		strcat(homeinit, "rc");
-		if (command_file(homeinit))	//should return 0 with a success
-		{
+		if (command_file(homeinit)) {
+			//should return 0 with a success
 /* 			if (newrcfile=fopen(homeinit,"a"))	//create the file if it didn't exist
  * 			{
  * 				fprintf(newrcfile, "\n#empty rcfile auto created by %s\n",progname);
@@ -1054,14 +987,13 @@ rc_file(void)
  * 				return diag_iseterr(DIAG_ERR_GENERAL);
  * 			}
  */
-		}
-		else	//command_file was at least partly successful (rc file exists)
-		{
-			printf("%s: Settings loaded succesfully from %s\n",progname,homeinit);
+		} else {
+			//command_file was at least partly successful (rc file exists)
+			printf("%s: Settings loaded from %s\n",progname,homeinit);
 			free(homeinit);
 			return 0;
 		}
-		//fall here  if command_file failed
+		//fall here if command_file failed
 		fprintf(stderr, FLFMT "Could not load rc file %s\n", FL, homeinit);
 		free(homeinit);
 	}
@@ -1075,13 +1007,12 @@ rc_file(void)
 
 	strcpy(homeinit, progname);
 	strcat(homeinit, ".ini");
-	if (command_file(homeinit))
-	{
+	if (command_file(homeinit)) {
 		fprintf(stderr, FLFMT "%s not found, no configuration loaded\n", FL, homeinit);
 		free(homeinit);
 		return diag_iseterr(DIAG_ERR_RCFILE);
 	}
-	printf("%s: Settings loaded succesfully from %s\n", progname, homeinit);
+	printf("%s: Settings loaded from %s\n", progname, homeinit);
 	free(homeinit);
 	return 0;
 #endif
@@ -1125,37 +1056,27 @@ int htoi(char *buf)
 	int rv = 0;
 	int base = 10;
 
-	if (buf[0] == '$')
-	{
+	if (buf[0] == '$') {
 		base = 16;
 		buf++;
-	}
-	else if (buf[0] == '0')
-	{
+	} else if (buf[0] == '0') {
 		base = 8;
 		buf++;
-		if (tolower(buf[0]) == 'x') 
-		{
+		if (tolower(buf[0]) == 'x') {
 			base = 16;
 			buf++;
 		}
 	}
 
-	while (*buf)
-	{
+	while (*buf) {
 		char upp = toupper(*buf);
 		int val;
 
-		if ((upp >= '0') && (upp <= '9'))
-		{
+		if ((upp >= '0') && (upp <= '9')) {
 			val = ((*buf) - '0');
-		}
-		else if ((upp >= 'A') && (upp <= 'F'))
-		{
+		} else if ((upp >= 'A') && (upp <= 'F')) {
 			val = (upp - 'A' + 10);
-		}
-		else
-		{
+		} else {
 			return -1;
 		}
 		if (val >= base)	/* Value too big for this base */
@@ -1173,12 +1094,11 @@ int htoi(char *buf)
  */
 void wait_enter(const char *message)
 {
-  printf(message);
-	while (1)
-	{
+	printf(message);
+	while (1) {
 		int ch = getc(stdin);
-    if (ch == '\n')
-      break;
+		if (ch == '\n')
+		break;
 	}
 }
 
@@ -1187,5 +1107,5 @@ void wait_enter(const char *message)
  */
 int pressed_enter()
 {
-  return diag_os_ipending(fileno(stdin));
+	return diag_os_ipending(fileno(stdin));
 }

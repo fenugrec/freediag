@@ -338,12 +338,15 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
  *
  * Look at the data and try and work out the length of the message based
  * on the J1979 protocol.
- * Check the checksum, if this is OK send message upward
- * If not, work thru the data working out whether the data looks correct
- * by looking for a checksum, ensuring there is only complete messages in
- * the buffer
+ * VVVVVVVV
+ * Note: J1979 doesn't specify particular checksums beyond what 9141 and 14230 already provide,
+ * i.e. a J1979 message is maximum 7 bytes long except on CANBUS.
+ * headers, address and checksum should be handled at the l2 level (9141, 14230, etc)
+ * The code currently doesn't verify checksums but have provisions for stripping headers + checksums.
+ * Also, the _getlen() function assumes 3 header bytes + 1 checksum byte.
  *
- * XXX this doesn't deal with CRCs
+ * Another validity check is comparing message length (expected vs real).
+ * Upper levels can also verify that the responses correspond to the requests (i.e. Service ID 0x02 -> 0x42 )
  *
  *
  */
@@ -356,12 +359,10 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 	int i;
 
 	while (d_l3_conn->rxoffset) {
-		int badpacket;
-
-		badpacket = 0;
+		int badpacket=0;
 
 		sae_msglen = diag_l3_j1979_getlen(d_l3_conn->rxbuf,
-					d_l3_conn->rxoffset);
+					d_l3_conn->rxoffset);	//set expected packet length based on SID + TID
 
 		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
 			fprintf(stderr,FLFMT "process_data rxoffset is %d sae_msglen is %ld\n",
@@ -395,7 +396,8 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			}
 
 			if (!badpacket)
-				diag_malloc(&data, (size_t)sae_msglen);
+				if (diag_malloc(&data, (size_t)sae_msglen))
+					return;
 	
 			if (badpacket || (data == NULL)) {
 				/* Failure indicated by zero len msg */
@@ -406,7 +408,6 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				msg->type = d_l3_conn->rxbuf[0];
 				msg->dest = d_l3_conn->rxbuf[1];
 				msg->src = d_l3_conn->rxbuf[2];
-/* XXX check checksum */
 				/* Copy in J1979 part of message */
 				memcpy(data, &d_l3_conn->rxbuf[3], (size_t)(sae_msglen - 4));
 				/* remove whole message from rx buf */
@@ -419,6 +420,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				msg->data = data;
 				msg->len = sae_msglen - 4;
 			}
+			free(data);
 
 			gettimeofday(&msg->rxtime, NULL);
 
@@ -432,6 +434,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				}
 				lmsg->next = msg;
 			}
+			free(msg);
 			if (badpacket) {
 				/* No point in continuing */
 				break;

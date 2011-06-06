@@ -161,8 +161,8 @@ struct diag_l2_conn
  * Operational L2 protocols
  *
  * NOTE, many of these protocols run on each others physical layer,
- * for instance J1850 runs on J1850/ISO9161/ISO14230 interfaces
- */
+ * for instance J1850 runs on J1850/ISO9141/ISO14230 interfaces
+  */
 #define DIAG_L2_PROT_RAW	0	/* Raw send/receive, ie. L2 pass thru */
 #define DIAG_L2_PROT_ISO9141	1	/* Iso 9141, keywords 08 08 */
 #define DIAG_L2_PROT_NOTUSED	2	/* NOT USED */
@@ -182,6 +182,7 @@ struct diag_l2_conn
 /*
  * Bits 0/1/2 used to tell what kind of initialisation to be done on the
  * diagnostic bus.
+ * XXX need to tidy up #defines for binary flags vs int values ...
  */
 #define DIAG_L2_TYPE_SLOWINIT	0x00		/* Do 5 Baud init */
 #define DIAG_L2_TYPE_FASTINIT	0x01		/* Do fast init */
@@ -217,6 +218,7 @@ struct diag_l2_conn
  * SAE J1978 is the ODB II ScanTool specification document
  */
 #define DIAG_L2_IDLE_J1978	0x40
+
 
 /* Used for L2_IOCTL_GETDATA */
 struct	diag_l2_data

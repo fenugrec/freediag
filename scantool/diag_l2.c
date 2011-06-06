@@ -70,19 +70,18 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
 		return 0;
 	}
 
-	for (last_node = l2proto_list; last_node != NULL ;
-                                       last_node = last_node->next)
+	for (last_node = l2proto_list; last_node != NULL ; last_node = last_node->next)
 		if (last_node->l2proto == l2proto)
 			return diag_iseterr(DIAG_ERR_GENERAL);	/* Already there. */
 
 	if ( (rv = diag_calloc(&new_node, 1)) ) 
 		return rv;
 
-        /* Find the last non-NULL node...*/
+	/* Find the last non-NULL node...*/
 
 	for (last_node = l2proto_list; last_node->next != NULL ;
-                                       last_node = last_node->next)
-          /* Do Nothing */ ;
+				last_node = last_node->next)
+	/* Do Nothing */ ;
 
 	new_node->l2proto = l2proto;
 	last_node->next = new_node;
@@ -720,8 +719,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, int cmd, void *data)
 		*(int *)data = diag_l1_getflags(dl0d);
 		break;
 	case DIAG_IOCTL_GET_L2_FLAGS:
-		*(int *)data =
-	 	   d_l2_conn->l2proto->diag_l2_flags;
+		*(int *)data = d_l2_conn->l2proto->diag_l2_flags;
 		break;
 	case DIAG_IOCTL_GET_L2_DATA:
 		d = (struct diag_l2_data *)data;

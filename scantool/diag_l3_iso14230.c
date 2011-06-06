@@ -135,25 +135,25 @@ char *buf, const size_t bufsize)
 static int
 diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 {
-        int rv;
-        struct diag_l2_conn *d_conn;
-        uint8_t buf[32];
-        struct diag_msg newmsg;
-        uint8_t cksum;
-        int i;
+	int rv;
+	struct diag_l2_conn *d_conn;
+	uint8_t buf[32];
+	struct diag_msg newmsg;
+	uint8_t cksum;
+	int i;
 
-        /* Get l2 connection info */
-        d_conn = d_l3_conn->d_l3l2_conn;
+	/* Get l2 connection info */
+	d_conn = d_l3_conn->d_l3l2_conn;
 
-        if (diag_l3_debug & DIAG_DEBUG_WRITE)
-                fprintf(stderr,FLFMT "send %d bytes, l2 flags 0x%x\n",
-                        FL, msg->len,  d_l3_conn->d_l3l2_flags);
+	if (diag_l3_debug & DIAG_DEBUG_WRITE)
+		fprintf(stderr,FLFMT "send %d bytes, l2 flags 0x%x\n",
+			FL, msg->len,  d_l3_conn->d_l3l2_flags);
 /*{int cnt; printf("[CJH] %s %d: ",__FILE__,__LINE__);
 for(cnt=0;cnt<msg->len;cnt++) printf("0x%02x ",msg->data[cnt]);printf("\n");}*/
 
-        /* Note source address on 1st send */
-        if (d_l3_conn->src == 0)
-                d_l3_conn->src = msg->src;
+	/* Note source address on 1st send */
+	if (d_l3_conn->src == 0)
+		d_l3_conn->src = msg->src;
 
 
 	if (1)// CJH (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_DATA_ONLY)
@@ -201,14 +201,14 @@ for(cnt=0;cnt<msg->len;cnt++) printf("0x%02x ",msg->data[cnt]);printf("\n");}*/
 			newmsg.len = msg->len + 4; /* Old len + hdr + cksum */
 		}
 		else
-			newmsg.len = msg->len + 3;      /* Old len + hdr */
+			newmsg.len = msg->len + 3;	/* Old len + hdr */
 
 		newmsg.data = buf;
 
 		/* And send message */
 		rv = diag_l2_send(d_conn, &newmsg);
 	}
-        return(rv);
+	return(rv);
 }
 
 
@@ -287,7 +287,7 @@ printf("[CJH] WARNING!! Should we be here?   %s %d\n",__FUNCTION__,__LINE__);
 
 static int
 diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, int timeout,
-        void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle)
+	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle)
 {
 	int rv;
 	struct diag_msg *msg;
@@ -467,47 +467,47 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 static void
 diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
 {
-        struct diag_msg msg;
-        uint8_t data[6];
+	struct diag_msg msg;
+	uint8_t data[6];
 
-        /* J1979 needs keepalive at least every 5 seconds, we use 3.5s */
+	/* J1979 needs keepalive at least every 5 seconds, we use 3.5s */
 /* XXX is this needed for all types of physical interface ? */
-        if (ms < 3500)
-                return;
-
-        /* Does L2 do keepalive for us ? */
-        if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_KEEPALIVE)
+	if (ms < 3500)
 		return;
 
-        /* OK, do keep alive on this connection */
+	/* Does L2 do keepalive for us ? */
+	if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_KEEPALIVE)
+		return;
 
-        if (diag_l3_debug & DIAG_DEBUG_TIMER)
-        {
-                /* XXX Not async-signal-safe */
-                fprintf(stderr, FLFMT "timeout impending for %p %d ms\n",
-                                FL, d_l3_conn, ms);
-        }
+	/* OK, do keep alive on this connection */
 
-        msg.data = data;
-        msg.len = 1;
-        data[0] = DIAG_KW2K_SI_TP ;
+	if (diag_l3_debug & DIAG_DEBUG_TIMER)
+	{
+		/* XXX Not async-signal-safe */
+		fprintf(stderr, FLFMT "timeout impending for %p %d ms\n",
+				FL, d_l3_conn, ms);
+	}
 
-        /*
-         * And set the source address, if no sends have happened, then
-         * the src advdress will be 0, so use the default used in J1979
-         */
-        if (d_l3_conn->src)
-                msg.src = d_l3_conn->src;
-        else
-                msg.src = 0xF1;         /* Default as used in SAE J1979 */
+	msg.data = data;
+	msg.len = 1;
+	data[0] = DIAG_KW2K_SI_TP ;
 
-        /* Send it */
-        (void)diag_l3_send(d_l3_conn, &msg);
+	/*
+	 * And set the source address, if no sends have happened, then
+	 * the src advdress will be 0, so use the default used in J1979
+	 */
+	if (d_l3_conn->src)
+		msg.src = d_l3_conn->src;
+	else
+		msg.src = 0xF1;	 /* Default as used in SAE J1979 */
 
-        /* Get and ignore the response */
-        (void)diag_l3_recv(d_l3_conn, 50, NULL, NULL);
+	/* Send it */
+	(void)diag_l3_send(d_l3_conn, &msg);
 
-        return;
+	/* Get and ignore the response */
+	(void)diag_l3_recv(d_l3_conn, 50, NULL, NULL);
+
+	return;
 }
 
 

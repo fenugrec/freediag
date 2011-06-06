@@ -52,8 +52,7 @@ extern "C" {
 #define DIAG_L1_FAST		0x02	/* Supports FAST Start */
 #define DIAG_L1_PREFSLOW	0x04	/* Prefers SLOW (5 baud) Start */
 #define DIAG_L1_PREFFAST	0x08	/* Prefers FAST Start */
-
-#define	DIAG_L1_HALFDUPLEX	0x10	/* Physical interface is half duplex, need to remove echos */
+#define DIAG_L1_HALFDUPLEX	0x10	/* Physical interface is half duplex, need to remove echos */
 
 /* following flags are for semi-intelligent interfaces */
 
@@ -97,13 +96,12 @@ extern "C" {
  *
  * This is a bitmask of what is supported
  */
-#define	DIAG_L1_SPARE		0x00	/* Not used */
+//#define	DIAG_L1_SPARE		0x00	/* Not used */
 #define	DIAG_L1_ISO9141		0x01	/* K line */
 #define	DIAG_L1_ISO14230	0x02	/* K line */
 #define DIAG_L1_J1850_VPW	0x04	/* J1850 interface, 10400 baud, VPW */
 #define DIAG_L1_J1850_PWM	0x08	/* J1850 interface 41600 baud, PWM */
 #define	DIAG_L1_CAN		0x10	/* CAN bus */
-
 #define	DIAG_L1_RAW		0x80	/* Raw data interface */
 
 /*

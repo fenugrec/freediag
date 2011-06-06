@@ -86,7 +86,7 @@ diag_l1_add_l0dev(const struct diag_l0 *l0dev) {
 		return rv;
 
 	for (last_node = l0dev_list; last_node->next != NULL; last_node = last_node->next)
-          /* Search for the next-to-last node */;
+		/* Search for the next-to-last node */;
 
 	new_node->l0dev = l0dev;
 	last_node->next = new_node;
@@ -130,7 +130,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 {
 	struct diag_l0_node *node;
 	const struct diag_l0 *l0dev;
- 
+
 	for (node = l0dev_list; node; node = node->next) {
 		l0dev = node->l0dev;
 		if (strcmp(name, l0dev->diag_l0_name) == 0)
@@ -191,23 +191,18 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 	 */ 
 	l0flags = diag_l1_getflags(dl0d);
 
-	if (   ((p4 == 0) && ((l0flags & DIAG_L1_HALFDUPLEX) == 0))
-		|| (l0flags & DIAG_L1_DOESL2FRAME) 
-		|| (l0flags & DIAG_L1_DOESP4WAIT) )
-	{
+	if (   ((p4 == 0) && ((l0flags & DIAG_L1_HALFDUPLEX) == 0)) ||
+		(l0flags & DIAG_L1_DOESL2FRAME) || (l0flags & DIAG_L1_DOESP4WAIT) ) {
 		/*
 		 * Send the lot if we don't need to delay, or collect
 		 * the echos
 		 */
 		rv = (dl0->diag_l0_send)(dl0d, subinterface, data, len);
-	}
-	else
-	{
+	} else {
 		const uint8_t *dp = (const uint8_t *)data;
 
 		/* Send each byte */
-		while (len--)
-		{
+		while (len--) {
 			rv = (dl0->diag_l0_send)(dl0d, subinterface, dp, 1);
 			if (rv != 0)
 				break;
@@ -218,8 +213,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 			 * i.e something wrote on the diag bus whilst
 			 * we were writing
 			 */
-			if (l0flags & DIAG_L1_HALFDUPLEX)
-			{
+			if (l0flags & DIAG_L1_HALFDUPLEX) {
 				uint8_t c;
 
 				c = *dp - 1; /* set it with wrong val */
@@ -227,13 +221,12 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 					rv=DIAG_ERR_GENERAL;
 					break;
 
-				if (c != *dp)
-				{
-				        if (c == *dp - 1)
-					    fprintf(stderr,"Half duplex interface not echoing!\n");
+				if (c != *dp) {
+					if (c == *dp - 1)
+						fprintf(stderr,"Half duplex interface not echoing!\n");
 					else
-					    fprintf(stderr,"Bus Error: got 0x%x expected 0x%x\n",
-						    c&0xff, *dp & 0xff);
+						fprintf(stderr,"Bus Error: got 0x%x expected 0x%x\n",
+							c&0xff, *dp & 0xff);
 					rv = DIAG_ERR_BUSERROR;
 					break;
 				}
@@ -279,6 +272,8 @@ int diag_l1_gettype(struct diag_l0_device *dl0d)
 	return diag_l0_device_dl0(dl0d)->diag_l0_type;
 }
 
+
+//return <0 on error, number of bytes on success
 static int
 diag_l1_saferead(struct diag_l0_device *dl0d, char *buf, size_t bufsiz, int timeout)
 {
