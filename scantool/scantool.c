@@ -532,10 +532,10 @@ l2_check_pid_bits(uint8_t *data, int pid)
   */
 int
 l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
-	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, uint8_t p7, void *handle)
+	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle)
 {
 	struct diag_msg	msg;
-	uint8_t data[256];	//Why 256?
+	uint8_t data[7];	//was 256?
 	int rv;
 	ecu_data_t *ep;
 	unsigned int i;
@@ -572,7 +572,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
 	data[4] = p4;
 	data[5] = p5;
 	data[6] = p6;
-	data[7] = p7;
+//	data[7] = p7;
 	diag_l3_send(d_conn, &msg);
 
 	/* And get response(s) within a short while */
@@ -964,7 +964,7 @@ do_j1979_getdata(int interruptible)
 		if (merged_mode1_info[i]) {
 			fprintf(stderr, "Requesting Mode 1 Pid 0x%02x...\n", i);
 			rv = l3_do_j1979_rqst(d_conn, 0x1, (int)i, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
+				0x00, 0x00, 0x00, 0x00, (void *)0);
 			if (rv < 0) {
 				fprintf(stderr, "Mode 1 Pid 0x%02x request failed (%d)\n",
 					i, rv);
@@ -985,7 +985,7 @@ do_j1979_getdata(int interruptible)
 	/* Get mode2/pid2 (DTC that caused freezeframe) */
 	fprintf(stderr, "Requesting Mode 0x02 Pid 0x02 (Freeze frame DTCs)...\n", i);
 	rv = l3_do_j1979_rqst(d_conn, 0x2, 2, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
+		0x00, 0x00, 0x00, 0x00, (void *)0);
 
 	if (rv < 0) {
 		fprintf(stderr, "Mode 0x02 Pid 0x02 request failed (%d)\n", rv);
@@ -1006,7 +1006,7 @@ do_j1979_getdata(int interruptible)
 				if (ep->mode2_info[i]) {
 					fprintf(stderr, "Requesting Mode 0x02 Pid 0x%02x...\n", i);
 					rv = l3_do_j1979_rqst(d_conn, 0x2, (int)i, 0x00,
-						0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
+						0x00, 0x00, 0x00, 0x00, (void *)0);
 					if (rv < 0) {
 						fprintf(stderr, "Mode 0x02 Pid 0x%02x request failed (%d)\n", i, rv);
 					}
@@ -1165,7 +1165,7 @@ do_j1979_cms()
 
 	fprintf(stderr, "Requesting Mode 7 (Current cycle emission DTCs)...\n");
 	rv = l3_do_j1979_rqst(d_conn, 0x07, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
+			0x00, 0x00, 0x00, 0x00, (void *)0);
 	if (rv == DIAG_ERR_TIMEOUT) {
 		/* Didn't get a response, this is valid if there are no DTCs */
 		fprintf(stderr, "No DTCs stored.\n");
@@ -1234,7 +1234,7 @@ do_j1979_ncms(int printall)
 			/* Do test */
 			fprintf(stderr, "Requesting Mode 6 TestID 0x%02x...\n", i);
 			rv = l3_do_j1979_rqst(d_conn, 6, (int)i, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
 				(void *)(printall?RQST_HANDLE_NCMS:RQST_HANDLE_NCMS2));
 			if (rv < 0) {
 				fprintf(stderr, "Mode 6 Test ID 0x%d failed\n", i);
@@ -1274,7 +1274,7 @@ do_j1979_getmodeinfo(int mode, int response_offset)
 		 */
 		fprintf(stderr, "Exploring Mode 0x%02x supported PIDs (block 0x%02x)...\n", mode, pid);
 		rv = l3_do_j1979_rqst(d_conn, mode, pid, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
+			0x00, 0x00, 0x00, 0x00, (void *)0);
 		if (rv != 0) {
 			/* No response */
 			break;
@@ -1421,7 +1421,7 @@ do_j1979_getO2tests(int O2sensor)
 			/* Do test for of i + testID */
 			fprintf(stderr, "Requesting Mode 0x05 TestID 0x%02x...\n", i);
 			rv = l3_do_j1979_rqst(d_conn, 5, i, o2s,
-				0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
 				(void *)RQST_HANDLE_O2S);
 			if ((rv < 0) || (find_ecu_msg(0, 0x45)==NULL)) {
 				fprintf(stderr, "Mode 5 Test ID 0x%d failed\n", i);
@@ -1454,7 +1454,7 @@ do_j1979_getdtcs()
 
 	fprintf(stderr, "Requesting Mode 0x01 PID 0x01 (Current DTCs)...\n", i);
 	rv = l3_do_j1979_rqst(d_conn, 1, 1, 0,
-			0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
+			0x00, 0x00, 0x00, 0x00, (void *)0);
 
 	if ((rv < 0) || (find_ecu_msg(0, 0x41)==NULL)) {
 		fprintf(stderr, "Mode 1 Pid 1 request failed %d\n", rv);
@@ -1495,7 +1495,7 @@ do_j1979_getdtcs()
 
 		fprintf(stderr, "Requesting Mode 0x03 (Emission DTCs)...\n");
 		rv = l3_do_j1979_rqst(d_conn, 3, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
+				0x00, 0x00, 0x00, 0x00, (void *)0);
 		if ((rv < 0) || (find_ecu_msg(0, 0x43)==NULL)) {
 			fprintf(stderr, "ECU would not return DTCs\n");
 			return -1;
@@ -1533,7 +1533,7 @@ do_j1979_getO2sensors()
 
 	fprintf(stderr, "Requesting Mode 0x01 PID 0x13 (O2 sensors location)...\n");
 	rv = l3_do_j1979_rqst(d_conn, 1, 0x13, 0,
-			0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
+			0x00, 0x00, 0x00, 0x00, (void *)0);
 
 	if ((rv < 0) || (find_ecu_msg(0, 0x41)==NULL)) {
 		fprintf(stderr, "Mode 1 Pid 0x13 request failed %d\n", rv);
@@ -1568,7 +1568,7 @@ diag_cleardtc(void)
 	d_conn = global_l3_conn;
 	fprintf(stderr, "Requesting Mode 0x04 (Clear DTCs)...\n");
 	rv = l3_do_j1979_rqst(d_conn, 0x04, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, (void *)0);
+		0x00, 0x00, 0x00, 0x00, (void *)0);
 
 	rxmsg = find_ecu_msg(0, 0x44);
 

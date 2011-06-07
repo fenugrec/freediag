@@ -127,8 +127,7 @@ static void aif_monitor ( void *data )
 	d_conn = global_l3_conn ;
 
 	rv = l3_do_j1979_rqst ( d_conn, 0x07, 0x00, 0x00,
-	0x00, 0x00, 0x00,
-	0x00, 0x00, (void *)0 ) ;
+	0x00, 0x00, 0x00, 0x00, (void *)0 ) ;
 
 	if (rv == DIAG_ERR_TIMEOUT)
 	{
