@@ -463,6 +463,7 @@ int
 diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 {
 	int flags;	/* Current flag values. */
+	struct timeval tv;	//for getting timestamps
 	int setflags = 0, clearflags = 0;
 
 	if (dtr)
@@ -489,6 +490,11 @@ diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 			FLFMT "open: Ioctl TIOCMSET failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+	gettimeofday(&tv, NULL);
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, FLFMT "%04ld.%03ld : DTR/RTS changed\n", FL, tv.tv_sec, tv.tv_usec);
+	}
+
 	return 0;
 }
 
@@ -754,6 +760,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 {
 	char cbuf;
+	struct timeval tv;
 	int xferd;
 	struct diag_serial_settings set;
 
@@ -777,8 +784,13 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 
 	diag_tty_setup(dl0d, &set);
 
+	gettimeofday(&tv,NULL);
 	/* Send a 0x00 byte message */
 	diag_tty_write(dl0d, "", 1);
+	
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, FLFMT "%04ld.%03ld : break start\n", FL, tv.tv_sec, tv.tv_usec);
+	}
 
 	/*
 	 * And read back the single byte echo, which shows TX completes
@@ -803,7 +815,11 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	}
 
 	/* Now wait the requested number of ms */
+	gettimeofday(&tv,NULL);
 	diag_os_millisleep(ms);
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, FLFMT "%04ld.%03ld : end of break_L\n", FL, tv.tv_sec, tv.tv_usec);
+	}
 
 	return 0;
 }

@@ -528,13 +528,14 @@ l2_check_pid_bits(uint8_t *data, int pid)
 
 /*
  * Send a SAE J1979 request, and get a response, and part process it
- */
+ * XXX why is there "mode" + 7 bytes ? J1979 messages are 7 data bytes long (includes any mode / SID byte)
+  */
 int
 l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
 	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, uint8_t p7, void *handle)
 {
 	struct diag_msg	msg;
-	uint8_t data[256];
+	uint8_t data[256];	//Why 256?
 	int rv;
 	ecu_data_t *ep;
 	unsigned int i;
@@ -1245,6 +1246,7 @@ do_j1979_ncms(int printall)
 
 /*
  * Get mode info
+ * response_offset : index into received packet where the the supported_pid bytemasks start.
  */
 void
 do_j1979_getmodeinfo(int mode, int response_offset)

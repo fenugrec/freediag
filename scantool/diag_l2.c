@@ -624,7 +624,7 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 			FLFMT "diag_l2_send %p msg %p msglen %d called\n",
 				FL, d_l2_conn, msg, msg->len);
 
-		diag_l2_sendstamp(d_l2_conn);	/* Save timestamps */
+	diag_l2_sendstamp(d_l2_conn);	/* Save timestamps */
 
 	/* Call protocol specific send routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_send(d_l2_conn, msg);
@@ -686,8 +686,7 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	rv = d_l2_conn->l2proto->diag_l2_proto_recv(d_l2_conn, timeout, callback, handle);
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "diag_l2_recv returns %d\n",
-				FL, rv);
+		fprintf(stderr, FLFMT "diag_l2_recv returns %d\n", FL, rv);
 	return rv;
 }
 

@@ -75,7 +75,7 @@ const struct cmd_tbl_entry debug_cmd_table[] =
 		cmd_debug_l3, 0, NULL},
 	{ "cli", "cli [val]", "Show/set CLI debug level",
 		cmd_debug_cli, 0, NULL},
-	{ "all", "all", "Show/set All layer debug level",
+	{ "all", "all [val]", "Show/set All layer debug level",
 		cmd_debug_all, 0, NULL},
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -90,6 +90,10 @@ const struct cmd_tbl_entry debug_cmd_table[] =
 static int
 cmd_debug_help(int argc, char **argv)
 {
+	if (argc<2) {
+		printf("Debugging flags are set per level according to the values set in diag.h\n");
+		printf("Setting [val] to -1 will enable all debug messages for that level.\n");
+	}
 	return help_common(argc, argv, debug_cmd_table);
 }
 
@@ -208,12 +212,7 @@ cmd_debug_all(int argc, char **argv)
 {
 	int val;
 
-	if (argc == 1)
-	{
-		return cmd_debug_show(1, NULL);
-	}
-	else
-	{
+	if (argc > 0) {
 		val = htoi(argv[1]);
 		diag_l0_debug = val;
 		diag_l1_debug = val;
@@ -221,6 +220,8 @@ cmd_debug_all(int argc, char **argv)
 		diag_l3_debug = val;
 		diag_cmd_debug = val;
 	}
+	return cmd_debug_show(1, NULL);
+
 	return CMD_OK;
 }
 

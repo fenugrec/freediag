@@ -28,6 +28,10 @@
  *
  *This is meant to support ELM323 & 327 devices. For now, only 9600 comms
  *will be supported. See diag_l0_elm_setspeed
+ *
+ *This interface is particular in that it handles the header bytes + checksum internally.
+ *Data is transferred in ASCII hex format, i.e. 0x46 0xFE is sent and received as "46FE"
+ *
  */
 
 
@@ -382,12 +386,13 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 	case DIAG_L1_J1850_PWM:
 			break;
 	case DIAG_L1_ISO9141:
-			flags = DIAG_L1_SLOW;
-			flags |= DIAG_L1_DOESP4WAIT;
+			flags = DIAG_L1_SLOW | DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM;
+			flags |= DIAG_L1_DOESP4WAIT | DIAG_L1_STRIPSL2CKSUM;
 			break;
 	case DIAG_L1_ISO14230:
 			flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
-			flags |= DIAG_L1_DOESP4WAIT;
+			flags |= DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM;
+			flags |= DIAG_L1_DOESP4WAIT | DIAG_L1_STRIPSL2CKSUM;
 			break;
 	}
 

@@ -114,7 +114,7 @@ static const struct cmd_tbl_entry root_cmd_table[]=
 		0, dyno_cmd_table},
 
 	{ "debug", "debug [parameter = debug]",
-		"Sets/displays debug stuff, \"debug help\" for more info", NULL,
+		"Sets/displays debug data and flags, \"debug help\" for available commands", NULL,
 		0, debug_cmd_table},
 
 	{ "date", "date", "Prints date & time", cmd_date, FLAG_HIDDEN, NULL},
