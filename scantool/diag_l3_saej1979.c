@@ -770,8 +770,8 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
 	uint8_t data[6];
 
 	/* J1979 needs keepalive at least every 5 seconds, we use 3.5s */
-/* XXX is this needed for all types of physical interface ? */
-	if (ms < 3500)
+	// Not needed for l0_elm devices.
+	if (ms < J1979_KEEPALIVE)
 		return;
 
 	/* Does L2 do keepalive for us ? */

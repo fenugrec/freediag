@@ -31,7 +31,11 @@
  *
  *This interface is particular in that it handles the header bytes + checksum internally.
  *Data is transferred in ASCII hex format, i.e. 0x46 0xFE is sent and received as "46FE"
- *
+ *The ELM327 has non-volatile settings; this will require special treatment. Not
+ * implemented at the moment: the _open function will reset factory settings.
+ *These devices handle the periodic wake-up commands on the bus. This is the only l0
+ *device with that feature; upper levels (esp L2) need to be modified to take this into account. See
+ *diag_l3_saej1979.c : diag_l3_j1979_timer() etc.
  */
 
 
@@ -51,25 +55,23 @@
 
 CVSID("$Id$");
 
-
-/*
- * Scantool.net's ELM 323 chipset based drive driver
- * under POSIX-like systems connected to a serial port.
- *
- * This device actually works does all of the work for you - you
- * just treat it like a serial device and read/write as required.
- *
- */
+#define ELM_BUFSIZE 25	//longest data to be received during init is the version string, ~ 15 bytes. 25 should be plenty for all other situations
 
 struct diag_l0_elm_device {
 	int protocol;
 	struct diag_serial_settings serial;
+	//a couple of flags could be added here, like ELM323 / ELM327; packed_data; etc.
 };
+
+const char * elm_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?"};
 
 /* Global init flag */
 static int diag_l0_elm_initdone;
 
 extern const struct diag_l0 diag_l0_elm;
+
+static int diag_l0_elm_send(struct diag_l0_device *dl0d,
+const char *subinterface __attribute__((unused)), const void *data, size_t len);
 
 /*
  * Init must be callable even if no physical interface is
@@ -87,39 +89,6 @@ diag_l0_elm_init(void)
 	diag_os_sched();
 
 	return 0;
-}
-
-/*
- * Open the diagnostic device, returns a file descriptor
- * records original state of term interface so we can restore later
- */
-static struct diag_l0_device *
-diag_l0_elm_open(const char *subinterface, int iProtocol)
-{
-	int rv;
-	struct diag_l0_device *dl0d;
-	struct diag_l0_elm_device *dev;
-
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
-			FL, subinterface, iProtocol);
-	}
-
-	diag_l0_elm_init();
-
-	if (rv=diag_calloc(&dev, 1))
-		return (struct diag_l0_device *)diag_pseterr(rv);
-
-	dev->protocol = iProtocol;
-
-	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_elm, (void *)dev))
-		return (struct diag_l0_device *)diag_pseterr(rv);
-
-	diag_tty_iflush(dl0d);	/* Flush unread input */
-	
-	//XXX insert ELM init commands here
-
-	return dl0d;
 }
 
 static int
@@ -144,8 +113,182 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 	return 0;
 }
 
+
+//Send a command to ELM device and make sure no error occured. Data is passed on directly as a string; caller must make sure the string is \n-terminated.
+//Or rather, 0x0D-terminated. 0x0A is not required with ELM
+//Currently the code is dup'ed from _elm_send , but this will be changed so that _elm_send calls _sendcmd smartly.
+//returns 0 on success
+//_sendcmd should not be called from outside diag_l0_elm.c
+static int
+diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const void *data, size_t len, int timeout)
+{
+	ssize_t xferd;
+
+	if (((char *) data)[len-1] != 0x0D) {
+		//Last byte is not a carriage return, this would die.
+		fprintf(stderr, FLFMT "Error: trying to send non-terminated command %.*s\n", FL, len, data);
+		//the %.*s is pure magic : limits the string length to len, even if the string is not null-terminated.
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+		fprintf(stderr, FLFMT "sending command to ELM:\n\"%.*s\"", FL, len, data);
+		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+			diag_data_dump(stderr, data, len);
+		}
+	}
+
+	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
+		/* Partial write */
+		if (xferd <  0) {	//write error
+			/* error */
+			if (errno != EINTR) {	//not an interruption
+				perror("write");
+				fprintf(stderr, FLFMT "write returned error %d\n", FL, errno);
+				return diag_iseterr(DIAG_ERR_GENERAL);
+			}
+			xferd = 0; /* Interrupted write, nothing transferred. */
+		}
+		/*
+		 * Successfully wrote xferd bytes (or 0 && EINTR),
+		 * so inc pointers and continue
+		 */
+		len -= xferd;
+		data = (const void *)((const char *)data + xferd);
+	}
+	
+
+	return 0;
+	
+}
+/*
+ * Open the diagnostic device, returns a file descriptor
+ * records original state of term interface so we can restore later
+ */
+static struct diag_l0_device *
+diag_l0_elm_open(const char *subinterface, int iProtocol) 
+{
+	int rv;
+	struct diag_l0_device *dl0d;
+	struct diag_l0_elm_device *dev;
+	struct diag_serial_settings sset;
+	char * buf[ELM_BUFSIZE];
+
+	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
+			FL, subinterface, iProtocol);
+	}
+
+	diag_l0_elm_init();
+
+	if (rv=diag_calloc(&dev, 1))
+		return (struct diag_l0_device *)diag_pseterr(rv);
+
+	dev->protocol = iProtocol;
+
+	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_elm, (void *)dev))
+		return (struct diag_l0_device *)diag_pseterr(rv);
+	
+	//set speed to 9600;8n1. XXX Perhaps this could be included with the diag_tty_open call above ?
+	sset.speed=9600;
+	sset.databits = diag_databits_8;
+	sset.stopbits = diag_stopbits_1;
+	sset.parflag = diag_par_n;
+
+	dev->serial = sset;
+
+	if (rv=diag_iseterr(diag_tty_setup(dl0d, &sset))) {
+		fprintf(stderr, FLFMT "Error setting 9600;8N1 on %s\n",
+			FL, subinterface);
+		free(dev);
+		return (struct diag_l0_device *)diag_pseterr(rv);
+	}
+
+	diag_tty_iflush(dl0d);	/* Flush unread input */
+	
+	//At this stage, the ELM has possibly been powered up for a while;
+	//sending the command "ATZ" will cause a full reset and the chip will send a
+	//welcome string like "ELM323 v2.0\n>" or "ELM327 v1.4b\n>"
+	//the device string may be checked but the most important is the > character as
+	//it indicates the device's readiness.
+	//The following options are also set :
+	//ATE0   (disable echo)
+	//
+	
+	*buf="ATZ\n";
+	if (diag_l0_elm_send(dl0d, subinterface, buf, 4)) {
+		if (diag_l0_debug&DIAG_DEBUG_OPEN) {
+			fprintf(stderr, FLFMT "sending \"ATZ\" failed", FL);
+		}
+		diag_l0_elm_close(&dl0d);
+		free(dev);
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+	}
+	//next : read back welcome string. Max 250ms to complete... tentative guess
+	rv=diag_tty_read(dl0d, buf, 20, 250);
+	if (rv<1) {
+		//no data or error
+		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+			fprintf(stderr, FLFMT "ELM reset readback failed\n", FL);
+		}
+		diag_l0_elm_close(&dl0d);
+		free(dev);
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_TIMEOUT);
+	}
+	*buf[rv]=0;	//terminate string
+	if (*buf[rv-1] != '>') {
+		//if last character isn't the input prompt, there is a problem
+		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+			fprintf(stderr, FLFMT "ELM not ready; received %s", FL, buf);
+		}
+		diag_l0_elm_close(&dl0d);
+		free(dev);
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_TIMEOUT);
+	}
+	//else : correct prompt received:
+	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+		fprintf(stderr, FLFMT "ELM reset success : %s\n", FL, buf);
+	}
+	//now send "ATE0\n" command to disable echo.
+	*buf="ATE0\n";
+	if (diag_l0_elm_send(dl0d, subinterface, &buf, 5)) {
+		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+			fprintf(stderr, FLFMT "sending \"ATE0\" failed", FL);
+		}
+		diag_l0_elm_close(&dl0d);
+		free(dev);
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+	}
+	//again wait for prompt
+	rv=diag_tty_read(dl0d, &buf, 20, 250);
+	if (rv<1) {
+		//no data or error
+		rv=1;
+		buf[0]=NULL;
+		//this is just to fall in the next "if"... testing for (rv<1 || buf[rv-1] != '>') could
+		//have unpredictable results if rv is negative
+	}
+	*buf[rv]=0;		//terminate string
+	if (*buf[rv-1] != '>') {
+		//if last character isn't the input prompt, there is a problem
+		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+			fprintf(stderr, FLFMT "ELM setup failed; received %s\n", FL, &buf);
+		}
+		diag_l0_elm_close(&dl0d);
+		free(dev);
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+	}
+	//at this point : ELM is ready for further ops
+	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+		fprintf(stderr, FLFMT "ELM ready: %s\n", FL, buf);
+	}
+	return dl0d;
+}
+
+
 /*
  * Fastinit:
+ * ELM claims it will deal with slow/fast init automatically. Until the code from levels L1 and up can deal with this,
+ * the bus will manually be initialized.
  */
 #ifdef WIN32
 static int
@@ -157,11 +300,17 @@ diag_l0_elm_fastinit(struct diag_l0_device *dl0d,
 struct diag_l1_initbus_args *in __attribute__((unused)))
 #endif
 {
+	int rv;
+	char * buf="ATFI\n";
+	
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		fprintf(stderr, FLFMT "device link %p fastinit\n",
-			FL, dl0d);
+		fprintf(stderr, FLFMT "device link %p fastinit\n", FL, dl0d);
 
-	// XXX insert ELM fast init command : "AT FI" ?
+	//send command with 1000ms timeout (guess). This should be enough for 14230 inits
+	if (diag_l0_elm_sendcmd(dl0d, &buf, 5, 1000)) {
+		fprintf(stderr, FLFMT "sending ATFI failed", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 	return 0;
 }
 
@@ -224,12 +373,6 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 		break;
 	}
 
-	/*
-	 * return the baud rate etc to what the user had set
-	 * because the init routines will have messed them up
-	 */
-	(void)diag_tty_setup(dl0d, &dev->serial);
-
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "initbus device link %p returning %d\n",
 			FL, dl0d, rv);
@@ -257,11 +400,6 @@ const char *subinterface __attribute__((unused)),
 const void *data, size_t len)
 #endif
 {
-	/*
-	 * This will be called byte at a time unless P4 timing parameter is zero
-	 * as the L1 code that called this will be adding the P4 gap between
-	 * bytes
-	 */
 	ssize_t xferd;
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {

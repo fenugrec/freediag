@@ -28,6 +28,7 @@
 extern "C" {
 #endif
 
+#define J1979_KEEPALIVE 3500		//ms timeout between keepalive messages on OBD bus
 extern const diag_l3_proto_t diag_l3_j1979;
 
 #if defined(__cplusplus)

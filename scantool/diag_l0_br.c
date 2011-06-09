@@ -67,7 +67,7 @@ struct diag_l0_br_device
 	uint8_t dev_kb2;
 
 
-	uint8_t	dev_rxbuf[MAXRBUF];/* Receive buffer XXX need to be this big? */
+	uint8_t	dev_rxbuf[MAXRBUF];	/* Receive buffer XXX need to be this big? */
 	int		dev_rxlen;	/* Length of data in buffer */
 	int		dev_rdoffset;	/* Offset to read from to */
 

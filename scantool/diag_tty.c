@@ -47,7 +47,7 @@ void *dl0_handle)
 
 	const char *tty_template ="/dev/obdII%d";
 
-	if ((rv=diag_calloc(&dl0d, 1)))
+	if (rv=diag_calloc(&dl0d, 1))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
 
 	dl0d->fd = -1;
@@ -62,6 +62,8 @@ void *dl0_handle)
 	*ppdl0d = dl0d;
 
 	/*
+	 * XXX this should probably be removed... "historical compatibility" with what ?? Who ?
+	
 	 * For historical compatibility, if the subinterface decodes cleanly
 	 * as an integer we will write it into a string to get the name.
 	 * You can create a symlink to "/dev/obdII<NUMBER>" if you want to,
@@ -72,6 +74,8 @@ void *dl0_handle)
 	if (*endptr == 0) {
 		/* Entire string is a valid number: Provide compatibility.  */
 		size_t n = strlen(tty_template) + 32;
+		printf("Warning : using deprecated /dev/obdII<x> subinterface definition.\n");
+		printf("Support for this will be discontinued shortly...\n");
 
 		if ((rv=diag_malloc(&dl0d->name, n))) {
 			(void)diag_tty_close(ppdl0d);;
@@ -511,11 +515,10 @@ const void *buf, const size_t count)
 
 /*
  * Non interruptible, sleeping posix like read() with a timeout
- * timeout is in ms. If timeout is 0, this acts as a non-blocking
- * read,
-+* and is used both to read from a TTY and to check for input available
-+* at stdin.  I've split things out to separate the TTY reads from the
-+* check for available input.
+ * timeout is in ms. If timeout is 0, this acts as a non-blocking read,
+ * and is used both to read from a TTY and to check for input available
+ * at stdin.  I've split things out to separate the TTY reads from the
+ * check for available input.
  * returns either 0 on succes, <0 on error, or # of bytes read on success. pah.
 */
 ssize_t

@@ -470,9 +470,8 @@ diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
 	struct diag_msg msg;
 	uint8_t data[6];
 
-	/* J1979 needs keepalive at least every 5 seconds, we use 3.5s */
-/* XXX is this needed for all types of physical interface ? */
-	if (ms < 3500)
+	/* ISO14230 ? XXX J1979 needs keepalive at least every 5 seconds, we use 3.5s */
+	if (ms < ISO14230_KEEPALIVE)
 		return;
 
 	/* Does L2 do keepalive for us ? */

@@ -238,16 +238,17 @@ char **argv __attribute__((unused)))
 static int cmd_set_interface(int argc, char **argv)
 {
 	if (argc > 1) {
-		int i, prflag = 0, found = 0;
+		int i, helping = 0, found = 0;
 		if (strcmp(argv[1], "?") == 0) {
-			prflag = 1;
+			helping = 1;
 			printf("hardware interface: use \"set interface NAME [id]\" .\n"
 			"[id] is either an integer to be appended as /dev/obdII[id] or\n"
 			"a complete device name such as \"/dev/ttyS0\".\n"
 			"Valid interface names are: \n");
 		}
 		for (i=0; l0_names[i].longname != NULL; i++) {
-			if (prflag)
+			//loop through l0 interface names, either printing or comparing to argv[1]
+			if (helping)
 				printf("%s ", l0_names[i]);
 			else
 				if (strcasecmp(argv[1], l0_names[i].longname) == 0) {
@@ -256,7 +257,7 @@ static int cmd_set_interface(int argc, char **argv)
 					found = 1;
 				}
 		}
-		if (prflag) {
+		if (helping) {
 			//"?" was entered
 			printf("\n");
 		} else if (!found) {
