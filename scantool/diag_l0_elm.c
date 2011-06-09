@@ -31,11 +31,15 @@
  *
  *This interface is particular in that it handles the header bytes + checksum internally.
  *Data is transferred in ASCII hex format, i.e. 0x46 0xFE is sent and received as "46FE"
+ *
  *The ELM327 has non-volatile settings; this will require special treatment. Not
- * implemented at the moment: the _open function will reset factory settings.
+ * implemented at the moment -> the _open function will reset factory settings.
+ *
  *These devices handle the periodic wake-up commands on the bus. This is the only l0
  *device with that feature; upper levels (esp L2) need to be modified to take this into account. See
  *diag_l3_saej1979.c : diag_l3_j1979_timer() etc.
+ *
+ *For now, fast / slow init uses default addressing. This should be fixed someday
  */
 
 
@@ -63,7 +67,8 @@ struct diag_l0_elm_device {
 	//a couple of flags could be added here, like ELM323 / ELM327; packed_data; etc.
 };
 
-const char * elm_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?"};
+// possible error messages returned by ELM323. ELM327 messages should be defined separately ?
+const char * elm_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?", NULL};
 
 /* Global init flag */
 static int diag_l0_elm_initdone;
@@ -116,17 +121,19 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 
 //Send a command to ELM device and make sure no error occured. Data is passed on directly as a string; caller must make sure the string is \n-terminated.
 //Or rather, 0x0D-terminated. 0x0A is not required with ELM
-//Currently the code is dup'ed from _elm_send , but this will be changed so that _elm_send calls _sendcmd smartly.
+//This func should not be used for data that elicits a data response (i.e. all data destined to the OBD bus, hence not prefixed by "AT")
 //returns 0 on success
-//_sendcmd should not be called from outside diag_l0_elm.c
+//_sendcmd should not be called from outside diag_l0_elm.c;
 static int
 diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const void *data, size_t len, int timeout)
 {
 	ssize_t xferd;
+	int i, rpos, rv;
+	char * buf[ELM_BUFSIZE];
 
 	if (((char *) data)[len-1] != 0x0D) {
 		//Last byte is not a carriage return, this would die.
-		fprintf(stderr, FLFMT "Error: trying to send non-terminated command %.*s\n", FL, len, data);
+		fprintf(stderr, FLFMT "Error: attempting to send non-terminated command %.*s\n", FL, len, data);
 		//the %.*s is pure magic : limits the string length to len, even if the string is not null-terminated.
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -156,7 +163,45 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const void *data, size_t len, i
 		data = (const void *)((const char *)data + xferd);
 	}
 	
-
+	//next, receive ELM response, with {ms} timeout.
+	rv=diag_tty_read(dl0d, buf, ELM_BUFSIZE-5, timeout);
+	if (rv<1) {
+		//no data or error
+		if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+			fprintf(stderr, FLFMT "ELM did not respond\n", FL);
+		}
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	*buf[rv]=0;	//terminate string
+	if (*buf[rv-1] != '>') {
+		//if last character isn't the input prompt, there is a problem
+		if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+			fprintf(stderr, FLFMT "ELM not ready; received %s", FL, buf);
+		}
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	//At this point we did get a prompt but there may have been an error message; 
+	//first : search for the last 0x0D / 0x0A before the prompt.
+	rpos=rv-1;
+	while (rpos>0) {
+		rpos--;
+		if ((*buf[rpos] == 0x0D) || (*buf[rpos] ==0x0A))
+			break;
+	}
+	if ((rv - rpos) > 3) {
+		//there is probably a message between the last CR/LF and the prompt. Find possible error message:
+		for (i=0; elm_errors[i] != NULL; i++) {
+			if (strncmp(buf[rpos], elm_errors[i], (rv - 1) - rpos) == 0) {
+				//error message found :
+				fprintf(stderr, FLFMT "ELM returned error : %s\n", FL, elm_errors[i]);
+				return diag_iseterr(DIAG_ERR_GENERAL);
+			}
+		}
+		//no match found, but there was "something" before '>'. Display this.
+		fprintf(stderr, FLFMT "Warning: unrecognized response before prompt : %s\n", FL, buf);
+		fprintf(stderr, FLFMT "This is probably a bug, please report !\n", FL);
+	}
+	
 	return 0;
 	
 }
@@ -215,7 +260,8 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	//
 	
 	*buf="ATZ\n";
-	if (diag_l0_elm_send(dl0d, subinterface, buf, 4)) {
+	if (diag_l0_elm_sendcmd(dl0d, buf, 4, 250)) {
+	//if (diag_l0_elm_send(dl0d, subinterface, buf, 4)) {
 		if (diag_l0_debug&DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATZ\" failed", FL);
 		}
@@ -223,34 +269,15 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		free(dev);
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
-	//next : read back welcome string. Max 250ms to complete... tentative guess
-	rv=diag_tty_read(dl0d, buf, 20, 250);
-	if (rv<1) {
-		//no data or error
-		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "ELM reset readback failed\n", FL);
-		}
-		diag_l0_elm_close(&dl0d);
-		free(dev);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_TIMEOUT);
-	}
-	*buf[rv]=0;	//terminate string
-	if (*buf[rv-1] != '>') {
-		//if last character isn't the input prompt, there is a problem
-		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "ELM not ready; received %s", FL, buf);
-		}
-		diag_l0_elm_close(&dl0d);
-		free(dev);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_TIMEOUT);
-	}
-	//else : correct prompt received:
+	
+	//Correct prompt received:
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "ELM reset success : %s\n", FL, buf);
 	}
+	
 	//now send "ATE0\n" command to disable echo.
 	*buf="ATE0\n";
-	if (diag_l0_elm_send(dl0d, subinterface, &buf, 5)) {
+	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 250)) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATE0\" failed", FL);
 		}
@@ -258,25 +285,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		free(dev);
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
-	//again wait for prompt
-	rv=diag_tty_read(dl0d, &buf, 20, 250);
-	if (rv<1) {
-		//no data or error
-		rv=1;
-		buf[0]=NULL;
-		//this is just to fall in the next "if"... testing for (rv<1 || buf[rv-1] != '>') could
-		//have unpredictable results if rv is negative
-	}
-	*buf[rv]=0;		//terminate string
-	if (*buf[rv-1] != '>') {
-		//if last character isn't the input prompt, there is a problem
-		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "ELM setup failed; received %s\n", FL, &buf);
-		}
-		diag_l0_elm_close(&dl0d);
-		free(dev);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
-	}
+
 	//at this point : ELM is ready for further ops
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "ELM ready: %s\n", FL, buf);
@@ -286,59 +295,50 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 
 /*
- * Fastinit:
- * ELM claims it will deal with slow/fast init automatically. Until the code from levels L1 and up can deal with this,
- * the bus will manually be initialized.
+ * Fastinit & slowinit:
+ * ELM claims it will deal with slow/fast init automatically. Until the code from levels L1 and up can deal with
+ * this, the bus will manually be initialized.
+ * Only callable internally. Not for export !!
  */
-#ifdef WIN32
 static int
-diag_l0_elm_fastinit(struct diag_l0_device *dl0d,
-struct diag_l1_initbus_args *in)
-#else
-static int
-diag_l0_elm_fastinit(struct diag_l0_device *dl0d,
-struct diag_l1_initbus_args *in __attribute__((unused)))
-#endif
+diag_l0_elm_fastinit(struct diag_l0_device *dl0d)
 {
-	int rv;
-	char * buf="ATFI\n";
+	char * cmds="ATFI\n";
 	
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		fprintf(stderr, FLFMT "device link %p fastinit\n", FL, dl0d);
+	if (diag_l0_debug & DIAG_DEBUG_PROTO)
+		fprintf(stderr, FLFMT "ELM forced fastinit\n", FL);
 
-	//send command with 1000ms timeout (guess). This should be enough for 14230 inits
-	if (diag_l0_elm_sendcmd(dl0d, &buf, 5, 1000)) {
-		fprintf(stderr, FLFMT "sending ATFI failed", FL);
+	//send command with 1000ms timeout (guessing)
+	if (diag_l0_elm_sendcmd(dl0d, &cmds, 5, 1000)) {
+		fprintf(stderr, FLFMT "Command ATFI failed\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	return 0;
 }
 
-/*
- * Slowinit:
- * ELM takes care of the details & timing.
- */
+
 static int
-diag_l0_elm_slowinit(struct diag_l0_device *dl0d,
-struct diag_l1_initbus_args *in, struct diag_l0_elm_device *dev)
+diag_l0_elm_slowinit(struct diag_l0_device *dl0d)
 {
-	char cbuf[MAXRBUF];
-	int xferd, rv;
-	int tout;
-	struct diag_serial_settings set;
+	char * cmds="ATSI\n";
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "slowinit link %p address 0x%x\n",
-			FL, dl0d, in->addr);
+		fprintf(stderr, FLFMT "ELM forced slowinit\n", FL);
 	}
 
-	//XXX insert ELM commands here
+	//huge timeout of 3.5s. Not sure if this is adequate
+	if (diag_l0_elm_sendcmd(dl0d, &cmds, 5, 3500)) {
+		fprintf(stderr, FLFMT "Command ATSI failed\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 	return 0;
 
 }
 
 /*
  * Do wakeup on the bus
+ * For now, the address specified in initbus_args is ignored. XXX This should be fixed with a ATSR command, probably ?
+ * ELM luckily has adequate default addresses for most cases.
  */
 static int
 diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
@@ -347,37 +347,33 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 
 	struct diag_l0_elm_device *dev;
 
+	if (diag_l0_debug & DIAG_DEBUG_WRITE)
+		fprintf(stderr, FLFMT "ELM initbus type %d\n",
+			FL, in->type);
+
 	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n",
-			FL, dl0d, dev, in->type);
-
 	if (!dev)
-		return -1;
-
+		return diag_iseterr(rv);
 	
 	/* Wait the idle time (Tidle > 300ms) */
-	diag_tty_iflush(dl0d);	/* Flush unread input */
 	diag_os_millisleep(300);
 
-	switch (in->type) 	{
-	case DIAG_L1_INITBUS_FAST:
-		rv = diag_l0_elm_fastinit(dl0d, in);
-		break;
-	case DIAG_L1_INITBUS_5BAUD:
-		rv = diag_l0_elm_slowinit(dl0d, in, dev);
-		break;
-	default:
-		rv = DIAG_ERR_INIT_NOTSUPP;
-		break;
+	switch (in->type) {
+		case DIAG_L1_INITBUS_FAST:
+			rv = diag_l0_elm_fastinit(dl0d);
+			break;
+		case DIAG_L1_INITBUS_5BAUD:
+			rv = diag_l0_elm_slowinit(dl0d);
+			break;
+		default:
+			rv = DIAG_ERR_INIT_NOTSUPP;
+			break;
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		fprintf(stderr, FLFMT "initbus device link %p returning %d\n",
-			FL, dl0d, rv);
-	
-	return rv;
+	if (rv)
+		return diag_iseterr(rv);
+	return 0;
 
 }
 
