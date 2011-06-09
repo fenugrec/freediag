@@ -21,10 +21,7 @@
  *************************************************************************
  *
  * Diag, Layer 0, interface for Scantool.net's ELM32x Interface
- * Ken Bantoft <ken@bantoft.org>
- *
- * This is currently just cut/copy/pasted from the sileng driver, and
- * will not work yet.
+ * Work in progress, will not work yet. 
  *
  *This is meant to support ELM323 & 327 devices. For now, only 9600 comms
  *will be supported. See diag_l0_elm_setspeed
@@ -51,6 +48,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "diag.h"
 #include "diag_err.h"
@@ -59,7 +57,7 @@
 
 CVSID("$Id$");
 
-#define ELM_BUFSIZE 25	//longest data to be received during init is the version string, ~ 15 bytes. 25 should be plenty for all other situations
+#define ELM_BUFSIZE 25	//longest data to be received during init is the version string, ~ 15 bytes. OBD data is 7 bytes, received as a 23-char string.
 
 struct diag_l0_elm_device {
 	int protocol;
@@ -120,7 +118,7 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 
 
 //Send a command to ELM device and make sure no error occured. Data is passed on directly as a string; caller must make sure the string is \n-terminated.
-//Or rather, 0x0D-terminated. 0x0A is not required with ELM
+//Or rather, 0x0D-terminated. 0x0A is not required with ELM ?
 //This func should not be used for data that elicits a data response (i.e. all data destined to the OBD bus, hence not prefixed by "AT")
 //returns 0 on success
 //_sendcmd should not be called from outside diag_l0_elm.c;
@@ -261,7 +259,6 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	
 	*buf="ATZ\n";
 	if (diag_l0_elm_sendcmd(dl0d, buf, 4, 250)) {
-	//if (diag_l0_elm_send(dl0d, subinterface, buf, 4)) {
 		if (diag_l0_debug&DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATZ\" failed", FL);
 		}
@@ -357,6 +354,7 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 		return diag_iseterr(rv);
 	
 	/* Wait the idle time (Tidle > 300ms) */
+	/* Although this is probably already taken care of in ELM's firmware*/
 	diag_os_millisleep(300);
 
 	switch (in->type) {
@@ -382,6 +380,10 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 /*
  * Send a load of data
  *
+ * Directly send hex-ASCII; exit without receiving response.
+ * Upper levels don't append 0x0D / 0x0A at the end, we take care of it.
+ * "ATx" commands sould not be sent with this.
+ *
  * Returns 0 on success, -1 on failure
  */
 #ifdef WIN32
@@ -396,23 +398,42 @@ const char *subinterface __attribute__((unused)),
 const void *data, size_t len)
 #endif
 {
-	ssize_t xferd;
+	char buf[ELM_BUFSIZE];
+	size_t xferd;
+	int i;
+	
+	if ((2*len)>(ELM_BUFSIZE-1)) {
+		//too much data for buffer size
+		fprintf(stderr, FLFMT "ELM: too much data for buffer (report this bug !)\n", FL);
+		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %d bytes ",
-			FL, dl0d, (int)len);
+		fprintf(stderr, FLFMT "ELM: sending %d bytes ", FL, len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 		}
 	}
 
-	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
+	for (i=0; i<len; i++) {
+		//fill buffer with ascii-fied hex data
+		snprintf(&buf[2*i], 3, "%02x", ((char *)data)[i]);
+	}
+	i=2*len;
+	buf[i]=0x0D;
+	buf[i+1]=0x00;	//terminate string
+	
+	if ((diag_l0_debug & DIAG_DEBUG_WRITE) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
+		fprintf(stderr, FLFMT "ELM: sending %s\n", FL, &buf);
+	}
+	
+	while ((size_t)(xferd = diag_tty_write(dl0d, &buf, i+1)) != i+1) {
 		/* Partial write */
 		if (xferd <  0) {	//write error
 			/* error */
 			if (errno != EINTR) {	//not an interruption
 				perror("write");
-				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
+				fprintf(stderr, FLFMT "write returned error %d\n", FL, errno);
 				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 			xferd = 0; /* Interrupted write, nothing transferred. */
@@ -422,11 +443,7 @@ const void *data, size_t len)
 		 * so inc pointers and continue
 		 */
 		len -= xferd;
-		data = (const void *)((const char *)data + xferd);
-	}
-	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, "\n");
+		data = (const void *)((const char *)&buf + xferd);
 	}
 
 	return 0;
@@ -435,6 +452,8 @@ const void *data, size_t len)
 /*
  * Get data (blocking), returns number of chars read, between 1 and len
  * If timeout is set to 0, this becomes non-blocking
+ * ELM returns a string with format "%02x %02x %02x[...]\n" . 
+ * We convert this received ascii string to hex before returning.
  */
 #ifdef WIN32
 static int
@@ -449,19 +468,17 @@ void *data, size_t len, int timeout)
 #endif
 {
 	int xferd;
+	char rxbuf[ELM_BUFSIZE];		//need max (7 digits *2chars) + (6 space *1) + 1(CR) + 1(>) + (NUL) bytes.
 
-	struct diag_l0_elm_device *dev;
-	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
+	//possibly not useful until ELM323 vs 327 distinction is made :
+	//struct diag_l0_elm_device *dev;
+	//dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
-		fprintf(stderr,
-			FLFMT "link %p recv upto %d bytes timeout %d",
-			FL, dl0d, (int)len, timeout);
+		fprintf(stderr, FLFMT "Expecting %d bytes from ELM, %d ms timeout\n", FL, (int) len, timeout);
 
-	while ( (xferd = diag_tty_read(dl0d, data, len, timeout)) <= 0) {
+	while ( (xferd = diag_tty_read(dl0d, &rxbuf, len, timeout)) <= 0) {
 		if (xferd == DIAG_ERR_TIMEOUT) {
-			if (diag_l0_debug & DIAG_DEBUG_READ)
-				fprintf(stderr, "\n");
 			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		}
 		if (xferd == 0) {
@@ -476,8 +493,25 @@ void *data, size_t len, int timeout)
 		}
 	}
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		diag_data_dump(stderr, data, (size_t)xferd);
+		diag_data_dump(stderr, &rxbuf, (size_t)xferd);
 		fprintf(stderr, "\n");
+	}
+	
+	//Here, rxbuf contains the string received from ELM. Parse it to get hex digits
+	char *rptr, *bp;
+	char rbyte;
+	xferd=0;
+	rptr=rxbuf+strspn(rxbuf, " \n");	//skip all leading spaces and linefeeds
+	while ((bp=strtok(rptr, " >\n")) !=NULL) {
+		//process token delimited by spaces or prompt character
+		//this is very sketchy and deserves to be tested more...
+		sscanf(bp, "%02x", &rbyte);
+		((char *)data)[xferd]=rbyte;
+		xferd++;
+		if (xferd==len)
+			break;	
+		//printf("%s\t0x%02x\n", bp, i);
+		rptr=NULL;
 	}
 	return xferd;
 }
