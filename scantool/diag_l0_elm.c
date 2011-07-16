@@ -117,8 +117,8 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 }
 
 
-//Send a command to ELM device and make sure no error occured. Data is passed on directly as a string; caller must make sure the string is \n-terminated.
-//Or rather, 0x0D-terminated. 0x0A is not required with ELM ?
+//Send a command to ELM device and make sure no error occured. Data is passed on directly as a string; caller must make sure the string is \r-terminated -
+//more precisely, 0x0D-terminated. 0x0A is ignored by ELM.
 //This func should not be used for data that elicits a data response (i.e. all data destined to the OBD bus, hence not prefixed by "AT")
 //returns 0 on success
 //_sendcmd should not be called from outside diag_l0_elm.c;
@@ -239,7 +239,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 	dev->serial = sset;
 
-	if (rv=diag_iseterr(diag_tty_setup(dl0d, &sset))) {
+	if (rv=diag_tty_setup(dl0d, &sset)) {
 		fprintf(stderr, FLFMT "Error setting 9600;8N1 on %s\n",
 			FL, subinterface);
 		free(dev);
@@ -257,7 +257,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	//ATE0   (disable echo)
 	//
 	
-	*buf="ATZ\n";
+	*buf="ATZ\x0D";
 	if (diag_l0_elm_sendcmd(dl0d, buf, 4, 250)) {
 		if (diag_l0_debug&DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATZ\" failed", FL);
@@ -273,7 +273,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	}
 	
 	//now send "ATE0\n" command to disable echo.
-	*buf="ATE0\n";
+	*buf="ATE0\x0D";
 	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 250)) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATE0\" failed", FL);
@@ -300,7 +300,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 static int
 diag_l0_elm_fastinit(struct diag_l0_device *dl0d)
 {
-	char * cmds="ATFI\n";
+	char * cmds="ATFI\x0D";
 	
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr, FLFMT "ELM forced fastinit\n", FL);
@@ -317,7 +317,7 @@ diag_l0_elm_fastinit(struct diag_l0_device *dl0d)
 static int
 diag_l0_elm_slowinit(struct diag_l0_device *dl0d)
 {
-	char * cmds="ATSI\n";
+	char * cmds="ATSI\x0D";
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "ELM forced slowinit\n", FL);
@@ -404,7 +404,7 @@ const void *data, size_t len)
 	
 	if ((2*len)>(ELM_BUFSIZE-1)) {
 		//too much data for buffer size
-		fprintf(stderr, FLFMT "ELM: too much data for buffer (report this bug !)\n", FL);
+		fprintf(stderr, FLFMT "ELM: too much data for buffer (report this bug please!)\n", FL);
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
@@ -501,8 +501,8 @@ void *data, size_t len, int timeout)
 	char *rptr, *bp;
 	char rbyte;
 	xferd=0;
-	rptr=rxbuf+strspn(rxbuf, " \n");	//skip all leading spaces and linefeeds
-	while ((bp=strtok(rptr, " >\n")) !=NULL) {
+	rptr=rxbuf+strspn(rxbuf, " \n\r");	//skip all leading spaces and linefeeds
+	while ((bp=strtok(rptr, " >\n\r")) !=NULL) {
 		//process token delimited by spaces or prompt character
 		//this is very sketchy and deserves to be tested more...
 		sscanf(bp, "%02x", &rbyte);
