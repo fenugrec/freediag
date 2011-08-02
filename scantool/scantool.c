@@ -227,13 +227,13 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	/* Deal with the diag type responses (send/recv/watch) */
 	switch (*ihandle) {
 	/* There is no difference between watch and decode ... */
-	case RQST_HANDLE_WATCH:
-	case RQST_HANDLE_DECODE:
-		if (!(diag_cmd_debug & DIAG_DEBUG_DATA)) {
-			/* Print data (unless done already) */
-				print_msg(stdout, msg, 0);
-		}
-		return;
+		case RQST_HANDLE_WATCH:
+		case RQST_HANDLE_DECODE:
+			if (!(diag_cmd_debug & DIAG_DEBUG_DATA)) {
+				/* Print data (unless done already) */
+					print_msg(stdout, msg, 0);
+			}
+			return;
 	}
 
 	/* All other responses are J1979 response messages */
@@ -301,135 +301,135 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		 */
 		data = msg->data;
 		switch (*ihandle) {
-		case RQST_HANDLE_READINESS:
-			/* Handled in cmd_test_readiness() */
-			break;
-		case RQST_HANDLE_NCMS:
-		case RQST_HANDLE_NCMS2:
-			/*
-			 * Non Continuously Monitored System result
-			 * NCMS2 prints everything, NCMS prints just failed
-			 * tests
-			 */
-			if (data[0] != 0x46) {
-				fprintf(stderr, "Test 0x%02x failed %d\n",
-					data[1], data[2]);
-				return;
-			}
-			if ((data[1] & 0x1f) == 0) {
-				/* no Test support */
-				return;
-			}
-			for (tmsg = msg , i = 0; tmsg; tmsg=tmsg->next, i++) {
-				int val, lim;
-				data = tmsg->data;
-				len = tmsg->len;
+			case RQST_HANDLE_READINESS:
+				/* Handled in cmd_test_readiness() */
+				break;
+			case RQST_HANDLE_NCMS:
+			case RQST_HANDLE_NCMS2:
+				/*
+				 * Non Continuously Monitored System result
+				 * NCMS2 prints everything, NCMS prints just failed
+				 * tests
+				 */
+				if (data[0] != 0x46) {
+					fprintf(stderr, "Test 0x%02x failed %d\n",
+						data[1], data[2]);
+					return;
+				}
+				if ((data[1] & 0x1f) == 0) {
+					/* no Test support */
+					return;
+				}
+				for (tmsg = msg , i = 0; tmsg; tmsg=tmsg->next, i++) {
+					int val, lim;
+					data = tmsg->data;
+					len = tmsg->len;
 
-				val = (data[3]*255) + data[4];
-				lim = (data[5]*255) + data[6];
+					val = (data[3]*255) + data[4];
+					lim = (data[5]*255) + data[6];
 
-				if ((data[2] & 0x80) == 0) {
-					if (*ihandle == RQST_HANDLE_NCMS2) {
-						/* Only print fails */
-						if (val > lim) {
-							fprintf(stderr, "Test 0x%x Component 0x%x FAILED ",
-							data[1], data[2] & 0x7f);
+					if ((data[2] & 0x80) == 0) {
+						if (*ihandle == RQST_HANDLE_NCMS2) {
+							/* Only print fails */
+							if (val > lim) {
+								fprintf(stderr, "Test 0x%x Component 0x%x FAILED ",
+								data[1], data[2] & 0x7f);
+								fprintf(stderr, "Max val %d Current Val %d\n",
+									lim, val);
+
+							}
+						} else {
+							/* Max value test */
+							fprintf(stderr, "Test 0x%x Component 0x%x ",
+								data[1], data[2] & 0x7f);
+				
+							if (val > lim)
+								fprintf(stderr, "FAILED ");
+							else
+								fprintf(stderr, "Passed ");
+
 							fprintf(stderr, "Max val %d Current Val %d\n",
 								lim, val);
-
 						}
 					} else {
-						/* Max value test */
-						fprintf(stderr, "Test 0x%x Component 0x%x ",
-							data[1], data[2] & 0x7f);
-			
-						if (val > lim)
-							fprintf(stderr, "FAILED ");
-						else
-							fprintf(stderr, "Passed ");
-
-						fprintf(stderr, "Max val %d Current Val %d\n",
-							lim, val);
-					}
-				} else {
-					if (*ihandle == RQST_HANDLE_NCMS2) {
-						if (val < lim) {
-							fprintf(stderr, "Test 0x%x Component 0x%x FAILED ",
+						if (*ihandle == RQST_HANDLE_NCMS2) {
+							if (val < lim) {
+								fprintf(stderr, "Test 0x%x Component 0x%x FAILED ",
+									data[1], data[2] & 0x7f);
+								fprintf(stderr, "Min val %d Current Val %d\n",
+									lim, val);
+							}
+						} else {
+							/* Min value test */
+							fprintf(stderr, "Test 0x%x Component 0x%x ",
 								data[1], data[2] & 0x7f);
+							if (val < lim)
+								fprintf(stderr, "FAILED ");
+							else
+								fprintf(stderr, "Passed ");
+
 							fprintf(stderr, "Min val %d Current Val %d\n",
 								lim, val);
 						}
-					} else {
-						/* Min value test */
-						fprintf(stderr, "Test 0x%x Component 0x%x ",
-							data[1], data[2] & 0x7f);
-						if (val < lim)
-							fprintf(stderr, "FAILED ");
-						else
-							fprintf(stderr, "Passed ");
-
-						fprintf(stderr, "Min val %d Current Val %d\n",
-							lim, val);
 					}
 				}
-			}
-			return;
-		case RQST_HANDLE_O2S:
-			if (ecu_count>1)
-				fprintf(stderr, "ECU %d ", i);
-
-			/* O2 Sensor test results */
-			if (msg->data[0] != 0x45) {
-				fprintf(stderr, "Test 0x%02x failed %d\n",
-					msg->data[1], msg->data[2]);
 				return;
-			}
-			if ((data[1] & 0x1f) == 0) {
-				/* No Test support */
-			} else {
-				int val = data[4];
-				int min = data[5];
-				int max = data[6];
-				int failed ;
+			case RQST_HANDLE_O2S:
+				if (ecu_count>1)
+					fprintf(stderr, "ECU %d ", i);
 
-				if ((val < min) || (val > max))
-					failed = 1;
-				else
-					failed = 0;
-
-				switch (data[1]) {
-				case 1:	/* Constant values voltages */
-				case 2:
-				case 3:
-				case 4:
-					fprintf(stderr, "%s: %f\n", O2_strings[data[1]],
-							data[4]/200.0);
-					break;
-				case 5:
-				case 6:
-				case 9:
-					fprintf(stderr, "%s: actual %2.2f min %2.2f max %2.2f %s\n",
-						O2_strings[data[1]], data[4]/250.0,
-						data[5]/250.0, data[6]/250.0,
-						failed?"FAILED":"Passed" );
-					break;
-				case 7:
-				case 8:
-					fprintf(stderr, "%s: %f %f %f %s\n", O2_strings[data[1]],
-						data[4]/200.,
-						data[5]/200.,
-						data[6]/200.,
-						failed?"FAILED":"Passed" );
-					break;
-				default:
-					fprintf(stderr, "Test %d: actual 0x%x min 0x%x max 0x%x %s\n",
-						data[1], data[4],
-						data[5], data[6],
-						failed?"FAILED":"Passed" );
-					break;
+				/* O2 Sensor test results */
+				if (msg->data[0] != 0x45) {
+					fprintf(stderr, "Test 0x%02x failed %d\n",
+						msg->data[1], msg->data[2]);
+					return;
 				}
-			}
-			return;
+				if ((data[1] & 0x1f) == 0) {
+					/* No Test support */
+				} else {
+					int val = data[4];
+					int min = data[5];
+					int max = data[6];
+					int failed ;
+
+					if ((val < min) || (val > max))
+						failed = 1;
+					else
+						failed = 0;
+
+					switch (data[1]) {
+						case 1:	/* Constant values voltages */
+						case 2:
+						case 3:
+						case 4:
+							fprintf(stderr, "%s: %f\n", O2_strings[data[1]],
+									data[4]/200.0);
+							break;
+						case 5:
+						case 6:
+						case 9:
+							fprintf(stderr, "%s: actual %2.2f min %2.2f max %2.2f %s\n",
+								O2_strings[data[1]], data[4]/250.0,
+								data[5]/250.0, data[6]/250.0,
+								failed?"FAILED":"Passed" );
+							break;
+						case 7:
+						case 8:
+							fprintf(stderr, "%s: %f %f %f %s\n", O2_strings[data[1]],
+								data[4]/200.,
+								data[5]/200.,
+								data[6]/200.,
+								failed?"FAILED":"Passed" );
+							break;
+						default:
+							fprintf(stderr, "Test %d: actual 0x%x min 0x%x max 0x%x %s\n",
+								data[1], data[4],
+								data[5], data[6],
+								failed?"FAILED":"Passed" );
+							break;
+					}
+				}
+				return;
 		}
 	}
 	return;
@@ -592,47 +592,47 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
 	}
 
 	switch (*ihandle) {
-	/* We dont process the info in watch/decode mode */
-	case RQST_HANDLE_WATCH:
-	case RQST_HANDLE_DECODE:
-		return rv;
-	}
-
-	/*
-	 * Go thru the ecu_data and see what was received.
-	 */
-	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
-		if (ep->rxmsg) {
-			/* Some data arrived from this ecu */
-			rxmsg = ep->rxmsg;
-			rxdata = ep->rxmsg->data;
-
-			switch (mode) {
-			case 1:
-				if (rxdata[0] != 0x41) {
-					ep->mode1_data[p1].type = TYPE_FAILED;
-					break;
-				}
-				memcpy(ep->mode1_data[p1].data, rxdata,
-					rxmsg->len);
-				ep->mode1_data[p1].len = rxmsg->len;
-				ep->mode1_data[p1].type = TYPE_GOOD;
-
-				break;
-			case 2:
-				if (rxdata[0] != 0x42) {
-					ep->mode2_data[p1].type = TYPE_FAILED;
-					break;
-				}
-				memcpy(ep->mode2_data[p1].data, rxdata,
-					rxmsg->len);
-				ep->mode2_data[p1].len = rxmsg->len;
-				ep->mode2_data[p1].type = TYPE_GOOD;
-				break;
-			}	
+		/* We dont process the info in watch/decode mode */
+		case RQST_HANDLE_WATCH:
+		case RQST_HANDLE_DECODE:
+			return rv;
 		}
-	}
-	return 0;
+
+		/*
+		 * Go thru the ecu_data and see what was received.
+		 */
+		for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
+			if (ep->rxmsg) {
+				/* Some data arrived from this ecu */
+				rxmsg = ep->rxmsg;
+				rxdata = ep->rxmsg->data;
+
+				switch (mode) {
+					case 1:
+						if (rxdata[0] != 0x41) {
+							ep->mode1_data[p1].type = TYPE_FAILED;
+							break;
+						}
+						memcpy(ep->mode1_data[p1].data, rxdata,
+							rxmsg->len);
+						ep->mode1_data[p1].len = rxmsg->len;
+						ep->mode1_data[p1].type = TYPE_GOOD;
+
+						break;
+					case 2:
+						if (rxdata[0] != 0x42) {
+							ep->mode2_data[p1].type = TYPE_FAILED;
+							break;
+						}
+						memcpy(ep->mode2_data[p1].data, rxdata,
+							rxmsg->len);
+						ep->mode2_data[p1].len = rxmsg->len;
+						ep->mode2_data[p1].type = TYPE_GOOD;
+						break;
+				}	
+			}
+		}
+		return 0;
 }
 
 
