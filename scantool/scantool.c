@@ -179,7 +179,7 @@ print_msg(FILE *fp, struct diag_msg *msg, int timestamp)
  */
 
 /*
- * Receive callback routines. If handle is 1 then we're in "watch"
+ * Receive callback routines. If handle is RQST_HANDLE_WATCH then we're in "watch"
  * mode (set by caller to recv()), else in normal data mode
  *
  * We get called by L3/L2 with all the messages received within the
@@ -197,6 +197,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	uint8_t *data = msg->data;
 	struct diag_msg *tmsg;
 	unsigned int i;
+	int * ihandle= (int *) handle;
 	ecu_data_t	*ep;
 
 	const char *O2_strings[] = {
@@ -213,7 +214,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		};
 
 	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
-		fprintf(stderr, "scantool: Got handle %p %d bytes of data, src %x, dest %x msgcnt %d\n",
+		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src %x, dest %x; msgcnt %d\n",
 			handle, len, msg->src, msg->dest, msg->mcnt);
 	}
 
@@ -224,7 +225,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	}
 
 	/* Deal with the diag type responses (send/recv/watch) */
-	switch ((uint32_t)handle) {
+	switch (*ihandle) {
 	/* There is no difference between watch and decode ... */
 	case RQST_HANDLE_WATCH:
 	case RQST_HANDLE_DECODE:
@@ -299,7 +300,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		 * response
 		 */
 		data = msg->data;
-		switch ((uint32_t)handle) {
+		switch (*ihandle) {
 		case RQST_HANDLE_READINESS:
 			/* Handled in cmd_test_readiness() */
 			break;
@@ -328,8 +329,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 				lim = (data[5]*255) + data[6];
 
 				if ((data[2] & 0x80) == 0) {
-					if ((uint32_t)handle
-						== RQST_HANDLE_NCMS2) {
+					if (*ihandle == RQST_HANDLE_NCMS2) {
 						/* Only print fails */
 						if (val > lim) {
 							fprintf(stderr, "Test 0x%x Component 0x%x FAILED ",
@@ -352,7 +352,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 							lim, val);
 					}
 				} else {
-					if ((uint32_t)handle == RQST_HANDLE_NCMS2) {
+					if (*ihandle == RQST_HANDLE_NCMS2) {
 						if (val < lim) {
 							fprintf(stderr, "Test 0x%x Component 0x%x FAILED ",
 								data[1], data[2] & 0x7f);
@@ -536,6 +536,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
 {
 	struct diag_msg	msg;
 	uint8_t data[7];	//was 256?
+	int * ihandle=(int *) handle;
 	int rv;
 	ecu_data_t *ep;
 	unsigned int i;
@@ -590,7 +591,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
 		}
 	}
 
-	switch ((uint32_t)handle) {
+	switch (*ihandle) {
 	/* We dont process the info in watch/decode mode */
 	case RQST_HANDLE_WATCH:
 	case RQST_HANDLE_DECODE:

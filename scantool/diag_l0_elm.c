@@ -123,20 +123,20 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 //returns 0 on success
 //_sendcmd should not be called from outside diag_l0_elm.c;
 static int
-diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const void *data, size_t len, int timeout)
+diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, int timeout)
 {
 	ssize_t xferd;
 	int i, rpos, rv;
-	char * buf[ELM_BUFSIZE];
-
-	if (((char *) data)[len-1] != 0x0D) {
+	char *buf[ELM_BUFSIZE];	//for receiving responses
+	
+	if (data[len-1] != 0x0D) {
 		//Last byte is not a carriage return, this would die.
 		fprintf(stderr, FLFMT "Error: attempting to send non-terminated command %.*s\n", FL, len, data);
 		//the %.*s is pure magic : limits the string length to len, even if the string is not null-terminated.
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "sending command to ELM:\n\"%.*s\"", FL, len, data);
+		fprintf(stderr, FLFMT "sending command to ELM: %.*s\n", FL, len-1, data);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 		}
@@ -158,7 +158,8 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const void *data, size_t len, i
 		 * so inc pointers and continue
 		 */
 		len -= xferd;
-		data = (const void *)((const char *)data + xferd);
+		//data = (const void *)((const char *)data + xferd);
+		data += xferd;
 	}
 	
 	//next, receive ELM response, with {ms} timeout.
@@ -214,7 +215,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	struct diag_l0_device *dl0d;
 	struct diag_l0_elm_device *dev;
 	struct diag_serial_settings sset;
-	char * buf[ELM_BUFSIZE];
+	const char *buf;	//[ELM_BUFSIZE];
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
@@ -257,12 +258,12 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	//ATE0   (disable echo)
 	//
 	
-	*buf="ATZ\x0D";
+	buf="ATZ\x0D";
 	if (diag_l0_elm_sendcmd(dl0d, buf, 4, 250)) {
 		if (diag_l0_debug&DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "sending \"ATZ\" failed", FL);
+			fprintf(stderr, FLFMT "sending \"ATZ\" failed\n", FL);
 		}
-		diag_l0_elm_close(&dl0d);
+		diag_tty_close(&dl0d);
 		free(dev);
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -273,10 +274,10 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	}
 	
 	//now send "ATE0\n" command to disable echo.
-	*buf="ATE0\x0D";
+	buf="ATE0\x0D";
 	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 250)) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "sending \"ATE0\" failed", FL);
+			fprintf(stderr, FLFMT "sending \"ATE0\" failed\n", FL);
 		}
 		diag_l0_elm_close(&dl0d);
 		free(dev);
@@ -306,7 +307,7 @@ diag_l0_elm_fastinit(struct diag_l0_device *dl0d)
 		fprintf(stderr, FLFMT "ELM forced fastinit\n", FL);
 
 	//send command with 1000ms timeout (guessing)
-	if (diag_l0_elm_sendcmd(dl0d, &cmds, 5, 1000)) {
+	if (diag_l0_elm_sendcmd(dl0d, cmds, 5, 1000)) {
 		fprintf(stderr, FLFMT "Command ATFI failed\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -324,7 +325,7 @@ diag_l0_elm_slowinit(struct diag_l0_device *dl0d)
 	}
 
 	//huge timeout of 3.5s. Not sure if this is adequate
-	if (diag_l0_elm_sendcmd(dl0d, &cmds, 5, 3500)) {
+	if (diag_l0_elm_sendcmd(dl0d, cmds, 5, 3500)) {
 		fprintf(stderr, FLFMT "Command ATSI failed\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -381,9 +382,8 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
  * Send a load of data
  *
  * Directly send hex-ASCII; exit without receiving response.
- * Upper levels don't append 0x0D / 0x0A at the end, we take care of it.
- * "ATx" commands sould not be sent with this.
- *
+ * Upper levels don't append 0x0D / 0x0A at the end, we take care of adding the required 0x0D.
+ * "ATx" commands sould not be sent with this function.
  * Returns 0 on success, -1 on failure
  */
 #ifdef WIN32
@@ -409,7 +409,7 @@ const void *data, size_t len)
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "ELM: sending %d bytes ", FL, len);
+		fprintf(stderr, FLFMT "ELM: sending %d bytes \n", FL, len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 		}

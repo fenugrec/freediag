@@ -389,7 +389,7 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
 		fprintf(stderr, FLFMT "initbus device link %p returning %d\n",
 			FL, dl0d, rv);
 
-	return diag_iseterr(rv);
+	return rv;
 
 }
 
