@@ -127,7 +127,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 {
 	ssize_t xferd;
 	int i, rpos, rv;
-	char *buf[ELM_BUFSIZE];	//for receiving responses
+	char buf[ELM_BUFSIZE];	//for receiving responses
 	
 	if (data[len-1] != 0x0D) {
 		//Last byte is not a carriage return, this would die.
@@ -164,6 +164,12 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 	
 	//next, receive ELM response, with {ms} timeout.
 	rv=diag_tty_read(dl0d, buf, ELM_BUFSIZE-5, timeout);
+	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+		fprintf(stderr, FLFMT "sent %d bytes\n", FL, xferd);
+		fprintf(stderr, FLFMT "received %d bytes\n", FL, rv);
+	}
+	
+	
 	if (rv<1) {
 		//no data or error
 		if (diag_l0_debug & DIAG_DEBUG_WRITE) {
@@ -171,11 +177,11 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 		}
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	*buf[rv]=0;	//terminate string
-	if (*buf[rv-1] != '>') {
+	buf[rv]=0;	//terminate string
+	if (buf[rv-1] != '>') {
 		//if last character isn't the input prompt, there is a problem
 		if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-			fprintf(stderr, FLFMT "ELM not ready; received %s", FL, buf);
+			fprintf(stderr, FLFMT "ELM not ready; received %s\n", FL, buf);
 		}
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -184,13 +190,13 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 	rpos=rv-1;
 	while (rpos>0) {
 		rpos--;
-		if ((*buf[rpos] == 0x0D) || (*buf[rpos] ==0x0A))
+		if ((buf[rpos] == 0x0D) || (buf[rpos] ==0x0A))
 			break;
 	}
 	if ((rv - rpos) > 3) {
 		//there is probably a message between the last CR/LF and the prompt. Find possible error message:
 		for (i=0; elm_errors[i] != NULL; i++) {
-			if (strncmp(buf[rpos], elm_errors[i], (rv - 1) - rpos) == 0) {
+			if (strncmp(&buf[rpos], elm_errors[i], (rv - 1) - rpos) == 0) {
 				//error message found :
 				fprintf(stderr, FLFMT "ELM returned error : %s\n", FL, elm_errors[i]);
 				return diag_iseterr(DIAG_ERR_GENERAL);
@@ -251,7 +257,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	
 	//At this stage, the ELM has possibly been powered up for a while;
 	//sending the command "ATZ" will cause a full reset and the chip will send a
-	//welcome string like "ELM323 v2.0\n>" or "ELM327 v1.4b\n>"
+	//welcome string like "ELM323 v2.0\n>" or "ELM327 v1.4b\n>" or "ELM327 1.5a\n" for certain clones.
 	//the device string may be checked but the most important is the > character as
 	//it indicates the device's readiness.
 	//The following options are also set :
@@ -259,7 +265,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	//
 	
 	buf="ATZ\x0D";
-	if (diag_l0_elm_sendcmd(dl0d, buf, 4, 250)) {
+	if (diag_l0_elm_sendcmd(dl0d, buf, 4, 1500)) {
 		if (diag_l0_debug&DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATZ\" failed\n", FL);
 		}
@@ -275,7 +281,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	
 	//now send "ATE0\n" command to disable echo.
 	buf="ATE0\x0D";
-	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 250)) {
+	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 1000)) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATE0\" failed\n", FL);
 		}
