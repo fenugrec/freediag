@@ -271,7 +271,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		}
 		diag_tty_close(&dl0d);
 		free(dev);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	
 	//Correct prompt received:
@@ -287,7 +287,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		}
 		diag_l0_elm_close(&dl0d);
 		free(dev);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
 	//at this point : ELM is ready for further ops
