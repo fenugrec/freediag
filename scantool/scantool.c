@@ -887,6 +887,7 @@ do_l2_j1850_start(int l1_type)
 
 /*
  * Generic init, using parameters set by user
+ * called by cmd_diag_connect;
  */
 int
 do_l2_generic_start(void)

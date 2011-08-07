@@ -187,7 +187,7 @@ struct diag_l2_conn
 #define DIAG_L2_TYPE_SLOWINIT	0x00		/* Do 5 Baud init */
 #define DIAG_L2_TYPE_FASTINIT	0x01		/* Do fast init */
 #define DIAG_L2_TYPE_CARBINIT	0x02		/* Do CARB init (see ISO14230-2 5.2.4) */
-#define DIAG_L2_TYPE_MONINIT	0x06		/* Don't do any init, just connect to bus */
+#define DIAG_L2_TYPE_MONINIT	0x04		/* Don't do any init, just connect to bus */
 #define DIAG_L2_TYPE_INITMASK	0x07		/* Init options mask */
 /*
  * Bit 3 shows whether the address supplied is a functional or physical
