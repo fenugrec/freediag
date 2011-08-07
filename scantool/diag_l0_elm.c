@@ -389,14 +389,15 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 			break;
 	}
 
-	//if (rv && !is_clone)
-	if (rv)
+	if (rv && !is_clone)
+	//XXX ignore errors if device is a clone...
+	//if (rv)
 		return diag_iseterr(rv);
 	//XXX Hax ! XXX
-	global_state = STATE_CONNECTED;
-	//since ELM handles the keybytes and the rest of the formalities, some flags would be needed to skip the checks
+	//global_state = STATE_CONNECTED;
+	//since ELM handles the keybytes and the rest of the formalities, some flags will be needed to skip the checks
 	//carried out by the upper levels (diag_l2_iso9141.c:_startcomms, etc.)
-	//If a correct prompt was received, the ELM is almost certainly in ready-state.
+	//If a correct prompt was received, the ELM is almost certainly in ready state.
 	return 0;
 
 }
