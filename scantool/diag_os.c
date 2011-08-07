@@ -58,6 +58,12 @@
 #include <string.h>
 #include <time.h>
 
+#include <linux/rtc.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "diag.h"
 #include "diag_tty.h"
 #include "diag_l1.h"
@@ -141,7 +147,83 @@ diag_os_init(void)
 }
 
 
+//different os_millisleep implementations
 #if defined(__linux__) && (TRY_POSIX == 0)
+
+int
+diag_os_millisleep(int ms)
+{
+
+	int i, fd, retval;
+	unsigned long tmp,data;
+	struct rtc_time rtc_tm;
+
+	/* adjust time for 2048 rate */
+
+	ms *= 4096/2000;
+
+	if (ms > 2)
+		ms-=2;
+
+	fd = open ("/dev/rtc", O_RDONLY);
+
+	if (fd ==  -1) {
+		perror("/dev/rtc");
+		exit(errno);
+	}
+
+	/* Read periodic IRQ rate */
+	retval = ioctl(fd, RTC_IRQP_READ, &tmp);
+	if (retval == -1) {
+		perror("ioctl");
+		exit(errno);
+	}
+
+	if (retval != 2048) {
+
+		retval = ioctl(fd, RTC_IRQP_SET, 2048);
+		if (retval == -1) {
+			perror("ioctl");
+			exit(errno);
+		}
+	}
+
+	/* Enable periodic interrupts */
+	retval = ioctl(fd, RTC_PIE_ON, 0);
+	if (retval == -1) {
+		perror("ioctl");
+		exit(errno);
+	}
+
+	i = 0;
+	while (1) {
+		/* This blocks */
+		retval = read(fd, &data, sizeof(unsigned long));
+		if (retval == -1) {
+			perror("read");
+			exit(errno);
+		}
+		data >>= 8;
+		i+=(int)data;
+		if (i>=(ms*2))
+			break;
+	}
+
+	/* Disable periodic interrupts */
+	retval = ioctl(fd, RTC_PIE_OFF, 0);
+	if (retval == -1) {
+		perror("ioctl");
+		exit(errno);
+	}
+
+	close(fd);
+
+	return (0);
+}
+
+//old millisleep
+#if 0
+
 /*
 +* Original LINUX implementation for a millisecond sleep:
  *
@@ -168,6 +250,9 @@ int
 diag_os_millisleep(int ms)
 {
 	struct timespec rqst, resp;
+
+	if (ms > 1)
+		ms /= 2;
 
 	while (ms)
 	{
@@ -199,7 +284,12 @@ diag_os_millisleep(int ms)
 
 	return(0);
 }
+
+#endif
+
+//following from initial "if linux && !posix" :
 #else
+
 /*
 +* I think this implementation works in all cases, with less overhead.
  */

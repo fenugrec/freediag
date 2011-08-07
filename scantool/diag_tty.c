@@ -24,6 +24,9 @@
 #include <time.h>		/* For POSIX timers */
 #endif
 
+#include <linux/rtc.h>
+#include <sys/time.h>
+
 #include "diag.h"
 #include "diag_l1.h"
 #include "diag_err.h"
@@ -352,7 +355,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 		int retries=9, result;
 		do
 		{
-			fprintf(stderr,"Couldn't set baud rate....retrying\n");
+			fprintf(stderr, FLFMT "Couldn't set baud rate....retry %d\n", FL, retries);
 			result = tcsetattr(fd, TCSAFLUSH, &dt->dt_tinfo);
 		}
 		while ((result < 0) && (--retries));
@@ -505,13 +508,18 @@ diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 /*
  * TTY handling routines
  */
+//different tty_write and tty_read versions according to TRY_POSIX
 #if defined(__linux__) && (TRY_POSIX == 0)
+
 ssize_t
 diag_tty_write(struct diag_l0_device *dl0d,
 const void *buf, const size_t count)
 {
 	return write(dl0d->fd, buf, count);
 }
+
+#if 0
+//old tty_read
 
 /*
  * Non interruptible, sleeping posix like read() with a timeout
@@ -526,6 +534,11 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 {
 	struct timeval tv;
 	int rv;
+
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
+			fprintf(stderr, FLFMT "Entered diag_tty_read with count=%d, timeout=%dms", FL, count, timeout);
+	}
+
 
 	/*
 	 * Do a select() with a timeout
@@ -559,7 +572,9 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	switch (rv) {
 		case 0:
 			/* Timeout */
-			return diag_iseterr(DIAG_ERR_TIMEOUT);
+			if (count)
+				return diag_iseterr(DIAG_ERR_TIMEOUT);	//XXX who would sent count=0 ??
+			return rv;
 		case 1:
 			/* Ready for read */
 			rv = 0;
@@ -579,10 +594,111 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	}
 }
 #else
+// goes with previous #if 0 (replacing old tty_read)
 
 /*
  * We have to be read to loop in write since we've cleared SA_RESTART.
  */
+
+//#if 1
+
+ssize_t
+diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
+{
+	struct timeval tv;
+	int time,rv,fd,retval;
+	unsigned long data;
+
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
+			fprintf(stderr, FLFMT "Entered diag_tty_read with count=%d, timeout=%dms\n", FL, count, timeout);
+	}
+
+	errno = 0;
+	time = 0;
+
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+
+	timeout *= 4096/2000;
+
+	fd = open ("/dev/rtc", O_RDONLY);
+
+	/* Read periodic IRQ rate */
+	retval = ioctl(fd, RTC_IRQP_READ, &data);
+
+	if (retval != 2048)
+		ioctl(fd, RTC_IRQP_SET, 2048);
+
+	/* Enable periodic interrupts */
+	ioctl(fd, RTC_PIE_ON, 0);
+
+	read(fd, &data, sizeof(unsigned long));
+	data >>= 8;
+	time+=(int)data;
+
+	while ( 1 ) {
+		fd_set set;
+
+		FD_ZERO(&set);
+		FD_SET(dl0d->fd, &set);
+
+		rv = select ( dl0d->fd + 1,  &set, NULL, NULL, &tv ) ;
+
+		if ( rv > 0 ) break ;
+
+		if (errno != 0 && errno != EINTR) break;
+		errno = 0 ;
+
+		read(fd, &data, sizeof(unsigned long));
+		data >>= 8;
+		time+=(int)data;
+		if (time>=timeout)
+			break;
+	}
+
+	/* Disable periodic interrupts */
+	ioctl(fd, RTC_PIE_OFF, 0);
+	close(fd);
+
+	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
+		if (time>=timeout){
+			fprintf(stderr, FLFMT "timed out: %dms\n",FL,timeout);
+		}
+
+	switch (rv)
+	{
+	case 0:
+		/* Timeout */
+	//this doesn't require a diag_iseterr() call, as is the case when diag_tty_read
+	//is called to flush
+		return (DIAG_ERR_TIMEOUT);
+	case 1:
+		/* Ready for read */
+		rv = 0;
+		/*
+		 * XXX Won't you hang here if "count" bytes don't arrive?
+		 * We've enabled SA_RESTART in the alarm handler, so this could
+		 * never return.
+		 */
+		if (count)
+			rv = read(dl0d->fd, buf, count);
+		return (rv);
+
+	default:
+		fprintf(stderr, FLFMT "select on fd %d returned %s.\n",
+			FL, dl0d->fd, strerror(errno));
+
+		/* Unspecific Error */
+		return (diag_iseterr(DIAG_ERR_GENERAL));
+	}
+}
+
+//#else
+#endif
+
+
+#else
+//# goes with previous #if linux && posix==0
 ssize_t
 diag_tty_write(struct diag_l0_device *dl0d,
 const void *buf, const size_t count)
@@ -717,6 +833,8 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 }
 #endif
 
+
+//different _iflush implementations (POSIX or not)
 #if defined(__linux__) && (TRY_POSIX == 0)
 /*
  * Original Linux input-flush implementation that uses the select timeout:
@@ -727,7 +845,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 	int i, rv;
 
 	/* Read any old data hanging about on the port */
-	rv = diag_tty_read(dl0d, buf, sizeof(buf), 50);
+	rv = diag_tty_read(dl0d, buf, sizeof(buf), 150);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_OPEN))
 	{
 		fprintf(stderr, FLFMT "%d junk bytes discarded: ", FL,
@@ -739,6 +857,9 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 
 	return 0;
 }
+
+//#endif
+
 #else
 /*
  * POSIX serial I/O input flush:
@@ -755,6 +876,9 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 }
 #endif
 
+
+
+//different tty_break implementations depending on __linux__ ; TRY_POSIX; TIOCSBRK; __CYGWIN__
 #if defined(__linux__) && (TRY_POSIX == 0)
 
 /*

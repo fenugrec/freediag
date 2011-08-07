@@ -524,15 +524,16 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	if (rv < 0)
 	{
 		/* Something went wrong */
-		if (diag_l2_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr,FLFMT "protocol startcomms returned %d\n", FL, rv);
+		//if (diag_l2_debug & DIAG_DEBUG_OPEN)
+		//	fprintf(stderr,FLFMT "protocol startcomms returned %d\n", FL, rv);
 
 		if (reusing == 0)
 			free(d_l2_conn);
 
-		/* XXX tidy structures */
+		/* XXX tidy structures... We possibly freed d_l2_conn but we set to NULL anyway ?? */
 
 		d_l2_conn = NULL;
+		return (struct diag_l2_conn *)diag_pseterr(rv);
 	}
 
 	/*

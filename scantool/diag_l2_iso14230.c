@@ -509,11 +509,12 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	set.parflag = diag_par_n;
 
 	/* Set the speed as shown */
-	rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set);
-	if (rv < 0)
+	
+	if (rv=diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set))
 	{
 		free(dp);
-		return rv;
+		dp=0;
+		return diag_iseterr(rv);
 	}
 
 	dp->state = STATE_CONNECTING ;

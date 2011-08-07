@@ -205,7 +205,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 			FL, d_l2_conn);
 
 	if (diag_calloc(&dp, 1))
-		return DIAG_ERR_NOMEM;
+		return diag_iseterr(DIAG_ERR_NOMEM);
 
 	dp->srcaddr = source;
 	dp->target = target;
@@ -225,9 +225,9 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	set.databits = diag_databits_8;
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
-	rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set);
-	if (rv < 0)
-		return rv;
+	
+	if (rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set))
+		return diag_iseterr(rv);
 
 	// Initialize ECU (unless if in monitor mode):
 	if ( (flags & DIAG_L2_TYPE_INITMASK) ==  DIAG_L2_TYPE_MONINIT)
@@ -235,10 +235,13 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	else
 		rv = diag_l2_proto_iso9141_wakeupECU(d_l2_conn);
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN)
-		fprintf(stderr,
-			FLFMT "diag_l2_iso9141_startcomms returns %d\n",
-			FL, rv);
+	//if (diag_l2_debug & DIAG_DEBUG_OPEN)
+//			fprintf(stderr,
+//			FLFMT "diag_l2_iso9141_startcomms returns %d\n",
+//			FL, rv);
+
+	if (rv)
+		return diag_iseterr(rv);
 
 	dp->state = STATE_ESTABLISHED;
 	

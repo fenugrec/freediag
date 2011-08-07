@@ -57,7 +57,7 @@
 
 CVSID("$Id$");
 
-#define ELM_BUFSIZE 25	//longest data to be received during init is the version string, ~ 15 bytes. OBD data is 7 bytes, received as a 23-char string.
+#define ELM_BUFSIZE 32	//longest data to be received during init is the version string, ~ 15 bytes, plus possible command echo. OBD data is 7 bytes, received as a 23-char string. 32 should be enough...
 
 struct diag_l0_elm_device {
 	int protocol;
@@ -75,6 +75,8 @@ extern const struct diag_l0 diag_l0_elm;
 
 static int diag_l0_elm_send(struct diag_l0_device *dl0d,
 const char *subinterface __attribute__((unused)), const void *data, size_t len);
+
+void elm_parse_cr(char *data, int len);	//change 0x0A to 0x0D
 
 /*
  * Init must be callable even if no physical interface is
@@ -117,10 +119,12 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 }
 
 
-//Send a command to ELM device and make sure no error occured. Data is passed on directly as a string; caller must make sure the string is \r-terminated -
-//more precisely, 0x0D-terminated. 0x0A is ignored by ELM.
-//This func should not be used for data that elicits a data response (i.e. all data destined to the OBD bus, hence not prefixed by "AT")
-//returns 0 on success
+//Send a command to ELM device and make sure no error occured. Data is passed on directly as a string;
+//caller //must make sure the string is \r-terminated - more precisely, 0x0D-terminated. 0x0A is ignored by ELM.
+//This func should not be used for data that elicits a data response (i.e. all data destined to the OBD bus,
+//hence not prefixed by "AT")
+//returns 0 on success. Waits *at least* timeout for all data & responses to come in. Responses to commands
+//are not verified in detail; only the prompt character ">" must be present at the end of the data.
 //_sendcmd should not be called from outside diag_l0_elm.c;
 static int
 diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, int timeout)
@@ -137,9 +141,6 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 	}
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "sending command to ELM: %.*s\n", FL, len-1, data);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
-			diag_data_dump(stderr, data, len);
-		}
 	}
 
 	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
@@ -162,11 +163,17 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 		data += xferd;
 	}
 	
-	//next, receive ELM response, with {ms} timeout.
-	rv=diag_tty_read(dl0d, buf, ELM_BUFSIZE-5, timeout);
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+	//next, receive ELM response, after {ms} delay.
+	diag_os_millisleep(timeout);
+
+	rv=diag_tty_read(dl0d, buf, ELM_BUFSIZE-5, 100);
+	if (diag_l0_debug & DIAG_DEBUG_WRITE || diag_l0_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "sent %d bytes\n", FL, xferd);
 		fprintf(stderr, FLFMT "received %d bytes\n", FL, rv);
+		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+			elm_parse_cr(buf, rv);
+			fprintf(stderr, FLFMT "(got %.*s)\n", FL, rv, buf);
+		}
 	}
 	
 	
@@ -181,7 +188,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 	if (buf[rv-1] != '>') {
 		//if last character isn't the input prompt, there is a problem
 		if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-			fprintf(stderr, FLFMT "ELM not ready; received %s\n", FL, buf);
+			fprintf(stderr, FLFMT "ELM not ready (no prompt received)\n", FL);
 		}
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -265,12 +272,13 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	//
 	
 	buf="ATZ\x0D";
-	if (diag_l0_elm_sendcmd(dl0d, buf, 4, 1500)) {
+	if (diag_l0_elm_sendcmd(dl0d, buf, 4, 1000)) {
 		if (diag_l0_debug&DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATZ\" failed\n", FL);
 		}
 		diag_tty_close(&dl0d);
 		free(dev);
+		dev=NULL;
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	
@@ -281,7 +289,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	
 	//now send "ATE0\n" command to disable echo.
 	buf="ATE0\x0D";
-	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 1000)) {
+	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 500)) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATE0\" failed\n", FL);
 		}
@@ -303,6 +311,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
  * ELM claims it will deal with slow/fast init automatically. Until the code from levels L1 and up can deal with
  * this, the bus will manually be initialized.
  * Only callable internally. Not for export !!
+ * Unsupported by some clones (they handle the init internally, on demand)
  */
 static int
 diag_l0_elm_fastinit(struct diag_l0_device *dl0d)
@@ -310,7 +319,7 @@ diag_l0_elm_fastinit(struct diag_l0_device *dl0d)
 	char * cmds="ATFI\x0D";
 	
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
-		fprintf(stderr, FLFMT "ELM forced fastinit\n", FL);
+		fprintf(stderr, FLFMT "ELM forced fastinit...\n", FL);
 
 	//send command with 1000ms timeout (guessing)
 	if (diag_l0_elm_sendcmd(dl0d, cmds, 5, 1000)) {
@@ -327,7 +336,7 @@ diag_l0_elm_slowinit(struct diag_l0_device *dl0d)
 	char * cmds="ATSI\x0D";
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "ELM forced slowinit\n", FL);
+		fprintf(stderr, FLFMT "ELM forced slowinit...\n", FL);
 	}
 
 	//huge timeout of 3.5s. Not sure if this is adequate
@@ -348,8 +357,12 @@ static int
 diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
 	int rv = DIAG_ERR_INIT_NOTSUPP;
+	int is_clone=1;		//eventually configurable ? Or auto-detected?
 
 	struct diag_l0_elm_device *dev;
+
+	fprintf(stderr, FLFMT "Note : ELM clones do not support explicit bus initialization.\n", FL);
+	fprintf(stderr, FLFMT "Errors are therefore ignored.\n", FL);
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr, FLFMT "ELM initbus type %d\n",
@@ -376,7 +389,7 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 			break;
 	}
 
-	if (rv)
+	if (rv && !is_clone)
 		return diag_iseterr(rv);
 	return 0;
 
@@ -530,6 +543,7 @@ static int
 diag_l0_elm_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pss)
 {
+	int rv;
 	fprintf(stderr, FLFMT "Warning: attempted to override serial settings. 9600;8N1 maintained\n", FL);
 	struct diag_serial_settings sset;
 	sset.speed=9600;
@@ -542,7 +556,10 @@ const struct diag_serial_settings *pss)
 
 	dev->serial = sset;
 
-	return diag_iseterr(diag_tty_setup(dl0d, &sset));
+	if (rv=diag_tty_setup(dl0d, &sset))
+		return diag_iseterr(rv);
+
+	return 0;
 }
 
 static int
@@ -577,6 +594,17 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 
 	return flags;
 
+}
+
+//elm_parse_cr :  change 0x0A to 0x0D in datastream.
+void elm_parse_cr(char *data, int len) {
+	int i=0;
+	for (;i<len; i++) {
+		if (*data==0x0D)
+			*data=0x0A;
+		data++;
+	}
+	return;
 }
 
 const struct diag_l0 diag_l0_elm = {
