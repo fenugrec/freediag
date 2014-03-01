@@ -30,7 +30,7 @@ rge </a> ]
 
 
 
-  <p>This manual applies to Version 0.3 of Freediag/Scantool.
+  <p>This manual applies to versions >1.00 of Freediag/Scantool.
 
   <p>Table of contents:
   <ul>
@@ -75,11 +75,14 @@ rge </a> ]
   is attached to the PC. The scantool does not yet support any manufacturer
   specific protocols for talking to non OBDII vehicles.
   
-  <p>It is configured by default to use a generic serial to ISO9141 converter
+  <p>It is configured by default to use a generic (<i>dumb</i>) serial to ISO9141 converter
   such as those used on the VAG-COM software, It also supports <i>smart</i>
   interfaces from Multiplex Engineering and from B.Roadman for SAEJ1850
-  vehicles (mainly Ford and GM).
-
+  vehicles (mainly Ford and GM). Support for ELMxxx devices is being added but
+  should be considered inexistant as of early 2014.
+  
+  <p>Support for CANbus (ISO 15765) is incomplete and unusable.
+  
   <p>Please refer to the "supported interfaces" document to determine which
   interface support what protocols.
 
@@ -87,7 +90,8 @@ rge </a> ]
   <a name="build"></a>
   <div class="section">1) Building the scantool</div>
   
-  <p>The scantool distribution is a source-code distribution, so you will have
+  <p>Note that win32 is not supported at the moment.
+  The scantool distribution is a source-code distribution, so you will have
   to configure/compile it for your Linux system. To do this, unpack the archive
   and in the <i>src</i> directory, type:
 
@@ -108,7 +112,7 @@ rge </a> ]
   interfaces, it may work with SAEJ1850 type interfaces where timing is not so
   critical.
   
-  <p>Start the Scantool CLI by running &quot;./Scantool&quot;, you will get a
+  <p>Start the Scantool CLI by running &quot;./scantool&quot;, you will get a
   command prompt:
 
   <p><ul>
@@ -293,39 +297,60 @@ rge </a> ]
     </tr>
     
     <tr><th colspan="2">Set Sub-Menu</th></tr>
-    <tr>
-      <td><code>show</code></td>
-      <td>Show all item values</td>
-    </tr>
-    <tr>
-      <td><code>speed [<i>value</i>]</code></td>
-      <td>show/set the speed to connect to ECU at</td>
-    </tr>
-    <tr>
-      <td><code>testerid [<i>val</i>]</code></td>
-      <td>Set the source address to use</td>
-    </tr>
-    <tr>
-      <td><code>destaddr [<i>val</i>]</code></td>
-      <td>Set the destination address to connect to</td>
-    </tr>
-    <tr>
-      <td><code>protocol [<i>val</i>]</code></td>
-      <td>Set the protocol to use. Use protocol ? to get list</td>
-    </tr>
-    <tr>
-      <td><code>initmode [<i>val</i>]</code></td>
-      <td>Set the initmode to use. Use initmode ? to get list</td>
-    </tr>
-    <tr>
-      <td><code>display&nbsp;[english/metric]</code></td>
-      <td>Sets default display mode for monitor command</td>
-    </tr>
-    <tr>
-      <td><code>interface [<i>type</i>]</code></td>
-      <td>Set the type of hardware interface. Use interface ? to get a list
-          of interface types, and refer to the supported interface document.</td>
-    </tr>
+	<tr>
+	<td><code>show</code></td>
+	<td>Show all "setable" values</td>
+	</tr>
+
+	<tr>
+	<td><code>interface NAME [dev]</td></code>
+	<td>Shows/Sets the interface and device to use. Use set interface ? to get a list of names</td>
+	</tr>
+
+	<tr>
+	<td><code>simfile [filename]</td></code>
+	<td>Select simulation file to use as data input. See freediag_carsim_all.db for an example</td>
+	</tr>
+
+	<tr>
+	<td><code>display [english/metric]</td></code>
+	<td>Sets english or metric display</td>
+	</tr>
+
+	<tr>
+	<td><code>speed [speed]</td></code>
+	<td>Shows/Sets the speed to connect</td>
+	</tr>
+
+	<tr>
+	<td><code>testerid [testerid]</td></code>
+	<td>Shows/Sets the source ID for us to use</td>
+	</tr>
+
+	<tr>
+	<td><code>destaddr [destaddr]</td></code>
+	<td>Shows/Sets the destination ID to connect</td>
+	</tr>
+
+	<tr>
+	<td><code>addrtype [func/phys]</td></code>
+	<td>Shows/Sets the address type to use</td>
+	</tr>
+
+	<tr>
+	<td><code>l1protocol [protocolname]</td></code>
+	<td>Shows/Sets the hardware protocol to use. Use set l1protocol ? to get a list of protocols</td>
+	</tr>
+
+	<tr>
+	<td><code>l2protocol [protocolname]</td></code>
+	<td>Shows/Sets the software protocol to use. Use set l2protocol ? to get a list of protocols</td>
+	</tr>
+
+	<tr>
+	<td><code>initmode [modename]</td></code>
+	<td>Shows/Sets the initialisation mode to use. Use set initmode ? to get a list of protocols</td>
+	</tr>
     
     <tr><th colspan="2">Diag Sub-Menu</th></tr>
     <tr>
@@ -445,22 +470,22 @@ rge </a> ]
   
   <p>In order to use the appropriate driver for your hardware interface, the
   appropriate <code>set interface XXX</code> command needs to be run. The
-  default interface driver is the <i>se9141</i> driver which works with most
+  default interface driver is the <i>dumb</i> driver which works with most
   generic serial to ISO9141 interfaces. It is recommended that you put this
   command in your <i>.scantoolrc</i> file.
   
   <ul>
     <p>Andy Whittaker's OBD-II ISO9141 interface:<br>
     <a href="http://www.andywhittaker.com/ecu/obdii_hardware.htm">http://www.andywhittaker.com/ecu/obdii_hardware.htm</a><br>
-    <code>set interface se9141</code>
+    <code>set interface dumb</code>
     
     <p>Jeff's OBD-II ISO 9141 interface:<br>
     <a href="http://www.planetfall.com/~jeff/obdii">http://www.planetfall.com/~jeff/obdii</a><br>
-    <code>set interface se9141</code>
+    <code>set interface dumb</code>
     
     <p>Silicon Engines ISO 9141 interface:<br>
-    <a href="http://www.siliconengines-ltd.com/products/9141-232.html">http://www.siliconengines-ltd.com/products/9141-232.html</a><br>
-    <code>set interface se9141</code>
+    <a href="http://www.siliconengines.net/">http://www.siliconengines.net/</a><br>
+    <code>set interface dumb</code>
     
     <p>B.Roadman ISO9141/VPW/PWM interface:<br>
     <a href="http://obddiagnostics.com/">http://obddiagnostics.com/</a><br>

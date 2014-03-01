@@ -25,7 +25,7 @@ rge </a> ]
 > ]
     [ <a href="http://sourceforge.net/mail/?group_id=34714"> Mailing Lists </a>
 ]
-    [ <a href="http://sourceforge.net/cvs/?group_id=34714"> CVS Access </a> ]
+    [ <a href="http://sourceforge.net/p/freediag/code/"> CVS Access </a> ]
   </div>
 
   <br>
@@ -53,9 +53,9 @@ my opinion remarked with "vnevoa"):
 
 <H2>-- diag_l0_elm.c:</H2>
 <ul>
-   <li>/* Empty for the moment */
+   <li> Incomplete, work in progress. This will support ELMxxx devices and hopefully clones as well. These are PIC-based
+   and are considered "smart".
 </ul>
-   vnevoa: I know this is also a PIC implementation, like the BR-x interfaces.
 
 <H2>-- diag_l0_me.c:</H2>
 <ul>
@@ -69,23 +69,12 @@ my opinion remarked with "vnevoa"):
    better than a PIC, which will probably result in a higher-quality,
    more-featured protocol.
 
-<H2>-- diag_l0_se.c:</H2>
+<H2>-- diag_l0_vw.c: (soon to be merged in diag_l0_dumb.c)</H2>
 <ul>
-    <li> Interface for Silicon Engines generic ISO 9141 interface.
-    <li> We purposely haven't defined an structure that is used externally by this
-       interface, just a file descriptor because it's not so easy to do for
-       different devices, and potentially different operating systems.
-</ul>
-    vnevoa: don't know it. Another Active interface, like it is obvious
-    on their web page. Expensive, too!
-
-<H2>-- diag_l0_vw.c:</H2>
-<ul>
-    <li> interface for VAGTool compatible interface
+    <li> interface for VAGTool compatible interfaces
      such as Jeff Noxon's opendiag interface.
     <li> This is also tested with the Silicon Engines K line only interface, but
-     has some of the startup ECU checking removed. Dunno if it's worth keeping
-     the separate SE drivers.
+     has some of the startup ECU checking removed. 
 </ul>
    vnevoa: This is my baby :)...  This  supports any Passive interface,
    that is, this file does not really deal with any dreamed-up protocol,
