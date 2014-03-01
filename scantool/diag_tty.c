@@ -32,23 +32,24 @@
 #include "diag_err.h"
 #include "diag_tty.h"
 
-const struct diag_l0 *diag_l0_device_dl0(struct diag_l0_device *dl0d) {
-	return dl0d->dl0;
-}
+//~ const struct diag_l0 *diag_l0_device_dl0(struct diag_l0_device *dl0d) {
+	//~ return dl0d->dl0;
+//~ } // XXXthis has been moved to diag_l1.c ... why was it in here in the first place ?
 
 int diag_tty_open(struct diag_l0_device **ppdl0d, 
-const char *subinterface,
-const struct diag_l0 *dl0,
-void *dl0_handle)
+	const char *subinterface,
+	const struct diag_l0 *dl0,
+	void *dl0_handle)
 {
 	int rv;
 	struct diag_ttystate	*dt;
 	struct diag_l0_device *dl0d;
 
+#ifdef OLD_DEVNAME
 	char *endptr;
 	int iInterface;
-
 	const char *tty_template ="/dev/obdII%d";
+#endif
 
 	if (rv=diag_calloc(&dl0d, 1))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
@@ -72,7 +73,7 @@ void *dl0_handle)
 	 * You can create a symlink to "/dev/obdII<NUMBER>" if you want to,
 	 * or just set the subinterface to a valid device name.
 	 */
-
+#ifdef OLD_DEVNAME
 	iInterface = strtol(subinterface, &endptr, 10);
 	if (*endptr == 0) {
 		/* Entire string is a valid number: Provide compatibility.  */
@@ -86,6 +87,9 @@ void *dl0_handle)
 		}
 		(void)snprintf(dl0d->name, n, tty_template, iInterface);
 	} else {
+#else
+	if (1) {
+#endif	// OLD_DEVNAMEs
 		size_t n = strlen(subinterface) + 1;
 
 		if ((rv=diag_malloc(&dl0d->name, n))) {
@@ -94,6 +98,8 @@ void *dl0_handle)
 		}
 		strncpy(dl0d->name, subinterface, n);
 	}
+
+
 
 	errno = 0;
 #if defined(__linux__) && (TRY_POSIX == 0)

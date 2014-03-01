@@ -1,9 +1,9 @@
 # L0 devices to configure:
 # Any of these may be commented out before running make
 
-sileng
+#sileng #do not use. dumb should cover sileng and vwtool
 muleng
-vwtool
+#vwtool #same thing.
 dumb
 br
 elm

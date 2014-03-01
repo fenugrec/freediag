@@ -568,7 +568,7 @@ print_current_data(int english)
 				printf("%-30.30s ", p->desc);
 
 				if (DATA_VALID(p, ep->mode1_data))
-					p->sprintf(buf, english, p,
+					p->cust_sprintf(buf, english, p,
 						ep->mode1_data, 2);
 				else
 					sprintf(buf, "-----");
@@ -576,7 +576,7 @@ print_current_data(int english)
 				printf("%-15.15s ", buf);
 
 				if (DATA_VALID(p, ep->mode2_data))
-					p->sprintf(buf, english, p,
+					p->cust_sprintf(buf, english, p,
 						ep->mode2_data, 3);
 				else
 					sprintf(buf, "-----");

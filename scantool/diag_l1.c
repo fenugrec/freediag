@@ -48,6 +48,10 @@ CVSID("$Id$");
 int diag_l0_debug;
 int diag_l1_debug;
 
+const struct diag_l0 *diag_l0_device_dl0(struct diag_l0_device *dl0d) {
+	return dl0d->dl0;
+} //XXX this used to be in diag_tty.c ... why ??
+
 static int diag_l1_saferead(struct diag_l0_device *dl0d,
 char *buf, size_t bufsiz, int timeout);
 

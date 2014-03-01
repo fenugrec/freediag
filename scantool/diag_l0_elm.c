@@ -69,7 +69,7 @@ struct diag_l0_elm_device {
 const char * elm_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?", NULL};
 
 /* Global init flag */
-static int diag_l0_elm_initdone;
+static int diag_l0_elm_initdone=0;		//1=init done
 
 extern const struct diag_l0 diag_l0_elm;
 
@@ -120,7 +120,7 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 
 
 //Send a command to ELM device and make sure no error occured. Data is passed on directly as a string;
-//caller //must make sure the string is \r-terminated - more precisely, 0x0D-terminated. 0x0A is ignored by ELM.
+//caller must make sure the string is \r-terminated - more precisely, 0x0D-terminated. 0x0A is ignored by ELM.
 //This func should not be used for data that elicits a data response (i.e. all data destined to the OBD bus,
 //hence not prefixed by "AT")
 //returns 0 on success. Waits *at least* timeout for all data & responses to come in. Responses to commands
@@ -135,12 +135,12 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 	
 	if (data[len-1] != 0x0D) {
 		//Last byte is not a carriage return, this would die.
-		fprintf(stderr, FLFMT "Error: attempting to send non-terminated command %.*s\n", FL, len, data);
+		fprintf(stderr, FLFMT "Error: attempting to send non-terminated command %.*s\n", FL, (int) len, data);
 		//the %.*s is pure magic : limits the string length to len, even if the string is not null-terminated.
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "sending command to ELM: %.*s\n", FL, len-1, data);
+		fprintf(stderr, FLFMT "sending command to ELM: %.*s\n", FL, (int) len-1, data);
 	}
 
 	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
@@ -435,7 +435,7 @@ const void *data, size_t len)
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "ELM: sending %d bytes \n", FL, len);
+		fprintf(stderr, FLFMT "ELM: sending %d bytes \n", FL, (int) len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 		}
@@ -443,17 +443,17 @@ const void *data, size_t len)
 
 	for (i=0; i<len; i++) {
 		//fill buffer with ascii-fied hex data
-		snprintf(&buf[2*i], 3, "%02x", ((char *)data)[i]);
+		snprintf(&buf[2*i], 3, "%02x", (size_t) ((char *)data)[i]);
 	}
 	i=2*len;
 	buf[i]=0x0D;
 	buf[i+1]=0x00;	//terminate string
 	
 	if ((diag_l0_debug & DIAG_DEBUG_WRITE) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
-		fprintf(stderr, FLFMT "ELM: sending %s\n", FL, &buf);
+		fprintf(stderr, FLFMT "ELM: sending %s\n", FL, buf);
 	}
 	
-	while ((size_t)(xferd = diag_tty_write(dl0d, &buf, i+1)) != i+1) {
+	while ((size_t)(xferd = diag_tty_write(dl0d, buf, i+1)) != i+1) {
 		/* Partial write */
 		if (xferd <  0) {	//write error
 			/* error */
@@ -469,7 +469,7 @@ const void *data, size_t len)
 		 * so inc pointers and continue
 		 */
 		len -= xferd;
-		data = (const void *)((const char *)&buf + xferd);
+		data = (const void *)((const char *)buf + xferd);
 	}
 
 	return 0;
@@ -503,7 +503,7 @@ void *data, size_t len, int timeout)
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "Expecting %d bytes from ELM, %d ms timeout\n", FL, (int) len, timeout);
 
-	while ( (xferd = diag_tty_read(dl0d, &rxbuf, len, timeout)) <= 0) {
+	while ( (xferd = diag_tty_read(dl0d, rxbuf, len, timeout)) <= 0) {
 		if (xferd == DIAG_ERR_TIMEOUT) {
 			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		}
@@ -525,14 +525,14 @@ void *data, size_t len, int timeout)
 	
 	//Here, rxbuf contains the string received from ELM. Parse it to get hex digits
 	char *rptr, *bp;
-	char rbyte;
+	unsigned int rbyte;
 	xferd=0;
 	rptr=rxbuf+strspn(rxbuf, " \n\r");	//skip all leading spaces and linefeeds
 	while ((bp=strtok(rptr, " >\n\r")) !=NULL) {
 		//process token delimited by spaces or prompt character
 		//this is very sketchy and deserves to be tested more...
 		sscanf(bp, "%02x", &rbyte);
-		((char *)data)[xferd]=rbyte;
+		((char *)data)[xferd]=(char) rbyte;
 		xferd++;
 		if (xferd==len)
 			break;	

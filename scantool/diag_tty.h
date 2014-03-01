@@ -23,6 +23,11 @@
  *
  *************************************************************************
  *
+ * This is totally unix-exclusive. The win32 of this and diag_tty.c will be radically different.
+ * One way to cross-platform this would be to "#include DIAGTTY_HEADER" everywhere there
+ * was an "#include diag_tty.h"; and use the makefile to define DIAGTTY_HEADER = (diag_tty_win32.h | diag_tty.h)
+ * diag_tty.c also is duplicated for win32 platforms, there are too many differences...
+ * work in progress.
  */
 
 #if defined(__cplusplus)
@@ -30,14 +35,16 @@ extern "C" {
 #endif
 
 #if defined(__linux__) && (TRY_POSIX == 0)
-#include <linux/serial.h>	/* For Linux-specific struct serial_struct */
-#include <fcntl.h>
+	#include <linux/serial.h>	/* For Linux-specific struct serial_struct */
+	#include <fcntl.h>
 #endif
-#include <termios.h>	/* For struct termios */
+
 
 #ifdef WIN32
-#include <Basetsd.h>
-typedef SSIZE_T ssize_t;
+	#include <Basetsd.h>
+	typedef SSIZE_T ssize_t;
+#else
+	#include <termios.h>	/* For struct termios, not on Win32*/
 #endif
 
 #include "diag_l1.h"
@@ -88,30 +95,8 @@ struct diag_l0_device
 #endif
 };
 
-struct diag_serial_settings;
-
-struct diag_l0	//XXX Why is this in here ??
-{
-	const char	*diag_l0_textname;	/* Useful textual name */
-	const char	*diag_l0_name;	/* Short, unique text name for user interface */
-
-	int 	diag_l0_type;			/* See type description above */
-	
-	/* function pointers to L0 code */
-	int	(*diag_l0_init)(void);
-	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
-		int iProtocol);
-	int	(*diag_l0_close)(struct diag_l0_device **);
-	int	(*diag_l0_initbus)(struct diag_l0_device *,
-		struct diag_l1_initbus_args *in);
-	int	(*diag_l0_send)(struct diag_l0_device *,
-		const char *subinterface, const void *data, size_t len);
-	int	(*diag_l0_recv)(struct diag_l0_device *,
-		const char *subinterface, void *data, size_t len, int timeout);
-	int	(*diag_l0_setspeed)(struct diag_l0_device *,
-		const struct diag_serial_settings *pss);
-	int	(*diag_l0_getflags)(struct diag_l0_device *);
-};
+//struct diag_serial_settings;
+//struct diag_l0	//XXX this has been moved to diag_l1.h !
 
 /*
  * Serial port settings.

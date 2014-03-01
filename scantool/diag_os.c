@@ -40,32 +40,34 @@
  */
 
 #ifdef WIN32
-#include <process.h>
-
-//#include <winsock.h>
+	#include <process.h>
+	#include <windows.h>
+	#include "diag_tty_win.h"
 
 #else
-#include <unistd.h>
-
-#include <sys/ioctl.h>
+	#include <unistd.h>
+	#include <sys/ioctl.h>
+	#include <linux/rtc.h>
+	#include <sys/ioctl.h>
+	#include <sys/time.h>
+	#include <sys/types.h>
+	#include <unistd.h>
+	#include <errno.h>
+	#include <fcntl.h>
+	#include <signal.h>
+	#include "diag_tty.h"  //LSKDLSKDNFLSDF
 
 #endif
 
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include <linux/rtc.h>
-#include <sys/ioctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
+
 
 #include "diag.h"
-#include "diag_tty.h"
+
 #include "diag_l1.h"
 #include "diag_l2.h"
 #include "diag_l3.h"
@@ -285,10 +287,9 @@ diag_os_millisleep(int ms)
 	return(0);
 }
 
-#endif
+#endif //of #if 0 (old millisleep)
 
-//following from initial "if linux && !posix" :
-#else
+#else	// from initial "if linux && !posix" :
 
 /*
 +* I think this implementation works in all cases, with less overhead.
@@ -310,15 +311,15 @@ diag_os_millisleep(int ms) {
 		else
 			return -1;
 	}
-#else
-    Sleep(ms);
+#else		//so it's WIN32
+	Sleep(ms);
 #endif
 	return 0;
 }
 #endif
 
 /*
- * diag_os_ipending: Is input avilable at the given file descriptor?
+ * diag_os_ipending: Is input available at the given file descriptor?
  *
  * This is what is left of the read function that was used both
  * for the TTY read and to check for input at a file descriptor.

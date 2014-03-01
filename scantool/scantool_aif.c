@@ -111,12 +111,12 @@ static void aif_monitor ( void *data )
 						const char *name = p->desc ;
 
 						if (DATA_VALID(p, ep->mode1_data))
-							p->sprintf(buf, set_display, p, ep->mode1_data, 2);
+							p->cust_sprintf(buf, set_display, p, ep->mode1_data, 2);
 
 						printf("%-15.15s ", buf);
 
 						if (DATA_VALID(p, ep->mode2_data))
-							p->sprintf(buf, set_display, p, ep->mode2_data, 3);
+							p->cust_sprintf(buf, set_display, p, ep->mode2_data, 3);
 
 						printf("%-15.15s\n", buf);
 					}

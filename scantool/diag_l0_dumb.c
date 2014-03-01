@@ -58,6 +58,7 @@ static int diag_l0_dumb_initdone;
 // flags set according to particular interface type (VAGtool vs SE etc.)
 static int dumb_flags=0;
 #define DUMB_RTS_L	0x01		//interface maps L line to RTS
+// would be nice to have that define in scantool_set.c somehow
 
 extern const struct diag_l0 diag_l0_dumb;
 

@@ -268,6 +268,7 @@ diag_errlookup(const int code) {
 	return ill_str;
 }
 
+//do not call diag_pflseterr; refer to diag.h for related macros
 void *
 diag_pflseterr(const char *name, const int line, const int code) {
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
@@ -298,6 +299,7 @@ diag_geterr(void) {
 
 /* Memory allocation */
 
+//diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
 int diag_flcalloc(const char *name, const int line,
 void **pp, size_t n, size_t s) {
 	void *p = calloc(n, s);

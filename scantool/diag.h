@@ -27,12 +27,16 @@
  * Library user header file
  */
 #include <sys/types.h>
+
 #ifdef WIN32
-#include <time.h>
+	#include <time.h>
+	#include <basetsd.h>
+	#include <windows.h>
 #else
-#include <sys/time.h>	/* For timeval */
-#include <stdint.h>		/* For uint8_t, etc */
+	#include <sys/time.h>	/* For timeval */
+	#include <stdint.h>		/* For uint8_t, etc */
 #endif
+
 #include <stdio.h>		/* For FILE */
 
 #if defined(__cplusplus)
@@ -43,47 +47,50 @@ extern "C" {
 #define MIN(_a_, _b_) (((_a_) < (_b_) ? (_a_) : (_b_)))
 
 #ifdef WIN32
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+	typedef unsigned char uint8_t;
+	typedef unsigned short uint16_t;
+	typedef unsigned int uint32_t;
 
-struct timeval {
-	long tv_sec;	/* seconds */
-	long tv_usec;	/* and microseconds */
-};
+	//struct timeval { //already in sys/time.h from windows.h ?
+//		long tv_sec;	/* seconds */
+//		long tv_usec;	/* and microseconds */
+//	};
 
-#define timercmp(tvp, uvp, cmp) \
-	((tvp)->tv_sec cmp (uvp)->tv_sec || \
-	(tvp)->tv_sec == (uvp)->tv_sec && (tvp)->tv_usec cmp (uvp)->tv_usec)
+//already in winsock2.h from windows.h ?
+	//~ #define timercmp(tvp, uvp, cmp) \		
+		//~ ((tvp)->tv_sec cmp (uvp)->tv_sec || \
+		//~ (tvp)->tv_sec == (uvp)->tv_sec && (tvp)->tv_usec cmp (uvp)->tv_usec)
 
-typedef unsigned int u_int;
-typedef _W64 unsigned int UINT_PTR, *PUINT_PTR;
-typedef UINT_PTR SOCKET;
+	typedef unsigned int u_int;
+	//typedef _W64 unsigned int UINT_PTR, *PUINT_PTR; //already in "basetsd.h" ?
+	//and _W64 is probably deprecated. See MSDN library.
+	typedef UINT_PTR SOCKET;
 
-#ifndef FD_SETSIZE
-#define FD_SETSIZE 64
-#endif /* FD_SETSIZE */
+	#ifndef FD_SETSIZE
+	#define FD_SETSIZE 64
+	#endif /* FD_SETSIZE */
 
-typedef struct fd_set {
-	u_int fd_count;	/* how many are SET? */
-	SOCKET fd_array[FD_SETSIZE];	/* an array of SOCKETs */
-} fd_set;
+//also already in windows.h -> winsock2.h
+	//~ typedef struct fd_set {
+		//~ u_int fd_count;	/* how many are SET? */
+		//~ SOCKET fd_array[FD_SETSIZE];	/* an array of SOCKETs */
+	//~ } fd_set;
 
-#define SIGALRM 14
+	#define SIGALRM 14
 
-typedef int sigset_t;
+	typedef int sigset_t;
 
-typedef struct sigaction_t {
-	void (*sa_handler)();
-	sigset_t sa_mask;
-	int sa_flags;
-	void (*sa_restorer)(void);
-} sigaction_t;
+	typedef struct sigaction_t {
+		void (*sa_handler)();
+		sigset_t sa_mask;
+		int sa_flags;
+		void (*sa_restorer)(void);
+	} sigaction_t;
 
-#endif
+#endif	//WIN32
 
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
-#define DB_FILE "./freediag_carsim.db"	//default simfile for CARSIM interface
+#define DB_FILE "./freediag_carsim_all.db"	//default simfile for CARSIM interface
 #define DIAG_NAMELEN	256
 
 /* For diagnostics */
@@ -208,6 +215,7 @@ const char *diag_errlookup(const int code);
  * using sizeof. This makes it a little unusual, but reduces potential errors.
  */
 
+//diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
 int diag_flcalloc(const char *name, const int line, 
 	void **p, size_t n, size_t s);
 

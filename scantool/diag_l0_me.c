@@ -297,7 +297,6 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		txbuf[1] = 0x85;
 		txbuf[2] = 0x01;		/* One byte message */
 		txbuf[3] = DIAG_KW2K_SI_TP;	/* tester present */
-/* XXX checksum ?? */
 		break;
 	}
 
@@ -738,7 +737,7 @@ void *data, size_t len, int timeout)
 	{
 /* XXX, we should deal with this properly rather than just printing a message */
 		fprintf(stderr,"Got bad checksum from ME device 0x%x != 0x%x\n",
-			xferd & 0xff, dev->dev_rxbuf[13]);
+			(int) xferd & 0xff, dev->dev_rxbuf[13]);
 		fprintf(stderr,"PC Serial port probably out of spec.\n");
 		fprintf(stderr,"RX Data: ");
 		for (i=0; i < dev->dev_rxlen; i++)

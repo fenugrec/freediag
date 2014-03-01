@@ -21,6 +21,9 @@
  *************************************************************************
  *
  * Diag library test harness
+ * This is a stand-alone program !
+ * Hard-coded to use a DUMB interface on the current device with "DIAG_L1_RAW" proto...
+ * 
  */
 
 #ifdef WIN32
@@ -53,7 +56,7 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype);
 
 uint8_t global_data[MAXRBUF];
 int global_datalen;
-
+char *set_subinterface;
 
 uint8_t	global_pids[0x100];	/* Pids supported by ECU */
 
@@ -68,16 +71,18 @@ alarm_handler(int sig __attribute__((unused)))
 	alarm(1);
 }
 
-#ifdef WIN32
+
 int
 main(int argc,  char **argv)
-#else
-int
-main(int argc __attribute__((unused)),  char **argv __attribute__((unused)))
-#endif
 {
+	if (argc != 2) {
+		//must be called with one parameter
+		printf("Error : correct usage is : %s [dev]\nwhere [dev] looks like /dev/ttyS0 etc.\n",argv[0]);
+		return;
+	}
+	set_subinterface=argv[1];	//point to the device name string
 	struct sigaction stNew;
-
+	//XXX these probably need to be expanded or changed to xyz_debug=-1; ?
 	diag_l0_debug = 0xff;
 	diag_l1_debug = 0xff;
 	diag_l2_debug = 0xff;
@@ -94,11 +99,18 @@ main(int argc __attribute__((unused)),  char **argv __attribute__((unused)))
 		target_type i;
 		for (i=33 ; i < 0xFF; i++)
 		{
-			do_l2_raw_test(0, i, DIAG_L2_TYPE_SLOWINIT);
+			if (do_l2_raw_test(0, i, DIAG_L2_TYPE_SLOWINIT)) {
+				printf("do_l2_raw_test error. Exiting.\n");
+				return 0;
+			}
 		}
 	}
 #else
-	do_l2_raw_test(0, (target_type)32, DIAG_L2_TYPE_SLOWINIT);
+	if (do_l2_raw_test(0, (target_type)32, DIAG_L2_TYPE_SLOWINIT)) {
+		printf("do_l2_raw_test error. Exiting.\n");
+		return 0;
+	}
+	
 #endif
     
 	return 0;
@@ -135,6 +147,7 @@ l2_rcv(void *handle __attribute__((unused)), struct diag_msg *msg)
 /*
  * Layer 0 (L0) interface table
  */
+//do_l2_raw_test : ret 0 if ok
 static int
 do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 {
@@ -149,7 +162,11 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 	rv = diag_l2_init();
 	printf("init rv = 0x%x\n", rv);
 
-	dl0d = diag_l2_open("SE9141", "0", 0);
+	dl0d = diag_l2_open("DUMB", set_subinterface, DIAG_L1_RAW);
+	if (! dl0d) {
+		printf("could not open %s\n",set_subinterface);
+		return -1;
+	}
 	printf("open dl0d = %p\n", dl0d);
 
 	/*
@@ -179,7 +196,7 @@ printf("For %d %d\n", funcaddr, destecu);
 	else {
 		diag_l2_close(dl0d);
 		printf("Connection to ECU failed (con. %p)\n", d_conn);
-		return(0);
+		return -1;
 	}
 
 #if !DO_ISO
@@ -280,7 +297,7 @@ do_l1_test(void)
 	rv = diag_l1_init();
 	printf("init rv = 0x%x\n", rv);
 
-	dl0d = diag_l1_open("SE9141", 0, 0);
+	dl0d = diag_l1_open("DUMB", set_subinterface, DIAG_L1_RAW);
 	if (dl0d==0)
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	printf("open dl0d = %p\n", dl0d);

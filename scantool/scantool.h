@@ -116,7 +116,7 @@ extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
 #define	PROTOCOL_SAEJ1850	3
 
 //XXX The following defs should probably go in an auto-generated l0_list.h file
-enum l0_nameindex {MET16, SE9141, VAGTOOL, BR1, ELM, CARSIM, DUMB};
+enum l0_nameindex {MET16, VAGTOOL, BR1, ELM, CARSIM, DUMB};
 struct l0_name
 {
 	char * longname;
@@ -210,7 +210,7 @@ struct pid
 {
 	int pidID ;
 	const char *desc ;
-	formatter *sprintf ;
+	formatter *cust_sprintf ;
 	int bytes ;
 	const char *fmt1 ; // SI
 	double scale1 ;

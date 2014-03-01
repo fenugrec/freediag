@@ -29,6 +29,8 @@
  * - Layer 1 interface definitions
  */
 
+#include "diag.h"		//we need this for uint8_t
+
 /*
  * Layer 1/0 device flags
  *
@@ -91,10 +93,11 @@ extern "C" {
 /*
  * Layer 0 device types
  *
- * Types of L1 Interface supported
+ * Types of L1 Interface (L1protocol) supported
  * Each "device" has up to 16 interfaces, and many sub-interfaces
  *
- * This is a bitmask of what is supported
+ * This is a bitmask of what is supported;
+ * used for struct diag_l0 (diag_l0_type)
  */
 //#define	DIAG_L1_SPARE		0x00	/* Not used */
 #define	DIAG_L1_ISO9141		0x01	/* K line */
@@ -102,6 +105,8 @@ extern "C" {
 #define DIAG_L1_J1850_VPW	0x04	/* J1850 interface, 10400 baud, VPW */
 #define DIAG_L1_J1850_PWM	0x08	/* J1850 interface 41600 baud, PWM */
 #define	DIAG_L1_CAN		0x10	/* CAN bus */
+#define DIAG_L1_RES1 0x20	/* Reserved */
+#define DIAG_L1_RES2 0x40	/* Reserved */
 #define	DIAG_L1_RAW		0x80	/* Raw data interface */
 
 /*
@@ -130,6 +135,7 @@ struct diag_l1_initbus_args
 	uint8_t	type;	/* Init type */
 	uint8_t	addr;	/* Address for 5 baud init */
 };
+
 #define DIAG_L1_INITBUS_NONE	0	/* Not needed */
 #define DIAG_L1_INITBUS_FAST	1	/* Fast init (25ms low, 25ms high) */
 #define DIAG_L1_INITBUS_5BAUD	2	/* 5 baud init */
@@ -148,9 +154,33 @@ struct diag_l1_initbus_args
  * gettype(), return the type as above
  */ 
 
-struct diag_l0;
 struct diag_l0_device;
 struct diag_serial_settings;
+
+
+struct diag_l0 //XXX this used to be in diag_tty.h !?
+{
+	const char	*diag_l0_textname;	/* Useful textual name */
+	const char	*diag_l0_name;	/* Short, unique text name for user interface */
+
+	int 	diag_l0_type;			/* See L1protocol defines above*/
+	
+	/* function pointers to L0 code */
+	int	(*diag_l0_init)(void);
+	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
+		int iProtocol);
+	int	(*diag_l0_close)(struct diag_l0_device **);
+	int	(*diag_l0_initbus)(struct diag_l0_device *,
+		struct diag_l1_initbus_args *in);
+	int	(*diag_l0_send)(struct diag_l0_device *,
+		const char *subinterface, const void *data, size_t len);
+	int	(*diag_l0_recv)(struct diag_l0_device *,
+		const char *subinterface, void *data, size_t len, int timeout);
+	int	(*diag_l0_setspeed)(struct diag_l0_device *,
+		const struct diag_serial_settings *pss);
+	int	(*diag_l0_getflags)(struct diag_l0_device *);
+};
+
 
 int diag_l1_init(void);
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);

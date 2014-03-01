@@ -92,8 +92,8 @@ struct sim_ecu_response* sim_last_ecu_responses = NULL;
 // or not the L2 framing and CRC/Checksums.
 // These boolean flags are to be programmed with values
 // from the DB file in use.
-char sim_skip_frame = 0;
-char sim_skip_crc = 0;
+int sim_skip_frame = 0;
+int sim_skip_crc = 0;
 
 
 /**************************************************/
@@ -260,11 +260,17 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 		if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) != 0)
 			continue;
 		// synthesize up to 11 byte values from DB request line.
-		memset(synth_req, 0, 11);
+		int reqvals[11];
+		memset(reqvals, 0, 11);
 		int num = sscanf(line_buf+3, "%x %x %x %x %x %x %x %x %x %x %x",
-			 &synth_req[0], &synth_req[1], &synth_req[2], &synth_req[3],
-			 &synth_req[4], &synth_req[5], &synth_req[6], &synth_req[7],
-			 &synth_req[8], &synth_req[9], &synth_req[10]);
+			 &reqvals[0], &reqvals[1], &reqvals[2], &reqvals[3],
+			 &reqvals[4], &reqvals[5], &reqvals[6], &reqvals[7],
+			 &reqvals[8], &reqvals[9], &reqvals[10]);
+		//re-cast to uint8...
+		int i;
+		for (i=0; i<=10; i++) {
+			synth_req[i]=(uint8_t) reqvals[i];
+		}
 		// compare given request with synthesized DB file request.
 		if (memcmp(data, synth_req, MIN(len, num)) == 0) {
 			// got a match, now cycle the following lines for responses.
@@ -370,7 +376,7 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 			synth_resp[pos] = cs1(synth_resp, pos);
 		else
 			// failed. try scanning element as an Hex byte.
-			if ((ret = sscanf(parse_offset, "%x", &synth_resp[pos])) != 1) {
+			if ((ret = sscanf(parse_offset, "%x", ((int *)(&synth_resp[pos])))) != 1) {
 				// failed. something's wrong.
 				fprintf(stderr, FLFMT "Error parsing line: %s at position %d.\n", FL, resp_p->text, pos*5);
 				break;
@@ -400,8 +406,8 @@ void sim_read_cfg(FILE *fp)
 #define CFG_NOL2FRAME "SIM_NOL2FRAME"
 #define CFG_NOL2CKSUM "SIM_NOL2CKSUM"
 
-sim_skip_crc = 0;
-sim_skip_frame = 0;
+	sim_skip_crc = 0;
+	sim_skip_frame = 0;
 
 	// search for all config lines.
 	while (1) {

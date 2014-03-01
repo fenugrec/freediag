@@ -27,6 +27,10 @@
  *
  *
  */
+#ifdef WIN32	//no strcasecmp on win32 ! but kernel32 provides lstrcmpi which should be equivalent.
+	#include <windows.h>
+	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b) 
+#endif
 
 #include "diag.h"
 #include "diag_l1.h"
@@ -53,8 +57,8 @@ const char *	set_vehicle;	/* Vehicle */
 const char *	set_ecu;	/* ECU name */
 
 //const char  *	set_interface;	/* H/w interface to use */
-#define DEFAULT_INTERFACE 5	//index into l0_names below
-const struct l0_name l0_names[] = { {"MET16", MET16}, {"SE9141", SE9141}, {"VAGTOOL", VAGTOOL},
+#define DEFAULT_INTERFACE CARSIM	//index into l0_names below
+const struct l0_name l0_names[] = { {"MET16", MET16}, {"VAGTOOL", VAGTOOL},
 			{"BR1", BR1}, {"ELM", ELM}, {"CARSIM", CARSIM}, {"DUMB", DUMB}, NULL};
 
 enum l0_nameindex set_interface;	//hw interface to use
@@ -87,7 +91,7 @@ int set_init(void)
 	set_interface_idx= DEFAULT_INTERFACE;
 	set_interface = l0_names[DEFAULT_INTERFACE].code;	/* Default H/w interface to use */
 
-	strncpy(set_subinterface,"/dev/null",sizeof(set_subinterface));
+	strncpy(set_subinterface,"/dev/null",SUBINTERFACE_MAX-1);
 	printf( "%s: Interface set to default: %s on %s\n", progname, l0_names[set_interface_idx].longname, set_subinterface);
 
 	if (diag_calloc(&set_simfile, strlen(DB_FILE)+1))
@@ -135,7 +139,7 @@ const struct cmd_tbl_entry set_cmd_table[] =
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_set_help, 0, NULL},
 
-	{ "interface", "interface NAME [id]", "Shows/Sets the interface to use. Use set interface ? to get a list of names",
+	{ "interface", "interface NAME [dev]", "Shows/Sets the interface to use. Use set interface ? to get a list of names",
 		cmd_set_interface, 0, NULL},
 		
 	{ "simfile", "simfile [filename]", "Select simulation file to use as data input. See freediag_carsim.db for an example",
@@ -155,7 +159,6 @@ const struct cmd_tbl_entry set_cmd_table[] =
 
 	{ "addrtype", "addrtype [func/phys]", "Shows/Sets the address type to use",
 		cmd_set_addrtype, 0, NULL},
-
 
 	{ "l1protocol", "l1protocol [protocolname]", "Shows/Sets the hardware protocol to use. Use set l1protocol ? to get a list of protocols",
 		cmd_set_l1protocol, 0, NULL},
@@ -179,13 +182,13 @@ const struct cmd_tbl_entry set_cmd_table[] =
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
 
-const char * const l1_names[] =
+const char * const l1_names[] = //these MUST be in the same order as they are listed in diag_l1.h !!
 {
 	"ISO9141", "ISO14230",
 	"J1850-VPW", "J1850-PWM", "CAN", "", "", "RAW", NULL
 };
 
-const char * const l2_names[] =
+const char * const l2_names[] = //these MUST match the listing in diag_l2.h !
 {
 	"RAW", "ISO9141", PROTO_NONE, "ISO14230",
 	"J1850", "CAN", "VAG", "MB1", NULL
@@ -241,10 +244,14 @@ static int cmd_set_interface(int argc, char **argv)
 		int i, helping = 0, found = 0;
 		if (strcmp(argv[1], "?") == 0) {
 			helping = 1;
-			printf("hardware interface: use \"set interface NAME [id]\" .\n"
+			printf("hardware interface: use \"set interface NAME [dev]\" .\n"
+#ifdef OLD_DEVNAME
 			"[id] is either an integer to be appended as /dev/obdII[id] or\n"
-			"a complete device name such as \"/dev/ttyS0\".\n"
-			"Valid interface names are: \n");
+#else
+			"NAME is interface type and [dev] is\n"
+#endif
+			"a complete device path such as \"/dev/ttyS0\".\n"
+			"Valid NAMEs are: \n");
 		}
 		for (i=0; l0_names[i].longname != NULL; i++) {
 			//loop through l0 interface names, either printing or comparing to argv[1]
@@ -264,14 +271,14 @@ static int cmd_set_interface(int argc, char **argv)
 			printf("interface: invalid interface %s\n", argv[1]);
 			printf("interface: use \"set interface ?\" to see list of names\n");
 		} else {
-			if (argc > 2)
-				strncpy(set_subinterface, argv[2], sizeof(set_subinterface));
+			if (argc > 2)	//there's also a "subinterface" aka devicename
+				strncpy(set_subinterface, argv[2], SUBINTERFACE_MAX-1);
 			printf("interface is now %s on %s\n",
 					l0_names[set_interface_idx].longname, set_subinterface);
 			if (set_interface==VAGTOOL)
 				diag_l0_dumb_setflags(1);
 			else
-				diag_l0_dumb_setflags(0);	//not strictly correct usage, but will do for hack.
+				diag_l0_dumb_setflags(0);	//not strictly correct usage.. XXX
 		}
 	} else {
 		printf("interface: using %s on %s\n",
