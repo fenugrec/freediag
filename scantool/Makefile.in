@@ -578,7 +578,7 @@ uninstall-am: uninstall-binPROGRAMS
 	tags uninstall uninstall-am uninstall-binPROGRAMS
 
 diag_config.c: l0config l2config genconfig.sh
-	./genconfig.sh > diag_config.c
+	sh genconfig.sh > diag_config.c
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

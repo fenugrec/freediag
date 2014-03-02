@@ -6,6 +6,6 @@
 #cmakedefine DONT_USE_RCFILE @NUSE_RCFILE@
 #cmakedefine OLD_DEVNAME @OLDEV@
 
-#define PACKAGE_VERSION @PKGVERSION@
+#define PACKAGE_VERSION "@PKGVERSION@"
 
 //do we need to manually add all the #defines that autotools did ?

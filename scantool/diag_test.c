@@ -28,7 +28,7 @@
 
 #ifdef WIN32
 #include <process.h>
-#include "pthread.h"
+//#include "pthread.h" 
 #else
 #include <unistd.h>
 #endif
@@ -81,7 +81,11 @@ main(int argc,  char **argv)
 		return;
 	}
 	set_subinterface=argv[1];	//point to the device name string
+#ifdef WIN32
+	struct sigaction_t stNew;
+#else
 	struct sigaction stNew;
+#endif
 	//XXX these probably need to be expanded or changed to xyz_debug=-1; ?
 	diag_l0_debug = 0xff;
 	diag_l1_debug = 0xff;

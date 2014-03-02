@@ -1,28 +1,7 @@
 #ifndef _DIAG_TTY_UNIX_H_
 #define _DIAG_TTY_UNIX_H_
-/*
- *	freediag - Vehicle Diagnostic Utility
- *
- *
- * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *************************************************************************
- *
- * This is totally unix-exclusive and should not be included directly; other files should
+
+/* This is totally unix-exclusive and should not be included directly; other files should
  * " #include diag_tty.h " 
  * and diag_tty.h takes care of including the right os-specific diag_ttyXYZ.h file.
  *
@@ -37,19 +16,14 @@ extern "C" {
 	#include <fcntl.h>
 #endif
 
-
 #include <termios.h>	/* For struct termios*/
 
-
-#include "diag_l1.h"
 
 /*
  * L0 device structure
  * This is the structure to interface between the L1 code
  * and the interface-manufacturer dependent code (which is in diag_l0_if.c)
  */
-
-struct diag_l1_initbus_args;
 
 struct diag_ttystate
 {
@@ -92,79 +66,7 @@ struct diag_l0_device
 #endif
 };
 
-//struct diag_serial_settings;
-//struct diag_l0	//XXX this has been moved to diag_l1.h !
 
-/*
- * Serial port settings.
- * We allow most expected settings, except that we need to
- * support arbitrary speeds for some L0 links.
- */
-
-/*
- * Parity settings
- */
-enum diag_parity {
-	diag_par_e = 1,	/* Even parity */
-	diag_par_o = 2,	/* Odd parity */
-	diag_par_n = 3	/* No parity */
-};
-
-enum diag_databits {
-	diag_databits_8 = 8,
-	diag_databits_7 = 7,
-	diag_databits_6 = 6,
-	diag_databits_5 = 5
-};
-
-enum diag_stopbits {
-	diag_stopbits_1 = 1,
-	diag_stopbits_2 = 2
-};
-
-struct diag_serial_settings {
-	int speed;
-	enum diag_databits databits;
-	enum diag_stopbits stopbits;
-	enum diag_parity parflag;
-};
-
-void *diag_l0_dl0_handle(struct diag_l0_device *dl0d);
-
-struct diag_l2_link *
-diag_l0_dl2_link(struct diag_l0_device *dl0d);
-
-void
-diag_l0_set_dl2_link(struct diag_l0_device *dl0d,
-	struct diag_l2_link *dl2_link);
-
-const struct diag_l0 *diag_l0_device_dl0(struct diag_l0_device *dl0d);
-
-extern int diag_l0_debug;
-
-/* Open, close device */
-int diag_tty_open(struct diag_l0_device **ppdl0d,
-	const char *subinterface,
-	const struct diag_l0 *,
-	void *handle);
-
-int diag_tty_close(struct diag_l0_device **ppdl0d);
-
-/* Set speed/parity etc */
-int diag_tty_setup(struct diag_l0_device *dl0d,
-	const struct diag_serial_settings *pss);
-
-int diag_tty_control(struct diag_l0_device *dl0d, int dtr, int rts);
-
-/* Flush pending input */
-int diag_tty_iflush(struct diag_l0_device *dl0d);
-
-/* read with timeout, write */
-ssize_t diag_tty_read(struct diag_l0_device *dl0d,
-	void *buf, size_t count, int timeout);
-ssize_t diag_tty_write(struct diag_l0_device *dl0d,
-	const void *buf, const size_t count);
-int diag_tty_break(struct diag_l0_device *dl0d, const int);
 
 #if defined(__cplusplus)
 }

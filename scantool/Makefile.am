@@ -40,6 +40,6 @@ nodist_libdiag_a_SOURCES=diag_config.c
 BUILT_SOURCES=diag_config.c
 DISTCLEANFILES=diag_config.c
 diag_config.c: l0config l2config genconfig.sh
-	./genconfig.sh > diag_config.c
+	sh genconfig.sh > diag_config.c
 
 libdyno_a_SOURCES=dyno.c diag.h diag_os.h diag_err.h dyno.h

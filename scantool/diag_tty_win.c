@@ -8,7 +8,8 @@
 #include "diag.h"
 #include "diag_l1.h"
 #include "diag_err.h"
-#include "diag_tty_win.h"
+//#include "diag_tty_win.h"
+#include "diag_tty.h"	//
 
 static LARGE_INTEGER perfo_freq;
 //static LARGE_INTEGER perfo_count;	//for use with QueryPerformanceFrequency and QueryPerformanceCounter

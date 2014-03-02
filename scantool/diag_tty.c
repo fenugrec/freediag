@@ -192,7 +192,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 }
 
 /* Close up the TTY and restore. */
-int diag_tty_close(struct diag_l0_device **ppdl0d)
+void diag_tty_close(struct diag_l0_device **ppdl0d)
 {
 	if (ppdl0d) {
 		struct diag_l0_device *dl0d = *ppdl0d;
@@ -225,7 +225,7 @@ int diag_tty_close(struct diag_l0_device **ppdl0d)
 			*ppdl0d = 0;
 		}
 	}
-	return 0;
+	return;
 }
 
 void *

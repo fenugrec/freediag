@@ -22,12 +22,6 @@ option(OLDEV "Enable deprecated dev id (default=no)" OFF)
 option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
 option(USE_INIFILE "Enable ini file in ./ (default=disabled)" OFF)
 
-add_subdirectory(scantool)
-if (BUILDGUI)
-	#add_subdirectory(scangui)
-	message(FATAL_ERROR "scangui can't be built through cmake yet")
-endif (BUILDGUI)
-
 
 ###### INCLUDES
 #proj_bin_dir = requis pour config.h (not in src_dir)
@@ -35,8 +29,9 @@ include_directories("${PROJECT_BINARY_DIR}")
 #src_dir/include : freediag_aif.h
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
+message("DBG : include dirs set to ${INCLUDE_DIRECTORIES}")
 
-###### cconf.h
+###### generate cconf.h
 if (USE_RCFILE)
 	set (NUSE_RCFILE 1)
 	#we have to "invert" the flag for cconf.h
@@ -48,6 +43,15 @@ configure_file (
   "${PROJECT_BINARY_DIR}/cconf.h"
 )
 #should parse cconf.h.in and produce buildir/cconf.h
+
+
+###### parse sub-dirs
+add_subdirectory(scantool)
+
+if (BUILDGUI)
+	#add_subdirectory(scangui)
+	message(FATAL_ERROR "scangui can't be built through cmake yet")
+endif (BUILDGUI)
 
 
 

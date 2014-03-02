@@ -37,7 +37,7 @@
 #include "diag_l3.h"
 
 #ifdef CMAKE_ENABLED
-	#include cconf.h
+	#include "cconf.h"
 #else
 	#include "config.h"	//still with autotoools. Both should work...
 #endif

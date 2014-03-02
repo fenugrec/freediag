@@ -37,12 +37,15 @@
  *			(i.e restartable system calls)
  *		SYSV does, so you see lots of code that copes with EINTR
  *
+ * WIN32 will use CreateTimerQueueTimer instead of the SIGALRM handler of unix.
+ * Right now there's no self-checking but it should be of OK accuracy for basic stuff ( keepalive messages probably?)
+ * NOTE : that means at least WinXP is required. 
  */
 
 #ifdef WIN32
 	#include <process.h>
 	#include <windows.h>
-	#include "diag_tty_win.h"
+	#define _WIN32_WINNT 0x0500	//not sure why we need to do this manually
 
 #else
 	#include <unistd.h>
@@ -55,8 +58,6 @@
 	#include <errno.h>
 	#include <fcntl.h>
 	#include <signal.h>
-	#include "diag_tty.h"  //LSKDLSKDNFLSDF
-
 #endif
 
 
@@ -65,7 +66,7 @@
 #include <time.h>
 
 
-
+#include "diag_tty.h"
 #include "diag.h"
 
 #include "diag_l1.h"
@@ -88,16 +89,30 @@ int diag_os_init_done;
 +* to occur during any other non-async-signal-safe function.
  */
 #ifdef WIN32
-void
-diag_os_sigalrm(int unused)
+int timerproblem;
+
+VOID CALLBACK timercallback(PVOID lpParam, BOOLEAN timedout) {
+	if (!timedout) {
+		//this should not happen...
+		if (!timerproblem) {
+			fprintf(stderr, FLFMT "Problem with OS timer callback!\n", FL);
+			timerproblem=1;	//so we dont flood the screen with errors
+		}
+		//SetEvent(timingprob) // probably not needed ?
+	} else {		
+		diag_l3_timer();	/* Call L3 Timer */
+		diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
+	}
+	return;
+}
 #else
 void
 diag_os_sigalrm(int unused __attribute__((unused)))
-#endif
 {
 	diag_l3_timer();	/* Call L3 Timer */
 	diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
 }
+#endif //WIN32
 
 int
 diag_os_init(void)
@@ -120,7 +135,6 @@ diag_os_init(void)
 	memset(&stNew, 0, sizeof(stNew));
 	stNew.sa_handler = diag_os_sigalrm;
 	stNew.sa_flags = 0;
-
 	/*
 	 * I want to use POSIX timers to interrupt the reads, but I can't
 	 * if SA_RESTART is in effect.  The best thing would be to use
@@ -128,12 +142,10 @@ diag_os_init(void)
 	 */
 #if defined(__linux__) && (TRY_POSIX == 0)
 	stNew.sa_flags = SA_RESTART;
-#else
-	stNew.sa_flags = 0;
 #endif
-	sigaction(SIGALRM, &stNew, NULL);
 
 #ifndef WIN32
+	sigaction(SIGALRM, &stNew, NULL);	//install handler for SIGALRM
 	/* 
 	 * Start repeating timer
 	 */
@@ -142,7 +154,7 @@ diag_os_init(void)
 
 	tv.it_value = tv.it_interval;
 
-	setitimer(ITIMER_REAL, &tv, 0); /* Set timer */
+	setitimer(ITIMER_REAL, &tv, 0); /* Set timer : it will SIGALRM upon expiration */
 #endif
 
 	return(0);
@@ -403,7 +415,7 @@ diag_os_sched(void)
 	}
 	return r;
 }
-#else
+#else		//(POSIX_PRIO_SCHED)
 /*
 +* This OS doesn't seem to have POSIX real time scheduling.
  */
@@ -416,14 +428,40 @@ diag_os_sched(void)
     // Must start a callback timer. Not sure about the frequency yet.
     //
 
-#else
+#else //!WIN32
 
 #if NOWARNINGS == 0
 	#warning No special scheduling support
-#endif
+#endif //NOWARNINGS
 	fprintf(stderr,
 		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
 	return -1;
-#endif
+#endif	//WIN32
 }
-#endif
+#endif	//(POSIX_PRIO_SCHED)
+
+#ifndef HAVE_GETTIMEOFDAY	//like on win32
+//#define DELTA_EPOCH_IN_MICROSECS  11644473600000000 // =  0x48864000, not compiler-friendly
+#define DELTA_EPOCH_H 0x4886	//so we'll cheat
+#define DELTA_EPOCH_L 0x4000
+int gettimeofday(struct timeval *tv, struct timezone *tz) {
+	FILETIME ft;
+	LARGE_INTEGER longtime;
+	const LONGLONG delta_epoch=((LONGLONG) DELTA_EPOCH_H <<32) + DELTA_EPOCH_L;
+
+	if (NULL != tv) {
+		GetSystemTimeAsFileTime(&ft);	//getnb of 100ns intvals since 1601-01-01
+		longtime.HighPart=ft.dwHighDateTime;
+		longtime.LowPart=ft.dwLowDateTime;	//load 64bit val
+		
+		longtime.QuadPart /=10;	// convert to 1E-6s; use 64bit member of union
+
+		longtime.QuadPart -= delta_epoch; 	//convert to unix timeframe
+		//maybe useless for freediag's purpose, but it's there in any case.
+		tv->tv_sec = (long)(longtime.QuadPart / 1000000);
+		tv->tv_usec = (long)(longtime.QuadPart % 1000000);
+	}
+	return 0;
+}
+
+#endif	//HAVE_GETTIMEOFDAY

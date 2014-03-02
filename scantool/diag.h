@@ -56,11 +56,6 @@ extern "C" {
 //		long tv_usec;	/* and microseconds */
 //	};
 
-//already in winsock2.h from windows.h ?
-	//~ #define timercmp(tvp, uvp, cmp) \		
-		//~ ((tvp)->tv_sec cmp (uvp)->tv_sec || \
-		//~ (tvp)->tv_sec == (uvp)->tv_sec && (tvp)->tv_usec cmp (uvp)->tv_usec)
-
 	typedef unsigned int u_int;
 	//typedef _W64 unsigned int UINT_PTR, *PUINT_PTR; //already in "basetsd.h" ?
 	//and _W64 is probably deprecated. See MSDN library.
@@ -88,6 +83,16 @@ extern "C" {
 	} sigaction_t;
 
 #endif	//WIN32
+
+#ifndef HAVE_GETTIMEOFDAY	//like on win32
+	struct timezone {
+	  int  tz_minuteswest;
+	  int  tz_dsttime;
+	};
+
+	//this is a bare implementation with no timezone support. Returns 0.
+	int gettimeofday(struct timeval *tv, struct timezone *tz);
+#endif //HAVE_GETTIMEOFDAY
 
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
 #define DB_FILE "./freediag_carsim_all.db"	//default simfile for CARSIM interface
