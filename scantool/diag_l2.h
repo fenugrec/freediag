@@ -346,6 +346,7 @@ void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  *
  */
 int diag_l2_init(void);
+int diag_l2_end(void);
 struct diag_l0_device * diag_l2_open(const char *device_name, const char *subinterface, int L1protocol);
 int diag_l2_close(struct diag_l0_device *);
 

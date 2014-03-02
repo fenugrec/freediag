@@ -51,7 +51,7 @@ enum diag_dtc_protocol {
 };
 #endif
 
-
+//do not use *allocs or open handles in diag_dtc_init !
 void diag_dtc_init(void);
 #ifdef WIN32
 char* diag_dtc_decode(uint8_t *data, int len,

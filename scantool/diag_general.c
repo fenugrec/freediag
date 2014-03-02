@@ -69,6 +69,29 @@ int diag_init(void)	//returns 0 if normal exit
 	return 0;
 }
 
+//must be called before exiting. Ret 0 if ok
+int diag_close() {
+	int rv=0;
+	if (! diag_initialized)
+		return 0;
+	if (diag_l2_end()) {
+		fprintf(stderr, FLFMT "Could not close L2 level\n", FL);
+		rv=-1;
+	}
+	if (diag_l1_end()) {
+		fprintf(stderr, FLFMT "Could not close L1 level\n", FL);
+		rv=-1;
+	}
+	if (diag_os_close()) {
+		fprintf(stderr, FLFMT "Could not close OS functions!\n", FL);
+		rv=-1;
+	}
+	//nothing to do for diag_dtc_init
+	
+	diag_initialized=0;
+	return rv;
+}
+
 
 /*
  * Message handling

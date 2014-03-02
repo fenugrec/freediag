@@ -42,24 +42,6 @@
  * NOTE : that means at least WinXP is required. 
  */
 
-#ifdef WIN32
-	#include <process.h>
-	#include <windows.h>
-	#define _WIN32_WINNT 0x0500	//not sure why we need to do this manually
-
-#else
-	#include <unistd.h>
-	#include <sys/ioctl.h>
-	#include <linux/rtc.h>
-	#include <sys/ioctl.h>
-	#include <sys/time.h>
-	#include <sys/types.h>
-	#include <unistd.h>
-	#include <errno.h>
-	#include <fcntl.h>
-	#include <signal.h>
-#endif
-
 
 #include <stdlib.h>
 #include <string.h>
@@ -73,6 +55,23 @@
 #include "diag_l2.h"
 #include "diag_l3.h"
 #include "diag_err.h"
+
+#ifdef WIN32
+	#include <process.h>
+	#include <windows.h>
+#else
+	#include <unistd.h>
+	#include <sys/ioctl.h>
+	#include <linux/rtc.h>
+	#include <sys/ioctl.h>
+	#include <sys/time.h>
+	#include <sys/types.h>
+	#include <unistd.h>
+	#include <errno.h>
+	#include <fcntl.h>
+	#include <signal.h>
+#endif
+
 
 CVSID("$Id$");
 
@@ -89,6 +88,7 @@ int diag_os_init_done;
 +* to occur during any other non-async-signal-safe function.
  */
 #ifdef WIN32
+HANDLE hDiagTimer;
 int timerproblem;
 
 VOID CALLBACK timercallback(PVOID lpParam, BOOLEAN timedout) {
@@ -114,21 +114,35 @@ diag_os_sigalrm(int unused __attribute__((unused)))
 }
 #endif //WIN32
 
+//return 0 if ok
 int
 diag_os_init(void)
 {
 #ifdef WIN32
 	struct sigaction_t stNew;
+	long tmo=20;	//20ms is reasonable on WIN32. XXX change this for a #define
 #else
 	struct sigaction stNew;
 	struct itimerval tv;
+	long tmo = 1;	/* 1 ms,  why such a high frequency ? */
 #endif
-	long tmo = 1;	/* 1 ms */
 
 	if (diag_os_init_done)
 		return(0);
 	diag_os_init_done = 1;
 
+#ifdef WIN32
+	//probably the nearest equivalent to a unix interval timer + associated alarm handler
+	//is the timer queue... so that's what we do.
+	//we create the timer in the default timerqueue
+	if (! CreateTimerQueueTimer(&hDiagTimer, NULL, 
+			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo, 
+			WT_EXECUTEDEFAULT)) {
+		fprintf(stderr, FLFMT "CTQT error.\n");
+		return -1;
+	}
+	return 0;
+#else // not WIN32
 	/*
 	 * Install alarm handler
 	 */
@@ -144,7 +158,6 @@ diag_os_init(void)
 	stNew.sa_flags = SA_RESTART;
 #endif
 
-#ifndef WIN32
 	sigaction(SIGALRM, &stNew, NULL);	//install handler for SIGALRM
 	/* 
 	 * Start repeating timer
@@ -155,9 +168,48 @@ diag_os_init(void)
 	tv.it_value = tv.it_interval;
 
 	setitimer(ITIMER_REAL, &tv, 0); /* Set timer : it will SIGALRM upon expiration */
-#endif
 
 	return(0);
+#endif	//WIN32
+}	//diag_os_init
+
+//return 0 if ok
+int diag_os_close() {
+	//delete alarm handlers / period timers
+#ifdef WIN32
+	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
+		//succes
+		return 0;
+	}
+	DWORD err=GetLastError();
+	fprintf(stderr, FLFMT "Could not DTQT err=%d!\n", FL, err);
+	if (err==ERROR_IO_PENDING) {
+		fprintf(stderr, FLFMT "But that's an ERROR_IO_PENDING so no worries.\n", FL);
+		return 0;
+	}
+	//sinon ici on est dans le troub;
+	fprintf(stderr, FLFMT "Could not DTQT. Retrying.\n", FL);
+	sleep(500);	//should be more than enough for the short timer period we chose
+	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
+		fprintf(stderr, FLFMT "OK !\n", FL);		//succes
+		return 0;
+	}
+	fprintf(stderr, FLFMT "Still could not DTQT. Please report this.\n", FL);
+	return -1;
+#else // not WIN32
+	//I know nothing about unix timers. Viewer discretion is advised.
+	//stop the interval timer:
+	struct itimerval tv={{0,0},{0, 0}};
+	setitimer(ITIMER_REAL, &tv, 0);
+	
+	//and  set the SIGALRM handler to default, whatever that is
+	struct sigaction disable_tmr;
+	memset(&disable_tmr, 0, sizeof(disable_tmr));
+	disable_tmr.sa_handler=SIG_DFL;
+	sigaction(SIGALRM, &disable_tmr, NULL);
+	return 0;
+	
+#endif //WIN32
 }
 
 
@@ -331,30 +383,41 @@ diag_os_millisleep(int ms) {
 #endif
 
 /*
- * diag_os_ipending: Is input available at the given file descriptor?
- *
- * This is what is left of the read function that was used both
- * for the TTY read and to check for input at a file descriptor.
+ * diag_os_ipending: Is input available on stdin. ret 1 if yes.
+ * 
+ * currently (like 2014), it is only used a few places as diag_os_ipending()  to break long loops ? 
+ * the effect is that diag_os_ipending returns immediately, and it returns 1 only if Enter was pressed.
+ * the WIN32 version of this is clumsier : it returns 1 if Enter was pressed since the last time diag_os_ipending() was called.
+ * 
  */
 int
-diag_os_ipending(int fd)
-{
+diag_os_ipending() {
+#if WIN32
+	SHORT rv=GetAsyncKeyState(0x0D);	//sketchy !
+	//LSB of rv ==1 :  key was pressed since the last call to GAKS.
+	return rv & 1;
+#else //so not WIN32
 	fd_set set;
 	int rv;
 	struct timeval tv;
 
-	FD_ZERO(&set);
-	FD_SET(fd, &set);
+	FD_ZERO(&set);	// empty set of FDs;
+	FD_SET(fileno(stdin), &set);	//adds an FD to the set
 	tv.tv_sec = 0;
-	tv.tv_usec = 0;
+	tv.tv_usec = 0;		//select() with 0 timeout (return immediately)
 
 	/*
 	 * poll for input using select():
 	 */
 	errno = 0;
-	rv = select(fd + 1,  &set, NULL, NULL, &tv);
+	//int select(nfds, readset, writeset, exceptset, timeout) ; return number of ready FDs found
+	rv = select(fileno(stdin) + 1,  &set, NULL, NULL, &tv);
+	//this will return immediately since timeout=0. NOTE : not the same thing as passing NULL instead of &tv :
+	// in that case, it would NOT return until something is ready, in this case readset.
 
 	return rv == 1 ;
+	
+#endif	//WIN32
 }
 
 /* POSIX fixed priority scheduling. */
@@ -426,17 +489,18 @@ diag_os_sched(void)
 
     //
     // Must start a callback timer. Not sure about the frequency yet.
+	// XXX and to do what ?
     //
 
 #else //!WIN32
 
-#if NOWARNINGS == 0
-	#warning No special scheduling support
-#endif //NOWARNINGS
+#warning No special scheduling support in diag_os.c !
+
 	fprintf(stderr,
 		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
 	return -1;
 #endif	//WIN32
+	
 }
 #endif	//(POSIX_PRIO_SCHED)
 
@@ -465,3 +529,15 @@ int gettimeofday(struct timeval *tv, struct timezone *tz) {
 }
 
 #endif	//HAVE_GETTIMEOFDAY
+
+#ifdef WIN32	//means we also don't have "timersub"
+void timersub(struct timeval *a, struct timeval *b, struct timeval *res) {
+	//compute res=a-b
+	LONGLONG atime=1000000 * (a->tv_sec) + a->tv_usec;	//combine high+low
+	LONGLONG btime=1000000 * (b->tv_sec) + b->tv_usec;
+	LONGLONG restime=atime-btime;
+	res->tv_sec= restime/1000000;
+	res->tv_usec= restime % 1000000;
+	return;
+}
+#endif //WIN32 for timersub

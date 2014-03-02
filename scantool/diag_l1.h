@@ -166,7 +166,7 @@ struct diag_l0 //XXX this used to be in diag_tty.h !?
 	int 	diag_l0_type;			/* See L1protocol defines above*/
 	
 	/* function pointers to L0 code */
-	int	(*diag_l0_init)(void);
+	int	(*diag_l0_init)(void);	//should not be used to allocate memory or open handles !
 	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
 		int iProtocol);
 	int	(*diag_l0_close)(struct diag_l0_device **);
@@ -183,6 +183,7 @@ struct diag_l0 //XXX this used to be in diag_tty.h !?
 
 
 int diag_l1_init(void);
+int diag_l1_end(void);
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, int L1protocol);
 int diag_l1_close(struct diag_l0_device **);

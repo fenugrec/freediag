@@ -36,12 +36,6 @@
 #include "diag_l2.h"
 #include "diag_l3.h"
 
-#ifdef CMAKE_ENABLED
-	#include "cconf.h"
-#else
-	#include "config.h"	//still with autotoools. Both should work...
-#endif
-
 #include "scantool.h"
 #include "scantool_cli.h"
 
@@ -1113,5 +1107,5 @@ void wait_enter(const char *message)
  */
 int pressed_enter()
 {
-	return diag_os_ipending(fileno(stdin));
+	return diag_os_ipending();
 }

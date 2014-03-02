@@ -26,13 +26,20 @@
  *
  * Library user header file
  */
-#include <sys/types.h>
+
+#ifdef CMAKE_ENABLED
+	#include "cconf.h"
+#else
+	#include "config.h"	//still with autotoools. Both should work...
+#endif
 
 #ifdef WIN32
+	#define _WIN32_WINNT 0x0500	//use > winXP features...
 	#include <time.h>
 	#include <basetsd.h>
 	#include <windows.h>
 #else
+	#include <sys/types.h>
 	#include <sys/time.h>	/* For timeval */
 	#include <stdint.h>		/* For uint8_t, etc */
 #endif

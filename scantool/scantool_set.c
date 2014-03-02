@@ -27,10 +27,6 @@
  *
  *
  */
-#ifdef WIN32	//no strcasecmp on win32 ! but kernel32 provides lstrcmpi which should be equivalent.
-	#include <windows.h>
-	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b) 
-#endif
 
 #include "diag.h"
 #include "diag_l1.h"
@@ -38,6 +34,11 @@
 
 #include "scantool.h"
 #include "scantool_cli.h"
+
+#ifdef WIN32	//no strcasecmp on win32 ! but kernel32 provides lstrcmpi which should be equivalent.
+	//#include <windows.h>
+	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b) 
+#endif
 
 CVSID("$Id$");
 

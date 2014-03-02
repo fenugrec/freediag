@@ -106,9 +106,10 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
  * (maybe when we actually finish supporting talking to more than
  * one ECU on one interface at once)
  */
+#define CONBYIDSIZE 256
 
 static struct diag_l2_conn	*diag_l2_connections;
-static struct diag_l2_conn	*diag_l2_conbyid[256];	/* Look up by ECU address */
+static struct diag_l2_conn	*diag_l2_conbyid[CONBYIDSIZE];	/* Look up by ECU address */
 
 static int diag_l2_init_done;	/* Init done */
 
@@ -285,12 +286,18 @@ int diag_l2_init()
 		return 0;
 	diag_l2_init_done = 1;
 
-	memset(diag_l2_conbyid, 0, 256);
+	memset(diag_l2_conbyid, 0, CONBYIDSIZE);
 
 	/*
 	 * And go do the layer 1 init
 	 */
 	return diag_l1_init();
+}
+
+//diag_l2_end : opposite of diag_l2_init !
+int diag_l2_end() {
+	diag_l2_init_done=0;
+	return diag_l1_end();
 }
 
 /*

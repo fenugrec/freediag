@@ -944,7 +944,7 @@ do_l2_generic_start(void)
  * Returns <0 on failure, 0 on good and 1 on interrupted
  *
  * If Interruptible is 1, then this is interruptible by the stdin
- * becoming ready for read (using diag_os_ipending())
+ * becoming ready for read (using diag_os_ipending()), which amounts to "was Enter pressed".
  *
  * It is used in "Interuptible" mode when doing "monitor" command
  */
@@ -958,6 +958,8 @@ do_j1979_getdata(int interruptible)
 	struct diag_msg *msg;
 
 	d_conn = global_l3_conn;
+	
+	diag_os_ipending();	//this is necessary on WIN32 to "purge" the last state of the enter key; we can't just poll stdin.
 
 	/*
 	 * Now get all the data supported
@@ -978,7 +980,7 @@ do_j1979_getdata(int interruptible)
 			}
 
 			if (interruptible) {
-				if (diag_os_ipending(fileno(stdin)))
+				if (diag_os_ipending())
 					return 1;
 			}
 		}
@@ -1020,7 +1022,7 @@ do_j1979_getdata(int interruptible)
 					
 				}
 				if (interruptible) {
-					if (diag_os_ipending(fileno(stdin)))
+					if (diag_os_ipending())	//was Enter pressed
 						return 1;
 				}
 			}

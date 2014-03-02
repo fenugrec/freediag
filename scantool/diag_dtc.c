@@ -32,6 +32,7 @@
 CVSID("$Id$");
 
 
+//do not use *allocs or open handles in diag_dtc_init !
 void diag_dtc_init(void)
 {
 }

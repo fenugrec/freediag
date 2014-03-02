@@ -111,12 +111,20 @@ diag_l1_init(void)
 	diag_l1_initdone = 1;
 
 	/* Now call the init routines for the L0 devices */
+	//NOTE : the diag_l0_init functions should NOT play any mem tricks (*alloc etc) or open handles.
+	//That way we won't need to add a diag_l0_end function.
 
 	for (node = l0dev_list; node; node = node->next) {
 		if (node->l0dev->diag_l0_init)
 			(node->l0dev->diag_l0_init)();
 	}
 
+	return 0;
+}
+
+//diag_l1_end : opposite of diag_l1_init . Non-critical for now
+int diag_l1_end(void) {
+	diag_l1_initdone=0;
 	return 0;
 }
 
