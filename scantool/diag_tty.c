@@ -54,7 +54,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	if (rv=diag_calloc(&dl0d, 1))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
 
-	dl0d->fd = -1;
+	dl0d->fd = DL0D_INVALIDHANDLE;
 	dl0d->dl0_handle = dl0_handle;
 	dl0d->dl0 = dl0;
 
@@ -198,7 +198,7 @@ int diag_tty_close(struct diag_l0_device **ppdl0d)
 		struct diag_l0_device *dl0d = *ppdl0d;
 		if (dl0d) {
 			if (dl0d->ttystate) {
-				if (dl0d->fd != -1) {
+				if (dl0d->fd != DL0D_INVALIDHANDLE) {
 			#if defined(__linux__) && (TRY_POSIX == 0)
 					(void)ioctl(dl0d->fd,
 						TIOCSSERIAL, &dl0d->ttystate->dt_osinfo);
@@ -217,9 +217,9 @@ int diag_tty_close(struct diag_l0_device **ppdl0d)
 				free(dl0d->name);
 				dl0d->name = 0;
 			}
-			if (dl0d->fd != -1) {
+			if (dl0d->fd != DL0D_INVALIDHANDLE) {
 				(void)close(dl0d->fd);
-				dl0d->fd = -1;
+				dl0d->fd = DL0D_INVALIDHANDLE;
 			}
 			free(dl0d);
 			*ppdl0d = 0;
@@ -258,7 +258,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 
 	fd = dl0d->fd;
 	dt = dl0d->ttystate;
-	if (fd == -1 || dt == 0) {
+	if (fd == DL0D_INVALIDHANDLE || dt == 0) {
 		fprintf(stderr, FLFMT "setup: something is not right\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}

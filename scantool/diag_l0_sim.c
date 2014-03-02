@@ -483,7 +483,7 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
 	if (rv=diag_calloc(&dl0d, 1))
 		return (struct diag_l0_device *)diag_pseterr(rv);
 
-	dl0d->fd = -1;
+	dl0d->fd = DL0D_INVALIDHANDLE;
 	dl0d->dl0_handle = dev;
 	dl0d->dl0 = &diag_l0_sim;
 	if (rv=diag_calloc(&dl0d->name, strlen(simfile)+1)) {
@@ -502,7 +502,7 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
-	dl0d->fd = 1;
+	dl0d->fd = (dl0d_handletype) 1;
 	rewind(dev->fp);
 
 	// Read the configuration flags from the db file:
@@ -531,9 +531,7 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 			fclose(dev->fp);
 			free(dev);
 		}
-		//XXX 
-		if (dl0d->fd != -1) 
-			dl0d->fd = -1;
+		dl0d->fd=DL0D_INVALIDHANDLE;
 	}
 	
 	return 0;

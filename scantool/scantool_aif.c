@@ -37,7 +37,11 @@
 #include "diag_l3.h"
 #include "diag_dtc.h"
 
-#include "config.h"
+#ifdef CMAKE_ENABLED
+	#include cconf.h
+#else
+	#include "config.h"	//still with autotoools. Both should work...
+#endif
 #include "scantool.h"
 #include "scantool_cli.h"
 #include "scantool_aif.h"

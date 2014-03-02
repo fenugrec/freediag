@@ -36,7 +36,12 @@
 #include "diag_l2.h"
 #include "diag_l3.h"
 
-#include "config.h"
+#ifdef CMAKE_ENABLED
+	#include cconf.h
+#else
+	#include "config.h"	//still with autotoools. Both should work...
+#endif
+
 #include "scantool.h"
 #include "scantool_cli.h"
 
@@ -957,6 +962,7 @@ rc_file(void)
 	 *	"DONT_USE_RCFILE" and "USE_INIFILE",
 	 * or support both by setting USE_INIFILE.
 	* as set by ./configure
+	* (see configure.ac)
 	 */
 
 #ifndef DONT_USE_RCFILE
