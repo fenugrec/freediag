@@ -85,7 +85,7 @@ CVSID("$Id$");
  * This is used to store the 1st message of a received set of messages
  * It's only 24 bytes long as this is plenty to store a J1979 message
  */
-#if notdef
+#if 0
 uint8_t global_data[MAXRBUF];
 int global_datalen;
 #endif
@@ -719,6 +719,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 	rv = diag_init();
 	if (rv != 0) {
 		fprintf(stderr, "diag_init failed\n");
+		diag_close();
 		return NULL;
 	}
 
@@ -900,6 +901,7 @@ do_l2_generic_start(void)
 	rv = diag_init();
 	if (rv != 0) {
 		fprintf(stderr, "diag_init failed\n");
+		diag_close();
 		return diag_iseterr(rv);
 	}
 
@@ -1000,7 +1002,7 @@ do_j1979_getdata(int interruptible)
 		fprintf(stderr, "Mode 0x02 Pid 0x02 request no-data (%d)\n", rv);
 		return 0;
 	}
-
+	diag_os_ipending();	//again, required for WIN32 to "purge" last keypress
 	/* Now go thru the ECUs that have responded with mode2 info */
 	for (j=0, ep=ecu_info; j<ecu_count; j++, ep++) {
 		if ( (ep->mode1_data[2].type == TYPE_GOOD) &&

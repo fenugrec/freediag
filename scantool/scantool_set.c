@@ -35,10 +35,14 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
-#ifdef WIN32	//no strcasecmp on win32 ! but kernel32 provides lstrcmpi which should be equivalent.
+#ifndef HAVE_STRCASECMP	//no strcasecmp on win32 ! but kernel32 provides lstrcmpi which should be equivalent.
+#ifdef WIN32
 	//#include <windows.h>
 	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b) 
-#endif
+#else
+	#error Your system provides no strcasecmp ! This is a problem !
+#endif 	//WIN32
+#endif	//have_strcasecmp
 
 CVSID("$Id$");
 
@@ -59,8 +63,8 @@ const char *	set_ecu;	/* ECU name */
 
 //const char  *	set_interface;	/* H/w interface to use */
 #define DEFAULT_INTERFACE CARSIM	//index into l0_names below
-const struct l0_name l0_names[] = { {"MET16", MET16}, {"VAGTOOL", VAGTOOL},
-			{"BR1", BR1}, {"ELM", ELM}, {"CARSIM", CARSIM}, {"DUMB", DUMB}, NULL};
+const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM},
+			{"CARSIM", CARSIM}, {"DUMB", DUMB}, NULL};
 
 enum l0_nameindex set_interface;	//hw interface to use
 
@@ -118,7 +122,7 @@ void set_close(void)
 #define CMD_EXIT	3	/* Exit called */
 #define CMD_UP		4	/* Go up one level in command tree */
 
-#define FLAG_HIDDEN	1	/* Hidden command */
+//#define FLAG_HIDDEN	1	/* Hidden command */ : already defined in scantool_cli.h
 
 /* SET sub menu */
 static int cmd_set_help(int argc, char **argv);
@@ -133,15 +137,21 @@ static int cmd_set_l2protocol(int argc, char **argv);
 static int cmd_set_initmode(int argc, char **argv);
 static int cmd_set_display(int argc, char **argv);
 static int cmd_set_interface(int argc, char **argv);
+static int cmd_set_dumbopts(int argc, char **argb);
 static int cmd_set_simfile(int argc, char **argv);
 
 const struct cmd_tbl_entry set_cmd_table[] =
 {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_set_help, 0, NULL},
+	{ "?", "help [command]", "Gives help for a command",
+		cmd_set_help, FLAG_HIDDEN, NULL},
 
 	{ "interface", "interface NAME [dev]", "Shows/Sets the interface to use. Use set interface ? to get a list of names",
 		cmd_set_interface, 0, NULL},
+		
+	{ "dumbopts", "dumbopts [opts]", "Sets dumb-interface-specific options. Use set dumbopts ? to get details.",
+		cmd_set_dumbopts, 0, NULL},
 		
 	{ "simfile", "simfile [filename]", "Select simulation file to use as data input. See freediag_carsim.db for an example",
 		cmd_set_simfile, 0, NULL},
@@ -221,6 +231,8 @@ char **argv __attribute__((unused)))
 	printf("interface: %s on %s\n", l0_names[set_interface_idx].longname, set_subinterface);
 	if (set_interface==CARSIM)
 		printf("simfile: %s\n", set_simfile);
+	if (set_interface==DUMB)
+		printf("dumbopts: %dx\n", diag_l0_getopts());
 	printf("speed:    Connect speed: %d\n", set_speed);
 	printf("display:  %s units\n", set_display?"english":"metric");
 	printf("testerid: Source ID to use: 0x%x\n", set_testerid);
@@ -249,9 +261,9 @@ static int cmd_set_interface(int argc, char **argv)
 #ifdef OLD_DEVNAME
 			"[id] is either an integer to be appended as /dev/obdII[id] or\n"
 #else
-			"NAME is interface type and [dev] is\n"
+			"NAME is the interface type and [dev] is\n"
 #endif
-			"a complete device path such as \"/dev/ttyS0\".\n"
+			"a complete device path such as \"/dev/ttyS0\" or \"\\\\.\\COM11\"\n"
 			"Valid NAMEs are: \n");
 		}
 		for (i=0; l0_names[i].longname != NULL; i++) {
@@ -263,6 +275,7 @@ static int cmd_set_interface(int argc, char **argv)
 					set_interface = l0_names[i].code;
 					set_interface_idx=i;
 					found = 1;
+					break;	//no use in continuing
 				}
 		}
 		if (helping) {
@@ -275,11 +288,13 @@ static int cmd_set_interface(int argc, char **argv)
 			if (argc > 2)	//there's also a "subinterface" aka devicename
 				strncpy(set_subinterface, argv[2], SUBINTERFACE_MAX-1);
 			printf("interface is now %s on %s\n",
-					l0_names[set_interface_idx].longname, set_subinterface);
-			if (set_interface==VAGTOOL)
-				diag_l0_dumb_setflags(1);
-			else
-				diag_l0_dumb_setflags(0);	//not strictly correct usage.. XXX
+				l0_names[set_interface_idx].longname, set_subinterface);
+			if (l0_names[set_interface_idx].code==DUMB) {
+				printf("Note concerning generic (dumb) interfaces : there are additional\n"
+					"options which can be set with \"set dumbopts\". By default\n"
+					"\"K-line only\" is set. \n");
+			}
+
 		}
 	} else {
 		printf("interface: using %s on %s\n",
@@ -349,6 +364,38 @@ cmd_set_speed(int argc, char **argv)
 
 	return (CMD_OK);
 }
+
+static int cmd_set_dumbopts(int argc, char **argv) {
+	if (argc >1) {
+		if ( argv[1][0]=='?' ) {
+			printf("dumbopts: use \"set dumbopts [opts]\" where [opts] is the addition of the desired flags:\n"
+				" 1 : USE_LLINE : use if the L line (driven by RTS) is required for init. Interface must support this\n"
+				"\t(VAGTOOL for example).\n"
+				" 2 : CLEAR_DTR : use if your interface needs DTR to be always clear (neg. voltage).\n"
+				"\tThis is unusual. By default DTR will always be SET (pos. voltage)\n"
+				" 4 : SET_RTS : use if your interface needs RTS to be always set (pos. voltage).\n"
+				"\tThis is unusual. By default RTS will always be CLEAR (neg. voltage)\n"
+				"\tThis option should not be used with USE_LLINE.\n"
+				" 8 : MAN_BREAK : essential for USB-serial converters that don't support 5bps\n"
+				"\tsuch as FTDI232*, P230* and other ICs.\n"
+				"ex.: \"dumbopts 6\" for CLEAR_DTR and SET_RTS\n"
+				"Note : these options are ignored on any non-DUMB interfaces.\n");
+			return CMD_OK;
+		}
+		int tmp;
+		if ( ! sscanf(argv[1], "%d", &tmp)) {	//interpret the options as decimal. I might change this to %x if I add a lot more flags
+			printf("could not parse \"%s\" ! verify input.\n\n", argv[1]);
+			return CMD_USAGE;
+		}
+		//we just set the l0 flags to whatever sscanf parsed. Let diag_l0_dumb do the parsing
+		diag_l0_dumb_setopts(tmp);
+	} else {
+		printf("Current dumbopts=%d\n", diag_l0_getopts);
+	}
+		
+	return (CMD_OK);
+}
+
 
 static int
 cmd_set_testerid(int argc, char **argv)

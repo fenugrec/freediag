@@ -115,8 +115,8 @@ extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
 #define	PROTOCOL_ISO14230	2
 #define	PROTOCOL_SAEJ1850	3
 
-//XXX The following defs should probably go in an auto-generated l0_list.h file
-enum l0_nameindex {MET16, VAGTOOL, BR1, ELM, CARSIM, DUMB};
+//XXX The following defs should probably go in an auto-generated l0_list.h file ... and they MUST match the list in scantool_set.c !
+enum l0_nameindex {MET16, BR1, ELM, CARSIM, DUMB};
 struct l0_name
 {
 	char * longname;
@@ -201,7 +201,7 @@ int set_interface_idx;	//index into l0_names
 extern const struct l0_name l0_names[];	//filled in scantool_set.c
 
 #define SUBINTERFACE_MAX 256
-extern char	set_subinterface[SUBINTERFACE_MAX];	/* Sub interface ID */
+extern char	set_subinterface[SUBINTERFACE_MAX];	/* Sub interface (aka device name) */
 
 struct pid ;
 typedef void (formatter)(char *, int, const struct pid *, response_t *, int);

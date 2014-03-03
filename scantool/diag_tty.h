@@ -72,6 +72,9 @@ void diag_tty_close(struct diag_l0_device **ppdl0d);
 int diag_tty_setup(struct diag_l0_device *dl0d,
 	const struct diag_serial_settings *pss);
 
+//set DTR and RTS lines :
+ //~  terminology : rts=1 or dtr=1  ==> set DTR/RTS ==> set pin at positive voltage ?
+ //~  (opposite polarity of the TX/RX pins!!)
 int diag_tty_control(struct diag_l0_device *dl0d, int dtr, int rts);
 
 /* Flush pending input */

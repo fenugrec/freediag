@@ -57,8 +57,10 @@ static int diag_l0_dumb_initdone;
 
 // flags set according to particular interface type (VAGtool vs SE etc.)
 static int dumb_flags=0;
-#define DUMB_RTS_L	0x01		//interface maps L line to RTS
-// would be nice to have that define in scantool_set.c somehow
+#define USE_LLINE	0x01		//interface maps L line to RTS : setting RTS pulls L down to 0 .
+#define CLEAR_DTR 0x02		//have DTR cleared constantly (unusual, disabled by default)
+#define SET_RTS 0x04			//have RTS set constantly (also unusual, disabled by default). 
+#define MAN_BREAK 0x08		//force bitbanged breaks for inits
 
 extern const struct diag_l0 diag_l0_dumb;
 
@@ -109,8 +111,9 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 	/*
 	 * We set RTS to low, and DTR high, because this allows some
 	 * interfaces to work than need power from the DTR/RTS lines;
+	 * this is altered according to dumb_flags.
 	 */
-	if (diag_tty_control(dl0d, 1, 0) < 0) {
+	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & SET_RTS)) < 0) {
 		diag_tty_close(&dl0d);
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -154,8 +157,12 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 	//Using at least 300ms to be safe here.
 	diag_os_millisleep(350);
 	/* Send 25/25 ms break as initialisation pattern (TiniL) */
-	//ISO14230-2 says we should send the same sync pattern on both L and K together. XXX _tty_break should be modified
+	//ISO14230-2 says we should send the same sync pattern on both L and K together.
+	//TODO : add code for optionally breaking on K and L together. This will require something like
+	//diag_tty_syncbreak (not created yet) or some fancy non-overlapped (asynchronous) writing.
 	diag_tty_break(dl0d, 25);
+	//this should return right after clearing the break, so we need to wait another 25ms.
+	diag_os_millisleep(25);
 
 	/* Now let the caller send a startCommunications message */
 	return 0;
@@ -163,7 +170,8 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 
 
 /* Do the 5 BAUD L line stuff while the K line is twiddling */
-// Only called when DUMB_RTS_L is set in dumb_flags (VAGTOOL, Jeff Noxon, other K+L interfaces)
+// Only called when USE_LLINE is set in dumb_flags (VAGTOOL, Jeff Noxon, other K+L interfaces)
+// setting RTS will pull L down.
 // Exits after stop bit is finished.
 #define MSDELAY 180	//length of 5bps bits. Nominally 200ms, less a small margin.
 static void
@@ -187,6 +195,8 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	/*
 	 * Set DTR low during this, receive circuitry
 	 * will see a break for that time, that we'll clear out later
+	 * XXX Why would we see a break ? On most interfaces, setting DTR low will only prevent the RXD pin from
+	 * being pulled up; the RXD pin therefore is always negative (logical 1) ? 
 	 */
 	if (diag_tty_control(dl0d, 0, 1) < 0) {
 		fprintf(stderr, FLFMT "open: Failed to set modem control lines\n",
@@ -226,7 +236,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	diag_os_millisleep(MSDELAY);		/* 200ms -5% */
 
 	/* Now put DTR/RTS back correctly so RX side is enabled */
-	if (diag_tty_control(dl0d, 1, 0) < 0) {
+	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & SET_RTS)) < 0) {
 		fprintf(stderr, FLFMT "open: Failed to set modem control lines\n",
 			FL);
 	}
@@ -261,6 +271,11 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 			FL, dl0d, in->addr);
 	}
 
+	//two methods of sending at 5bps. Most USB-serial converts don't support such a slow bitrate !
+	//It might be possible to auto-detect this capability ?
+	if (dumb_flags & MAN_BREAK) {
+		//do manual 5bps init (bit-banged)
+	}
 	/* Set to 5 baud, 8 N 1 */
 	
 	set.speed = 5;
@@ -277,7 +292,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	diag_tty_write(dl0d, &in->addr, 1);
 
 	/* Do the L line stuff as required*/
-	if (dumb_flags & DUMB_RTS_L) {
+	if (dumb_flags & USE_LLINE) {
 		diag_l0_dumb_Lline(dl0d, in->addr);
 		tout=400;	//Shorter timeout to get back echo, as dumb_Lline exits after 5bps stopbit.
 	} else {
@@ -520,14 +535,15 @@ const struct diag_serial_settings *pset)
 	return diag_tty_setup(dl0d, &dev->serial);
 }
 
-// Update interface flags to customize particular interface type (K-line only or K&L)
+// Update interface options to customize particular interface type (K-line only or K&L)
 // Not related to the "getflags" function which returns the interface capabilities.
-void
-diag_l0_dumb_setflags(int newflags)
+void diag_l0_dumb_setopts(int newflags)
 {
 	dumb_flags=newflags;
 }
-
+int diag_l0_dumb_getopts() {
+	return dumb_flags;
+}
 
 #ifdef WIN32
 static int

@@ -166,7 +166,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 	//next, receive ELM response, after {ms} delay.
 	diag_os_millisleep(timeout);
 
-	rv=diag_tty_read(dl0d, buf, ELM_BUFSIZE-5, 100);
+	rv=diag_tty_read(dl0d, buf, ELM_BUFSIZE-5, 100);	//rv=# bytes read
 	if (diag_l0_debug & DIAG_DEBUG_WRITE || diag_l0_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "sent %d bytes\n", FL, xferd);
 		fprintf(stderr, FLFMT "received %d bytes\n", FL, rv);

@@ -333,8 +333,7 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
  * open, close and then re-open it (as we need to pass it a new "protocol"
  * field if the l1 protocol is different
  * 
- * The subinterface indicates the device to use, either a device name
- * or a string indicating a device number.
+ * The subinterface indicates the device to use
  *
  * We need to tell L1 what protocol we are going to use, because some L1
  * interfaces are smart and can support multiple protocols, also L2 needs

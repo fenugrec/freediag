@@ -41,6 +41,7 @@
 
 CVSID("$Id$");
 
+#define PROMPTBUFSIZE 80		//was 1024 !!
 char *progname;
 
 FILE		*global_logfp;		/* Monitor log output file pointer */
@@ -120,8 +121,8 @@ static const struct cmd_tbl_entry root_cmd_table[]=
 	{ "#", "#", "Does nothing", cmd_rem, FLAG_HIDDEN, NULL},
 	{ "source", "source <file>", "Read commands from a file", cmd_source, 0, NULL},
 
-	{ "help", "help [command]", "Gives help for a command",
-		cmd_help, 0, NULL },
+	{ "help", "help [command]", "Gives help for a command", cmd_help, 0, NULL },
+	{ "?", "? [command]", "Gives help for a command", cmd_help, FLAG_HIDDEN, NULL },
 	{ "exit", "exit", "Exits program", cmd_exit, 0, NULL},
 	{ "quit", "quit", "Exits program", cmd_exit, FLAG_HIDDEN, NULL},
 	{ NULL, NULL, NULL, NULL, 0, NULL}
@@ -167,7 +168,7 @@ basic_get_input(const char *prompt)
 	return input;
 }
 
-#if HAVE_LIBREADLINE
+#ifdef HAVE_LIBREADLINE
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -197,7 +198,7 @@ readline_init(void)
 	rl_bind_key('\t', rl_insert);
 }
 
-#else
+#else	// so no libreadline
 
 static char *
 get_input(const char *prompt)
@@ -207,7 +208,7 @@ get_input(const char *prompt)
 
 static void readline_init(void) {}
 
-#endif
+#endif	//HAVE_LIBREADLINE
 
 static char *
 command_line_input(const char *prompt)
@@ -466,6 +467,7 @@ cmd_watch(int argc, char **argv)
 	rv = diag_init();
 	if (rv != 0) {
 		fprintf(stderr, "diag_init failed\n");
+		diag_close();
 		return -1;
 	}
 	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);
@@ -805,7 +807,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	int rv, done;
 	int i;
 
-	char promptbuf[80];	/* Was 1024, who needs that long a prompt? */
+	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
 	static char nullstr[2];
 
 	rv = 0, done = 0;
@@ -1029,6 +1031,8 @@ enter_cli(char *name)
 	printf("%s: Type HELP for a list of commands\n", progname);
 	printf("%s: Type SCAN to start ODBII Scan\n", progname);
 	printf("%s: Then use MONITOR to monitor real-time data\n", progname);
+	printf("%s: **** IMPORTANT : this is alpha software !!! Use at your own risk.\n", progname);
+	printf("%s: **** Remember to \"debug all -1\" to display debugging info !\n", progname);
 
 	readline_init();
 	set_init();
@@ -1107,5 +1111,8 @@ void wait_enter(const char *message)
  */
 int pressed_enter()
 {
+#ifdef WIN32
+	fprintf(stderr, "Warning : diag_os_ipending() called from pressed_enter !! Please report this !\n");
+#endif
 	return diag_os_ipending();
 }

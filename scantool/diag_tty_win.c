@@ -9,8 +9,7 @@
 
 #include <windows.h>
 
-static LARGE_INTEGER perfo_freq;
-//static LARGE_INTEGER perfo_count;	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
+static LARGE_INTEGER perfo_freq;	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
 //maybe they could go in diag_os eventually, for now they're here just for tests
 
 //diag_tty_open : load the diag_l0_device with the correct stuff
@@ -22,6 +21,11 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	int rv;
 	struct diag_ttystate	*tty_dcb;		//this is a DCB struct
 	struct diag_l0_device *dl0d;
+	
+	if (! QueryPerformanceFrequency(&perfo_freq)) {
+		fprintf(stderr, FLFMT "Could not QPF. Please report this !\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	if (rv=diag_calloc(&dl0d, 1))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
@@ -55,8 +59,8 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 				FL, dl0d->name, dl0d->fd);
 	} else {
 		fprintf(stderr,
-			FLFMT "Open of device interface \"%s\" failed: %s\n", 
-			FL, dl0d->name, strerror(GetLastError()));
+			FLFMT "Open of device interface \"%s\" failed: %8d\n", 
+			FL, dl0d->name, GetLastError());
 		fprintf(stderr, FLFMT
 			"(Make sure the device specified corresponds to the\n", FL );
 		fprintf(stderr,
@@ -88,7 +92,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	devtimeouts.WriteTotalTimeoutMultiplier=0;	//probably useless as all flow control will be disabled ??
 	devtimeouts.WriteTotalTimeoutConstant=0;
 	if (! SetCommTimeouts(dl0d->fd,&devtimeouts)) {
-		fprintf(stderr, FLFMT "Could not get set comm timeouts !\n",FL);
+		fprintf(stderr, FLFMT "Could not set comm timeouts !\n",FL);
 		diag_tty_close(ppdl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -237,16 +241,27 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	//to be really thorough we could do another GetCommState and check that the parameters were set properly.
-	//Not today.
+	//to be really thorough we do another GetCommState and check that the speed was set properly.
+	//I see no particular reason to check all the other fields though.
+	
+	DCB verif_dcb;
+	if (! GetCommState(devhandle, &verif_dcb)) {
+		fprintf(stderr, FLFMT "Could not verify with GetCommState\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	if (verif_dcb.BaudRate != pset->speed) {
+		fprintf(stderr, FLFMT "SetCommState failed : speed is currently %d\n", FL, verif_dcb.BaudRate);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
 	return 0;
 } //diag_tty_setup
 
 /*
  * Set/Clear DTR and RTS lines, as specified
- * terminology : "rts=1 or dtr=1 : enable DTR/RTS" ==> set pin at positive voltage ?
- * (opposite polarity of the TX/RX pins!!)
  * on Win32 I think this can't be done in one operation, so EscapeCommFunction is called twice.
+ * Unless we change the DCB ? updating it with SetCommState would then set both pins at the same time...
+ * 
  * ret 0 if ok
  */
 int
@@ -336,7 +351,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	devtimeouts.WriteTotalTimeoutMultiplier=0;	//probably useless as all flow control will be disabled ??
 	devtimeouts.WriteTotalTimeoutConstant=0;
 	if (! SetCommTimeouts(dl0d->fd,&devtimeouts)) {
-		fprintf(stderr, FLFMT "Could not get set comm timeouts !\n",FL);
+		fprintf(stderr, FLFMT "Could not set comm timeouts !\n",FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	
@@ -379,7 +394,8 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 //TODO : add verification of timing with QueryPerformanceCounter etc.
 
 // diag_tty_break #1 : use Set / ClearCommBreak
-#if 0
+// and return as soon as break is cleared.
+#if 1
 int diag_tty_break(struct diag_l0_device *dl0d, const int ms) {
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL)
@@ -391,9 +407,6 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms) {
 	//one improvement would be to always add a configurable offset to every diag_os_millisleep
 	//it could even be auto-calibrated to some extent
 	errval += !ClearCommBreak(dl0d->fd);
-	
-	diag_os_millisleep(ms);
-	
 	if (errval) {
 		//if either of the calls failed
 		return diag_iseterr(DIAG_ERR_IOCTL);
@@ -401,19 +414,24 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms) {
 	
 	return 0;
 }
-#endif
+
+#else //alternate diag_tty_break
 
 /*
- * diag_tty_break #2 : send 0x00 at 360bps => fixed 25ms break; then wait (ms) before returning.
+ * diag_tty_break #2 : send 0x00 at 360bps => fixed 25ms break; return as soon as break is cleared.
+ * 
  */
-#if 1
+
 int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 {
+	if (ms==0)		//very funny
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	
 	DCB tempDCB; 	//for sabotaging the settings just to do the break
 	DCB origDCB;
 	LARGE_INTEGER qpc1, qpc2;	//to time the break period
 	LONGLONG timediff;		//64bit delta
-	int tremain,counts;
+	long int tremain,counts;
 	
 	char cbuf;
 	int xferd;
@@ -441,7 +459,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	QueryPerformanceCounter(&qpc1);		//get starting time
 	diag_tty_write(dl0d, '\0', 1);
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "%09d : approx start of break\n", FL, qpc1.LowPart);
+		fprintf(stderr, FLFMT "%09ld : approx start of break\n", FL, qpc1.LowPart);
 	}
 
 	/*
@@ -465,15 +483,14 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	tremain=counts-timediff;	//counts remaining
 	if (tremain<=0)
 		return 0;
-	tremain = (tremain*1000)/perfo_freq.QuadPart;	//convert to ms; imprecise but that should be OK.
-
+	tremain = ((LONGLONG) tremain*1000)/perfo_freq.QuadPart;	//convert to ms; imprecise but that should be OK.
 	diag_os_millisleep(tremain);
 	QueryPerformanceCounter(&qpc2);
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "%09d : approx end of break\n", FL, qpc2.LowPart);
+		fprintf(stderr, FLFMT "%09ld : approx end of break\n", FL, qpc2.LowPart);
 	}
 
 	return 0;
 }
 
-#endif
+#endif //alternate diag_tty_break

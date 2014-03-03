@@ -120,7 +120,7 @@ diag_os_init(void)
 {
 #ifdef WIN32
 	struct sigaction_t stNew;
-	long tmo=20;	//20ms is reasonable on WIN32. XXX change this for a #define
+	long tmo=20;	//20ms seems reasonable on WIN32. XXX change this for a #define
 #else
 	struct sigaction stNew;
 	struct itimerval tv;
@@ -140,6 +140,17 @@ diag_os_init(void)
 			WT_EXECUTEDEFAULT)) {
 		fprintf(stderr, FLFMT "CTQT error.\n");
 		return -1;
+	}
+	
+	//and set the current process to high priority.
+	//the resultant "base priority" is a combination of process priority and thread priority.
+	HANDLE curprocess=GetCurrentProcess();
+	if (! SetPriorityClass(curprocess, HIGH_PRIORITY_CLASS)) {
+		fprintf(stderr, FLFMT "Warning: could not increase process priority. Timing may be impaired.\n", FL);
+	}
+	HANDLE curthread=GetCurrentThread();
+	if (! SetThreadPriority(curthread, THREAD_PRIORITY_HIGHEST)) {
+		fprintf(stderr, FLFMT "Warning : could not increase thread priority. Timing may be impaired.\n", FL);
 	}
 	return 0;
 #else // not WIN32
@@ -385,7 +396,7 @@ diag_os_millisleep(int ms) {
 /*
  * diag_os_ipending: Is input available on stdin. ret 1 if yes.
  * 
- * currently (like 2014), it is only used a few places as diag_os_ipending()  to break long loops ? 
+ * currently (like 2014), it is only used a few places to break long loops ? 
  * the effect is that diag_os_ipending returns immediately, and it returns 1 only if Enter was pressed.
  * the WIN32 version of this is clumsier : it returns 1 if Enter was pressed since the last time diag_os_ipending() was called.
  * 
@@ -505,6 +516,7 @@ diag_os_sched(void)
 #endif	//(POSIX_PRIO_SCHED)
 
 #ifndef HAVE_GETTIMEOFDAY	//like on win32
+#ifdef WIN32
 //#define DELTA_EPOCH_IN_MICROSECS  11644473600000000 // =  0x48864000, not compiler-friendly
 #define DELTA_EPOCH_H 0x4886	//so we'll cheat
 #define DELTA_EPOCH_L 0x4000
@@ -527,7 +539,9 @@ int gettimeofday(struct timeval *tv, struct timezone *tz) {
 	}
 	return 0;
 }
-
+#else	//not WIN32 !
+	#error Your system does not provide gettimeofday() !
+#endif 	//WIN32
 #endif	//HAVE_GETTIMEOFDAY
 
 #ifdef WIN32	//means we also don't have "timersub"

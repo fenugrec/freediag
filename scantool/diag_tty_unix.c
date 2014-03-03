@@ -887,8 +887,12 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 //different tty_break implementations depending on __linux__ ; TRY_POSIX; TIOCSBRK; __CYGWIN__
 #if defined(__linux__) && (TRY_POSIX == 0)
 
+#warning ******* Compiling diag_tty_break with a fixed 25ms setbreak !
+#warning ******* DUMB interfaces may not work properly !!
 /*
  * diag_tty_break
+ * fixed 25ms (1 byte @ 360bps) break and returns after [ms] !!
+ * this is a bad idea
  */
 int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 {
@@ -958,6 +962,8 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 }
 #elif defined(TIOCSBRK)
 /*
+ * This one returns right after clearing the break. This is more generic and
+ * can be used to bit-bang a 5bps byte.
  */
 int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 {
@@ -989,10 +995,8 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 #include <io.h>
 #include <w32api/windows.h>
 
-#if NOWARNINGS != 1
 #warning diag_tty_break on CYGWIN is untested but might work.
-#endif
-
+//This one also returns right after clearing the break, which is the correct method.
 int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 {
 	HANDLE hd;
