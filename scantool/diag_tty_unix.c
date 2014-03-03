@@ -841,9 +841,12 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 
 //different _iflush implementations (POSIX or not)
+// ret 0 if ok
 #if defined(__linux__) && (TRY_POSIX == 0)
 /*
  * Original Linux input-flush implementation that uses the select timeout:
+ * I shortened the timeout from 150ms in case the caller needs to receive a byte soon
+ * (ex.: after an iso9141 slow init)
  */
 int diag_tty_iflush(struct diag_l0_device *dl0d)
 {
@@ -851,7 +854,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 	int i, rv;
 
 	/* Read any old data hanging about on the port */
-	rv = diag_tty_read(dl0d, buf, sizeof(buf), 150);
+	rv = diag_tty_read(dl0d, buf, sizeof(buf), 30);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_OPEN))
 	{
 		fprintf(stderr, FLFMT "%d junk bytes discarded: ", FL,
@@ -869,6 +872,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 #else
 /*
  * POSIX serial I/O input flush:
+ * this one has no timeout...
  */
 int diag_tty_iflush(struct diag_l0_device *dl0d) {
 	errno = 0;

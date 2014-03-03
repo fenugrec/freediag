@@ -8,6 +8,7 @@
 #include "diag_tty.h"
 
 #include <windows.h>
+#include <inttypes.h>	//for PRIu64 formatter
 
 static LARGE_INTEGER perfo_freq;	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
 //maybe they could go in diag_os eventually, for now they're here just for tests
@@ -25,6 +26,9 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	if (! QueryPerformanceFrequency(&perfo_freq)) {
 		fprintf(stderr, FLFMT "Could not QPF. Please report this !\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, FLFMT "Performance counter frequency : %9"PRIu64"\n", FL, perfo_freq.QuadPart);
 	}
 
 	if (rv=diag_calloc(&dl0d, 1))		//free'd in diag_tty_close
@@ -367,6 +371,8 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 /*
  *  flush input buffer and display some of the discarded data
+ * ret 0 if ok
+ * a short timeout (30ms) is used in case the caller needs to receive a byte soon (like after a iso9141 slow init)
  */
 int diag_tty_iflush(struct diag_l0_device *dl0d)
 {
@@ -374,7 +380,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 	int i, rv;
 
 	/* Read any old data hanging about on the port */
-	rv = diag_tty_read(dl0d, buf, sizeof(buf), 100);
+	rv = diag_tty_read(dl0d, buf, sizeof(buf), 30);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_OPEN))
 	{
 		fprintf(stderr, FLFMT "at least %d junk bytes discarded: ", FL, rv);
@@ -398,7 +404,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 #if 1
 int diag_tty_break(struct diag_l0_device *dl0d, const int ms) {
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
-		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL)
+		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	int errval=0;
@@ -409,7 +415,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms) {
 	errval += !ClearCommBreak(dl0d->fd);
 	if (errval) {
 		//if either of the calls failed
-		return diag_iseterr(DIAG_ERR_IOCTL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	
 	return 0;

@@ -415,7 +415,7 @@ diag_l2_close(struct diag_l0_device *dl0d)
 {
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr,FLFMT "diag_l2_close %p called\n",
+		fprintf(stderr,FLFMT "Entering diag_l2_close for dl0d=%p\n",
 			FL, dl0d);
 
 	/* XXX */
@@ -530,8 +530,8 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	if (rv < 0)
 	{
 		/* Something went wrong */
-		//if (diag_l2_debug & DIAG_DEBUG_OPEN)
-		//	fprintf(stderr,FLFMT "protocol startcomms returned %d\n", FL, rv);
+		if (diag_l2_debug & DIAG_DEBUG_OPEN)
+			fprintf(stderr,FLFMT "protocol startcomms returned %d\n", FL, rv);
 
 		if (reusing == 0)
 			free(d_l2_conn);

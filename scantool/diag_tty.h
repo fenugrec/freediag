@@ -78,6 +78,7 @@ int diag_tty_setup(struct diag_l0_device *dl0d,
 int diag_tty_control(struct diag_l0_device *dl0d, int dtr, int rts);
 
 /* Flush pending input */
+// ret 0 if ok
 int diag_tty_iflush(struct diag_l0_device *dl0d);
 
 /* read with timeout, write */
@@ -85,7 +86,9 @@ ssize_t diag_tty_read(struct diag_l0_device *dl0d,
 	void *buf, size_t count, int timeout);
 ssize_t diag_tty_write(struct diag_l0_device *dl0d,
 	const void *buf, const size_t count);
-int diag_tty_break(struct diag_l0_device *dl0d, const int);
+	
+// send break on TX during [ms], return after clearing break
+int diag_tty_break(struct diag_l0_device *dl0d, const int ms);
 
 
 #endif /* _DIAG_TTY_H_ */

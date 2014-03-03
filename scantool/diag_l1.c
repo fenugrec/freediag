@@ -165,6 +165,8 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 int
 diag_l1_close(struct diag_l0_device **pdl0d)
 {
+	if (diag_l1_debug & DIAG_DEBUG_CLOSE)
+		fprintf(stderr, FLFMT "entering diag_l1_close\n", FL);
 	return pdl0d ?
 		(diag_l0_device_dl0(*pdl0d)->diag_l0_close)(pdl0d) : 0;
 }

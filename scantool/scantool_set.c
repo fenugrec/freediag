@@ -232,7 +232,7 @@ char **argv __attribute__((unused)))
 	if (set_interface==CARSIM)
 		printf("simfile: %s\n", set_simfile);
 	if (set_interface==DUMB)
-		printf("dumbopts: %dx\n", diag_l0_getopts());
+		printf("dumbopts: %d\n", diag_l0_dumb_getopts());
 	printf("speed:    Connect speed: %d\n", set_speed);
 	printf("display:  %s units\n", set_display?"english":"metric");
 	printf("testerid: Source ID to use: 0x%x\n", set_testerid);
@@ -390,7 +390,7 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 		//we just set the l0 flags to whatever sscanf parsed. Let diag_l0_dumb do the parsing
 		diag_l0_dumb_setopts(tmp);
 	} else {
-		printf("Current dumbopts=%d\n", diag_l0_getopts);
+		printf("Current dumbopts=%d\n", diag_l0_dumb_getopts());
 	}
 		
 	return (CMD_OK);

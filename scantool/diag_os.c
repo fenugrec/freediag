@@ -59,6 +59,7 @@
 #ifdef WIN32
 	#include <process.h>
 	#include <windows.h>
+	#include <inttypes.h> 	//for PRIu64 formatters 
 #else
 	#include <unistd.h>
 	#include <sys/ioctl.h>
@@ -225,6 +226,9 @@ int diag_os_close() {
 
 
 //different os_millisleep implementations
+//TODO : add debugging info of timing for *unix
+//TODO : add timer verification to all of them ?
+
 #if defined(__linux__) && (TRY_POSIX == 0)
 
 int
@@ -367,7 +371,7 @@ diag_os_millisleep(int ms)
 #else	// from initial "if linux && !posix" :
 
 /*
-+* I think this implementation works in all cases, with less overhead.
+ * I think this implementation works in all cases, with less overhead.
  */
 int
 diag_os_millisleep(int ms) {
@@ -387,11 +391,19 @@ diag_os_millisleep(int ms) {
 			return -1;
 	}
 #else		//so it's WIN32
-	Sleep(ms);
+	LARGE_INTEGER qpc1, qpc2;
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		QueryPerformanceCounter(&qpc1);
+		Sleep(ms);
+		QueryPerformanceCounter(&qpc2);
+		fprintf(stderr, FLFMT "diag_os_millisleep slept for %9"PRIu64" counts\n", FL, qpc2.QuadPart-qpc1.QuadPart);
+	} else {
+		Sleep(ms);
+	}
 #endif
 	return 0;
 }
-#endif
+#endif	//initial "if linux && !posix"
 
 /*
  * diag_os_ipending: Is input available on stdin. ret 1 if yes.

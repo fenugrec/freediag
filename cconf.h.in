@@ -1,11 +1,25 @@
 // cconf.h.in
-// test to replace autotools' config.h.in + config.h files. 
-//usually @varname@ will be replace by the contents of the cmake variable varname
+// this is to replace autotools' config.h.in + config.h files. 
+//usually @varname@ will be replaced by the contents of the cmake variable varname
 
 // # cmakedefine asdf @varname@ will "#define asdf 1" if @varname@ is non-false ?
-#cmakedefine DONT_USE_RCFILE @NUSE_RCFILE@
-#cmakedefine OLD_DEVNAME @OLDEV@
+// # cmakedefine asdf 1  will "#define asdf" 1 if ${asdf} is true ?
+// # cmakedefine asdf  will #define asdf" if ${asdf} is true ?
+
+#cmakedefine HAVE_LIBREADLINE
+
+#cmakedefine HAVE_GETTIMEOFDAY
+#cmakedefine HAVE_MALLOC
+#cmakedefine HAVE_STRCASECMP
+#cmakedefine HAVE_STRERROR
+#cmakedefine HAVE_STRRCHR
+#cmakedefine HAVE_STRTOL
+#cmakedefine HAVE_ALARM
+#cmakedefine HAVE_SELECT
+
+// TODO : change "polarity" of DONT_USE_RCFILE here, in cmakelists.txt, and in scantool_cli.c 
+#cmakedefine DONT_USE_RCFILE
+#cmakedefine OLD_DEVNAME
+
 
 #define PACKAGE_VERSION "@PKGVERSION@"
-
-//do we need to manually add all the #defines that autotools did ?

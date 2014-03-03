@@ -92,7 +92,9 @@ diag_l0_elm_init(void)
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
-
+	if (diag_l0_debug & DIAG_DEBUG_INIT) {
+		fprintf(stderr, FLFMT "entered diag_l0_elm_init\n", FL);
+	}
 	return 0;
 }
 

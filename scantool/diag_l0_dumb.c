@@ -55,6 +55,7 @@ struct diag_l0_dumb_device
 /* Global init flag */
 static int diag_l0_dumb_initdone;
 
+#define BPS_PERIOD 200		//length of 5bps bits. The idea is to make this configurable eventually by adding a user-settable offset
 // flags set according to particular interface type (VAGtool vs SE etc.)
 static int dumb_flags=0;
 #define USE_LLINE	0x01		//interface maps L line to RTS : setting RTS pulls L down to 0 .
@@ -113,7 +114,7 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 	 * interfaces to work than need power from the DTR/RTS lines;
 	 * this is altered according to dumb_flags.
 	 */
-	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & SET_RTS)) < 0) {
+	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 		diag_tty_close(&dl0d);
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -236,7 +237,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	diag_os_millisleep(MSDELAY);		/* 200ms -5% */
 
 	/* Now put DTR/RTS back correctly so RX side is enabled */
-	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & SET_RTS)) < 0) {
+	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 		fprintf(stderr, FLFMT "open: Failed to set modem control lines\n",
 			FL);
 	}
@@ -274,74 +275,122 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	//two methods of sending at 5bps. Most USB-serial converts don't support such a slow bitrate !
 	//It might be possible to auto-detect this capability ?
 	if (dumb_flags & MAN_BREAK) {
-		//do manual 5bps init (bit-banged)
-	}
-	/* Set to 5 baud, 8 N 1 */
-	
-	set.speed = 5;
-	set.databits = diag_databits_8;
-	set.stopbits = diag_stopbits_1;
-	set.parflag = diag_par_n;
+		if (dumb_flags & USE_LLINE) {
+			//do manual 5bps init (bit-banged) on K and L.
+			//we need to send the byte at in->addr, bit by bit. Usually this will be 0x33 but for
+			//"generic-ness" we'll do it the hard way
+			
+			/* Wait W0 (2ms or longer) leaving the bus at logic 1 */
+			diag_os_millisleep(2);
+			int bitcounter;
+			uint8_t tempbyte=in->addr;
+			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1);	//L is the logical opposite of RTS...
+			diag_tty_break(dl0d, BPS_PERIOD);	//start startbit
+			for (bitcounter=0; bitcounter<=7; bitcounter++) {
+				//LSB first.
+				if (tempbyte & 1) {
+					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0);	//release L
+					diag_os_millisleep(BPS_PERIOD);
+				} else {
+					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1);	//pull L down
+					diag_tty_break(dl0d, BPS_PERIOD);
+				}
+				tempbyte = tempbyte >>1;
+					}
+			//at this point we just finished the last bit, we'll wait the duration of the stop bit.
+			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0);	//release L
+			diag_os_millisleep(BPS_PERIOD);
+		} else {
+			//do manual break on K only. 
+			/* Wait W0 (2ms or longer) leaving the bus at logic 1 */
+			diag_os_millisleep(2);
+			int bitcounter;
+			uint8_t tempbyte=in->addr;
+			diag_tty_break(dl0d, BPS_PERIOD);	//start startbit
+			for (bitcounter=0; bitcounter<=7; bitcounter++) {
+				//LSB first.
+				if (tempbyte & 1) {
+					diag_os_millisleep(BPS_PERIOD);
+				} else {
+					diag_tty_break(dl0d, BPS_PERIOD);
+				}
+				tempbyte = tempbyte >>1;
+			}	//for bitcounter
+		}	//if use_lline
+		//at this point the stop bit is finished. We could just purge the input buffer ? Usually the next thing to happen
+		//is the tester (us) waits between 60 and 300ms before sending the "sync pattern" which is 
+		// the risk is that depending on the time diag_tty_iflush takes to return the "sync pattern byte" may be lost ?
+		diag_tty_iflush(dl0d);
+	} else {	//so it's not a man_break
+		/* Set to 5 baud, 8 N 1 */
+		
+		set.speed = 5;
+		set.databits = diag_databits_8;
+		set.stopbits = diag_stopbits_1;
+		set.parflag = diag_par_n;
 
-	diag_tty_setup(dl0d, &set);
+		diag_tty_setup(dl0d, &set);
 
-	/* Wait W0 (2ms or longer) leaving the bus at logic 1 */
-	diag_os_millisleep(2);
+		/* Wait W0 (2ms or longer) leaving the bus at logic 1 */
+		diag_os_millisleep(2);
 
-	/* Send the address as a single byte message */
-	diag_tty_write(dl0d, &in->addr, 1);
+		/* Send the address as a single byte message */
+		diag_tty_write(dl0d, &in->addr, 1);
 
-	/* Do the L line stuff as required*/
-	if (dumb_flags & USE_LLINE) {
-		diag_l0_dumb_Lline(dl0d, in->addr);
-		tout=400;	//Shorter timeout to get back echo, as dumb_Lline exits after 5bps stopbit.
-	} else {
-		// If there's no manual L line to do, timeout needs to be longer to receive echo
-		tout=2400;
-	}
-
-	/*
-	 * And read back the single byte echo, which shows TX completes
-	 * - At 5 baud, it takes 2 seconds to send a byte ..
-	 * - ECU responds within W1 = [60,300]ms after stop bit.
-	 */
-	
-	while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, tout)) <= 0) {
-		if (xferd == DIAG_ERR_TIMEOUT) {
-			if (diag_l0_debug & DIAG_DEBUG_PROTO)
-				fprintf(stderr, FLFMT "slowinit link %p echo read timeout\n",
-					FL, dl0d);
-			return diag_iseterr(DIAG_ERR_TIMEOUT);
+		/* Do the L line stuff as required*/
+		if (dumb_flags & USE_LLINE) {
+			diag_l0_dumb_Lline(dl0d, in->addr);
+			tout=400;	//Shorter timeout to get back echo, as dumb_Lline exits after 5bps stopbit.
+		} else {
+			// If there's no manual L line to do, timeout needs to be longer to receive echo
+			tout=2400;
 		}
-		if (xferd == 0) {
-			/* Error, EOF */
-			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return diag_iseterr(DIAG_ERR_GENERAL);
+
+		/*
+		 * And read back the single byte echo, which shows TX completes
+		 * - At 5 baud, it takes 2 seconds to send a byte ..
+		 * - ECU responds within W1 = [60,300]ms after stop bit.
+		 */
+		
+		while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, tout)) <= 0) {
+			if (xferd == DIAG_ERR_TIMEOUT) {
+				if (diag_l0_debug & DIAG_DEBUG_PROTO)
+					fprintf(stderr, FLFMT "slowinit link %p echo read timeout\n",
+						FL, dl0d);
+				return diag_iseterr(DIAG_ERR_TIMEOUT);
+			}
+			if (xferd == 0) {
+				/* Error, EOF */
+				fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
+				return diag_iseterr(DIAG_ERR_GENERAL);
+			}
+			if (errno != EINTR) {
+				/* Error, EOF */
+				perror("read");
+				fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
+				return diag_iseterr(DIAG_ERR_GENERAL);
+			}
 		}
-		if (errno != EINTR) {
-			/* Error, EOF */
-			perror("read");
-			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
-	}
-	if (diag_l0_debug & DIAG_DEBUG_PROTO)
-		fprintf(stderr, FLFMT "slowinit 5bps address echo 0x%x\n",
-				FL, xferd);
+		if (diag_l0_debug & DIAG_DEBUG_PROTO)
+			fprintf(stderr, FLFMT "slowinit 5bps address echo 0x%x\n",
+					FL, xferd);
+		diag_tty_setup(dl0d, &dev->serial);	//reset original settings
+	}	//if  !man_break
+	//Here, we sent 0x33 @ 5bps and read back the echo. 
 	diag_os_millisleep(60);		//W1 minimum
-	//At this point the ECU is about to, or already, sending the sync byte 0x55.
+	//And the ECU is about to, or already, sending the sync byte 0x55.
 	/*
 	 * Ideally we would now measure the length of the received
 	 * 0x55 sync character to work out the baud rate.
-	 * However, we cant do that yet, so we just set the
-	 * baud rate to what the user requested and read the 0x55
+	 * not implemented, we'll just suppose the current serial settings
+	 * are OK and read the 0x55
 	 */
-	diag_tty_setup(dl0d, &dev->serial);
 
 	if (dev->protocol == DIAG_L1_ISO9141)
-		tout = 400;		/* maximum W1 + sync byte@10kbps = >241ms */
+		tout = 241+50;		/* maximum W1 + sync byte@10kbps - elapsed (60ms) + mud factor= 241ms + mud factor*/
 	else
-		tout = 400;		/* 300ms according to ISO14230-2 ?? sec 5.2.4.2.2 */
+		// probably ISO14230-2 ?? sec 5.2.4.2.2 
+		tout = 300;		/* It should be the same thing, but let's put 300. */
 
 	rv = diag_tty_read(dl0d, &cbuf, 1, tout);
 	if (rv < 0) {
