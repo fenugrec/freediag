@@ -1,0 +1,45 @@
+freediag build system, brief description
+CSB / fenugrec 03/2014
+
+1- CMake
+I added a CMake build system specifically to support WIN targets, as the GNU autotools
+(autoconf, ./configure & friends) are not trivial to use on MS platforms. CMake should also make
+other platforms (OSX) easier to support as well.
+The main drawback is that the CMake package is quite large (>30MB), and is an additional
+dependency that I force on anyone who wants to compile freediag. However I reasoned that for
+the moment, I am able to maintain both build systems (autotools and CMake), so linux users
+won't need to touch CMake. Win users have to install something in any case: either Cygwin,
+MSYS with autotools, or CMake. I prefer CMake as it also allows the user to select his
+compiler toolchain : mingw (that I use), Code::blocks, MSVisual Studio *, etc.
+It should even work on OSX / XCode though I know nothing about Macs.
+
+As distributed, the freediag source package contains the following files that are part of the CMake
+build system :
+cconf.h.in 		// manually edited, it is eventually parsed by CMake to create cconf.h
+CMakeLists.txt	//there's one of these in every subdirectory that has compiled code.
+
+The CMakeLists.txt are generally equivalent to the autotools' configure.ac and Makefile.am files, which
+are edited manually to describe the build process : dependencies, required source files, executable names, etc.
+
+To compile freediag on win32, the general process is as such (rename directories as required)
+	-make sure cmake is installed and %PATH% holds the cmake/bin directory
+	-extract the source tree (from CVS or a source package) to  srcdir\
+	-make an empty build directory not far from the source tree, for instance  srcdir\..\builddir\
+	-cd to builddir
+	-run "cmake-gui ..\srcdir" : this uses the current directory (builddir) to store the CMake cache & all output files.
+	-set the desired "Generator" (i.e. I use MingW native toolchain but you could select VS9 or whatever)
+	-Configure + Generate
+	-compile according to your selected toolchain. I run "mingw32-make" from the builddir and off it goes.
+
+It's my hope that I can find a way to include pre-generated Makefiles and IDE-specific project files (for
+MSVS and Codeblocks for instance) along with freediag source packages, so most users will not need to install CMake.
+Please contact me if you have suggestions on how to accomplish this.
+
+2- Autotools
+GNU autotools, while arcane and truculent, are also widespread and familiar to many. Here is just
+some information specific to freediag:
+	- make sure you run "./configure --help" to see available build options. They may change before the
+	online docs are updated.
+	- the scantool/Makefile creates diag_config.c by running genconfig.sh ; 
+	you can edit l0config and l2config to select which "modules" you want to build. I don't recommend
+	modifying these files however.

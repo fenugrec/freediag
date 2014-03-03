@@ -1,0 +1,29 @@
+This is a brief list of changes since freediag 1.0.0 , per release.
+Refer to OLD_CHANGES for development history prior to 1.0.0
+
+Since ~ 2011, CSB (fenugrec) has maintained the freediag project on sourceforge, albeit loosely.
+
+He also took the liberty of modifying the version number format to MAJOR.MINOR, the MINOR number
+with 2 digits ( %02d if you will), and occasionally suffixed by a lower-case latter indicating
+a snapshot of the CVS source tree.
+
+*** Release 1.00c 2011-06-09
+(copied from release notes :)
+- ELM preliminary support added, possibly filled with bugs.
+- Systems with kernel>=2.6 will probably have timing problems
+- CARSIM interface should work reliably
+- Dumb serial interfaces (VAGTOOL, SE9141) are merged into one file, diag_l0_dumb.c . "set interface dumb /dev/ttyS0" will enable this interface.
+- Next release will remove the separate VAGTOOL & SE device files. They will be totally replaced by the single "dumb" driver, which will be configurable to use (or not) the L-line. This was the only difference between the two drivers.
+
+
+*** Release 1.00b 2011-05-29
+(copied from release notes :)
+- ELM support is still not complete (though under way)
+- Systems with kernel>=2.6 will probably have timing problems
+- CARSIM interface should work reliably
+
+
+*** Release 1.00a 2011-05-21
+A snapshot of the actual CVS tree, with the goal of making a source code package available for
+download. Many people will not bother with CVS just to try some experimental software.
+This was the first package released since freediag-0.3, and did not include many new features.

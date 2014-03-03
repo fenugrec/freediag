@@ -40,6 +40,9 @@ Each package contains a list of it's contributors.
 INSTALLATION:
 ~~~~~~~~~~~~~
 
+refer to doc/build_system.txt for most recent information.
+
+1) On linux / unix platforms :
 freediag uses a standard GNU autotools installation process:
 ./configure && make
 
@@ -50,10 +53,16 @@ If you checked freediag out of CVS:
 you may need to run automake+autoconf from the root source
 directory to create the ./configure script.
 
+Make sure to try "./configure --help" to vew available
+options.
+
 ./configure options:
 --enable-scangui if you wish to build the gui (disabled by
 default). This will require the fltk package & libraries.
 
+2) On Windows platforms :
+freediag uses CMake and your choice of compiler toolchain.
+Refer to doc\build_system.txt
 
 RUNNING:
 ~~~~~~~~

@@ -1,3 +1,5 @@
+#ifndef _CCONF_H
+#define _CCONF_H
 // cconf.h.in
 // this is to replace autotools' config.h.in + config.h files. 
 //usually @varname@ will be replaced by the contents of the cmake variable varname
@@ -23,3 +25,5 @@
 
 
 #define PACKAGE_VERSION "@PKGVERSION@"
+
+#endif //ifndef _cconf_h

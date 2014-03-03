@@ -1,0 +1,30 @@
+DUMB interface with optocouplers :
+a) typical device supporting K + L lines :
+	L is pulled down (=0) when RTS is set (>5V).
+	K is driven by TXD with the correct polarity ( TX="1" = negative voltage => K=V+="1")
+	K also drives RXD (half-duplex ! So any data sent on TXD will be seen on RXD !) similarly;
+	In order to receive data on RXD, RTS must be CLEARED (neg. voltage)
+	DTR is a "pull-up" on RXD and needs to be SET permanently (pos. voltage)
+	
+	So after messing with the L line using RTS, it's important to clear RTS afterwards.
+	
+b) typical simplified interface, K-line only :
+	K is driven by TXD with the correct polarity ( TXD="1" = neg voltage ==> K="1" = +Vb
+	K also drives RXD (half-duplex ! So any data sent on TXD will be seen on RXD !) similarly;
+	In order to receive data on RXD, RTS must always be CLEAR (neg. voltage)
+	DTR is a "pull-up" on RXD so it needs to be always SET (pos. voltage)
+	
+
+Configurable options : (try "set dumbopts ?" for most recent list)
+
+use "set dumbopts [opts]" where [opts] is the addition of the desired flags:
+ 1 : USE_LLINE : use if the L line (driven by RTS) is required for init. Interface must support this
+	(VAGTOOL for example).
+ 2 : CLEAR_DTR : use if your interface needs DTR to be always clear (neg. voltage).
+	This is unusual. By default DTR will always be SET (pos. voltage)
+ 4 : SET_RTS : use if your interface needs RTS to be always set (pos. voltage).
+	This is unusual. By default RTS will always be CLEAR (neg. voltage)
+	This option should not be used with USE_LLINE.
+ 8 : MAN_BREAK : use to force manual 5bps transmission. Essential for most USB-serial bridges
+ ex. : "dumbopts 12" will set MAN_BREAK and SET_RTS.
+Note : these options are ignored on any non-DUMB interfaces.\n");
