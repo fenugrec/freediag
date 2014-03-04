@@ -64,7 +64,7 @@ const char *	set_ecu;	/* ECU name */
 //const char  *	set_interface;	/* H/w interface to use */
 #define DEFAULT_INTERFACE CARSIM	//index into l0_names below
 const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM},
-			{"CARSIM", CARSIM}, {"DUMB", DUMB}, NULL};
+			{"CARSIM", CARSIM}, {"DUMB", DUMB}, {NULL,LAST}};
 
 enum l0_nameindex set_interface;	//hw interface to use
 
@@ -72,6 +72,8 @@ char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
 
 char *set_simfile;	//source for simulation data
 extern void diag_l0_sim_setfile(char * fname);
+extern int diag_l0_dumb_getopts(void);
+extern void diag_l0_dumb_setopts(int);
 
 /*
  * XXX All commands should probably have optional "init" hooks.
@@ -266,10 +268,10 @@ static int cmd_set_interface(int argc, char **argv)
 			"a complete device path such as \"/dev/ttyS0\" or \"\\\\.\\COM11\"\n"
 			"Valid NAMEs are: \n");
 		}
-		for (i=0; l0_names[i].longname != NULL; i++) {
+		for (i=0; l0_names[i].code != LAST; i++) {
 			//loop through l0 interface names, either printing or comparing to argv[1]
 			if (helping)
-				printf("%s ", l0_names[i]);
+				printf("%s ", (l0_names[i].longname));
 			else
 				if (strcasecmp(argv[1], l0_names[i].longname) == 0) {
 					set_interface = l0_names[i].code;

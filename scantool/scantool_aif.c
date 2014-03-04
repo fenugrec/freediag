@@ -59,17 +59,18 @@ static void BadToApp (void) { toApp ( FREEDIAG_AIF_ERROR_RETURN ) ; }
 	working!
 */
 
-static void aif_watch     ( void *data ) { BadToApp () ; }
-static void aif_clear_dtc ( void *data ) { BadToApp () ; }
-static void aif_ecus      ( void *data ) { BadToApp () ; }
-static void aif_test      ( void *data ) { BadToApp () ; }
-static void aif_diag      ( void *data ) { BadToApp () ; }
-static void aif_vw        ( void *data ) { BadToApp () ; }
-static void aif_dyno      ( void *data ) { BadToApp () ; }
+static void aif_watch( void *data ) { (void) data; BadToApp () ; }
+static void aif_clear_dtc( void *data) { (void) data; BadToApp () ; }
+static void aif_ecus( void *data) {(void) data; BadToApp () ; }
+static void aif_test( void *data) { (void) data; BadToApp () ; }
+static void aif_diag( void *data) { (void) data; BadToApp () ; }
+static void aif_vw( void *data) { (void) data; BadToApp () ; }
+static void aif_dyno( void *data) { (void) data; BadToApp () ; }
 
 
 static void aif_monitor ( void *data )
 {
+	(void) data;	//note : this is the cleanest way I know to silence "unused parameter" warnings.
 	if ( global_state < STATE_CONNECTED )
 	{
 		fprintf ( stderr, "scantool: Can't monitor - car is not yet connected.\n");
@@ -107,7 +108,7 @@ static void aif_monitor ( void *data )
 					if ( DATA_VALID(p, ep->mode1_data) ||
 					DATA_VALID(p, ep->mode2_data) )
 					{
-						const char *name = p->desc ;
+						UNUSED(const char *name = p->desc ;)
 
 						if (DATA_VALID(p, ep->mode1_data))
 							p->cust_sprintf(buf, set_display, p, ep->mode1_data, 2);
@@ -219,21 +220,24 @@ static void aif_set ( void *data )
 
 static void aif_noop ( void *data )
 {
+	(void) data;
 	OkToApp () ;
 }
 
 
 static void aif_exit ( void *data )
 {
+	(void) data;
 	OkToApp () ;
 	fprintf ( stderr, "scantool: Exiting.\n" ) ;
-	set_close;
+	set_close();
 	exit ( 0 ) ;
 }
 
 
 static void aif_disconnect ( void *data )
 {
+	(void) data;
 	if ( global_state < STATE_CONNECTED )
 	{
 		OkToApp () ;
@@ -257,8 +261,9 @@ static void aif_disconnect ( void *data )
 
 
 
-static void aif_scan ( void *data )
+static void aif_scan ( void *data)
 {
+	(void) data;
 	if ( global_state >= STATE_CONNECTED )
 	{
 		OkToApp () ;

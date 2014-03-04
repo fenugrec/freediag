@@ -1909,9 +1909,15 @@ main(int argc __attribute__((unused)), char **argv)
 	/* Input buffer */
 
 	do_init();
-
-	progname = strrchr(argv[0], '/');
+#ifdef WIN32
+	progname = strrchr(argv[0],'\\');
+#else
+	progname = strrchr(argv[0], '/');	//skip a possible absolute or deep relative path
+#endif
 	progname = (progname)?(progname+1):argv[0];
+	//XXX Maybe a better way would be to have "  const char progname[]=SCANTOOL_NAME
+	// and have a compile-time #define SCANTOOL_NAME "sldkfnlsdkf" ?
+	// BONUS : it would remove the requirement for strrchr ! And compile faster !
 
 	if ( user_interface )
 		enter_cli ( progname ) ;

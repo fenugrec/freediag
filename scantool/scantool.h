@@ -116,7 +116,7 @@ extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
 #define	PROTOCOL_SAEJ1850	3
 
 //XXX The following defs should probably go in an auto-generated l0_list.h file ... and they MUST match the list in scantool_set.c !
-enum l0_nameindex {MET16, BR1, ELM, CARSIM, DUMB};
+enum l0_nameindex {MET16, BR1, ELM, CARSIM, DUMB, LAST};
 struct l0_name
 {
 	char * longname;

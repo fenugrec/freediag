@@ -1,7 +1,7 @@
 #Process this with autoconf for magic.
 
 AC_PREREQ(2.62)		#But would probably work with earlier versions
-AC_INIT(freediag, 1.0.0, freediag-discuss@lists.sourceforge.net,,freediag.sourceforge.net)
+AC_INIT(freediag, 1.01, freediag-discuss@lists.sourceforge.net,,freediag.sourceforge.net)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])

@@ -1,12 +1,28 @@
+###### General setup
+#Note : this file is a work in progress, it's probably missing
+#some checks to make it more robust.
+
+
 project(freediag)
 cmake_minimum_required(VERSION 2.8)
 #include (CheckLibraryExists) #maybe not needed just yet ,we can use "find_library" ?
 include (CheckFunctionExists)
 
+# don't go polluting c:\program files (this has to go before project()!)
+set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
+message("Using install prefix : ${CMAKE_INSTALL_PREFIX}")
+
 set (PKGVERSION "1.01")
+set (PKGVERSIONMAJOR "1")
+set (PKGVERSIONMINOR "01")
 
 # define CMAKE_ENABLED // used to toggle between autotools' config.h(.in) and our cconf.h(.in)
 add_definitions(-DCMAKE_ENABLED)
+add_definitions ("-Wall -Wextra")
+# other method of enabling warnings :
+# if (CMAKE_COMPILER_IS_GNUCC) :  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra" 
+# else set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+#endif
 
 message(STATUS "Generating make/project files for: ${CMAKE_GENERATOR}")
 
@@ -56,7 +72,6 @@ include_directories("${PROJECT_BINARY_DIR}")
 #src_dir/include : to find freediag_aif.h
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
-message("DBG : include dirs set to ${INCLUDE_DIRECTORIES}")
 
 ###### Generate cconf.h
 if (USE_RCFILE)
@@ -81,5 +96,16 @@ if (BUILDGUI)
 endif (BUILDGUI)
 
 
+###### package generation
+#this adds "package" and "package_source" targets, i.e. we can "make package_source"
+set (CPACK_GENERATOR "TGZ;ZIP")
+set (CPACK_SOURCE_GENERATOR "TGZ")
+set (CPACK_PACKAGE_VERSION_MAJOR ${PKGVERSIONMAJOR})
+set (CPACK_PACKAGE_VERSION_MINOR ${PKGVERSIONMINOR})
+set (CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PKGVERSION}")
+set (CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PKGVERSION}-src")
+set (CPACK_SOURCE_IGNORE_FILES "xcf")
+set (CPACK_INCLUDE_TOPLEVEL_DIRECTORY 1)
 
-message("finished parsing root cmakelists.txt")
+# I think this has to stay near the end, and CPack options come before the include()
+include (CPack)

@@ -52,6 +52,7 @@ extern "C" {
 
 // Nice to have anywhere...
 #define MIN(_a_, _b_) (((_a_) < (_b_) ? (_a_) : (_b_)))
+#define UNUSED(X)		//magic !
 
 #ifdef WIN32
 	typedef unsigned char uint8_t;
@@ -108,7 +109,27 @@ extern "C" {
 /* For diagnostics */
 
 #define FLFMT "%s:%d:  "
-#define FL __FILE__, __LINE__
+	
+#ifndef CMAKE_ENABLED
+	#define CURFILE __FILE__
+	//with autotools __FILE__ seems OK, so less reason for these warnings :
+	
+	//#warning *** Without CMake, the debbuging & error messages will show the
+	//#warning *** absolute path of the relevant source file. This is annoying
+	//#warning *** but not severe. See diag.h
+#endif
+
+//CURFILE will be defined by CMake on a per-file basis !
+#ifdef MSVC
+	#warning MSVC may not work with the CURFILE macro. See diag.h
+	// apparently some (all ?) MSVC compilers don't support per-file defines, so CURFILE would be the
+	// same for all source files.
+	// The disadvantage of __FILE__ is that it often (always ?) holds the absolute path of the file,
+	// not just the filename. For our debugging messages we only care about the filename, hence CURFILE.
+	#define CURFILE __FILE__
+#endif
+#define FL CURFILE, __LINE__
+
 
 /*
  * Many receive buffers are set to 1024, which seems large. At least
@@ -192,6 +213,7 @@ void diag_freemsg(struct diag_msg *);	/* Free a msg that we dup'ed */
  * General functions
  */
 int diag_init(void);
+int diag_close(void);
 void diag_data_dump(FILE *out, const void *data, size_t len);
 void smartcat(char *p1, const size_t s1, const char *p2 );
 
@@ -206,8 +228,8 @@ void smartcat(char *p1, const size_t s1, const char *p2 );
 void *diag_pflseterr(const char *name, const int line, const int code);
 int diag_iflseterr(const char *name, const int line, const int code);
 
-#define diag_pseterr(C) diag_pflseterr(__FILE__, __LINE__, (C))
-#define diag_iseterr(C) diag_iflseterr(__FILE__, __LINE__, (C))
+#define diag_pseterr(C) diag_pflseterr(CURFILE, __LINE__, (C))
+#define diag_iseterr(C) diag_iflseterr(CURFILE, __LINE__, (C))
 
 /*
  * diag_geterr returns the last error and clears it.
@@ -234,10 +256,10 @@ int diag_flcalloc(const char *name, const int line,
 
 int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 
-#define diag_calloc(P, N) diag_flcalloc(__FILE__, __LINE__, \
+#define diag_calloc(P, N) diag_flcalloc(CURFILE, __LINE__, \
 	((void **)(P)), (N), sizeof(*(*P)))
 
-#define diag_malloc(P, S) diag_flmalloc(__FILE__, __LINE__, \
+#define diag_malloc(P, S) diag_flmalloc(CURFILE, __LINE__, \
 	((void **)(P)), (S))
 
 /*

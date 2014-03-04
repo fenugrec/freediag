@@ -82,10 +82,10 @@ static const struct cmd_tbl_entry root_cmd_table[]=
 	{ "log", "log <filename>", "Log monitor data to <filename>",
 		cmd_log, 0, NULL},
 	{ "stoplog", "stoplog", "Stop logging", cmd_stoplog, 0, NULL},
-#if notdef
+
 	{ "play", "play filename", "Play back data from <filename>",
 		cmd_play, FLAG_HIDDEN, NULL},
-#endif
+
 	{ "cleardtc", "cleardtc", "Clear DTCs from ECU", cmd_cleardtc, 0, NULL},
 	{ "ecus", "ecus", "Show ECU information", cmd_ecus, 0, NULL},
 
@@ -916,7 +916,7 @@ command_file(char *filename)
 {
 		FILE *prev_instream = instream;	//assume it was already initted...
 
-	if (instream=fopen(filename, "r")) {
+	if ( (instream=fopen(filename, "r"))) {
 		do_cli(root_cmd_table, progname, 0, NULL);
 		fclose(instream);
 		instream=prev_instream;
@@ -1016,8 +1016,8 @@ rc_file(void)
 	}
 	printf("%s: Settings loaded from %s\n", progname, homeinit);
 	free(homeinit);
-	return 0;
 #endif
+	return 0;
 
 }
 
