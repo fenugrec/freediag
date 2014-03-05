@@ -40,7 +40,7 @@ Each package contains a list of it's contributors.
 INSTALLATION:
 ~~~~~~~~~~~~~
 
-refer to doc/build_system.txt for most recent information.
+Refer to doc/build_system.txt for the most recent information.
 
 1) On linux / unix platforms :
 freediag uses a standard GNU autotools installation process:
@@ -62,7 +62,8 @@ default). This will require the fltk package & libraries.
 
 2) On Windows platforms :
 freediag uses CMake and your choice of compiler toolchain.
-Refer to doc\build_system.txt
+The win32 release was compiled with the mingw toolchain.
+Refer to doc\build_system.txt for more details.
 
 RUNNING:
 ~~~~~~~~

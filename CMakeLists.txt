@@ -110,8 +110,15 @@ set (CPACK_PACKAGE_VERSION_MAJOR ${PKGVERSIONMAJOR})
 set (CPACK_PACKAGE_VERSION_MINOR ${PKGVERSIONMINOR})
 set (CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PKGVERSION}")
 set (CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PKGVERSION}-src")
-set (CPACK_SOURCE_IGNORE_FILES "xcf")
+set (CPACK_SOURCE_IGNORE_FILES "xcf"
+	"Makefile\\\\.in$"
+	"~$"
+	"^${PROJECT_SOURCE_DIR}.*/autom4te.*"
+	"^${PROJECT_SOURCE_DIR}.*/\\\\.deps/"
+	"^${PROJECT_SOURCE_DIR}.*/CVS/" )
+
+
 set (CPACK_INCLUDE_TOPLEVEL_DIRECTORY 1)
 
-# I think this has to stay near the end, and CPack options come before the include()
+# I think this has to stay near the end, after CPack options
 include (CPack)

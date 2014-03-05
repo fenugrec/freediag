@@ -1,0 +1,48 @@
+/*
+ * This file will be parsed by CMake to generate diag_config.c
+ * TODO : implement it !! something like "foreach in l0config" ...
+ *  
+ */
+#include "diag.h"
+#if defined(__cplusplus)
+extern "C" {
+#endif
+//Zone 1 : "extern int diag_l0_${L0NAME}_add(void);"
+extern int diag_l0_muleng_add(void);
+extern int diag_l0_dumb_add(void);
+extern int diag_l0_br_add(void);
+extern int diag_l0_elm_add(void);
+extern int diag_l0_sim_add(void);
+//Zone 2 : "extern int diag_l2_${L2NAME}_add(void);"
+extern int diag_l2_can_add(void);
+extern int diag_l2_14230_add(void);
+extern int diag_l2_iso9141_add(void);
+extern int diag_l2_mb1_add(void);
+extern int diag_l2_raw_add(void);
+extern int diag_l2_j1850_add(void);
+extern int diag_l2_vag_add(void);
+#if defined(__cplusplus)
+}
+#endif
+int diag_l0_config(void) {
+	int rv = 0;
+//Zone 3 : "	rv |= diag_l0_{L0NAME}_add();"
+	rv |= diag_l0_muleng_add();
+	rv |= diag_l0_dumb_add();
+	rv |= diag_l0_br_add();
+	rv |= diag_l0_elm_add();
+	rv |= diag_l0_sim_add();
+	return rv;
+}
+int diag_l2_config(void) {
+	int rv = 0;
+//Zone 4 : "	rv |= diag_l2_{L2NAME}_add();"
+	rv |= diag_l2_can_add();
+	rv |= diag_l2_14230_add();
+	rv |= diag_l2_iso9141_add();
+	rv |= diag_l2_mb1_add();
+	rv |= diag_l2_raw_add();
+	rv |= diag_l2_j1850_add();
+	rv |= diag_l2_vag_add();
+	return rv;
+}

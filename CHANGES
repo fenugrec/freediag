@@ -4,9 +4,35 @@ Refer to OLD_CHANGES for development history prior to 1.0.0
 Since ~ 2011, CSB (fenugrec) has maintained the freediag project on sourceforge, albeit loosely.
 
 He also took the liberty of modifying the version number format to MAJOR.MINOR, the MINOR number
-with 2 digits ( %02d if you will), and occasionally suffixed by a lower-case latter indicating
+written with 2 digits ( %02d if you will), and occasionally suffixed by a lower-case letter indicating
 a snapshot of the CVS source tree.
 
+*** Release 1.01 2014-03-04
+Codename "phoenix zombie".
+From the release notes :
+- freediag now compiles and runs on Win32 ! Very preliminary pre-alpha status.
+- A lot of small fixes, hopefully not breaking the rest of the codebase.
+- bugfix : #15, diag_tty_break broken on win32 (64-bit ints)
+- bugfix : #12, struct pid has a member named sprintf
+- bugfix : #10, *printf format warnings / missing casts / other dumb errors
+- bugfix : #8, shell script permissions
+
+- old style device IDs no longer supported. Previously :
+"set interface xyz 2" would use /dev/ttyOBDII2 as the device name. Now the full name must
+be entered :
+"set interface xyz /dev/ttyS0" for instance, or "set interface xyz \\.\COM16" on Win.
+However the code is still in place for the old behavior. See CMakeLists.txt or otherwise define
+OLD_DEVNAME before compiling. (i.e. "make -DOLD_DEVNAME" should do the trick with autotools)
+
+- removed SE9141 and VAG interface files; they fall under the category "DUMB" and shared the exact same code ( diag_l0_dumb.c )
+by default they will not build but the source files are still in the repo for a while.
+To use a K-line only interface, use something like " set interface dumb /dev/ttyUSB2" ;
+To use K + L line interfaces (VAGTOOL and some others), "set interface vagtool /dev/ttyS0".
+
+- CMake build system (in addition to the old GNU autotools system). Mainly for Win32 but is
+ supposed to work on linux, UNIX and OSX.
+ 
+ 
 *** Release 1.00c 2011-06-09
 (copied from release notes :)
 - ELM preliminary support added, possibly filled with bugs.

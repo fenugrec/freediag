@@ -13,22 +13,22 @@ MSYS with autotools, or CMake. I prefer CMake as it also allows the user to sele
 compiler toolchain : mingw (that I use), Code::blocks, MSVisual Studio *, etc.
 It should even work on OSX / XCode though I know nothing about Macs.
 
-As distributed, the freediag source package contains the following files that are part of the CMake
-build system :
+As distributed, the CMake build system for freediag consists of the following files in
+the source tree :
 cconf.h.in 		// manually edited, it is eventually parsed by CMake to create cconf.h
 CMakeLists.txt	//there's one of these in every subdirectory that has compiled code.
 
-The CMakeLists.txt are generally equivalent to the autotools' configure.ac and Makefile.am files, which
+The CMakeLists.txt are roughly equivalent to the autotools' configure.ac and Makefile.am files, which
 are edited manually to describe the build process : dependencies, required source files, executable names, etc.
 
 To compile freediag on win32, the general process is as such (rename directories as required)
 	-make sure cmake is installed and %PATH% holds the cmake/bin directory
 	-extract the source tree (from CVS or a source package) to  srcdir\
-	-make an empty build directory not far from the source tree, for instance  srcdir\..\builddir\
+	-make an empty build directory not far from the source tree, I like  srcdir\..\builddir\
 	-cd to builddir
 	-run "cmake-gui ..\srcdir" : this uses the current directory (builddir) to store the CMake cache & all output files.
-	-set the desired "Generator" (i.e. I use MingW native toolchain but you could select VS9 or whatever)
-	-Configure + Generate
+	-set the desired "Generator" (i.e. I use "MingW native toolchain" but you could select VS9 or whatever)
+	-Configure then Generate
 	-compile according to your selected toolchain. I run "mingw32-make" from the builddir and off it goes.
 
 It's my hope that I can find a way to include pre-generated Makefiles and IDE-specific project files (for
@@ -36,7 +36,7 @@ MSVS and Codeblocks for instance) along with freediag source packages, so most u
 Please contact me if you have suggestions on how to accomplish this.
 
 2- Autotools
-GNU autotools, while arcane and truculent, are also widespread and familiar to many. Here is just
+GNU autotools, while arcane and truculent, are also widespread and familiar to most. Here is just
 some information specific to freediag:
 	- make sure you run "./configure --help" to see available build options. They may change before the
 	online docs are updated.
