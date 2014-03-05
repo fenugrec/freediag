@@ -85,7 +85,6 @@ int
 diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 {
 	struct diag_l1_initbus_args in;
-	struct diag_serial_settings set;
 	uint8_t kb1, kb2, address, inv_address, inv_kb2;
 	int rv = 0;
 	struct diag_l2_iso9141 *dp;
@@ -163,7 +162,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 		}
 
 		// Check the received inverted address:
-		if ( inv_address != (uint8_t)~address )
+		if ( inv_address != ~address )	//even though they're both uint8_t, gcc complains !
 		{
 			if (diag_l2_debug & DIAG_DEBUG_OPEN)
 			fprintf(stderr,
@@ -226,7 +225,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
 	
-	if (rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set))
+	if ((rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set)))
 		return diag_iseterr(rv);
 
 	// Initialize ECU (unless if in monitor mode):
@@ -277,7 +276,7 @@ static int
 diag_l2_proto_iso9141_decode(uint8_t *data, int len,
 				 int *hdrlen, int *datalen, int *source, int *dest)
 {
-	int dl;
+	//int dl;
 
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
 	{

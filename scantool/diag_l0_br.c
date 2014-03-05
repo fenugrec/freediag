@@ -180,7 +180,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 
 	diag_l0_br_init();
 
-	if (rv=diag_calloc(&dev, 1))
+	if ((rv=diag_calloc(&dev, 1)))
 		return (struct diag_l0_device *)diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
@@ -191,7 +191,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	dev->dev_features = BR_FEATURE_SETADDR;
 
 	/* Get an L0 link */
-	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_br, (void *)dev)) {
+	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_br, (void *)dev))) {
 		free(dev);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
@@ -762,30 +762,38 @@ void *data, size_t len, int timeout)
 			dev->dev_state);
 
 	switch (dev->dev_state) {
-	case BR_STATE_KWP_FASTINIT:
-		/* Extend timeouts */
-		timeout = 300;
-		dev->dev_state = BR_STATE_OPEN;
-		break;
-	case BR_STATE_KWP_SENDKB1:
-		if (len >= 2) {
-			pdata[0] = dev->dev_kb1;
-			pdata[1] = dev->dev_kb2;
+		case BR_STATE_KWP_FASTINIT:
+			/* Extend timeouts */
+			timeout = 300;
 			dev->dev_state = BR_STATE_OPEN;
-			return 2;
-		} else if (len == 1) {
-			*pdata = dev->dev_kb1;
-			dev->dev_state = BR_STATE_KWP_SENDKB2;
-			return 1;
-		}
-		return 0;	/* Strange, user asked for 0 bytes */
-	case BR_STATE_KWP_SENDKB2:
-		if (len >= 1) {
-			*pdata = dev->dev_kb2;
-			dev->dev_state = BR_STATE_OPEN;
-			return 1;
-		}
-		return 0;	/* Strange, user asked for 0 bytes */
+			break;
+		case BR_STATE_KWP_SENDKB1:
+			if (len >= 2) {
+				pdata[0] = dev->dev_kb1;
+				pdata[1] = dev->dev_kb2;
+				dev->dev_state = BR_STATE_OPEN;
+				return 2;
+			} else if (len == 1) {
+				*pdata = dev->dev_kb1;
+				dev->dev_state = BR_STATE_KWP_SENDKB2;
+				return 1;
+			}
+			return 0;	/* Strange, user asked for 0 bytes */
+			break;
+		case BR_STATE_KWP_SENDKB2:
+			if (len >= 1) {
+				*pdata = dev->dev_kb2;
+				dev->dev_state = BR_STATE_OPEN;
+				return 1;
+			}
+			return 0;	/* Strange, user asked for 0 bytes */
+			break;
+		default:
+			//So BR_STATE_CLOSED and BR_STATE_OPEN.
+			// I don't know what's supposed to happen here, so
+			fprintf(stderr, FLFMT "Warning : landed in a strange place. Report this please !\n", FL);
+			return 0;
+			break;
 	}
 
 	switch (dev->protocol) {

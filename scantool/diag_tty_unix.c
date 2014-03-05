@@ -51,7 +51,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	const char *tty_template ="/dev/obdII%d";
 #endif
 
-	if (rv=diag_calloc(&dl0d, 1))		//free'd in diag_tty_close
+	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
 
 	dl0d->fd = DL0D_INVALIDHANDLE;

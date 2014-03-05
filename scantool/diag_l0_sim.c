@@ -126,7 +126,7 @@ sim_new_ecu_response_txt(const char* text)
 	int rv;
 
 	//~ resp = calloc(1, sizeof(struct sim_ecu_response));
-	if (rv=diag_calloc(&resp, 1))
+	if ((rv=diag_calloc(&resp, 1)))
 		return (struct sim_ecu_response *)diag_pseterr(rv);
 	
 	resp->data = NULL;
@@ -136,7 +136,7 @@ sim_new_ecu_response_txt(const char* text)
 	
 	if (text != NULL && strlen(text)) {
 		// resp->text = calloc(strlen(text)+1, sizeof(char));
-		if (rv=diag_calloc(&(resp->text), strlen(text)+1))
+		if ((rv=diag_calloc(&(resp->text), strlen(text)+1)))
 			return (struct sim_ecu_response *)diag_pseterr(rv);
 		
 		strncpy(resp->text, text, strlen(text));
@@ -321,7 +321,15 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 // Returns the ISO9141 checksum of a byte sequence.
 uint8_t cs1(uint8_t *data, uint8_t pos)
 {
-	return diag_l2_proto_iso9141_cs(data, pos-1);
+	//return diag_l2_proto_iso9141_cs(data, pos-1);
+	//to avoid than cross-calling accross levels,  we'll just copy the checksum code right here.
+	//It's small enough; probably less than 10 opcodes ?
+	uint8_t cs = 0;
+	uint8_t i;
+
+	for (i=0; i<(pos-1); i++)
+		cs += data[i];
+	return cs;
 }
 
 // Returns a value between 0x00 and 0xFF calculated as the trigonometric
@@ -362,7 +370,7 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 	char* parse_offset = NULL;
 	int ret = 0;
 	do {
-		if (pos*5 >= strlen(resp_p->text))
+		if ((size_t) pos*5 >= strlen(resp_p->text))
 			break;
 		// scan an element.
 		parse_offset = resp_p->text + pos*5;
@@ -474,24 +482,24 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
 	diag_l0_sim_init();
 
 	// Create diag_l0_sim_device:
-	if (rv=diag_calloc(&dev, 1))
+	if ((rv=diag_calloc(&dev, 1)))
 		return (struct diag_l0_device *)diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 
 	// Create diag_l0_device:
-	if (rv=diag_calloc(&dl0d, 1))
+	if ((rv=diag_calloc(&dl0d, 1)))
 		return (struct diag_l0_device *)diag_pseterr(rv);
 
 	dl0d->fd = DL0D_INVALIDHANDLE;
 	dl0d->dl0_handle = dev;
 	dl0d->dl0 = &diag_l0_sim;
-	if (rv=diag_calloc(&dl0d->name, strlen(simfile)+1)) {
+	if ((rv=diag_calloc(&dl0d->name, strlen(simfile)+1))) {
 		free(dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 	strcpy(dl0d->name, simfile);
-	if (rv=diag_calloc(&dl0d->ttystate, 1))  {
+	if ((rv=diag_calloc(&dl0d->ttystate, 1))) {
 		free(dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
@@ -589,7 +597,6 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 		 const char *subinterface __attribute__((unused)),
 		 const void *data, const size_t len)
 {
-	ssize_t xferd;
 
 	if (sim_last_ecu_responses != NULL) {
 		fprintf(stderr, FLFMT "AAAHHH!!! You're sending a new request before reading all previous responses!!! \n", FL);
@@ -626,10 +633,10 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		 void *data, size_t len, int timeout)
 {
 	int xferd;
-	struct diag_l0_sim_device *dev;
+	//struct diag_l0_sim_device *dev;
 	struct sim_ecu_response* resp_p = NULL;
 
-	dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);
+	//dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);	//we don't use this ?
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
@@ -673,7 +680,7 @@ diag_l0_sim_setspeed(struct diag_l0_device *dl0d,
 			 const struct diag_serial_settings *pset)
 {
 	struct diag_l0_sim_device *dev;
-	int ret;
+	int ret=0;
 
 	dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);
 

@@ -989,7 +989,7 @@ do_j1979_getdata(int interruptible)
 	}
 
 	/* Get mode2/pid2 (DTC that caused freezeframe) */
-	fprintf(stderr, "Requesting Mode 0x02 Pid 0x02 (Freeze frame DTCs)...\n", i);
+	fprintf(stderr, "Requesting Mode 0x02 Pid 0x02 (Freeze frame DTCs)...\n");
 	rv = l3_do_j1979_rqst(d_conn, 0x2, 2, 0x00,
 		0x00, 0x00, 0x00, 0x00, (void *)0);
 
@@ -1041,12 +1041,12 @@ do_j1979_getdata(int interruptible)
 void
 do_j1979_basics()
 {
-	struct diag_l3_conn *d_conn;
+//	struct diag_l3_conn *d_conn;
 	ecu_data_t *ep;
 	unsigned int i;
 	int o2monitoring = 0;
 
-	d_conn = global_l3_conn;
+//	d_conn = global_l3_conn;	//not used ?
 
 	/*
 	 * Get supported PIDs and Tests etc
@@ -1132,10 +1132,6 @@ print_single_dtc(databyte_type d0, databyte_type d1)
 	db[0] = d0;
 	db[1] = d1;
 
-	/*
-	 * XXX Another place where a decode can just get a file pointer
-	 * and not a buffer and size
-	 */
 	fprintf(stderr, "%s", 
 		diag_dtc_decode(db, 2, set_vehicle, set_ecu, dtc_proto_j2012, buf,
 		sizeof(buf)));
@@ -1205,7 +1201,7 @@ do_j1979_ncms(int printall)
 	int rv;
 	struct diag_l3_conn *d_conn;
 	unsigned int i, j;
-	int supported;
+//	int supported=0;		//not used ?
 	ecu_data_t *ep;
 
 	uint8_t merged_mode6_info[0x100];
@@ -1214,12 +1210,12 @@ do_j1979_ncms(int printall)
 
 	/* Merge all ECU mode6 info into one place*/
 	memset(merged_mode6_info, 0, sizeof(merged_mode6_info));
-	for (i=0, ep=ecu_info, supported = 0; i<ecu_count; i++, ep++) {
+	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		for (j=0; j<sizeof(ep->mode6_info);j++) {
 			merged_mode6_info[j] |= ep->mode6_info[j] ;
 		}
-		if (ep->mode6_info[0] != 0)
-			supported = 1;
+		//if (ep->mode6_info[0] != 0)	//XXX not sure what this accomplished
+			//supported = 1;	//this never gets used ...
 	}
 
 	if (merged_mode6_info[0] == 0x00) {
@@ -1349,11 +1345,11 @@ do_j1979_getmodeinfo(int mode, int response_offset)
 void
 do_j1979_getpids()
 {
-	struct diag_l3_conn *d_conn;
+//	struct diag_l3_conn *d_conn;
 	ecu_data_t *ep;
 	unsigned int i, j;
 	
-	d_conn = global_l3_conn;
+//	d_conn = global_l3_conn;		//not used ?
 
 	do_j1979_getmodeinfo(1, 2);
 	do_j1979_getmodeinfo(2, 2);
@@ -1458,7 +1454,7 @@ do_j1979_getdtcs()
 		return 0;
 	}
 
-	fprintf(stderr, "Requesting Mode 0x01 PID 0x01 (Current DTCs)...\n", i);
+	fprintf(stderr, "Requesting Mode 0x01 PID 0x01 (Current DTCs)...\n");
 	rv = l3_do_j1979_rqst(d_conn, 1, 1, 0,
 			0x00, 0x00, 0x00, 0x00, (void *)0);
 
@@ -1869,9 +1865,9 @@ static const struct pid pids[] = {
 };
 
 
-const struct pid *get_pid ( int i )
+const struct pid *get_pid ( unsigned int i )
 {
-	if ( i < 0 || i >= ARRAY_SIZE(pids) )
+	if ( i >= ARRAY_SIZE(pids) )
 		return NULL ;
 
 	return & pids [ i ] ;
@@ -1909,16 +1905,7 @@ main(int argc __attribute__((unused)), char **argv)
 	/* Input buffer */
 
 	do_init();
-#ifdef WIN32
-	progname = strrchr(argv[0],'\\');
-#else
-	progname = strrchr(argv[0], '/');	//skip a possible absolute or deep relative path
-#endif
-	progname = (progname)?(progname+1):argv[0];
-	//XXX Maybe a better way would be to have "  const char progname[]=SCANTOOL_NAME
-	// and have a compile-time #define SCANTOOL_NAME "sldkfnlsdkf" ?
-	// BONUS : it would remove the requirement for strrchr ! And compile faster !
-
+	
 	if ( user_interface )
 		enter_cli ( progname ) ;
 	else

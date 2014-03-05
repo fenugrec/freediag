@@ -131,6 +131,8 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 static int
 diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, int timeout)
 {
+	//note : we better not request (len == (size_t) -1) bytes ! The casts between ssize_t and size_t are
+	// "muddy" in here
 	ssize_t xferd;
 	int i, rpos, rv;
 	char buf[ELM_BUFSIZE];	//for receiving responses
@@ -145,11 +147,12 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 		fprintf(stderr, FLFMT "sending command to ELM: %.*s\n", FL, (int) len-1, data);
 	}
 
-	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
+	while ((xferd = diag_tty_write(dl0d, data, len)) != (ssize_t) len) {
 		/* Partial write */
 		if (xferd <  0) {	//write error
 			/* error */
 			if (errno != EINTR) {	//not an interruption
+				//warning : errno probably doesn't work on Win...
 				perror("write");
 				fprintf(stderr, FLFMT "write returned error %d\n", FL, errno);
 				return diag_iseterr(DIAG_ERR_GENERAL);
@@ -170,7 +173,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 
 	rv=diag_tty_read(dl0d, buf, ELM_BUFSIZE-5, 100);	//rv=# bytes read
 	if (diag_l0_debug & DIAG_DEBUG_WRITE || diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "sent %d bytes\n", FL, xferd);
+		fprintf(stderr, FLFMT "sent %d bytes\n", FL, (int) xferd);
 		fprintf(stderr, FLFMT "received %d bytes\n", FL, rv);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			elm_parse_cr(buf, rv);
@@ -239,12 +242,12 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 	diag_l0_elm_init();
 
-	if (rv=diag_calloc(&dev, 1))
+	if ((rv=diag_calloc(&dev, 1)))
 		return (struct diag_l0_device *)diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 
-	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_elm, (void *)dev))
+	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_elm, (void *)dev)))
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	
 	//set speed to 9600;8n1. XXX Perhaps this could be included with the diag_tty_open call above ?
@@ -255,7 +258,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 	dev->serial = sset;
 
-	if (rv=diag_tty_setup(dl0d, &sset)) {
+	if ((rv=diag_tty_setup(dl0d, &sset))) {
 		fprintf(stderr, FLFMT "Error setting 9600;8N1 on %s\n",
 			FL, subinterface);
 		free(dev);
@@ -427,8 +430,8 @@ const void *data, size_t len)
 #endif
 {
 	char buf[ELM_BUFSIZE];
-	size_t xferd;
-	int i;
+	ssize_t xferd;
+	unsigned int i;
 	
 	if ((2*len)>(ELM_BUFSIZE-1)) {
 		//too much data for buffer size
@@ -455,7 +458,7 @@ const void *data, size_t len)
 		fprintf(stderr, FLFMT "ELM: sending %s\n", FL, buf);
 	}
 	
-	while ((size_t)(xferd = diag_tty_write(dl0d, buf, i+1)) != i+1) {
+	while ((xferd = diag_tty_write(dl0d, buf, i+1)) != (ssize_t)(i+1)) {
 		/* Partial write */
 		if (xferd <  0) {	//write error
 			/* error */
@@ -536,7 +539,7 @@ void *data, size_t len, int timeout)
 		sscanf(bp, "%02x", &rbyte);
 		((char *)data)[xferd]=(char) rbyte;
 		xferd++;
-		if (xferd==len)
+		if ( (size_t)xferd==len)
 			break;	
 		//printf("%s\t0x%02x\n", bp, i);
 		rptr=NULL;
@@ -565,7 +568,7 @@ const struct diag_serial_settings *pss)
 
 	dev->serial = sset;
 
-	if (rv=diag_tty_setup(dl0d, &sset))
+	if ((rv=diag_tty_setup(dl0d, &sset)))
 		return diag_iseterr(rv);
 
 	return 0;

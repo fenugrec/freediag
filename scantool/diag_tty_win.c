@@ -20,7 +20,6 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	void *dl0_handle)
 {
 	int rv;
-	struct diag_ttystate	*tty_dcb;		//this is a DCB struct
 	struct diag_l0_device *dl0d;
 	
 	if (! QueryPerformanceFrequency(&perfo_freq)) {
@@ -31,7 +30,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		fprintf(stderr, FLFMT "Performance counter frequency : %9"PRIu64"\n", FL, perfo_freq.QuadPart);
 	}
 
-	if (rv=diag_calloc(&dl0d, 1))		//free'd in diag_tty_close
+	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
 
 	dl0d->fd = INVALID_HANDLE_VALUE;
@@ -59,12 +58,12 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	if (dl0d->fd != INVALID_HANDLE_VALUE) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr, FLFMT "Device %s opened, fd %d\n", 
+			fprintf(stderr, FLFMT "Device %s opened, fd %p\n", 
 				FL, dl0d->name, dl0d->fd);
 	} else {
 		fprintf(stderr,
 			FLFMT "Open of device interface \"%s\" failed: %8d\n", 
-			FL, dl0d->name, GetLastError());
+			FL, dl0d->name, (int) GetLastError());
 		fprintf(stderr, FLFMT
 			"(Make sure the device specified corresponds to the\n", FL );
 		fprintf(stderr,
@@ -181,7 +180,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 	{
-		fprintf(stderr, FLFMT "device handle=%d; &ttystate=%p ",
+		fprintf(stderr, FLFMT "device handle=%p; &ttystate=%p ",
 			FL, devhandle, dl0d->ttystate);
 		fprintf(stderr, "speed=%d databits=%d stopbits=%d parity=%d\n",
 			pset->speed, pset->databits, pset->stopbits, pset->parflag);
@@ -254,7 +253,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	if (verif_dcb.BaudRate != pset->speed) {
-		fprintf(stderr, FLFMT "SetCommState failed : speed is currently %d\n", FL, verif_dcb.BaudRate);
+		fprintf(stderr, FLFMT "SetCommState failed : speed is currently %d\n", FL, (int) verif_dcb.BaudRate);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -319,11 +318,11 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 	OVERLAPPED *pOverlap;
 	pOverlap=0;		//note : if overlap is eventually enabled, the CreateFile flags should be adjusted
 	if (! WriteFile(dl0d->fd, buf, count, &byteswritten, pOverlap)) {
-		fprintf(stderr, FLFMT "WriteFile error. %d bytes written, %d requested\n", FL, byteswritten, count);
+		fprintf(stderr, FLFMT "WriteFile error. %d bytes written, %d requested\n", FL, (int) byteswritten, count);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "wrote %d bytes out of %d\n", FL, byteswritten, count );
+		fprintf(stderr, FLFMT "wrote %d bytes out of %d\n", FL, (int) byteswritten, count );
 	}
 	
 	return byteswritten;

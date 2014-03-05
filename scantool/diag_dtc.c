@@ -42,26 +42,27 @@ void diag_dtc_init(void)
  *
  *
  * Passed
- *	data, len	:-	Data representing the DTC
+ *	*data, len	:-	Data representing the DTC
  *	char *vehicle	:-	Vehicle name
  *	char *ecu	:-	ECU Name
- *	int protocol	:-	Protocol (see include file)
+ *	diag_dtc_protocl protocol	:-	Protocol (see include file)
+ * 	char *buf : pointer to buf in which to write the output
+ *	size_t bufsize : size of *buf 
+ * Output : writes description (or error) in *buf. 
+ * returns pointer to *buf, which may be useful to printf or fprintf...
  */
 
 #ifdef WIN32
-char *
-diag_dtc_decode(uint8_t *data, int len, 
-const char *vehicle,
-const char *ecu,
-diag_dtc_protocol protocol,
-char *buf, const size_t bufsize)
+char * diag_dtc_decode(uint8_t *data, int len, 
+	const char *vehicle, const char *ecu,
+	diag_dtc_protocol protocol,
+	char *buf, const size_t bufsize)
 #else
-char *
-diag_dtc_decode(uint8_t *data, int len, 
-const char *vehicle __attribute__((unused)),
-const char *ecu __attribute__((unused)),
-enum diag_dtc_protocol protocol,
-char *buf, const size_t bufsize)
+char * diag_dtc_decode(uint8_t *data, int len, 
+	const char *vehicle __attribute__((unused)),
+	const char *ecu __attribute__((unused)),
+	enum diag_dtc_protocol protocol,
+	char *buf, const size_t bufsize)
 #endif
 {
 	char area;
@@ -100,12 +101,12 @@ char *buf, const size_t bufsize)
 	case dtc_proto_int16:
 	case dtc_proto_int32:
 	case dtc_proto_text:
-		snprintf(buf, bufsize, "Unimplimented Protocol %d\n", protocol);
+		snprintf(buf, bufsize, "Unimplemented Protocol %d\n", protocol);
 		break;
 
 	default:
 		snprintf(buf, bufsize, "Unknown Protocol %d\n", protocol);
 		break;
 	}
-	return(buf);
+	return buf;
 }

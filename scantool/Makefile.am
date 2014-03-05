@@ -3,6 +3,7 @@
 #.h files from "gcc -MM *.c"
 #this is probably why the orig. makefile had a ".depend" target...
 
+
 AM_CPPFLAGS = -I../include
 bin_PROGRAMS=scantool diag_test
 scantool_SOURCES=scantool.c scantool_cli.c scantool_debug.c scantool_set.c \

@@ -2805,6 +2805,10 @@ am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'
 ac_config_headers="$ac_config_headers config.h"
 
 
+
+$as_echo "#define SCANTOOL_PROGNAME \"scantool\"" >>confdefs.h
+
+
 # Checks for programs.
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -4949,7 +4953,8 @@ fi
 
 
 
-for ac_func in alarm gettimeofday memset select strcasecmp strerror strrchr strtol
+#for some reason check_funcs doesn't work with timersub...
+for ac_func in alarm gettimeofday memset select strcasecmp strerror strtol
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
@@ -4960,6 +4965,11 @@ _ACEOF
 
 fi
 done
+
+#so we'll force it's presence:
+
+$as_echo "#define HAVE_TIMERSUB /**/" >>confdefs.h
+
 
 
 # Check whether --enable-scangui was given.

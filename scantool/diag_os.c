@@ -120,7 +120,7 @@ int
 diag_os_init(void)
 {
 #ifdef WIN32
-	struct sigaction_t stNew;
+//	struct sigaction_t stNew;
 	long tmo=20;	//20ms seems reasonable on WIN32. XXX change this for a #define
 #else
 	struct sigaction stNew;
@@ -139,7 +139,7 @@ diag_os_init(void)
 	if (! CreateTimerQueueTimer(&hDiagTimer, NULL, 
 			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo, 
 			WT_EXECUTEDEFAULT)) {
-		fprintf(stderr, FLFMT "CTQT error.\n");
+		fprintf(stderr, FLFMT "CTQT error.\n", FL);
 		return -1;
 	}
 	
@@ -194,14 +194,14 @@ int diag_os_close() {
 		return 0;
 	}
 	DWORD err=GetLastError();
-	fprintf(stderr, FLFMT "Could not DTQT err=%d!\n", FL, err);
+	fprintf(stderr, FLFMT "Could not DTQT err=%d!\n", FL, (int) err);
 	if (err==ERROR_IO_PENDING) {
 		fprintf(stderr, FLFMT "But that's an ERROR_IO_PENDING so no worries.\n", FL);
 		return 0;
 	}
 	//sinon ici on est dans le troub;
 	fprintf(stderr, FLFMT "Could not DTQT. Retrying.\n", FL);
-	sleep(500);	//should be more than enough for the short timer period we chose
+	Sleep(500);	//should be more than enough for the short timer period we chose
 	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
 		fprintf(stderr, FLFMT "OK !\n", FL);		//succes
 		return 0;
@@ -237,7 +237,7 @@ diag_os_millisleep(int ms)
 
 	int i, fd, retval;
 	unsigned long tmp,data;
-	struct rtc_time rtc_tm;
+	//struct rtc_time rtc_tm;	//not used ?
 
 	/* adjust time for 2048 rate */
 
@@ -508,21 +508,17 @@ diag_os_sched(void)
 int
 diag_os_sched(void)
 {
-#ifdef WIN32
 
     //
     // Must start a callback timer. Not sure about the frequency yet.
 	// XXX and to do what ?
     //
 
-#else //!WIN32
-
 #warning No special scheduling support in diag_os.c !
 
 	fprintf(stderr,
 		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
 	return -1;
-#endif	//WIN32
 	
 }
 #endif	//(POSIX_PRIO_SCHED)
@@ -552,11 +548,13 @@ int gettimeofday(struct timeval *tv, struct timezone *tz) {
 	return 0;
 }
 #else	//not WIN32 !
-	#error Your system does not provide gettimeofday() !
+	//I don't have a non-win implementation of gettimeofday.
+	#error No implementation of gettimeofday() for your system!
 #endif 	//WIN32
 #endif	//HAVE_GETTIMEOFDAY
 
-#ifdef WIN32	//means we also don't have "timersub"
+#ifndef HAVE_TIMERSUB	//like on win32
+#ifdef WIN32
 void timersub(struct timeval *a, struct timeval *b, struct timeval *res) {
 	//compute res=a-b
 	LONGLONG atime=1000000 * (a->tv_sec) + a->tv_usec;	//combine high+low
@@ -566,4 +564,7 @@ void timersub(struct timeval *a, struct timeval *b, struct timeval *res) {
 	res->tv_usec= restime % 1000000;
 	return;
 }
-#endif //WIN32 for timersub
+#else //WIN32
+	#error No implementation of timersub() for your system !
+#endif	//WIN32
+#endif //HAVE_TIMERSUB

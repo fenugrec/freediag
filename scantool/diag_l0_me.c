@@ -167,12 +167,12 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 
 	diag_l0_muleng_init();
 
-	if (rv=diag_calloc(&dev, 1))
+	if ((rv=diag_calloc(&dev, 1)))
 		return (struct diag_l0_device *)diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 
-	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_muleng, (void *)dev)) {
+	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_muleng, (void *)dev))) {
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 
@@ -183,13 +183,13 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
 
-	if (rv=diag_tty_setup(dl0d, &set)) {
+	if ((rv=diag_tty_setup(dl0d, &set))) {
 		diag_tty_close(&dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 
 	/* And set DTR high and RTS low to power the device */
-	if (rv=diag_tty_control(dl0d, 1, 0)) {
+	if ((rv=diag_tty_control(dl0d, 1, 0))) {
 		diag_tty_close(&dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
@@ -304,7 +304,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 	 * Calculate the checksum, and send the request
 	 */
 	(void)diag_l0_muleng_txcksum(txbuf);
-	if (rv = diag_l0_muleng_write(dl0d, txbuf, 15))
+	if ((rv = diag_l0_muleng_write(dl0d, txbuf, 15)))
 		return diag_iseterr(rv);
 
 	/*
@@ -445,10 +445,10 @@ diag_l0_muleng_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset __attribute__((unused)))
 #endif
 {
-	struct diag_l0_muleng_device *dev;
+	//struct diag_l0_muleng_device *dev;
 	struct diag_serial_settings set;
 
-	dev = (struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);
+	//dev = (struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);	//why do we do this ?
 
 	set.speed = 19200;
 	set.databits = diag_databits_8;
@@ -467,9 +467,9 @@ diag_l0_muleng_getmsg(struct diag_l0_device *dl0d, uint8_t *dp)
 {
 	size_t offset = 0;
 	ssize_t xferd;
-	struct diag_l0_muleng_device *dev;
+	//struct diag_l0_muleng_device *dev;
 
-	dev = (struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);
+	//dev = (struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);	//why do we do this ?
 
 	while (offset != 14)
 	{

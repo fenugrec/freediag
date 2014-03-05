@@ -10,7 +10,6 @@ extern "C" {
 
 #include <basetsd.h>
 #include <winbase.h> //maybe just <windows.h> ?
-typedef SSIZE_T ssize_t;
 
 /*
  * L0 device structure

@@ -49,19 +49,19 @@ int diag_init(void)	//returns 0 if normal exit
 
 	/* Add the supported protocols and links */
 
-	if (rv=diag_l0_config())
+	if ((rv=diag_l0_config()))
 		return diag_iseterr(rv);
 	
-	if (rv=diag_l2_config())
+	if ((rv=diag_l2_config()))
 		return diag_iseterr(rv);
 	
 	//XXX This is interesting: the following functions only ever return 0...
 	
-	if (rv = diag_l1_init())
+	if ((rv = diag_l1_init()))
 		return diag_iseterr(rv);
-	if (rv = diag_l2_init())
+	if ((rv = diag_l2_init()))
 		return diag_iseterr(rv);
-	if (rv = diag_os_init())
+	if ((rv = diag_os_init()))
 		return diag_iseterr(rv);
 
 	diag_dtc_init();

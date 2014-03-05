@@ -510,7 +510,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 	/* Set the speed as shown */
 	
-	if (rv=diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set))
+	if ((rv=diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set)))
 	{
 		free(dp);
 		dp=0;

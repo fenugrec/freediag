@@ -32,7 +32,7 @@ enum diag_stopbits {
 };
 
 struct diag_serial_settings {
-	int speed;	//in bps of course
+	unsigned int speed;	//in bps of course
 	enum diag_databits databits;
 	enum diag_stopbits stopbits;
 	enum diag_parity parflag;
@@ -47,6 +47,7 @@ struct diag_serial_settings {
 #endif //WIN32
 
 
+// this returns dl0d->dl0_handle
 void *diag_l0_dl0_handle(struct diag_l0_device *dl0d);
 
 struct diag_l2_link *

@@ -58,6 +58,7 @@ static const diag_l3_proto_t * const diag_l3_protocols[] =
 
 static struct diag_l3_conn	*diag_l3_list;
 
+
 /*
  * Protocol start (connect a protocol on top of a L2 connection
  */

@@ -41,9 +41,9 @@
 #else
 	#include <sys/types.h>
 	#include <sys/time.h>	/* For timeval */
-	#include <stdint.h>		/* For uint8_t, etc */
 #endif
 
+#include <stdint.h>		/* For uint8_t, etc. This is a C99 header? */
 #include <stdio.h>		/* For FILE */
 
 #if defined(__cplusplus)
@@ -55,30 +55,6 @@ extern "C" {
 #define UNUSED(X)		//magic !
 
 #ifdef WIN32
-	typedef unsigned char uint8_t;
-	typedef unsigned short uint16_t;
-	typedef unsigned int uint32_t;
-
-	//struct timeval { //already in sys/time.h from windows.h ?
-//		long tv_sec;	/* seconds */
-//		long tv_usec;	/* and microseconds */
-//	};
-
-	typedef unsigned int u_int;
-	//typedef _W64 unsigned int UINT_PTR, *PUINT_PTR; //already in "basetsd.h" ?
-	//and _W64 is probably deprecated. See MSDN library.
-	typedef UINT_PTR SOCKET;
-
-	#ifndef FD_SETSIZE
-	#define FD_SETSIZE 64
-	#endif /* FD_SETSIZE */
-
-//also already in windows.h -> winsock2.h
-	//~ typedef struct fd_set {
-		//~ u_int fd_count;	/* how many are SET? */
-		//~ SOCKET fd_array[FD_SETSIZE];	/* an array of SOCKETs */
-	//~ } fd_set;
-
 	#define SIGALRM 14
 
 	typedef int sigset_t;
@@ -92,15 +68,22 @@ extern "C" {
 
 #endif	//WIN32
 
-#ifndef HAVE_GETTIMEOFDAY	//like on win32
+#ifdef HAVE_GETTIMEOFDAY
+	#include <sys/time.h>	//probably the right place where gettimeofday() would be defined ?
+#else	//no HAVE_GETTIMEOFDAY	//like on win32?
 	struct timezone {
 	  int  tz_minuteswest;
 	  int  tz_dsttime;
 	};
 
-	//this is a bare implementation with no timezone support. Returns 0.
+	//this is a bare implementation with no timezone support. Returns 0. see diag_os.c
 	int gettimeofday(struct timeval *tv, struct timezone *tz);
 #endif //HAVE_GETTIMEOFDAY
+	
+#ifndef HAVE_TIMERSUB
+	//bare implementation, in diag_os.c
+	void timersub(struct timeval *a, struct timeval *b, struct timeval *res);
+#endif	//HAVE_TIMERSUB
 
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
 #define DB_FILE "./freediag_carsim_all.db"	//default simfile for CARSIM interface

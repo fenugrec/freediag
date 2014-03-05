@@ -14,16 +14,16 @@
 #cmakedefine HAVE_MALLOC
 #cmakedefine HAVE_STRCASECMP
 #cmakedefine HAVE_STRERROR
-#cmakedefine HAVE_STRRCHR
 #cmakedefine HAVE_STRTOL
 #cmakedefine HAVE_ALARM
 #cmakedefine HAVE_SELECT
+#cmakedefine HAVE_TIMERSUB
 
 // TODO : change "polarity" of DONT_USE_RCFILE here, in cmakelists.txt, and in scantool_cli.c 
 #cmakedefine DONT_USE_RCFILE
 #cmakedefine OLD_DEVNAME
 
-
 #define PACKAGE_VERSION "@PKGVERSION@"
+#define SCANTOOL_PROGNAME "@SCANTOOL_PROGNAME@"
 
 #endif //ifndef _cconf_h

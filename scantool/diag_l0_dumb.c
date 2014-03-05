@@ -105,7 +105,7 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_NOMEM);
 
 	dev->protocol = iProtocol;
-	if (rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dumb, (void *)dev)) {
+	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dumb, (void *)dev))) {
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 
@@ -537,8 +537,8 @@ void *data, size_t len, int timeout)
 
 	errno = EINTR;
 
-	struct diag_l0_dumb_device *dev;
-	dev = (struct diag_l0_dumb_device *)diag_l0_dl0_handle(dl0d);
+	//struct diag_l0_dumb_device *dev;
+	//dev = (struct diag_l0_dumb_device *)diag_l0_dl0_handle(dl0d);
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,

@@ -42,7 +42,7 @@ extern "C" {
 
 extern int diag_cmd_debug;
 
-extern char *progname;
+extern const char progname[];
 
 int htoi(char *buf);
 int cmd_up(int argc, char **argv);
@@ -229,7 +229,7 @@ struct pid
 #define DATA_ENGLISH(p, v)	(v * p->scale2 + p->offset2)
 
 
-const struct pid *get_pid ( int i ) ;
+const struct pid *get_pid ( unsigned int i ) ;
 
 
 #if defined(__cplusplus)

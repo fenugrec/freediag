@@ -6,6 +6,8 @@ AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 
+AC_DEFINE(SCANTOOL_PROGNAME,"scantool",[this string will be the prompt for the command-line tool])
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
@@ -31,7 +33,11 @@ AC_TYPE_UINT8_T
 # Checks for functions.
 AC_FUNC_MALLOC
 
-AC_CHECK_FUNCS([alarm gettimeofday memset select strcasecmp strerror strrchr strtol])
+#for some reason check_funcs doesn't work with timersub...
+AC_CHECK_FUNCS([alarm gettimeofday memset select strcasecmp strerror strtol])
+#so we'll force it's presence:
+AC_DEFINE(HAVE_TIMERSUB,,"Do we have timersub()")
+AC_WARNING([Warning : forcing HAVE_TIMERSUB !])
 
 AC_ARG_ENABLE(scangui,
 	[AS_HELP_STRING([--enable-scangui],[Enable scangui (default=no)])],

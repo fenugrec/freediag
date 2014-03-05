@@ -108,8 +108,6 @@ static void aif_monitor ( void *data )
 					if ( DATA_VALID(p, ep->mode1_data) ||
 					DATA_VALID(p, ep->mode2_data) )
 					{
-						UNUSED(const char *name = p->desc ;)
-
 						if (DATA_VALID(p, ep->mode1_data))
 							p->cust_sprintf(buf, set_display, p, ep->mode1_data, 2);
 
@@ -149,7 +147,6 @@ static void aif_monitor ( void *data )
 
 				for ( i = 0, j = 1 ; i < 3 ; i++, j += 2 )
 				{
-					char *result ;
 					char buf[256];
 					uint8_t db[2];
 
@@ -159,12 +156,15 @@ static void aif_monitor ( void *data )
 					db[0] = msg->data[j];
 					db[1] = msg->data[j+1];
 
-					result = diag_dtc_decode ( db, 2, set_vehicle, set_ecu,
-					dtc_proto_j2012, buf, sizeof(buf)) ;
+					diag_dtc_decode ( db, 2, set_vehicle, set_ecu,
+						dtc_proto_j2012, buf, sizeof(buf)) ;
+					//what do we do with the decoded DTC ?
+					//maybe just print it for now...
+					fprintf(stderr, FLFMT "decoded DTC : %s\n", FL, buf);
 				}
 			}
-	}
-	}
+	}	//if DIAG_ERR_TIMEOUT
+	}	//while 1
 
 	OkToApp () ;
 }
@@ -383,7 +383,7 @@ static void do_aif_command ()
 }
 
 
-void enter_aif ( char *name )
+void enter_aif ( const char *name )
 {
 	fprintf ( stderr, "%s AIF: version %s\n", name, PACKAGE_VERSION ) ;
 	set_init () ;

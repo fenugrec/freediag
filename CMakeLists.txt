@@ -15,6 +15,8 @@ message("Using install prefix : ${CMAKE_INSTALL_PREFIX}")
 set (PKGVERSION "1.01")
 set (PKGVERSIONMAJOR "1")
 set (PKGVERSIONMINOR "01")
+set (SCANTOOL_PROGNAME "scantool")
+#that sets the command-line tool prompt.
 
 # define CMAKE_ENABLED // used to toggle between autotools' config.h(.in) and our cconf.h(.in)
 add_definitions(-DCMAKE_ENABLED)
@@ -28,7 +30,8 @@ message(STATUS "Generating make/project files for: ${CMAKE_GENERATOR}")
 
 ###### Type checks
 #check_type_size ()
-# XXX TODO: add these intelligently. Not yet sure of the best way
+# XXX do we need to check sizes ?
+# we need stdint.h anyway so we'll have uint8_t anyway (the most important)...
 
 ###### Global function & library checks
 find_library (HAVE_LIBREADLINE libreadline)
@@ -39,8 +42,11 @@ check_function_exists (gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists (malloc HAVE_MALLOC)
 check_function_exists (strcasecmp HAVE_STRCASECMP)
 check_function_exists (strerror HAVE_STRERROR)
-check_function_exists (strrchr HAVE_STRRCHR)
 check_function_exists (strtol HAVE_STRTOL)
+set (CMAKE_REQUIRED_INCLUDES "sys/time.h")
+#we could use CMakePushCheckState to push / pop CMAKE_REQUIRED_INCLUDES
+#but I think it has no influence on the rest of the build...
+check_function_exists (timersub HAVE_TIMERSUB)
 
 ###### Platform-specific function checks
 

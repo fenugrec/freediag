@@ -78,7 +78,7 @@ main(int argc,  char **argv)
 	if (argc != 2) {
 		//must be called with one parameter
 		printf("Error : correct usage is : %s [dev]\nwhere [dev] looks like /dev/ttyS0 etc.\n",argv[0]);
-		return;
+		return 0;
 	}
 	set_subinterface=argv[1];	//point to the device name string
 #ifdef WIN32

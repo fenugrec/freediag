@@ -231,7 +231,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 				uint8_t c;
 
 				c = *dp - 1; /* set it with wrong val */
-				if (diag_l1_saferead(dl0d, &c, 1, 1000) < 0)
+				if (diag_l1_saferead(dl0d, (char *)(&c), 1, 1000) < 0)
 					rv=DIAG_ERR_GENERAL;
 					break;
 

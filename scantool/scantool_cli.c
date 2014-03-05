@@ -42,7 +42,7 @@
 CVSID("$Id$");
 
 #define PROMPTBUFSIZE 80		//was 1024 !!
-char *progname;
+const char progname[]=SCANTOOL_PROGNAME;
 
 FILE		*global_logfp;		/* Monitor log output file pointer */
 #define LOG_FORMAT	"FREEDIAG log format 0.2"
@@ -398,7 +398,7 @@ static int
 cmd_play(int argc, char **argv)
 {
 	FILE *fp;
-	int linenr;
+	//int linenr;
 
 	/* Turn on logging for monitor mode */
 	if (argc < 2)
@@ -411,7 +411,7 @@ cmd_play(int argc, char **argv)
 		return CMD_FAILED;
 	}
 
-	linenr = 0;
+	//linenr = 0;	//not used yet ?
 
 	/* Read data file in */
 	/* XXX logging */
@@ -637,10 +637,10 @@ static int
 cmd_monitor(int argc, char **argv)
 {
 	int rv;
-	struct diag_l3_conn *d_conn;
+	//struct diag_l3_conn *d_conn;
 	int english = 0;
 
-	d_conn = global_l3_conn;
+	//d_conn = global_l3_conn;	//not used ?
 
 	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
@@ -945,10 +945,10 @@ cmd_source(int argc, char **argv)
 		return CMD_OK;
 }
 
+//rc_file : returns 0 if ok
 static int
 rc_file(void)
 {
-	char *homeinit;
 	//this loads either a $home/.<progname>.rc or ./<progname>.ini (in order of preference)
 	//to load general settings. For now, only set_interface and set_subinterface can be specified
 
@@ -962,77 +962,80 @@ rc_file(void)
 	 */
 
 #ifndef DONT_USE_RCFILE
+	char *rchomeinit;
 	char *homedir;
 	homedir = getenv("HOME");
 
 	if (homedir) {
 		/* we add "/." and "rc" ... 4 characters */
-		if (diag_malloc(&homeinit, strlen(homedir) + strlen(progname) + 5)) {
+		if (diag_malloc(&rchomeinit, strlen(homedir) + strlen(progname) + 5)) {
 			return diag_iseterr(DIAG_ERR_RCFILE);
 		}
-		strcpy(homeinit, homedir);
-		strcat(homeinit, "/.");
-		strcat(homeinit, progname);
-		strcat(homeinit, "rc");
-		if (command_file(homeinit)) {
+		strcpy(rchomeinit, homedir);
+		strcat(rchomeinit, "/.");
+		strcat(rchomeinit, progname);
+		strcat(rchomeinit, "rc");
+		if (command_file(rchomeinit)) {
 			//should return 0 with a success
-/* 			if (newrcfile=fopen(homeinit,"a"))	//create the file if it didn't exist
+/* 			if (newrcfile=fopen(rchomeinit,"a"))	//create the file if it didn't exist
  * 			{
  * 				fprintf(newrcfile, "\n#empty rcfile auto created by %s\n",progname);
  * 				fclose(newrcfile);
- * 				printf("%s not found, empty file created\n",homeinit);
+ * 				printf("%s not found, empty file created\n",rchomeinit);
  * 			}
  * 			else	//could not create empty rcfile
  * 			{
- * 				fprintf(stderr, FLFMT "%s not found, could not create empty file", FL, homeinit);
- * 				free(homeinit);
+ * 				fprintf(stderr, FLFMT "%s not found, could not create empty file", FL, rchomeinit);
+ * 				free(rchomeinit);
  * 				return diag_iseterr(DIAG_ERR_GENERAL);
  * 			}
  */
 		} else {
 			//command_file was at least partly successful (rc file exists)
-			printf("%s: Settings loaded from %s\n",progname,homeinit);
-			free(homeinit);
+			printf("%s: Settings loaded from %s\n",progname,rchomeinit);
+			free(rchomeinit);
 			return 0;
 		}
 		//fall here if command_file failed
-		fprintf(stderr, FLFMT "Could not load rc file %s\n", FL, homeinit);
-		free(homeinit);
-	}
+		fprintf(stderr, FLFMT "Could not load rc file %s\n", FL, rchomeinit);
+		free(rchomeinit);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}	//if (homedir)
 #endif
 
 
 #ifdef USE_INIFILE
-	if (diag_malloc(&homeinit, strlen(progname) + strlen(".ini") + 1)) {
+	char * inihome
+	if (diag_malloc(&inihomeinit, strlen(progname) + strlen(".ini") + 1)) {
 		return diag_iseterr(DIAG_ERR_RCFILE);
 	}
 
-	strcpy(homeinit, progname);
-	strcat(homeinit, ".ini");
-	if (command_file(homeinit)) {
-		fprintf(stderr, FLFMT "%s not found, no configuration loaded\n", FL, homeinit);
-		free(homeinit);
+	strcpy(inihomeinit, progname);
+	strcat(inihomeinit, ".ini");
+	if (command_file(inihomeinit)) {
+		fprintf(stderr, FLFMT "%s not found, no configuration loaded\n", FL, inihomeinit);
+		free(inihomeinit);
 		return diag_iseterr(DIAG_ERR_RCFILE);
 	}
-	printf("%s: Settings loaded from %s\n", progname, homeinit);
-	free(homeinit);
+	printf("%s: Settings loaded from %s\n", progname, inihomeinit);
+	free(inihomeinit);
 #endif
 	return 0;
 
 }
 
 void
-enter_cli(char *name)
+enter_cli(const char *name)
 {
 	global_logfp = NULL;
-	progname = name;
+	//progname = name;	//we use the supplied *name instead.
 
-	printf("%s: version %s\n", progname, PACKAGE_VERSION);
-	printf("%s: Type HELP for a list of commands\n", progname);
-	printf("%s: Type SCAN to start ODBII Scan\n", progname);
-	printf("%s: Then use MONITOR to monitor real-time data\n", progname);
-	printf("%s: **** IMPORTANT : this is alpha software !!! Use at your own risk.\n", progname);
-	printf("%s: **** Remember to \"debug all -1\" to display debugging info !\n", progname);
+	printf("%s: version %s\n", name, PACKAGE_VERSION);
+	printf("%s: Type HELP for a list of commands\n", name);
+	printf("%s: Type SCAN to start ODBII Scan\n", name);
+	printf("%s: Then use MONITOR to monitor real-time data\n", name);
+	printf("%s: **** IMPORTANT : this is alpha software !!! Use at your own risk.\n", name);
+	printf("%s: **** Remember to \"debug all -1\" to display debugging info !\n", name);
 
 	readline_init();
 	set_init();
@@ -1040,7 +1043,7 @@ enter_cli(char *name)
 	printf("\n");
 	/* And go start CLI */
 	instream = stdin;
-	(void)do_cli(root_cmd_table, progname, 0, NULL);
+	(void)do_cli(root_cmd_table, name, 0, NULL);
 	set_close();
 
 }

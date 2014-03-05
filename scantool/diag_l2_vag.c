@@ -516,14 +516,14 @@ diag_l2_proto_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 /*	int len;*/
 /*	uint8_t buf[MAXRBUF];*/
 /*	int offset;*/
-	struct diag_l2_vag *dp;
+	//struct diag_l2_vag *dp;
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
 			FLFMT "diag_l2_vag_send %p msg %p len %d called\n",
 				FL, d_l2_conn, msg, msg->len);
 
-	dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
+	//dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;	//not used ?
 
 #if xx
 	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
@@ -629,12 +629,12 @@ diag_l2_proto_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 static void
 diag_l2_proto_vag_timeout(struct diag_l2_conn *d_l2_conn)
 {
-	struct diag_l2_vag *dp;
+	//struct diag_l2_vag *dp;
 	struct diag_msg	msg;
 	uint8_t data[256];
 /*	int rv;*/
 
-	dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
+	//dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;	//not used?
 
 	if (diag_l2_debug & DIAG_DEBUG_TIMER)
 	{
