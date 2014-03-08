@@ -47,23 +47,20 @@ void diag_dtc_init(void)
  *	char *ecu	:-	ECU Name
  *	diag_dtc_protocl protocol	:-	Protocol (see include file)
  * 	char *buf : pointer to buf in which to write the output
- *	size_t bufsize : size of *buf 
- * Output : writes description (or error) in *buf. 
+ *	size_t bufsize : size of *buf
+ * Output : writes description (or error) in *buf.
  * returns pointer to *buf, which may be useful to printf or fprintf...
  */
 
+
+char * diag_dtc_decode(uint8_t *data, int len,
+	UNUSED(const char *vehicle), UNUSED(const char *ecu),
 #ifdef WIN32
-char * diag_dtc_decode(uint8_t *data, int len, 
-	const char *vehicle, const char *ecu,
 	diag_dtc_protocol protocol,
-	char *buf, const size_t bufsize)
 #else
-char * diag_dtc_decode(uint8_t *data, int len, 
-	const char *vehicle __attribute__((unused)),
-	const char *ecu __attribute__((unused)),
 	enum diag_dtc_protocol protocol,
-	char *buf, const size_t bufsize)
 #endif
+	char *buf, const size_t bufsize)
 {
 	char area;
 

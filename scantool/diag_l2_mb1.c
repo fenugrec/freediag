@@ -28,10 +28,10 @@
  */
 
 #ifdef WIN32
-#include <process.h>
 #else
 #include <unistd.h>
 #endif
+
 #include <string.h>
 
 #include "diag.h"
@@ -49,21 +49,13 @@ static int
 diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	uint8_t *data, int len);
 
-#ifdef WIN32
+
 static int
 diag_l2_proto_mb1_startcomms( struct diag_l2_conn *d_l2_conn,
-flag_type flags,
+UNUSED(flag_type flags),
 int bitrate,
 target_type target,
-source_type source)
-#else
-static int
-diag_l2_proto_mb1_startcomms( struct diag_l2_conn *d_l2_conn,
-flag_type flags __attribute__((unused)),
-int bitrate,
-target_type target,
-source_type source __attribute__((unused)))
-#endif
+UNUSED(source_type source))
 {
 	struct diag_l1_initbus_args in;
 	uint8_t cbuf[2];
@@ -228,7 +220,7 @@ diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		tout = 100;
 
 		/* Got some data */
-		
+
 		rv = diag_l2_proto_mb1_decode(data, rxoffset, &msglen);
 
 		if (rv >= 0)
@@ -276,7 +268,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "recv conn %p got %d byte message\n", 
+			FLFMT "recv conn %p got %d byte message\n",
 				FL, d_l2_conn, rv);
 	if (rv < 5)
 	{
@@ -388,7 +380,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "msg receive conn %p got %d byte message\n", 
+			FLFMT "msg receive conn %p got %d byte message\n",
 				FL, d_l2_conn, rv);
 	if (rv < 5)
 	{
@@ -431,7 +423,7 @@ diag_l2_proto_mb1_timeout(struct diag_l2_conn *d_l2_conn)
 				FL, d_l2_conn);
 
 	txbuf[0] = 0x50;	/* Idle command */
-	txbuf[1] = 0x01;	
+	txbuf[1] = 0x01;
 	msg.data = txbuf;
 	msg.len = 2;
 

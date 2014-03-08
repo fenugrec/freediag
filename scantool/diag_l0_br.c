@@ -32,12 +32,6 @@
  *
  */
 
-#ifdef WIN32
-#include <process.h>
-#else
-#include <unistd.h>
-#endif
-
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -205,7 +199,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	set.databits = diag_databits_8;
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
-	
+
 	if (diag_tty_setup(dl0d, &set)) {
 		fprintf(stderr, FLFMT "open: TTY setup failed\n", FL);
 		diag_l0_br_close(&dl0d);
@@ -337,7 +331,7 @@ diag_l0_br_initialise(struct diag_l0_device *dl0d, int type, int addr)
 	dev->dev_features = 0;
 	switch (rv)
 	{
-	case 1:	
+	case 1:
 		dev->dev_features |= BR_FEATURE_SETADDR; /* All allow this */
 		break;
 	case 2:
@@ -473,7 +467,8 @@ static int
 diag_l0_br_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset)
 {
-	fprintf(stderr, FLFMT "Warning: attempted to over-ride serial settings. 19200;8N1 maintained\n", FL);
+	fprintf(stderr, FLFMT "Warning: attempted to over-ride serial settings (%d). 19200;8N1 maintained\n", FL, pset->speed);
+	return 0;
 	struct diag_serial_settings sset;
 	sset.speed=9600;
 	sset.databits = diag_databits_8;
@@ -619,7 +614,7 @@ diag_l0_br_writemsg(struct diag_l0_device *dl0d, int type,
 		fprintf(stderr,"0x%x ", (int)outb);	/* Length byte */
 		diag_data_dump(stderr, dp, txlen);
 		fprintf(stderr, "\n");
-	}	
+	}
 	rv = diag_l0_br_write(dl0d, dp, txlen);
 	if (rv < 0)
 		return diag_iseterr(rv);
@@ -635,7 +630,7 @@ diag_l0_br_writemsg(struct diag_l0_device *dl0d, int type,
 			fprintf(stderr,
 				FLFMT "device %p writing data: 0x%x\n",
 				FL, dev, dev->dev_framenr & 0xff);
-		}	
+		}
 		rv = diag_l0_br_write(dl0d, &dev->dev_framenr, 1);
 		if (rv < 0)
 			return diag_iseterr(rv);
@@ -652,17 +647,10 @@ diag_l0_br_writemsg(struct diag_l0_device *dl0d, int type,
  * This routine will do a fastinit if needed, but all 5 baud inits
  * will have been done by the slowinit() code
  */
-#ifdef WIN32
 static int
 diag_l0_br_send(struct diag_l0_device *dl0d,
-const char *subinterface,
+UNUSED(const char *subinterface),
 const void *data, size_t len)
-#else
-static int
-diag_l0_br_send(struct diag_l0_device *dl0d,
-const char *subinterface __attribute__((unused)),
-const void *data, size_t len)
-#endif
 {
 	int rv = 0;
 
@@ -736,17 +724,10 @@ const void *data, size_t len)
  * <control_byte><data ..>
  * If control byte is < 16, it's a length byte, else it's a error descriptor
  */
-#ifdef WIN32
 static int
 diag_l0_br_recv(struct diag_l0_device *dl0d,
-const char *subinterface,
+UNUSED(const char *subinterface),
 void *data, size_t len, int timeout)
-#else
-static int
-diag_l0_br_recv(struct diag_l0_device *dl0d,
-const char *subinterface __attribute__((unused)),
-void *data, size_t len, int timeout)
-#endif
 {
 	int xferd, rv, retrycnt;
 	uint8_t *pdata = (uint8_t *)data;

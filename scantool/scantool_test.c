@@ -1,5 +1,5 @@
 /*
- *	freediag - Vehicle Diagnostic Utility 
+ *	freediag - Vehicle Diagnostic Utility
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
@@ -108,22 +108,16 @@ get_vit_info(struct diag_l3_conn *d_conn, int rqst, const char *descr)
 
 
 /* Request Vehicle Info */
-#ifdef WIN32
+
 static int
-cmd_test_rvi(int argc,
-char **argv)
-#else
-static int
-cmd_test_rvi(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
 {
 	struct diag_l3_conn *d_conn;
 	int rv;
 	struct diag_msg *msg;
 	int j, k;
 	uint8_t *data;
-	
+
 
 
 	uint8_t vit_bits[4];
@@ -176,15 +170,9 @@ char **argv __attribute__((unused)))
 
 
 
-#ifdef WIN32
+
 static int
-cmd_test_cms(int argc,
-char **argv)
-#else
-static int
-cmd_test_cms(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_test_cms(UNUSED(int argc), UNUSED(char **argv))
 {
 	if (global_state < STATE_SCANDONE)
 	{
@@ -195,15 +183,9 @@ char **argv __attribute__((unused)))
 	return(CMD_OK);
 }
 
-#ifdef WIN32
+
 static int
-cmd_test_ncms(int argc,
-char **argv)
-#else
-static int
-cmd_test_ncms(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_test_ncms(UNUSED(int argc), UNUSED(char **argv))
 {
 	if (global_state < STATE_SCANDONE)
 	{
@@ -214,15 +196,9 @@ char **argv __attribute__((unused)))
 	return(CMD_OK);
 }
 
-#ifdef WIN32
+
 static int
-cmd_test_readiness(int argc,
-char **argv)
-#else
-static int
-cmd_test_readiness(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 {
 	int rv;
 	struct diag_l3_conn *d_conn;
@@ -280,7 +256,7 @@ char **argv __attribute__((unused)))
 				{
 					supported = (ep->mode1_data[1].data[3]>>i)&1;
 					value = (ep->mode1_data[1].data[3]>>(i+4))&1;
-					
+
 				}
 				else
 				{

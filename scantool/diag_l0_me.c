@@ -29,11 +29,6 @@
  *
  */
 
-#ifdef WIN32
-#include <process.h>
-#else
-#include <unistd.h>
-#endif
 
 #include <errno.h>
 #include <stdlib.h>
@@ -177,7 +172,7 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 	}
 
 	/* And set to 19200 baud , 8N1 */
-	
+
 	set.speed = 19200;
 	set.databits = diag_databits_8;
 	set.stopbits = diag_stopbits_1;
@@ -435,20 +430,15 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
  * If called by the user then we ignore what he says and use
  * 19200, 8, 1, none
  */
-#ifdef WIN32
-static int
-diag_l0_muleng_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pset)
-#else
-static int
-diag_l0_muleng_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pset __attribute__((unused)))
-#endif
-{
-	//struct diag_l0_muleng_device *dev;
-	struct diag_serial_settings set;
 
-	//dev = (struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);	//why do we do this ?
+static int
+diag_l0_muleng_setspeed(struct diag_l0_device *dl0d,
+		const struct diag_serial_settings *pset)
+{
+	fprintf(stderr, FLFMT "Warning: attempted to override com speed (%d)! Report this !\n", FL,pset->speed);
+	return 0;
+
+	struct diag_serial_settings set;
 
 	set.speed = 19200;
 	set.databits = diag_databits_8;
@@ -490,17 +480,10 @@ diag_l0_muleng_getmsg(struct diag_l0_device *dl0d, uint8_t *dp)
  * This routine will do a fastinit if needed, but all 5 baud inits
  * will have been done by the slowinit() code
  */
-#ifdef WIN32
 static int
 diag_l0_muleng_send(struct diag_l0_device *dl0d,
-const char *subinterface,
+UNUSED(const char *subinterface),
 const void *data, size_t len)
-#else
-static int
-diag_l0_muleng_send(struct diag_l0_device *dl0d,
-const char *subinterface __attribute__((unused)),
-const void *data, size_t len)
-#endif
 {
 	int cmd, rv;
 
@@ -526,7 +509,7 @@ const void *data, size_t len)
 		rv = diag_l0_muleng_write(dl0d, data, len);
 		return rv;
 	}
-	
+
 	/*
 	 * Figure out cmd to send depending on the hardware we have been
 	 * told to use and whether we need to do fastinit or not
@@ -589,17 +572,11 @@ const void *data, size_t len)
  * always be called with enough "len" to receive the max 11 byte message
  * (there are 2 header and 1 checksum byte)
  */
-#ifdef WIN32
+
 static int
 diag_l0_muleng_recv(struct diag_l0_device *dl0d,
-const char *subinterface,
+UNUSED(const char *subinterface),
 void *data, size_t len, int timeout)
-#else
-static int
-diag_l0_muleng_recv(struct diag_l0_device *dl0d,
-const char *subinterface __attribute__((unused)),
-void *data, size_t len, int timeout)
-#endif
 {
 	ssize_t xferd;
 	int i;
@@ -635,7 +612,7 @@ void *data, size_t len, int timeout)
 			return 1;
 		}
 		return 0;	/* Strange, user asked for 0 bytes */
-		
+
 
 	case MULENG_STATE_KWP_SENDKB2:
 		if (len >= 1)

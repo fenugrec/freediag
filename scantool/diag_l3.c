@@ -260,21 +260,14 @@ void diag_l3_timer(void)
 	}
 }
 
-#ifdef WIN32
-int diag_l3_base_start(struct diag_l3_conn *d_l3_conn)
-#else
-int diag_l3_base_start(struct diag_l3_conn *d_l3_conn __attribute__((unused)))
-#endif
+
+int diag_l3_base_start(UNUSED(struct diag_l3_conn *d_l3_conn))
 {
 	return(0);
 }
 
-#ifdef WIN32
-int diag_l3_base_stop(struct diag_l3_conn *d_l3_conn)
-#else
-int
-diag_l3_base_stop(struct diag_l3_conn *d_l3_conn __attribute__((unused)))
-#endif
+
+int diag_l3_base_stop(UNUSED(struct diag_l3_conn *d_l3_conn))
 {
 	return(0);
 }
@@ -282,15 +275,9 @@ diag_l3_base_stop(struct diag_l3_conn *d_l3_conn __attribute__((unused)))
 /*
  * Send a Message doing all the handshaking needed
  */
-#ifdef WIN32
-int diag_l3_base_send(
-struct diag_l3_conn *d_l3_conn,
-struct diag_msg *msg)
-#else
-int diag_l3_base_send(
-struct diag_l3_conn *d_l3_conn __attribute__((unused)),
-struct diag_msg *msg __attribute__((unused)))
-#endif
+
+int diag_l3_base_send(UNUSED(struct diag_l3_conn *d_l3_conn),
+	UNUSED(struct diag_msg *msg))
 {
 	return (0);
 }
@@ -302,21 +289,12 @@ struct diag_msg *msg __attribute__((unused)))
  *
  * Successful packet receive will call the callback routine with the message
  */
-#ifdef WIN32
+
 int
-diag_l3_base_recv(
-struct diag_l3_conn *d_l3_conn,
-int timeout,
-void (* rcv_call_back)(void *handle ,struct diag_msg *),
-void *handle)
-#else
-int
-diag_l3_base_recv(
-struct diag_l3_conn *d_l3_conn __attribute__((unused)),
-int timeout __attribute__((unused)),
-void (* rcv_call_back)(void *handle ,struct diag_msg *) __attribute__((unused)),
-void *handle __attribute__((unused)))
-#endif
+diag_l3_base_recv(UNUSED(struct diag_l3_conn *d_l3_conn),
+	UNUSED(int timeout),
+	UNUSED(void (* rcv_call_back)(void *handle ,struct diag_msg *)),
+	UNUSED(void *handle))
 {
 	return (0);
 }

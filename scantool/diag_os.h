@@ -30,13 +30,8 @@ extern "C" {
 #endif
 
 /* CVSID macro that will avoid warnings. */
-#ifdef WIN32
-#define CVSID(ID) \
-	static const char* const cvsid = (ID)
-#else
-#define CVSID(ID) \
-	static const char* const cvsid __attribute__ ((unused)) = (ID)
-#endif
+#define CVSID(ID) UNUSED(static const char* const cvsid) = (ID)
+
 
 /* Common prototypes but note that the source
 // is different and defined in OS specific

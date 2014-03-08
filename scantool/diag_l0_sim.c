@@ -36,11 +36,11 @@
  * for your own tests. The format is pretty raw (message bytes in hexadecimal),
  * with allowance for comments (lines started with "#") and a very small and
  * rigid syntax (check the comments in the file).
- * 
+ *
  */
-#include <unistd.h> // POSIX stuff
+#include <unistd.h> // POSIX stuff, XXX do we need this in here?
 
-#include <errno.h> 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h> // str**()
 #include <math.h> // sin()
@@ -103,11 +103,12 @@ int sim_skip_crc = 0;
 
 static int
 diag_l0_sim_send(struct diag_l0_device *dl0d,
-		 const char *subinterface __attribute__((unused)),
+		UNUSED(const char *subinterface),
 		 const void *data, size_t len);
+
 static int
 diag_l0_sim_recv(struct diag_l0_device *dl0d,
-		 const char *subinterface __attribute__((unused)),
+		UNUSED(const char *subinterface),
 		 void *data, size_t len, int timeout);
 
 extern void
@@ -128,17 +129,19 @@ sim_new_ecu_response_txt(const char* text)
 	//~ resp = calloc(1, sizeof(struct sim_ecu_response));
 	if ((rv=diag_calloc(&resp, 1)))
 		return (struct sim_ecu_response *)diag_pseterr(rv);
-	
+
 	resp->data = NULL;
 	resp->len = 0;
 	resp->text = NULL;
 	resp->next = NULL;
-	
+
 	if (text != NULL && strlen(text)) {
 		// resp->text = calloc(strlen(text)+1, sizeof(char));
-		if ((rv=diag_calloc(&(resp->text), strlen(text)+1)))
+		if ((rv=diag_calloc(&(resp->text), strlen(text)+1))) {
+			free(resp);
 			return (struct sim_ecu_response *)diag_pseterr(rv);
-		
+		}
+
 		strncpy(resp->text, text, strlen(text));
 	}
 
@@ -287,7 +290,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 					// if it's another request, then end the list.
 					if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) == 0) {
 						end_responses = 1;
-						break;
+ 						break;
 					} else {
 						continue;
 					}
@@ -429,7 +432,7 @@ void sim_read_cfg(FILE *fp)
 			continue;
 		// get the config values.
 		p = line_buf + strlen(TAG_CFG) + 1;
-		
+
 		if (strncmp(p, CFG_NOL2FRAME, strlen(CFG_NOL2FRAME)) == 0) {
 			// "no l2 frame":
 			p += strlen(CFG_NOL2FRAME) + 1;
@@ -457,7 +460,7 @@ diag_l0_sim_init(void)
 
 	if (diag_l0_sim_initdone)
 	return 0;
-	
+
 	diag_l0_sim_initdone = 1;
 	if (!simfile)
 		//not filled in yet : use default DB_FILE.
@@ -488,24 +491,32 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
 	dev->protocol = iProtocol;
 
 	// Create diag_l0_device:
-	if ((rv=diag_calloc(&dl0d, 1)))
+	if ((rv=diag_calloc(&dl0d, 1))) {
+		free(dev);
 		return (struct diag_l0_device *)diag_pseterr(rv);
+	}
 
 	dl0d->fd = DL0D_INVALIDHANDLE;
 	dl0d->dl0_handle = dev;
 	dl0d->dl0 = &diag_l0_sim;
 	if ((rv=diag_calloc(&dl0d->name, strlen(simfile)+1))) {
+		free(dev);
 		free(dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 	strcpy(dl0d->name, simfile);
 	if ((rv=diag_calloc(&dl0d->ttystate, 1))) {
+		free(dl0d->name);
+		free(dev);
 		free(dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 	// Open the DB file:
 	if ((dev->fp = fopen(dl0d->name, "r")) == NULL) {
 		fprintf(stderr, FLFMT "Unable to open file \"%s\"\n", FL, dl0d->name);
+		free(dl0d->ttystate);
+		free(dl0d->name);
+		free(dev);
 		free(dl0d);
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -525,23 +536,30 @@ static int
 diag_l0_sim_close(struct diag_l0_device **pdl0d)
 {
 	sim_free_ecu_responses(&sim_last_ecu_responses);
-	
+
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
 		struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);
-	
+
 		// If debugging, print to strerr.
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, FLFMT "link %p closing\n", FL, dl0d);
-		
+
 		if (dev) {
 			if (dev->fp != NULL)
 			fclose(dev->fp);
 			free(dev);
 		}
+		// dl0d->name, ->ttystate and dl0d are usually free()d by diag_tty_close
+		// so we have to do it ourselves
+		if (dl0d->name)
+			free(dl0d->name);
+		if (dl0d->ttystate)
+			free(dl0d->name);
 		dl0d->fd=DL0D_INVALIDHANDLE;
+		free(dl0d);
 	}
-	
+
 	return 0;
 }
 
@@ -582,7 +600,7 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
 		break;
 	}
-	
+
 	return 0;
 }
 
@@ -594,7 +612,7 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 // Gets the list of responses from the DB file for the given request.
 static int
 diag_l0_sim_send(struct diag_l0_device *dl0d,
-		 const char *subinterface __attribute__((unused)),
+		UNUSED(const char *subinterface),
 		 const void *data, const size_t len)
 {
 
@@ -611,7 +629,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 			fprintf(stderr, "\n");
 		}
 	}
-	
+
 
 	// Build the list of responses for this request.
 	struct diag_l0_sim_device * dev = dl0d->dl0_handle;
@@ -629,8 +647,8 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 // Returns number of chars read.
 static int
 diag_l0_sim_recv(struct diag_l0_device *dl0d,
-		 const char *subinterface __attribute__((unused)),
-		 void *data, size_t len, int timeout)
+		UNUSED(const char *subinterface),
+		void *data, size_t len, int timeout)
 {
 	int xferd;
 	//struct diag_l0_sim_device *dev;
@@ -642,7 +660,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		fprintf(stderr,
 			FLFMT "link %p recv upto %ld bytes timeout %d\n",
 			FL, dl0d, (long)len, timeout);
-	
+
 	// "Receive from the ECU" a response.
 	resp_p = sim_last_ecu_responses;
 	if (resp_p != NULL) {
@@ -698,13 +716,13 @@ diag_l0_sim_setspeed(struct diag_l0_device *dl0d,
 // If you don't want to deal with header bytes, uncomment
 // the SIM_NOL2FRAME line in the file (required for SAEJ1850).
 static int
-diag_l0_sim_getflags(struct diag_l0_device *dl0d __attribute__((unused)))
+diag_l0_sim_getflags(UNUSED(struct diag_l0_device *dl0d))
 {
 	int ret = 0;
 
-	ret = DIAG_L1_SLOW | 
-	DIAG_L1_FAST | 
-	DIAG_L1_PREFFAST | 
+	ret = DIAG_L1_SLOW |
+	DIAG_L1_FAST |
+	DIAG_L1_PREFFAST |
 	DIAG_L1_DOESP4WAIT |
 	DIAG_L1_HALFDUPLEX;
 
@@ -725,15 +743,15 @@ diag_l0_sim_setfile(char * fname)
 	simfile=fname;
 	return;
 }
-	
+
 
 // Declares the interface's protocol flags
 // and pointers to functions.
 // Like any simulator, it "implements" all protocols
 // (it only depends on the content of the DB file).
-const struct diag_l0 diag_l0_sim = 
+const struct diag_l0 diag_l0_sim =
 {
-	"Car Simulator interface", 
+	"Car Simulator interface",
 	"CARSIM",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM | DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
 	diag_l0_sim_init,
@@ -747,7 +765,7 @@ const struct diag_l0 diag_l0_sim =
 };
 
 #if defined(__cplusplus)
-extern "C" 
+extern "C"
 {
 #endif
 	extern int diag_l0_sim_add(void);
@@ -756,7 +774,7 @@ extern "C"
 #endif
 
 int
-diag_l0_sim_add(void) 
+diag_l0_sim_add(void)
 {
 	return diag_l1_add_l0dev(&diag_l0_sim);
 }

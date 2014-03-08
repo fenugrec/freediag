@@ -602,15 +602,10 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
  * Returns a string with the description + data associated with a J1979 message.
  * Doesn't do any data scaling / conversion.
  */
-#ifdef WIN32
+
 static char *
-diag_l3_j1979_decode(struct diag_l3_conn *d_l3_conn,
+diag_l3_j1979_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
 struct diag_msg *msg, char *buf, size_t bufsize)
-#else
-static char *
-diag_l3_j1979_decode(struct diag_l3_conn *d_l3_conn __attribute__((unused)),
-struct diag_msg *msg, char *buf, size_t bufsize)
-#endif
 {
 	int i, j;
 

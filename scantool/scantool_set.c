@@ -37,8 +37,7 @@
 
 #ifndef HAVE_STRCASECMP	//no strcasecmp on win32 ! but kernel32 provides lstrcmpi which should be equivalent.
 #ifdef WIN32
-	//#include <windows.h>
-	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b) 
+	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b)
 #else
 	#error Your system provides no strcasecmp ! This is a problem !
 #endif 	//WIN32
@@ -102,10 +101,10 @@ int set_init(void)
 	printf( "%s: Interface set to default: %s on %s\n", progname, l0_names[set_interface_idx].longname, set_subinterface);
 
 	if (diag_calloc(&set_simfile, strlen(DB_FILE)+1))
-		return diag_iseterr(DIAG_ERR_GENERAL);	
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	strcpy(set_simfile, DB_FILE);			//default simfile for use with CARSIM
 	diag_l0_sim_setfile(set_simfile);
-	
+
 	return 0;
 }
 
@@ -151,10 +150,10 @@ const struct cmd_tbl_entry set_cmd_table[] =
 
 	{ "interface", "interface NAME [dev]", "Shows/Sets the interface to use. Use set interface ? to get a list of names",
 		cmd_set_interface, 0, NULL},
-		
+
 	{ "dumbopts", "dumbopts [opts]", "Sets dumb-interface-specific options. Use set dumbopts ? to get details.",
 		cmd_set_dumbopts, 0, NULL},
-		
+
 	{ "simfile", "simfile [filename]", "Select simulation file to use as data input. See freediag_carsim.db for an example",
 		cmd_set_simfile, 0, NULL},
 
@@ -212,15 +211,9 @@ const char * const l2_initmodes[] =
 	"5BAUD", "FAST", "CARB", NULL
 };
 
-#ifdef WIN32
+
 static int
-cmd_set_show(int argc,
-char **argv)
-#else
-static int
-cmd_set_show(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 {
 	/* Show stuff */
 	int offset;
@@ -394,7 +387,7 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 	} else {
 		printf("Current dumbopts=%d\n", diag_l0_dumb_getopts());
 	}
-		
+
 	return (CMD_OK);
 }
 
@@ -471,7 +464,7 @@ static int cmd_set_l2protocol(int argc, char **argv)
 		{
 			if (prflag)
 			{
-				if (strcasecmp(l2_names[i], PROTO_NONE)) 
+				if (strcasecmp(l2_names[i], PROTO_NONE))
 				{
 					printf("%s ", l2_names[i]);
 				}

@@ -80,15 +80,10 @@ diag_l3_vag_start(struct diag_l3_conn *d_l3_conn)
 /*
  * This is called without just the VW protocol data
  */
-#ifdef WIN32
+
 static char *
-diag_l3_vag_decode(struct diag_l3_conn *d_l3_conn,
+diag_l3_vag_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
 struct diag_msg *msg, char *buf, size_t bufsize)
-#else
-static char *
-diag_l3_vag_decode(struct diag_l3_conn *d_l3_conn __attribute__((unused)),
-struct diag_msg *msg, char *buf, size_t bufsize)
-#endif
 {
 	char buf2[128];
 	char buf3[16];

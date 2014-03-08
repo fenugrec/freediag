@@ -97,13 +97,9 @@ cmd_debug_help(int argc, char **argv)
 	return help_common(argc, argv, debug_cmd_table);
 }
 
-#ifdef WIN32
+
 static void
-print_resp_info(int mode, response_t *data)
-#else
-static void
-print_resp_info(int mode __attribute__((unused)), response_t *data)
-#endif
+print_resp_info(UNUSED(int mode), response_t *data)
 {
 
 	int i;
@@ -127,15 +123,9 @@ print_resp_info(int mode __attribute__((unused)), response_t *data)
 	}
 }
 
-#ifdef WIN32
+
 static int
-cmd_debug_dumpdata(int argc,
-char **argv)
-#else
-static int
-cmd_debug_dumpdata(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_debug_dumpdata(UNUSED(int argc), UNUSED(char **argv))
 {
 	ecu_data_t *ep;
 	int i;
@@ -225,15 +215,9 @@ cmd_debug_all(int argc, char **argv)
 	return CMD_OK;
 }
 
-#ifdef WIN32
+
 static int
-cmd_debug_show(int argc,
-char **argv)
-#else
-static int
-cmd_debug_show(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_debug_show(UNUSED(int argc), UNUSED(char **argv))
 {
 /*	int layer, val; */
 
@@ -266,13 +250,8 @@ print_pidinfo(int mode, uint8_t *pid_data)
 		printf("\n");
 }
 
-#ifdef WIN32
-static int cmd_debug_pids(int argc,
-char **argv)
-#else
-static int cmd_debug_pids(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+
+static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 {
 	ecu_data_t *ep;
 	int i;

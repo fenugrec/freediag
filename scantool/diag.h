@@ -52,7 +52,11 @@ extern "C" {
 
 // Nice to have anywhere...
 #define MIN(_a_, _b_) (((_a_) < (_b_) ? (_a_) : (_b_)))
-#define UNUSED(X)		//magic !
+#ifdef __GNUC__
+	#define UNUSED(X) 	X __attribute__((unused))	//magic !
+#else
+	#define UNUSED(X)	X	//how can we suppress "unused parameter" warnings on other compilers?
+#endif // __GNUC__
 
 #ifdef WIN32
 	#define SIGALRM 14

@@ -63,7 +63,7 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
 	struct diag_l2_node *last_node, *new_node;
 
 	if (l2proto_list == NULL) {
-		if ( (rv = diag_calloc(&l2proto_list, 1)) ) 
+		if ( (rv = diag_calloc(&l2proto_list, 1)) )
 			return rv;
 
 		l2proto_list->l2proto = l2proto;
@@ -74,7 +74,7 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
 		if (last_node->l2proto == l2proto)
 			return diag_iseterr(DIAG_ERR_GENERAL);	/* Already there. */
 
-	if ( (rv = diag_calloc(&new_node, 1)) ) 
+	if ( (rv = diag_calloc(&new_node, 1)) )
 		return rv;
 
 	/* Find the last non-NULL node...*/
@@ -166,18 +166,10 @@ diag_l2_rmlink(struct diag_l2_link *d)
  *
  * remove a L2 connection from our list
  * - up to the caller to have shut it down properly first
- * diag_l2_rmconn XXX Currently not used.
+ * diag_l2_rmconn XXX Currently not used?
  */
-#ifdef WIN32
-static int
-diag_l2_rmconn(struct diag_l2_conn *d);
-#else
-static int
-diag_l2_rmconn(struct diag_l2_conn *d) __attribute__((unused));
-#endif
 
-static int
-diag_l2_rmconn(struct diag_l2_conn *d)
+static int diag_l2_rmconn(UNUSED(struct diag_l2_conn *d))
 {
 	struct diag_l2_conn	*d_l2_conn = diag_l2_connections;
 	struct diag_l2_conn	*d_l2_last_conn = NULL;
@@ -332,7 +324,7 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
  * Open a link to a Layer 1 device, returns dl0d, if device is already
  * open, close and then re-open it (as we need to pass it a new "protocol"
  * field if the l1 protocol is different
- * 
+ *
  * The subinterface indicates the device to use
  *
  * We need to tell L1 what protocol we are going to use, because some L1
@@ -395,7 +387,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 	 */
 	dl2l->next = diag_l2_links;
 	diag_l2_links = dl2l;
-		
+
 	return dl2l->diag_l2_dl0d;
 }
 
@@ -449,7 +441,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	/*
 	 * Check connection doesn't exist already, if it does, then use it
 	 * but reinitialise ECU - when checking connection, we look at the
-	 * target and the dl0d 
+	 * target and the dl0d
 	 */
 	d_l2_conn = diag_l2_conbyid[target];
 	while (d_l2_conn)
@@ -465,7 +457,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 		}
 		d_l2_conn = d_l2_conn -> diag_l2_next ;
 	}
-	
+
 	if (d_l2_conn == NULL)
 	{
 		/* New connection */
@@ -608,7 +600,7 @@ diag_l2_sendstamp(struct diag_l2_conn *d_l2_conn) {
 	d_l2_conn->diag_l2_expiry = d_l2_conn->diag_l2_lastsend;
 
 	d_l2_conn->diag_l2_expiry.tv_sec +=  (d_l2_conn->diag_l2_p3max*2/3) / 1000;
-	d_l2_conn->diag_l2_expiry.tv_usec += 
+	d_l2_conn->diag_l2_expiry.tv_usec +=
 		((d_l2_conn->diag_l2_p3max*2/3) % 1000) * 1000;
 
 	if (d_l2_conn->diag_l2_expiry.tv_usec > 1000000)
@@ -679,7 +671,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
  * Timeout is in ms
  */
 int
-diag_l2_recv(struct diag_l2_conn *d_l2_conn, int timeout, 
+diag_l2_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
 {
 	int rv;

@@ -466,15 +466,10 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 	}
 }
 
-#ifdef WIN32
+
 void
-l2raw_data_rcv(void *handle,
+l2raw_data_rcv(UNUSED(void *handle),
 struct diag_msg *msg)
-#else
-void
-l2raw_data_rcv(void *handle __attribute__((unused)),
-struct diag_msg *msg)
-#endif
 {
 	/*
 	 * Layer 2 call back, just print the data, this is used if we
@@ -1687,21 +1682,9 @@ static void do_usage ()
 }
 
 
-#ifdef WIN32
-static void
-format_o2(char *buf,
-int english,
-const struct pid *p,
-response_t *data,
-int n)
-#else
-static void
-format_o2(char *buf,
-int english __attribute__((unused)),
-const struct pid *p,
-response_t *data,
-int n)
-#endif
+
+static void format_o2(char *buf, UNUSED(int english),
+	const struct pid *p, response_t *data, int n)
 {
 		double v = DATA_SCALED(p, DATA_1(p, n, data));
 		int t = DATA_1(p, n + 1, data);
@@ -1712,41 +1695,19 @@ int n)
 				sprintf(buf, p->fmt2, v, t * p->scale2 + p->offset2);
 }
 
-#ifdef WIN32
+
 static void
-format_aux(char *buf,
-int english,
-const struct pid *p,
-response_t *data,
-int n)
-#else
-static void
-format_aux(char *buf,
-int english __attribute__((unused)),
-const struct pid *p,
-response_t *data,
-int n)
-#endif
+format_aux(char *buf, UNUSED(int english), const struct pid *p,
+	response_t *data, int n)
 {
 		sprintf(buf, (DATA_RAW(p, n, data) & 1) ? "PTO Active" : "----");
 }
 
 
-#ifdef WIN32
+
 static void
-format_fuel(char *buf,
-int english,
-const struct pid *p,
-response_t *data,
-int n)
-#else
-static void
-format_fuel(char *buf,
-int english __attribute__((unused)),
-const struct pid *p,
-response_t *data,
-int n)
-#endif
+format_fuel(char *buf, UNUSED(int english), const struct pid *p,
+	response_t *data, int n)
 {
 		int s = DATA_1(p, n, data);
 
@@ -1880,13 +1841,9 @@ const struct pid *get_pid ( unsigned int i )
 /*
  * Main
  */
-#ifdef WIN32
+
 int
-main(int argc, char **argv)
-#else
-int
-main(int argc __attribute__((unused)), char **argv)
-#endif
+main(UNUSED(int argc), UNUSED(char **argv))
 {
 	int user_interface = 1 ;
 	int i ;
@@ -1918,24 +1875,16 @@ main(int argc __attribute__((unused)), char **argv)
 	exit(0);
 }
 
-#ifdef WIN32
+
 int
-cmd_up(int argc, char **argv)
-#else
-int
-cmd_up(int argc __attribute__((unused)), char **argv __attribute__((unused)))
-#endif
+cmd_up(UNUSED(int argc), UNUSED(char **argv))
 {
 	return CMD_UP;
 }
 
-#ifdef WIN32
+
 int
-cmd_exit(int argc, char **argv)
-#else
-int
-cmd_exit(int argc __attribute__((unused)), char **argv __attribute__((unused)))
-#endif
+cmd_exit(UNUSED(int argc), UNUSED(char **argv))
 {
 	return CMD_EXIT;
 }

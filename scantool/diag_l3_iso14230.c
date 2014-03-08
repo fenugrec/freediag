@@ -419,15 +419,10 @@ printf("[CJH] %s %d: No process_data function!\n",__FUNCTION__,__LINE__);
 }
 
 
-#ifdef WIN32
+
 static char *
-diag_l3_iso14230_decode(struct diag_l3_conn *d_l3_conn,
+diag_l3_iso14230_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
 struct diag_msg *msg, char *buf, size_t bufsize)
-#else
-static char *
-diag_l3_iso14230_decode(struct diag_l3_conn *d_l3_conn __attribute__((unused)),
-struct diag_msg *msg, char *buf, size_t bufsize)
-#endif
 {
 	if (msg->data[0] & 0x40)
 		snprintf(buf, bufsize, "ISO14230 response ");

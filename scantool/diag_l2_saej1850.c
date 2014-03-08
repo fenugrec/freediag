@@ -49,7 +49,7 @@ CVSID("$Id$");
 struct diag_l2_j1850
 {
 	uint8_t type;		/* FAST/SLOW/CARB */
-	
+
 	uint8_t srcaddr;	/* Src address used */
 	uint8_t dstaddr;	/* Dest address used */
 	uint16_t modeflags;	/* Flags */
@@ -71,19 +71,12 @@ uint8_t diag_l2_proto_j1850_crc(uint8_t *msg_buf, int nbytes);
 /*
  * The complex initialisation routine for SAEJ1850
  */
-#ifdef WIN32
+
 static int
 diag_l2_proto_j1850_startcomms(struct diag_l2_conn	*d_l2_conn,
 flag_type flags,
-int bitrate,
+UNUSED(int bitrate),
 target_type target, source_type source)
-#else
-static int
-diag_l2_proto_j1850_startcomms(struct diag_l2_conn	*d_l2_conn,
-flag_type flags,
-int bitrate __attribute__((unused)),
-target_type target, source_type source)
-#endif
 {
 	struct diag_l2_j1850 *dp;
 
@@ -199,7 +192,7 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	buf[1] = dp->dstaddr;
 	buf[2] = dp->srcaddr;
 	offset += 3;
-	
+
 	// Now copy in data, should check for buffer overrun really
 	memcpy(&buf[offset], msg->data, msg->len);
 	offset += msg->len;

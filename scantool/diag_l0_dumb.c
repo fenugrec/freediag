@@ -502,17 +502,11 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
  *
  * Returns 0 on success, -1 on failure
  */
-#ifdef WIN32
+
 static int
 diag_l0_dumb_send(struct diag_l0_device *dl0d,
-const char *subinterface,
+UNUSED(const char *subinterface),
 const void *data, size_t len)
-#else
-static int
-diag_l0_dumb_send(struct diag_l0_device *dl0d,
-const char *subinterface __attribute__((unused)),
-const void *data, size_t len)
-#endif
 {
 	/*
 	 * This will be called byte at a time unless P4 timing parameter is zero
@@ -561,17 +555,11 @@ const void *data, size_t len)
  * If timeout is set to 0, this becomes non-blocking
  * returns # of bytes read if succesful
  */
-#ifdef WIN32
+
 static int
 diag_l0_dumb_recv(struct diag_l0_device *dl0d,
-const char *subinterface,
+UNUSED(const char *subinterface),
 void *data, size_t len, int timeout)
-#else
-static int
-diag_l0_dumb_recv(struct diag_l0_device *dl0d,
-const char *subinterface __attribute__((unused)),
-void *data, size_t len, int timeout)
-#endif
 {
 	int xferd;
 
@@ -635,13 +623,9 @@ int diag_l0_dumb_getopts() {
 	return dumb_flags;
 }
 
-#ifdef WIN32
+
 static int
-diag_l0_dumb_getflags(struct diag_l0_device *dl0d)
-#else
-static int
-diag_l0_dumb_getflags(struct diag_l0_device *dl0d __attribute__((unused)))
-#endif
+diag_l0_dumb_getflags(UNUSED(struct diag_l0_device *dl0d))
 {
 	return DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST |
 			DIAG_L1_HALFDUPLEX;

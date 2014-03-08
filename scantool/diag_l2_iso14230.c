@@ -27,9 +27,8 @@
  */
 
 #ifdef WIN32
-#include <process.h>
 #else
-#include <unistd.h>
+#include <unistd.h>	//do we need this ?
 #endif
 
 #include <stdlib.h>
@@ -53,7 +52,7 @@ CVSID("$Id$");
 struct diag_l2_14230
 {
 	uint8_t type;		/* FAST/SLOW/CARB */
-	
+
 	uint8_t srcaddr;	/* Src address used */
 	uint8_t dstaddr;	/* Dest address used (for connect) */
 	uint16_t modeflags;	/* Flags */
@@ -99,7 +98,7 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 		}
 		fprintf(stderr, "\n");
 	}
-	
+
 	dl = data[0] & 0x3f;
 	if (dl == 0) {
 		/* Additional length field present */
@@ -337,7 +336,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 			if (state == ST_STATE3)
 				break;
 		}
-		
+
 		if (rv<0)
 			break;
 
@@ -395,7 +394,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 			 */
 			if ((l1_doesl2frame == 0) && (rv < tmsg->len)) {
 				/*
-				 * This message contains more than one	
+				 * This message contains more than one
 				 * data frame (because it arrived with
 				 * odd timing), this means we have to
 				 * do horrible copy about the data
@@ -509,7 +508,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	set.parflag = diag_par_n;
 
 	/* Set the speed as shown */
-	
+
 	if ((rv=diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set)))
 	{
 		free(dp);
@@ -700,13 +699,9 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	return 0;
 }
 
-#ifdef WIN32
+
 static int
-diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
-#else
-static int
-diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX __attribute__((unused)))
-#endif
+diag_l2_proto_14230_stopcomms(UNUSED(struct diag_l2_conn* pX))
 {
 	/*
 	 * Send a stopcomms message, and wait for the +ve response, for upto

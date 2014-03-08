@@ -24,8 +24,8 @@
  *
  */
 
-#include <stdlib.h> 
-#include <string.h> 
+#include <stdlib.h>
+#include <string.h>
 
 #include "diag.h"	/* For CVSID */
 #include "diag_err.h"	/* For CVSID */
@@ -77,16 +77,16 @@ static int dyno_check_allocated_table(struct dyno_measure_table * table, size_t 
   {
     /* reallocating the table if maximum capacity is reached */
     void * ptr;
-    
+
     /* new table size */
     table->size *= 2;
-    
+
     /* allocating, transfering data */
     if (diag_malloc(&ptr, table->size * elt_size))
 		return DIAG_ERR_NOMEM;
 
     memcpy(ptr, table->meas.measures, table->nbr * elt_size);
-    
+
     /* free old memory */
     free(table->meas.measures);
     table->meas.measures = (dyno_measure *)ptr;
@@ -102,7 +102,7 @@ static int dyno_table_reset(struct dyno_measure_table * table)
     free(table->meas.measures);
     table->meas.measures = NULL;
   }
-  
+
   table->size = 0;
   table->nbr = 0;
   return 0;
@@ -179,17 +179,17 @@ int dyno_loss_add_measure(int millis, int speed)
 {
   /* check memory allocation */
   dyno_check_allocated_table(&loss_measure_table, sizeof(dyno_measure));
-  
+
   /* storing measure */
   loss_measure_table.meas.loss_measures[loss_measure_table.nbr].millis = millis;
   loss_measure_table.meas.loss_measures[loss_measure_table.nbr].speed = speed;
-  
+
   /* one measure added */
   loss_measure_table.nbr++;
-  
+
   /* d and f need to be re-calculated */
   dyno_loss_needs_calculation = 1;
-  
+
   return DYNO_OK;
 }
 
@@ -218,20 +218,20 @@ static double dyno_loss_a_inter(int i, int j)
   double a;
   dyno_loss_measure * measure0;
   dyno_loss_measure * measure1;
-  
+
   /* avoid bad use */
   if ((i < 0) || (i >= j) || (j > loss_measure_table.nbr))
     return 0;
-  
+
   /* select measures */
   measure0 = &loss_measure_table.meas.loss_measures[i];
   measure1 = &loss_measure_table.meas.loss_measures[j];
-  
+
   /* get acceleration */
   a = 1.0
     * (measure1->speed - measure0->speed)
     / (measure1->millis - measure0->millis);
-  
+
   return a;
 }
 
@@ -239,14 +239,14 @@ static double dyno_loss_a_inter(int i, int j)
 static double dyno_loss_a(int i)
 {
   double a;
-  
+
   if (i <= 0)
     a = dyno_loss_a_inter(0, 1);
   else if (i >= loss_measure_table.nbr - 1)
     a = dyno_loss_a_inter(loss_measure_table.nbr - 2, loss_measure_table.nbr - 1);
   else
     a = (dyno_loss_a_inter(i-1, i) + dyno_loss_a_inter(i, i+1)) / 2;
-  
+
   return a;
 }
 
@@ -263,40 +263,40 @@ static int dyno_loss_calculate(void)
   double sum;
   dyno_loss_measure * measure0;
   dyno_loss_measure * measure1;
-  
+
   /* calculate d */
   nb = loss_measure_table.nbr - 1;
   sum = 0;
   for (i=0; i<nb; i++)
   {
     double d;
-    
+
     /* select measures */
     measure0 = &loss_measure_table.meas.loss_measures[i];
     measure1 = &loss_measure_table.meas.loss_measures[i+1];
-  
+
     d = (dyno_loss_y(i+1) - dyno_loss_y(i))
         / (SQR(measure1->speed/1000.0) - SQR(measure0->speed/1000.0));
     sum += d;
   }
   dyno_loss_d = sum / nb;
-  
+
   /* calculate f */
   nb = loss_measure_table.nbr;
   sum = 0;
   for (i=0; i<nb; i++)
   {
     double f;
-    
+
     measure0 = &loss_measure_table.meas.loss_measures[i];
-    
+
     f = dyno_loss_y(i) - (dyno_loss_d * SQR(measure0->speed/1000.0));
     sum += f;
   }
   dyno_loss_f = sum / nb;
-  
+
   dyno_loss_needs_calculation = 0;
-  
+
   return DYNO_OK;
 }
 
@@ -304,7 +304,7 @@ static int dyno_loss_calculate(void)
 int dyno_loss_reset()
 {
   dyno_table_reset(&loss_measure_table);
-  
+
   dyno_loss_d = 0;
   dyno_loss_f = 0;
   dyno_loss_needs_calculation = 0;
@@ -316,7 +316,7 @@ double dyno_loss_get_d()
 {
   if (dyno_loss_needs_calculation == 1)
     dyno_loss_calculate();
-  
+
   return dyno_loss_d;
 }
 
@@ -325,7 +325,7 @@ double dyno_loss_get_f()
 {
   if (dyno_loss_needs_calculation == 1)
     dyno_loss_calculate();
-  
+
   return dyno_loss_f;
 }
 
@@ -343,13 +343,13 @@ void dyno_loss_set_f(double f)
 static long dyno_loss_power(long speed)
 {
   double power;
-  
+
   if (dyno_loss_needs_calculation == 1)
     dyno_loss_calculate();
-  
+
   /* Pl = d * v^3 + f * v */
   power = dyno_loss_d * CUB(speed/1000.0) + dyno_loss_f * (speed/1000.0);
-  
+
   return (long)(power + .50);
 }
 
@@ -362,14 +362,14 @@ int dyno_add_measure(int millis, int rpm)
 {
   /* check memory allocation */
   dyno_check_allocated_table(&measure_table, sizeof(dyno_measure));
-  
+
   /* storing measure */
   measure_table.meas.measures[measure_table.nbr].millis = millis;
   measure_table.meas.measures[measure_table.nbr].rpm = rpm;
-  
+
   /* one measure added */
   measure_table.nbr++;
-  
+
   return DYNO_OK;
 }
 
@@ -390,7 +390,7 @@ int dyno_get_measures(dyno_measure * measures, int size)
 {
   /* copy measures */
   memcpy(measures, measure_table.meas.measures, MIN(size, measure_table.nbr) * sizeof(dyno_measure));
-  
+
   return DYNO_OK;
 }
 
@@ -412,13 +412,13 @@ static void dyno_calculate_result(dyno_measure * measure0, dyno_measure * measur
 {
   /* effective power and lost power */
   int p_dyno, p_loss;
-  
+
   /* calculate effective power from cinetic energy variation */
   p_dyno = SQR(dyno_get_speed_from_rpm(measure1->rpm))
          - SQR(dyno_get_speed_from_rpm(measure0->rpm)); /* m2/s2 * 1.000.000 */
   p_dyno = (p_dyno / (measure1->millis - measure0->millis)); /* m2/s3 */
   p_dyno = p_dyno * dyno_mass / 2000;
- 
+
   /* calculate loss power at given speed */
   result->rpm = (measure0->rpm + measure1->rpm) / 2;
   p_loss = dyno_loss_power(dyno_get_speed_from_rpm(result->rpm));
@@ -438,8 +438,8 @@ static void dyno_calculate_results(dyno_result * results)
 {
   int i;
   int nb = dyno_get_nb_results();
-  
-  /* for each measure, calculate result */  
+
+  /* for each measure, calculate result */
   for (i=0; i<nb; i++)
   {
     dyno_calculate_result(&measure_table.meas.measures[i], &measure_table.meas.measures[i+1], &results[i]);
@@ -457,17 +457,14 @@ int dyno_get_nb_results()
 /*
  * Get dyno results
  */
-#ifdef WIN32
-int dyno_get_results(dyno_result * results, int size)
-#else
-int dyno_get_results(dyno_result * results, int size __attribute__((unused)))
-#endif
+
+int dyno_get_results(dyno_result * results, UNUSED(int size))
 {
   if ((dyno_mass == 0) || (dyno_gear == 0))
     return DYNO_USAGE;
-  
+
   dyno_calculate_results(results);
-  
+
   return DYNO_OK;
 }
 
@@ -478,12 +475,12 @@ int dyno_smooth_results(dyno_result * results, int size)
 {
   dyno_result * rawresults;
   int i;
-  
+
   /* smooth results */
   if (diag_malloc(&rawresults, size * sizeof(dyno_result)))
     return DIAG_ERR_NOMEM;
   memcpy(rawresults, results, size * sizeof(dyno_result));
-  
+
   for (i=1; i<size-1; i++)
   {
     /* smooth using nearby values */
@@ -491,9 +488,9 @@ int dyno_smooth_results(dyno_result * results, int size)
     results[i].power_ch = POWER_CH(results[i].power);
     results[i].torque   = (int)(TORQUE(results[i].power, results[i].rpm) + .50);
   }
-  
+
   free(rawresults);
-  
+
   return DYNO_OK;
 }
 
@@ -505,7 +502,7 @@ void dyno_save(char * filename, dyno_result * results, int size)
 {
   char buffer[MAXRBUF];
   int i;
-  
+
   /* open file */
   FILE * fd = fopen (filename, "w");
   if (fd == NULL)
@@ -513,29 +510,29 @@ void dyno_save(char * filename, dyno_result * results, int size)
     printf("Failed opening %s for writing\n", filename);
     return;
   }
-  
+
   printf("Saving dyno to file %s\n", filename);
-  
-  
+
+
   /* saving mass */
   printf("-> saving mass...\n");
-  
+
   sprintf(buffer, "Mass (kg)\t%d\n", dyno_mass);
   fwrite(buffer, strlen(buffer), sizeof(char), fd);
-  
+
   sprintf(buffer, "\n");
   fwrite(buffer, strlen(buffer), sizeof(char), fd);
-  
-  
+
+
   /* saving results */
   printf("-> saving results...\n");
-  
+
   sprintf(buffer, "Run results\n");
   fwrite(buffer, strlen(buffer), sizeof(char), fd);
-  
+
   sprintf(buffer, "RPM\tPower (W)\tPower (ch)\tTorque (N.m)\n");
   fwrite(buffer, strlen(buffer), sizeof(char), fd);
-  
+
   for (i=0; i<size; i++)
   {
     sprintf(buffer, "%d\t%d\t%d\t%d\n",
@@ -545,19 +542,19 @@ void dyno_save(char * filename, dyno_result * results, int size)
 
   sprintf(buffer, "\n");
   fwrite(buffer, strlen(buffer), sizeof(char), fd);
-  
-  
+
+
   /* saving run measures */
   if (measure_table.nbr > 0)
   {
     printf("-> saving run measures...\n");
-    
+
     sprintf(buffer, "Run measures\n");
     fwrite(buffer, strlen(buffer), sizeof(char), fd);
-    
+
     sprintf(buffer, "Time (ms)\tRPM\tSpeed (m/s)\tSpeed (km/h)\n");
     fwrite(buffer, strlen(buffer), sizeof(char), fd);
-    
+
     for (i=0; i<measure_table.nbr; i++)
     {
       sprintf(buffer, "%d\t%d\t%7.3f\t%7.3f\n",
@@ -567,18 +564,18 @@ void dyno_save(char * filename, dyno_result * results, int size)
         dyno_get_speed_from_rpm(measure_table.meas.measures[i].rpm)*3.6/1000.0);
       fwrite(buffer, strlen(buffer), sizeof(char), fd);
     }
-    
+
     sprintf(buffer, "\n");
     fwrite(buffer, strlen(buffer), sizeof(char), fd);
   }
-  
-  
+
+
   /* saving d and f loss parameters */
   printf("-> saving friction and aerodynamic parameters...\n");
 
   sprintf(buffer, "d and f loss parameters\n");
   fwrite(buffer, strlen(buffer), sizeof(char), fd);
-  
+
   sprintf(buffer, "d\t%8.5f\n", dyno_loss_d);
   fwrite(buffer, strlen(buffer), sizeof(char), fd);
 
@@ -587,20 +584,20 @@ void dyno_save(char * filename, dyno_result * results, int size)
 
   sprintf(buffer, "\n");
   fwrite(buffer, strlen(buffer), sizeof(char), fd);
-  
-  
+
+
   /* saving loss measures, if any */
   if (loss_measure_table.nbr > 0)
   {
-    
+
     printf("-> saving loss measures...\n");
-    
+
     sprintf(buffer, "Loss measures\n");
     fwrite(buffer, strlen(buffer), sizeof(char), fd);
-    
+
     sprintf(buffer, "Time (ms)\tSpeed (m/s)\tSpeed (km/h)\n");
     fwrite(buffer, strlen(buffer), sizeof(char), fd);
-    
+
     for (i=0; i<loss_measure_table.nbr; i++)
     {
       sprintf(buffer, "%d\t%7.3f\t%7.3f\n",
@@ -610,12 +607,12 @@ void dyno_save(char * filename, dyno_result * results, int size)
       fwrite(buffer, strlen(buffer), sizeof(char), fd);
     }
   }
-  
+
   /* flush file to disk */
   fflush(fd);
-  
+
   /* close file */
   fclose(fd);
-  
+
   printf("Done.\n");
 }

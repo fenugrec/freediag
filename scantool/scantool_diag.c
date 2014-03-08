@@ -170,9 +170,9 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 		return CMD_USAGE;
 
 	start = htoi(argv[1]);
-	if (argc == 2) 
+	if (argc == 2)
 	{
-		end = start; 
+		end = start;
 	}
 	else
 	{
@@ -292,15 +292,9 @@ cmd_diag_fastprobe(int argc, char **argv)
 	return cmd_diag_probe_common(argc, argv, 1);
 }
 
-#ifdef WIN32
+
 static int
-cmd_diag_connect(int argc,
-char **argv)
-#else
-static int
-cmd_diag_connect(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 {
 	int rv;
 
@@ -321,15 +315,9 @@ char **argv __attribute__((unused)))
 	return CMD_OK;
 }
 
-#ifdef WIN32
+
 static int
-cmd_diag_disconnect(int argc,
-char **argv)
-#else
-static int
-cmd_diag_disconnect(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
 {
 	if (global_state < STATE_CONNECTED)
 	{
@@ -404,7 +392,7 @@ cmd_diag_sendreq(int argc, char **argv)
 	}
 
 	memset(data, 0, sizeof(data));
-	
+
 	for (i=1, j=0; i < argc; i++, j++)
 		data[j] = htoi(argv[i]);
 	len = j ;

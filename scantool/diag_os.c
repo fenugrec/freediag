@@ -92,7 +92,7 @@ int diag_os_init_done;
 HANDLE hDiagTimer;
 int timerproblem;
 
-VOID CALLBACK timercallback(PVOID lpParam, BOOLEAN timedout) {
+VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
 	if (!timedout) {
 		//this should not happen...
 		if (!timerproblem) {
@@ -108,7 +108,7 @@ VOID CALLBACK timercallback(PVOID lpParam, BOOLEAN timedout) {
 }
 #else
 void
-diag_os_sigalrm(int unused __attribute__((unused)))
+diag_os_sigalrm(UNUSED(int unused))
 {
 	diag_l3_timer();	/* Call L3 Timer */
 	diag_l2_timer();	/* Call L2 timers, which will call L1 timer */

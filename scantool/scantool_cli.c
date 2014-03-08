@@ -62,11 +62,9 @@ static int cmd_ecus(int argc, char **argv);
 
 static int cmd_log(int argc, char **argv);
 static int cmd_stoplog(int argc, char **argv);
-#ifdef WIN32
-static int cmd_play(int argc, char **argv);
-#else
-static int cmd_play(int argc, char **argv) __attribute__((unused));
-#endif
+
+UNUSED(static int cmd_play(int argc, char **argv));
+
 static int cmd_scan(int argc, char **argv);
 
 static int cmd_date(int argc, char **argv);
@@ -264,13 +262,9 @@ cmd_help(int argc, char **argv)
 	return help_common(argc, argv, root_cmd_table);
 }
 
-#ifdef WIN32
+
 static int
-cmd_date(int argc, char **argv)
-#else
-static int
-cmd_date(int argc __attribute__((unused)), char **argv __attribute__((unused)))
-#endif
+cmd_date(UNUSED(int argc), UNUSED(char **argv))
 {
 	struct tm *tm;
 	time_t now;
@@ -282,13 +276,9 @@ cmd_date(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 	return CMD_OK;
 }
 
-#ifdef WIN32
+
 static int
-cmd_rem(int argc, char **argv)
-#else
-static int
-cmd_rem(int argc __attribute__((unused)), char **argv __attribute__((unused)))
-#endif
+cmd_rem(UNUSED(int argc), UNUSED(char **argv))
 {
 	return CMD_OK;
 }
@@ -374,13 +364,9 @@ cmd_log(int argc, char **argv)
 	return CMD_OK;
 }
 
-#ifdef WIN32
+
 static int
-cmd_stoplog(int argc, char **argv)
-#else
-static int
-cmd_stoplog(int argc __attribute__((unused)), char **argv __attribute__((unused)))
-#endif
+cmd_stoplog(UNUSED(int argc), UNUSED(char **argv))
 {
 	/* Turn off logging */
 	if (global_logfp == NULL) {
@@ -687,13 +673,9 @@ cmd_monitor(int argc, char **argv)
 	return CMD_OK;
 }
 
-#ifdef WIN32
+
 static int
-cmd_scan(int argc, char **argv)
-#else
-static int
-cmd_scan(int argc __attribute__((unused)), char **argv __attribute__((unused)))
-#endif
+cmd_scan(UNUSED(int argc), UNUSED(char **argv))
 {
 	int rv;
 
@@ -729,15 +711,9 @@ cmd_scan(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 }
 
 
-#ifdef WIN32
+
 static int
-cmd_cleardtc(int argc,
-char **argv)
-#else
-static int
-cmd_cleardtc(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv))
 {
 	char *input;
 
@@ -765,13 +741,9 @@ char **argv __attribute__((unused)))
 }
 
 
-#ifdef WIN32
+
 static int
-cmd_ecus(int argc, char **argv)
-#else
-static int
-cmd_ecus(int argc __attribute__((unused)), char **argv __attribute__((unused)))
-#endif
+cmd_ecus(UNUSED(int argc), UNUSED(char **argv))
 {
 	ecu_data_t *ep;
 	unsigned int i;

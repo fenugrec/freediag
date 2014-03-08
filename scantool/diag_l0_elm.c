@@ -84,7 +84,7 @@ static int diag_l0_elm_initdone=0;		//1=init done
 extern const struct diag_l0 diag_l0_elm;
 
 static int diag_l0_elm_send(struct diag_l0_device *dl0d,
-const char *subinterface __attribute__((unused)), const void *data, size_t len);
+	UNUSED(const char *subinterface), const void *data, size_t len);
 
 void elm_parse_cr(char *data, int len);	//change 0x0A to 0x0D
 
@@ -147,7 +147,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 	//note : we better not request (len == (size_t) -1) bytes ! The casts between ssize_t and size_t are
 	// "muddy" in here
 	ssize_t xferd;
-	int i, rpos, rv;
+	int i, rv;
 	char buf[ELM_BUFSIZE];	//for receiving responses
 	struct diag_l0_elm_device *dev;
 	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
@@ -253,6 +253,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 	return 0;
 
 #if 0	//old error message search, maybe faster but less robust
+	int rpos;
 	rpos=rv-1;
 	while (rpos>0) {
 		rpos--;
@@ -505,17 +506,12 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
  * "ATx" commands sould not be sent with this function.
  * Returns 0 on success, -1 on failure
  */
-#ifdef WIN32
+
 static int
 diag_l0_elm_send(struct diag_l0_device *dl0d,
-const char *subinterface,
+UNUSED(const char *subinterface),
 const void *data, size_t len)
-#else
-static int
-diag_l0_elm_send(struct diag_l0_device *dl0d,
-const char *subinterface __attribute__((unused)),
-const void *data, size_t len)
-#endif
+
 {
 	char buf[ELM_BUFSIZE];
 	ssize_t xferd;
@@ -574,17 +570,10 @@ const void *data, size_t len)
  * ELM returns a string with format "%02x %02x %02x[...]\n" .
  * We convert this received ascii string to hex before returning.
  */
-#ifdef WIN32
 static int
 diag_l0_elm_recv(struct diag_l0_device *dl0d,
-const char *subinterface,
+UNUSED(const char *subinterface),
 void *data, size_t len, int timeout)
-#else
-static int
-diag_l0_elm_recv(struct diag_l0_device *dl0d,
-const char *subinterface __attribute__((unused)),
-void *data, size_t len, int timeout)
-#endif
 {
 	int xferd;
 	char rxbuf[ELM_BUFSIZE];		//need max (7 digits *2chars) + (6 space *1) + 1(CR) + 1(>) + (NUL) bytes.
@@ -637,15 +626,17 @@ void *data, size_t len, int timeout)
 
 /*
  * Set speed/parity
-* but upper levels shouldn't be doing this. This function will
-* force the actual 9600/38400;8N1
+* but upper levels shouldn't be doing this.
+* This function will do nothing
  */
 static int
 diag_l0_elm_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pss)
 {
 	int rv;
-	fprintf(stderr, FLFMT "Warning: attempted to override serial settings! Report this !\n", FL);
+	fprintf(stderr, FLFMT "Warning: attempted to override ELM com speed (%d)! Report this !\n", FL,pss->speed);
+	return 0;
+
 	struct diag_serial_settings sset;
 	sset.speed=9600;
 	sset.databits = diag_databits_8;

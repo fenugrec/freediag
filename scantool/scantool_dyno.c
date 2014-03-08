@@ -20,7 +20,7 @@
  *
  *************************************************************************
  *
- * 
+ *
  * Mostly ODBII Compliant Scan Tool (as defined in SAE J1978)
  *
  * CLI routines - dyno subcommand
@@ -61,7 +61,7 @@ const struct cmd_tbl_entry dyno_cmd_table[] =
 {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_dyno_help, 0, NULL},
-  
+
 	{ "mass", "mass [mass]", "Step 1 : Shows/Sets the mass of the vehicle",
 		cmd_dyno_mass, 0, NULL},
 	{ "loss", "loss", "Step 2 : Determines power lost by aerodynamic and friction forces",
@@ -78,7 +78,7 @@ const struct cmd_tbl_entry dyno_cmd_table[] =
 		cmd_dyno_graph, 0, NULL},
 	{ "save", "save [filename]", "Save measures and results in a file",
 		cmd_dyno_save, 0, NULL},
-  
+
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
 	{ "quit","quit", "Return to previous menu level",
@@ -99,7 +99,7 @@ static int cmd_dyno_mass(int argc, char **argv)
 		dyno_set_mass(htoi(argv[1]));
 	else
 		printf("mass: %d kg\n", dyno_get_mass());
-  
+
 	return (0);
 }
 
@@ -120,13 +120,13 @@ static int cmd_dyno_mass(int argc, char **argv)
 static int measure_data(int data_pid, ecu_data_t *ep)
 {
   int rv;
-  
+
   /* measure */
   rv = l3_do_j1979_rqst(global_l3_conn, 0x1, data_pid, 0x00,
       0x00, 0x00, 0x00, 0x00, (void *)0);
   if (rv < 0)
     return 0;
-  
+
   /* data extraction */
   if (data_pid == RPM_PID)
     return (int)(RPM_DATA(ep->mode1_data) + .50);
@@ -134,7 +134,7 @@ static int measure_data(int data_pid, ecu_data_t *ep)
     return (int)(SPEED_DATA(ep->mode1_data) + .50);
   else
     return DYNDATA_1(data_pid, 2, ep->mode1_data);
-  
+
   return 0;
 }
 
@@ -144,26 +144,26 @@ static int measure_data(int data_pid, ecu_data_t *ep)
 #ifdef DYNO_DEBUG
 int counter;
 struct timeval tv0; /* measuring time */
-  
+
 /* fake loss measures */
 int fake_loss_measure_data()
 {
   struct timeval tv; /* measuring time */
   int elapsed; /* elapsed time */
   int speed;
-  
+
   if (counter == 0)
   {
     gettimeofday(&tv0, 0);
   }
-  
+
   diag_os_millisleep(250);
 
   /* get elapsed time */
   gettimeofday(&tv, 0);
   elapsed = MILLIS(tv) - MILLIS(tv0);
   elapsed += 11000;
-  
+
   if      (elapsed < 11983) speed = 89*10000/36;
   else if (elapsed < 12723) speed = 88*10000/36;
   else if (elapsed < 13473) speed = 87*10000/36;
@@ -205,9 +205,9 @@ int fake_loss_measure_data()
   else if (elapsed < 48183) speed = 50*10000/36;
   else if (elapsed < 49433) speed = 49*10000/36;
   else                      speed = 48*10000/36;
-  
+
   counter++;
-  
+
   return (speed);
 }
 
@@ -216,7 +216,7 @@ int counter2;
 int fake_run_measure_data(int data_pid)
 {
   int rpm;
-  
+
   diag_os_millisleep(250);
 
   rpm = 1000 + counter2 * 200;
@@ -224,7 +224,7 @@ int fake_run_measure_data(int data_pid)
     counter2++;
   else
     counter2--;
-  
+
   if (data_pid == RPM_PID)
     return rpm;
   else if (data_pid == SPEED_PID)
@@ -252,33 +252,28 @@ int dyno_loss_done;
 /*
  * Determine power lost by aerodynamic and friction forces
  */
-#ifdef WIN32
-static int cmd_dyno_loss(int argc,
-char **argv)
-#else
-static int cmd_dyno_loss(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+
+static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
 {
   ecu_data_t *ep;
-  
+
   int speed;              /* measured speed */
   int speed_previous = 0; /* previous speed */
-  
+
   struct timeval tv0, tv;  /* measuring time */
   int elapsed; /* elapsed time */
-  
+
   int i, length; /* length of printed string */
   int nb = 0; /* number of measures */
-  
-  
+
+
   /* Check mass */
   if (dyno_get_mass() <= 0)
   {
 		printf("The mass of the vehicle has not been set, please set the mass first\n");
 		return(CMD_OK);
   }
-  
+
   /* Show instructions */
   printf("To proceed loss determination, reach the maximum speed you will reach during\n");
   printf("dyno, then push in the clutch, leaving the car in gear. Allow the car to coast\n");
@@ -292,33 +287,33 @@ char **argv __attribute__((unused)))
   reset_results();
   gettimeofday(&tv0, 0); /* initial time */
   ep = ecu_info; /* ECU data */
-  
+
   /* exclude 1st measure */
   speed_previous = LOSS_MEASURE_DATA(SPEED_PID, ep); /* m/s * 1000 */
 
   printf("Starting loss determination (max speed=%d km/h)\n", SPEED_ISO_TO_KMH(speed_previous));
   printf("Number of measures : 0");
   length = 1;
-  
+
   /* loss measures */
   while (1)
   {
     /* measure speed */
     speed = LOSS_MEASURE_DATA(SPEED_PID, ep); /* m/s * 1000 */
-    
+
     /* get elapsed time */
     gettimeofday(&tv, 0);
     elapsed = MILLIS(tv) - MILLIS(tv0);
-    
+
     if (speed < speed_previous)
     {
       /* Add measure */
       dyno_loss_add_measure(elapsed, speed);
       nb++;
-      
+
       speed_previous = speed;
     }
-    
+
     if (pressed_enter() != 0)
     {
       /* ENTER pressed : stops */
@@ -330,14 +325,14 @@ char **argv __attribute__((unused)))
       /* erase previous measure */
       for (i=0; i<length; i++)
         printf("");
-      
+
       /* Display new measure */
       length = printf("%d (speed=%d km/h, d=%5.5f, f=%4.2f)   ",
         nb, SPEED_ISO_TO_KMH(speed), dyno_loss_get_d(), dyno_loss_get_f());
       fflush(stdout); /* force displaying now (may slow down dyno...) */
     }
   }
-  
+
   /* display dyno time */
   gettimeofday(&tv, 0);
   elapsed = MILLIS(tv) - MILLIS(tv0);
@@ -345,10 +340,10 @@ char **argv __attribute__((unused)))
   printf("Loss determination time : %ds.\n", (elapsed/1000));
 
   printf("\n");
-  
+
   /* now dyno loss has been done */
   dyno_loss_done = 1;
-  
+
   return(CMD_OK);
 }
 
@@ -367,7 +362,7 @@ static int cmd_dyno_setloss(int argc, char **argv)
       dyno_loss_set_d(d);
     }
   }
-  
+
   if (argc > 2)
   {
     int assigned;
@@ -378,16 +373,16 @@ static int cmd_dyno_setloss(int argc, char **argv)
       dyno_loss_set_f(f);
     }
   }
-  
+
   printf("d=%5.5f, f=%4.2f\n", dyno_loss_get_d(), dyno_loss_get_f());
   printf("\n");
-  
+
   if (argc > 2)
   {
     /* now consider that dyno loss has been done */
     dyno_loss_done = 1;
   }
-  
+
   return(CMD_OK);
 }
 
@@ -398,26 +393,21 @@ static int cmd_dyno_setloss(int argc, char **argv)
 /*
  * Run dyno
  */
-#ifdef WIN32
-static int cmd_dyno_run(int argc,
-char **argv)
-#else
-static int cmd_dyno_run(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+
+static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
 {
   ecu_data_t *ep;
-  
+
   int speed;            /* measured speed */
   int rpm;              /* measured rpm */
   int rpm_previous = 0; /* previous rpm */
-  
+
   struct timeval tv0, tv;  /* measuring time */
   int elapsed; /* elapsed time */
-  
+
   int i, length = 0; /* length of printed string */
   int nb = 0; /* number of measures */
-  
+
 
   /* Check mass */
   if (dyno_get_mass() <= 0)
@@ -425,14 +415,14 @@ char **argv __attribute__((unused)))
 		printf("The mass of the vehicle has not been set, please set the mass first\n");
 		return(CMD_OK);
   }
-  
+
   /* Check mass */
   if (dyno_loss_done <= 0)
   {
 		printf("The loss determination has not been done, please use command loss or setloss first\n");
 		return(CMD_OK);
   }
-  
+
   /* Show instructions */
   printf("To proceed dyno, do a full-throttle acceleration run\n");
   printf("in a single gear from a rolling start.\n");
@@ -452,35 +442,35 @@ char **argv __attribute__((unused)))
   {
     /* measure RPM */
     rpm = RUN_MEASURE_DATA(RPM_PID, ep);
-    
+
     if (rpm_previous == 0)
     {
       /* this is the first measure */
       printf("Starting dyno (min rpm=%d)\n", rpm);
       printf("Number of measures : ");
     }
-    
+
     /* if RPM starts decreasing, stop run */
     if (rpm < rpm_previous)
     {
       printf(" (max rpm=%d)\n", rpm_previous);
       break;
     }
-    
+
     /* get elapsed time */
     gettimeofday(&tv, 0);
     elapsed = MILLIS(tv) - MILLIS(tv0);
-    
+
     /* Add measure */
     dyno_add_measure(elapsed, rpm);
-    
+
     /* Display number of measures */
     nb++;
     for (i=0; i<length; i++)
       printf("");
     length = printf("%d (%d RPM) ", nb, rpm);
     fflush(stdout); /* force displaying now (may slow down dyno...) */
-    
+
     rpm_previous = rpm;
   }
 
@@ -489,14 +479,14 @@ char **argv __attribute__((unused)))
   speed = RUN_MEASURE_DATA(SPEED_PID, ep); /* m/s * 1000 */
   rpm   = RUN_MEASURE_DATA(RPM_PID,   ep);
   dyno_set_gear(speed, (rpm_previous + rpm) / 2);
-  
+
   /* display dyno time */
   gettimeofday(&tv, 0);
   elapsed = MILLIS(tv) - MILLIS(tv0);
   printf("Dyno time : %ds.\n", (elapsed/1000));
 
   printf("\n");
-  
+
   return(CMD_OK);
 }
 
@@ -512,7 +502,7 @@ static void get_measures(dyno_measure ** measures, int * nb_measures)
   (*nb_measures) = dyno_get_nb_measures();
   if (diag_malloc(measures, (*nb_measures) * sizeof(dyno_measure)))
     return;
-  
+
   /* get measures */
   dyno_get_measures((*measures), (*nb_measures));
 }
@@ -521,15 +511,15 @@ static void get_measures(dyno_measure ** measures, int * nb_measures)
 static void display_measures(dyno_measure * measures, int nb_measures)
 {
   int i;
-  
+
   for (i=0; i<nb_measures; i++)
   {
     printf("measure %d:\t%3.3f s. \tRPM: %d\t%3.3f m/s\t%3.2f km/h\n", (i+1),
-      measures[i].millis/1000.0, 
-      measures[i].rpm, 
-      dyno_get_speed_from_rpm(measures[i].rpm)/1000.0, 
+      measures[i].millis/1000.0,
+      measures[i].rpm,
+      dyno_get_speed_from_rpm(measures[i].rpm)/1000.0,
       dyno_get_speed_from_rpm(measures[i].rpm)*3.6/1000.0);
-    
+
     if (((i+1) % 22) == 0)
     {
       wait_enter("Press ENTER to continue... ");
@@ -538,25 +528,20 @@ static void display_measures(dyno_measure * measures, int nb_measures)
 }
 
 /* Display all measures */
-#ifdef WIN32
-static int cmd_dyno_measures(int argc,
-char **argv)
-#else
-static int cmd_dyno_measures(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+
+static int cmd_dyno_measures(UNUSED(int argc), UNUSED(char **argv))
 {
   dyno_measure * measures = NULL;
   int nb_measures = 0;
-  
+
   printf("Dyno measures :\n");
   get_measures(&measures, &nb_measures);
   display_measures(measures, nb_measures);
   free(measures);
-  
+
   printf("%d measures.\n", nb_measures);
   printf("\n");
-  
+
   return(CMD_OK);
 }
 
@@ -565,17 +550,17 @@ char **argv __attribute__((unused)))
 static void display_results(dyno_result * results, int nb)
 {
   int i;
-  
+
   int max_power_i = 0;
   int max_power = 0;
   int max_torque_i = 0;
   int max_torque = 0;
-  
+
   for (i=0; i<nb; i++)
   {
     printf("%d:\tRPM=%d  \tpower=%d W (%d ch)\ttorque=%d Nm\n", i,
       results[i].rpm, results[i].power, results[i].power_ch, results[i].torque);
-    
+
     if (results[i].power > max_power)
     {
       max_power = results[i].power;
@@ -586,7 +571,7 @@ static void display_results(dyno_result * results, int nb)
       max_torque = results[i].torque;
       max_torque_i = i;
     }
-    
+
     if (((i+1) % 22) == 0)
     {
       wait_enter("Press ENTER to continue... ");
@@ -606,7 +591,7 @@ static void display_results(dyno_result * results, int nb)
 static void display_graphs(dyno_result * results, int nb)
 {
   int row, col, step;
-  
+
   int max_power_i = 0;
   int max_power = 0;
   int max_torque_i = 0;
@@ -626,10 +611,10 @@ static void display_graphs(dyno_result * results, int nb)
       max_torque_i = col;
     }
   }
-  
+
   /* 80 columns max */
   step = (nb / 80) + 1;
-  
+
   /* Displaying torque */
   printf("Torque :\n");
   for (row=DYNO_GRAPH_HEIGHT-1; row>=0; row--)
@@ -643,12 +628,12 @@ static void display_graphs(dyno_result * results, int nb)
     }
     printf("\n");
   }
-  
+
   printf("\n");
-  
+
   /* Pause */
   wait_enter("Press ENTER to continue... ");
-  
+
   printf("\n");
 
   /* Displaying power */
@@ -677,10 +662,10 @@ static void get_results(void)
     if (diag_malloc(&dyno_results, dyno_nb_results * sizeof(dyno_result)))
       return;
   }
-  
+
   /* raw results */
   dyno_get_results(dyno_results, dyno_nb_results);
-  
+
   /* smooth results */
   dyno_smooth_results(dyno_results, dyno_nb_results);
 }
@@ -697,23 +682,18 @@ void reset_results(void)
 /*
  * Display dyno results
  */
-#ifdef WIN32
-static int cmd_dyno_result(int argc,
-char **argv)
-#else
-static int cmd_dyno_result(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+
+static int cmd_dyno_result(UNUSED(int argc), UNUSED(char **argv))
 {
   get_results();
-  
+
   /* Check data */
   if (dyno_nb_results <= 0)
   {
 		printf("Dyno run has not been done, please do a run first\n");
 		return(CMD_OK);
   }
-  
+
   display_results(dyno_results, dyno_nb_results);
   return CMD_OK;
 }
@@ -721,23 +701,18 @@ char **argv __attribute__((unused)))
 /*
  * Display dyno graphs
  */
-#ifdef WIN32
-static int cmd_dyno_graph(int argc,
-char **argv)
-#else
-static int cmd_dyno_graph(int argc __attribute__((unused)),
-char **argv __attribute__((unused)))
-#endif
+
+static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv))
 {
   get_results();
-  
+
   /* Check data */
   if (dyno_nb_results <= 0)
   {
 		printf("Dyno run has not been done, please do a run first\n");
 		return(CMD_OK);
   }
-  
+
   display_graphs(dyno_results, dyno_nb_results);
   return(CMD_OK);
 }
@@ -753,17 +728,17 @@ char **argv __attribute__((unused)))
 static int cmd_dyno_save(int argc, char **argv)
 {
   char * filename;
-  
+
   get_results();
-  
+
   /* Check data */
   if (dyno_nb_results <= 0)
   {
 		printf("Dyno run has not been done, please do a run first\n");
 		return(CMD_OK);
   }
-  
-  
+
+
   if (argc > 1)
   {
     /* Get filename from command arguments */
@@ -778,11 +753,11 @@ static int cmd_dyno_save(int argc, char **argv)
     size_t nbytes = 256;
     if (diag_malloc(&filename, nbytes + 1))
       return DIAG_ERR_NOMEM;
-    
+
     printf("Enter filename: ");
     if (fgets(filename, (int)nbytes, stdin) == 0)
       return(CMD_OK);
-    
+
     /* Remove pending "\n" and "\r", if any */
     while ((filename[strlen(filename)-1] == '\n') ||
            (filename[strlen(filename)-1] == '\r'))
@@ -790,10 +765,10 @@ static int cmd_dyno_save(int argc, char **argv)
       filename[strlen(filename)-1] = '\0';
     }
   }
-  
+
   dyno_save(filename, dyno_results, dyno_nb_results);
   printf("\n");
-  
+
   free(filename);
   return CMD_OK;
 }
