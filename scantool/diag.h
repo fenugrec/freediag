@@ -79,7 +79,7 @@ extern "C" {
 	//this is a bare implementation with no timezone support. Returns 0. see diag_os.c
 	int gettimeofday(struct timeval *tv, struct timezone *tz);
 #endif //HAVE_GETTIMEOFDAY
-	
+
 #ifndef HAVE_TIMERSUB
 	//bare implementation, in diag_os.c
 	void timersub(struct timeval *a, struct timeval *b, struct timeval *res);
@@ -92,11 +92,11 @@ extern "C" {
 /* For diagnostics */
 
 #define FLFMT "%s:%d:  "
-	
+
 #ifndef CMAKE_ENABLED
 	#define CURFILE __FILE__
 	//with autotools __FILE__ seems OK, so less reason for these warnings :
-	
+
 	//#warning *** Without CMake, the debbuging & error messages will show the
 	//#warning *** absolute path of the relevant source file. This is annoying
 	//#warning *** but not severe. See diag.h
@@ -128,8 +128,8 @@ typedef uint16_t flag_type;
  *
  * The IOCTL can be done to any layer, and it is passed downward with
  * each layer filling in info as needed (there are currently no clashes)
- * 
- * Values for "cmd" parameter to diag_l[12]_ioctl() 
+ *
+ * Values for "cmd" parameter to diag_l[12]_ioctl()
  */
 
 #define DIAG_IOCTL_GET_L1_TYPE	0x2010	/* Get L1 Type, data is ptr to int */
@@ -178,7 +178,7 @@ struct diag_msg
 	uint8_t	*data;		/* The data */
 
 	struct timeval	 rxtime;	/* Processed time */
-	struct diag_msg	*next;		/* For lists of messages */
+	struct diag_msg	*next;		/* For linked lists of messages */
 
 	uint8_t	mcnt;		/* Number of elements on this list */
 
@@ -198,6 +198,7 @@ void diag_freemsg(struct diag_msg *);	/* Free a msg that we dup'ed */
 int diag_init(void);
 int diag_close(void);
 void diag_data_dump(FILE *out, const void *data, size_t len);
+//smartcat : only verifies if s1 is not too large !
 void smartcat(char *p1, const size_t s1, const char *p2 );
 
 /*
@@ -234,7 +235,7 @@ const char *diag_errlookup(const int code);
  */
 
 //diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
-int diag_flcalloc(const char *name, const int line, 
+int diag_flcalloc(const char *name, const int line,
 	void **p, size_t n, size_t s);
 
 int diag_flmalloc(const char *name, const int line, void **p, size_t s);

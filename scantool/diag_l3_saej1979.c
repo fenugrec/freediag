@@ -22,6 +22,9 @@
  *
  * L3 code to do SAE J1979 messaging
  *
+ * TODO : all of this expects a 3-byte header; but it may be possible
+ * (iso14230 in some cases) to have no header... shouldn't we check
+ * some "STRIPHEADER" flags ?
  */
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +65,7 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		return diag_iseterr(DIAG_ERR_BADDATA);
 
 	/* Mode 8 responses vary in length dependent on request */
-	//J1979 section 6.8+ 
+	//J1979 section 6.8+
 	//the requests, however, are fixed length
 	// There is a filler byte inserted when using TID 00 to request supported TIDs. But length is still 7+4
 	//if ((mode == 8) && ((data[4]&0x1f) == 0))
@@ -88,7 +91,7 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		//	rv = DIAG_ERR_INCDATA;
 		//	break;
 		// }
-		if ((data[4] & 0x1f) == 0) {	
+		if ((data[4] & 0x1f) == 0) {
 			/* PID 00 or 0x20 : return supported PIDs */
 			rv = 10;
 			break;
@@ -125,7 +128,7 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 			rv=7;
 			break;
 		case 0x0C:
-			rv=8;	
+			rv=8;
 			break;
 		case 0x0D:
 		case 0x0E:
@@ -398,7 +401,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			if (!badpacket)
 				if (diag_malloc(&data, (size_t)sae_msglen))
 					return;
-	
+
 			if (badpacket || (data == NULL)) {
 				/* Failure indicated by zero len msg */
 				msg->data = NULL;
@@ -411,7 +414,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				/* Copy in J1979 part of message */
 				memcpy(data, &d_l3_conn->rxbuf[3], (size_t)(sae_msglen - 4));
 				/* remove whole message from rx buf */
-				memcpy(d_l3_conn->rxbuf, 
+				memcpy(d_l3_conn->rxbuf,
 					&d_l3_conn->rxbuf[sae_msglen],
 					(size_t)sae_msglen);
 
@@ -666,7 +669,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 			for (i=0, j=1; i<3; i++, j+=2) {
 				if ((msg->data[j]==0) && (msg->data[j+1]==0))
 					continue;
-				
+
 				switch ((msg->data[j] >> 6) & 0x03) {
 					case 0:
 						area = 'P';
@@ -769,8 +772,8 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
 	struct diag_msg msg;
 	uint8_t data[6];
 
-	/* J1979 needs keepalive at least every 5 seconds, we use 3.5s */
-	// Not needed for l0_elm devices.
+	/* J1979 needs keepalive at least every 5 seconds (P3), we use 3.5s */
+
 	if (ms < J1979_KEEPALIVE)
 		return;
 
@@ -782,12 +785,12 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
 
 	if (diag_l3_debug & DIAG_DEBUG_TIMER) {
 		/* XXX Not async-signal-safe */
-		fprintf(stderr, FLFMT "timeout impending for %p %d ms\n",
+		fprintf(stderr, FLFMT "P3 timeout impending for %p %d ms\n",
 				FL, d_l3_conn, ms);
 	}
 
 	/*
-	 * Mode 1 Pid 0 request is the SAEJ1979 idle message
+	 * Service 1 Pid 0 request is the SAEJ1979 idle message
 	 * XXX Need to get the address bytes correct
 	 */
 	msg.data = data;
@@ -809,12 +812,12 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
 
 	/* Get and ignore the response */
 	(void)diag_l3_recv(d_l3_conn, 50, NULL, NULL);
-	
+
 	return;
 }
 
 const diag_l3_proto_t diag_l3_j1979 = {
 	"SAEJ1979", diag_l3_base_start, diag_l3_base_stop,
 	diag_l3_j1979_send, diag_l3_j1979_recv, NULL,
-	diag_l3_j1979_decode, diag_l3_j1979_timer 
+	diag_l3_j1979_decode, diag_l3_j1979_timer
 };

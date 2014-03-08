@@ -69,12 +69,12 @@ my opinion remarked with "vnevoa"):
    better than a PIC, which will probably result in a higher-quality,
    more-featured protocol.
 
-<H2>-- diag_l0_vw.c: (soon to be merged in diag_l0_dumb.c)</H2>
+<H2>-- diag_l0_dumb.c: </H2>
 <ul>
-    <li> interface for VAGTool compatible interfaces
-     such as Jeff Noxon's opendiag interface.
-    <li> This is also tested with the Silicon Engines K line only interface, but
-     has some of the startup ECU checking removed. 
+    <li> interface for generic "dumb" interfaces, such as VAGTool &
+ clones, Jeff Noxon's opendiag interface, and all simple converters without
+  an onboard microcontroller.
+    <li> This is also tested with the Silicon Engines K line only interface.
 </ul>
    vnevoa: This is my baby :)...  This  supports any Passive interface,
    that is, this file does not really deal with any dreamed-up protocol,
@@ -89,13 +89,19 @@ my opinion remarked with "vnevoa"):
    "Andy-Whittaker", and it can do any protocol (all OBD2 flavours,
    plus ALDL!)... provided the PC SW knows what it's doing!!! ;)
 </pre>
+
+<H2>-- diag_l0_sim.c:</H2>
+<ul>
+   <li> the CARSIM interface allows testing of higher levels (L2, L3) without
+   having an actual car connected. It reads requests and responses from a file.
+</ul>
 <p>
 So, when it comes to interfaces (IFCs), we can draw the following conclusions:
 <ol>
 
-<li> There are 2 classes of interfaces, which I call "active"(with
-a microprocessor unit - mpu) and "passive" (no mpu, only electrical
-voltage protection).
+<li> There are 2 classes of interfaces, which I call "active" or "smart" (with
+a microprocessor unit - mpu) and "passive"/"dumb" (no mpu, only signal
+level translation and optionally opto-isolation).
 <p>
 
 <li> "Active" IFCs are very friendly for the programmers, because

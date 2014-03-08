@@ -61,6 +61,7 @@ static struct diag_l3_conn	*diag_l3_list;
 
 /*
  * Protocol start (connect a protocol on top of a L2 connection
+ * make sure to diag_l3_stop afterwards to free() the diag_l3_conn !
  */
 struct diag_l3_conn *
 diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
@@ -140,6 +141,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 
 /*
  * Just call the appropriate protocol routine
+ * and free() d_l3_conn
  */
 int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 {
@@ -151,7 +153,7 @@ int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 	/* Remove from list */
 	if (d_l3_conn == diag_l3_list)
 	{
-		/* 1st in list */
+		/* 1st in list : make list point to the actual 2nd*/
 		diag_l3_list = d_l3_conn->next;
 	} else {
 		for ( dl = diag_l3_list->next, dlast = diag_l3_list;
@@ -193,7 +195,8 @@ int diag_l3_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 		rcv_call_back, handle));
 }
 
-char *diag_l3_decode(struct diag_l3_conn *d_l3_conn, 
+//TODO : check if *buf should be uint8_t instead ?
+char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 	struct diag_msg *msg, char *buf, const size_t bufsize)
 {
 	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
@@ -201,6 +204,9 @@ char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 	return(dp->diag_l3_proto_decode(d_l3_conn, msg, buf, bufsize));
 }
 
+
+// diag_l3_ioctl : call the diag_l3_proto_ioctl AND diag_l2_ioctl !?
+// But why L2 ?
 int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, int cmd, void *data)
 {
 	int rv = 0;
@@ -221,7 +227,8 @@ int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, int cmd, void *data)
 
 
 /*
- * Note: This is called from a signal handler.
+ * Note: This is called regularly from a signal handler.
+ * (see diag_os.c)
  * XXX This calls non async-signal-safe functions!
  */
 
@@ -298,14 +305,14 @@ struct diag_msg *msg __attribute__((unused)))
 #ifdef WIN32
 int
 diag_l3_base_recv(
-struct diag_l3_conn *d_l3_conn, 
+struct diag_l3_conn *d_l3_conn,
 int timeout,
 void (* rcv_call_back)(void *handle ,struct diag_msg *),
 void *handle)
 #else
 int
 diag_l3_base_recv(
-struct diag_l3_conn *d_l3_conn __attribute__((unused)), 
+struct diag_l3_conn *d_l3_conn __attribute__((unused)),
 int timeout __attribute__((unused)),
 void (* rcv_call_back)(void *handle ,struct diag_msg *) __attribute__((unused)),
 void *handle __attribute__((unused)))

@@ -13,6 +13,11 @@ b) typical simplified interface, K-line only :
 	K also drives RXD (half-duplex ! So any data sent on TXD will be seen on RXD !) similarly;
 	In order to receive data on RXD, RTS must always be CLEAR (neg. voltage)
 	DTR is a "pull-up" on RXD so it needs to be always SET (pos. voltage)
+
+c) other simple interfaces with a different pattern :
+	A word of caution, the polarity of the L-Line init is currently hardcoded, so
+	make sure you do not set USE_LLINE ! Eventually I might change the configuration
+	to a more general "LLINE_POLARITY" flag but I know of no interface that would need that.
 	
 
 Configurable options : (try "set dumbopts ?" for most recent list)

@@ -6,7 +6,7 @@
 set (LIBDIAG_SRCS diag_l0_me.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c
 	diag_l0_dumb.c diag_config.c
 	${OS_DIAGTTY} diag_l1.c diag_l2.c diag_l2_can.c diag_l2_raw.c
-        diag_l2_iso9141.c diag_l2_iso9141.c diag_l2_iso14230.c
+		diag_l2_iso9141.c diag_l2_iso9141.c diag_l2_iso14230.c
 	diag_l2_saej1850.c diag_l2_vag.c diag_l2_mb1.c
 	diag_l3.c diag_l3_saej1979.c diag_l3_iso14230.c diag_l3_vag.c
 	diag_os.c diag_general.c diag_dtc.c )
@@ -15,8 +15,13 @@ set (DIAGTEST_SRCS diag_test.c)
 set (SCANTOOL_SRCS scantool.c scantool_cli.c scantool_debug.c scantool_set.c
 	scantool_test.c scantool_diag.c scantool_vag.c scantool_dyno.c
 	scantool_aif.c)
-	
-	
+#and GLOB all the headers. This is *only* so that the headers end up in
+#the file list of IDE projects (at least Code::blocks)
+#but could be removed without impacting the build process
+file (GLOB SCANTOOL_HEADERS *.h)
+
+
+
 ### step 2 : set CURFILE
 #for the various debugging fprintf()s, __FILE__ gives a super long path
 #but we're really only interested in the filename; the following should
@@ -34,7 +39,7 @@ endforeach()
 
 ### Now define targets.
 
-### libdiag and libdyno (required for binaries)	
+### libdiag and libdyno (required for binaries)
 
 add_library(libdiag STATIC ${LIBDIAG_SRCS})
 add_library(libdyno STATIC ${LIBDYNO_SRCS})
@@ -54,7 +59,7 @@ endif(WIN32)
 
 ### scantool binary
 
-add_executable(scantool  ${SCANTOOL_SRCS})
+add_executable(scantool  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
 
 target_link_libraries(scantool libdiag libdyno)
 install(TARGETS scantool DESTINATION bin)

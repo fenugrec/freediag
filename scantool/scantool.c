@@ -183,7 +183,7 @@ print_msg(FILE *fp, struct diag_msg *msg, int timestamp)
  * mode (set by caller to recv()), else in normal data mode
  *
  * We get called by L3/L2 with all the messages received within the
- * window, i.e we can get responses from many ECUs that all relate to 
+ * window, i.e we can get responses from many ECUs that all relate to
  * a single request [ISO9141/14230 uses timing windows to decide when
  * no more responses will arrive]
  *
@@ -201,7 +201,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	ecu_data_t	*ep;
 
 	const char *O2_strings[] = {
-		"Test 0", 
+		"Test 0",
 		"Rich to lean sensor threshold voltage",
 		"Lean to rich sensor threshold voltage",
 		"Low sensor voltage for switch time calc.",
@@ -255,7 +255,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		uint8_t src = tmsg->src;
 		struct diag_msg *rmsg;
 		int found;
-	
+
 		for (i=0, ep=ecu_info, found=0; i<MAX_ECU;i++, ep++) {
 			if (ep->valid) {
 				if (ep->ecu_addr == src) {
@@ -279,7 +279,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		/* Ok, we now have the ecu_info for this message fragment */
 
 		/* Attach the fragment to the ecu_info */
-		rmsg = diag_dupsinglemsg(tmsg);	
+		rmsg = diag_dupsinglemsg(tmsg);
 		if (ep->rxmsg) {
 			struct diag_msg *xmsg = ep->rxmsg;
 			while (xmsg) {
@@ -342,7 +342,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 							/* Max value test */
 							fprintf(stderr, "Test 0x%x Component 0x%x ",
 								data[1], data[2] & 0x7f);
-				
+
 							if (val > lim)
 								fprintf(stderr, "FAILED ");
 							else
@@ -564,7 +564,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
 		return -1;
 	else
 		msg.len = mode_lengths[mode];
-	
+
 	msg.data = data;
 	data[0] = mode;
 	data[1] = p1;
@@ -629,7 +629,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
 						ep->mode2_data[p1].len = rxmsg->len;
 						ep->mode2_data[p1].type = TYPE_GOOD;
 						break;
-				}	
+				}
 			}
 		}
 		return 0;
@@ -650,7 +650,7 @@ l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle)
 	msg.src = set_testerid;
 	msg.dest = set_destaddr;
 
-	msg.len = len;	
+	msg.len = len;
 	msg.data = (uint8_t *)data;
 	diag_l3_send(d_conn, &msg);
 
@@ -672,7 +672,7 @@ l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle)
 	msg.src = set_testerid;
 	msg.dest = set_destaddr;
 
-	msg.len = len;	
+	msg.len = len;
 	msg.data = (uint8_t *)data;
 	diag_l2_send(d_conn, &msg);
 
@@ -799,9 +799,9 @@ int do_l3_md1pid0_rqst( struct diag_l2_conn *d_conn )
 	// Do a L2 request ...
 	rmsg = diag_l2_request(d_conn, &msg, &errval);
 	if (rmsg != NULL) {
-		/* Check its a Mode1 Pid0 response */	
+		/* Check its a Mode1 Pid0 response */
 		if (rmsg->len < 1) {
-			return diag_iseterr(DIAG_ERR_BADDATA);	
+			return diag_iseterr(DIAG_ERR_BADDATA);
 		}
 // What is this???
 /*		if (rmsg->data[0] != 0x41) */
@@ -817,7 +817,7 @@ int do_l3_md1pid0_rqst( struct diag_l2_conn *d_conn )
 /*
  * 9141 init
  */
-int 
+int
 do_l2_9141_start(int destaddr)
 {
 	struct diag_l2_conn *d_conn;
@@ -848,7 +848,7 @@ do_l2_14230_start(int init_type)
 		flags = DIAG_L2_TYPE_FUNCADDR;
 	else
 		flags = 0;
-	
+
 	flags |= DIAG_L2_IDLE_J1978;	/* Use J1978 idle msgs */
 
 	flags |= (init_type & DIAG_L2_TYPE_INITMASK) ;
@@ -933,7 +933,7 @@ do_l2_generic_start(void)
 	}
 
 	/* Connected ! */
-	
+
 	global_l2_conn = d_conn;
 	global_l2_dl0d = dl0d;	/* Saved for close */
 
@@ -960,7 +960,7 @@ do_j1979_getdata(int interruptible)
 	struct diag_msg *msg;
 
 	d_conn = global_l3_conn;
-	
+
 	diag_os_ipending();	//this is necessary on WIN32 to "purge" the last state of the enter key; we can't just poll stdin.
 
 	/*
@@ -1021,7 +1021,7 @@ do_j1979_getdata(int interruptible)
 						fprintf(stderr, "Mode 0x02 Pid 0x%02x request no-data (%d)\n", i, rv);
 						return 0;
 					}
-					
+
 				}
 				if (interruptible) {
 					if (diag_os_ipending())	//was Enter pressed
@@ -1132,7 +1132,7 @@ print_single_dtc(databyte_type d0, databyte_type d1)
 	db[0] = d0;
 	db[1] = d1;
 
-	fprintf(stderr, "%s", 
+	fprintf(stderr, "%s",
 		diag_dtc_decode(db, 2, set_vehicle, set_ecu, dtc_proto_j2012, buf,
 		sizeof(buf)));
 
@@ -1222,7 +1222,7 @@ do_j1979_ncms(int printall)
 		/* Either not supported, or tests havent been done */
 		do_j1979_getmodeinfo(6, 3);
 	}
-	
+
 	if (merged_mode6_info[0] == 0x00) {
 		fprintf(stderr, "ECU doesn't support non-continuously monitored system tests\n");
 		return;
@@ -1260,7 +1260,7 @@ do_j1979_getmodeinfo(int mode, int response_offset)
 	ecu_data_t *ep;
 	int not_done;
 	uint8_t *data;
-	
+
 	d_conn = global_l3_conn;
 
 	/*
@@ -1315,7 +1315,7 @@ do_j1979_getmodeinfo(int mode, int response_offset)
 				data = NULL;
 				break;
 			}
-			
+
 			if (data == NULL)
 				break;
 
@@ -1348,7 +1348,7 @@ do_j1979_getpids()
 //	struct diag_l3_conn *d_conn;
 	ecu_data_t *ep;
 	unsigned int i, j;
-	
+
 //	d_conn = global_l3_conn;		//not used ?
 
 	do_j1979_getmodeinfo(1, 2);
@@ -1482,14 +1482,14 @@ do_j1979_getdtcs()
 	}
 	if (readiness == 1)
 		fprintf(stderr, "Not all readiness tests have completed\n");
-	
+
 	if (mil == 1)
 		fprintf(stderr, "MIL light ON, ");
 	else
 		fprintf(stderr, "MIL light OFF, ");
 
 	fprintf(stderr, "%d stored DTC%c\n", num_dtcs, (num_dtcs==1)?' ':'s');
-	
+
 	if (num_dtcs) {
 		/*
 		 * Do Mode3 command to get DTCs
@@ -1603,6 +1603,9 @@ const struct protocol protocols[] = {
 /*
  * Connect to ECU by trying all protocols
  * - We do the fast initialising protocols before the slow ones
+ * This (over)-writes global_l3_conn !
+ * the caller MUST make sure global_state isn't alreay STATE_CONNECTED
+ * before calling ecu_connect.
  */
 int
 ecu_connect(void)
@@ -1647,7 +1650,7 @@ ecu_connect(void)
 		global_state = STATE_L3ADDED;
 	}
 
-	if (diag_cmd_debug > 0)
+	if (diag_cmd_debug)
 		fprintf(stderr, "debug: L2 connection ID %p, L3 ID %p\n",
 			global_l2_conn, global_l3_conn);
 
@@ -1905,7 +1908,7 @@ main(int argc __attribute__((unused)), char **argv)
 	/* Input buffer */
 
 	do_init();
-	
+
 	if ( user_interface )
 		enter_cli ( progname ) ;
 	else

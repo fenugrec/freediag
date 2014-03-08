@@ -896,7 +896,9 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 /*
  * diag_tty_break
  * fixed 25ms (1 byte @ 360bps) break and returns after [ms] !!
- * this is a bad idea
+ * this makes it unusable for the manual 5bps init.
+ * However, it possibly makes tWUP more precise; in ISO 14230 tWUP
+ * must be 50ms +/- 1ms !
  */
 int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 {
@@ -959,7 +961,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	gettimeofday(&tv,NULL);
 	diag_os_millisleep(ms);
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "%04ld.%03ld : end of break_L\n", FL, tv.tv_sec, tv.tv_usec);
+		fprintf(stderr, FLFMT "%04ld.%03ld : end of WUP\n", FL, tv.tv_sec, tv.tv_usec);
 	}
 
 	return 0;

@@ -133,7 +133,7 @@ struct diag_l2_conn
 };
 
 // Special Timeout for so-called "Smart" interfaces;
-// Slower than any protocol, give them time to unframe 
+// Slower than any protocol, give them time to unframe
 // and checksum the data:
 #define SMART_TIMEOUT 150
 
@@ -157,7 +157,7 @@ struct diag_l2_conn
  * Application Interface
  */
 
-/* 
+/*
  * Operational L2 protocols
  *
  * NOTE, many of these protocols run on each others physical layer,
@@ -182,7 +182,7 @@ struct diag_l2_conn
 /*
  * Bits 0/1/2 used to tell what kind of initialisation to be done on the
  * diagnostic bus.
- * XXX need to tidy up #defines for binary flags vs int values ...
+ * TODO: tidy up #defines for binary flags vs int values ...
  */
 #define DIAG_L2_TYPE_SLOWINIT	0x00		/* Do 5 Baud init */
 #define DIAG_L2_TYPE_FASTINIT	0x01		/* Do fast init */
@@ -280,7 +280,7 @@ void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
 		id - device sub-ID
  *		L1protocol - Layer 1 protocol to use (Hardware layer)
  * l2_Close()
- *	use:	closes a L1 device - 
+ *	use:	closes a L1 device -
  *
  * l2_startCommunication()
  *	use: 	starts up a session between here and an ECU
@@ -296,7 +296,7 @@ void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  *
  * l2_stopCommunications()
  *	use:	stop talking to an ECU
- *	
+ *
  * AccessTimingParameters()
  *	use:	change access timing parameter defaults
  *	params:	connection - the connection
@@ -330,7 +330,7 @@ void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  *		It is also coded to return the received message, rather than
  *		use callbacks, so it's a different type of API to send/recv
  *	params:	connection	- The L2 connection info
- *		msg		- The message to send		
+ *		msg		- The message to send
  *		*errval		- Place for error to be stored
  *
  *	returns: msg or NULL
@@ -342,7 +342,7 @@ void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  *			diag_l2_StartCommunication() routine
  *		command	- the thing to do
  *		data	- where to get (or put) the data
- *	returns: 0 if OK, diag error num (<0) on error 
+ *	returns: 0 if OK, diag error num (<0) on error
  *
  */
 int diag_l2_init(void);

@@ -25,7 +25,7 @@
  *
  * NOTE: ISO9141-2 says that if the target address is 0x33, then the SAE-J1979
  * Scantool Application Protocol is used.
- * 
+ *
  * Other addresses are manufacturer-specific, and MAY EXCEED THIS IMPLEMENTATION.
  * (But we still let you TRY to use them... :) Just keep in mind that ISO9141 messages
  * have a maximum payload of 7 bytes.
@@ -91,7 +91,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 
 	kb1 = kb2 = address = inv_address = inv_kb2 = 0;
 	dp = d_l2_conn->diag_l2_proto_data;
-	
+
 	// Flush unread input:
 	(void)diag_tty_iflush(d_l2_conn->diag_link->diag_l2_dl0d);
 
@@ -148,7 +148,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 					&inv_kb2, 1, 0);
 		if (rv < 0)
 			return rv;
-		
+
 		// Wait for the address byte inverted:
 		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 					&inv_address, 1, W4max);
@@ -174,11 +174,11 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	}
 
 	//Success! Handshaking done.
-	
+
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
 			FLFMT "diag_l2_iso9141_wakeupECU con %p kb1 0x%x kb2 0x%x\n",
-			FL, d_l2_conn, 
+			FL, d_l2_conn,
 			kb1, kb2);
 
 	return 0;
@@ -224,9 +224,11 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	set.databits = diag_databits_8;
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
-	
-	if ((rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set)))
+
+	if ((rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set))) {
+		free(dp);
 		return diag_iseterr(rv);
+	}
 
 	// Initialize ECU (unless if in monitor mode):
 	if ( (flags & DIAG_L2_TYPE_INITMASK) ==  DIAG_L2_TYPE_MONINIT)
@@ -234,16 +236,17 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	else
 		rv = diag_l2_proto_iso9141_wakeupECU(d_l2_conn);
 
-	//if (diag_l2_debug & DIAG_DEBUG_OPEN)
-//			fprintf(stderr,
-//			FLFMT "diag_l2_iso9141_startcomms returns %d\n",
-//			FL, rv);
+	if (diag_l2_debug & DIAG_DEBUG_OPEN)
+			fprintf(stderr, FLFMT "diag_l2_iso9141_startcomms returns %d\n",
+					FL, rv);
 
-	if (rv)
+	if (rv) {
+		free(dp);
 		return diag_iseterr(rv);
+	}
 
 	dp->state = STATE_ESTABLISHED;
-	
+
 	return rv;
 }
 
@@ -413,7 +416,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					&dp->rxbuf[dp->rxoffset],
 					MAXLEN_ISO9141 - dp->rxoffset,
 					tout);
-			
+
 		// Timeout = end of message or end of responses.
 		if (rv == DIAG_ERR_TIMEOUT)
 		{
@@ -472,7 +475,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		// Other reception errors.
 		if (rv < 0)
 			break;
-		
+
 		// Data received OK.
 		// Add length to offset.
 		dp->rxoffset += rv;
@@ -485,15 +488,15 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 			state = ST_STATE2;
 
 	}//end while (read cycle).
-	
-	// Now walk through the response message list, 
-	// and strip off their headers and checksums 
+
+	// Now walk through the response message list,
+	// and strip off their headers and checksums
 	// after verifying them.
 	if (rv >= 0)
 	{
 		tmsg = d_l2_conn->diag_msg;
 		lastmsg = NULL;
-		
+
 		while (tmsg)
 		{
 			int hdrlen, datalen, source, dest;
@@ -528,7 +531,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 				//more than one message, so see if we can decode it.
 				if (rv < tmsg->len)
 				{
-					//This message contains more than one	
+					//This message contains more than one
 					//data frame (because it arrived with
 					// odd timing), this means we have to
 					// do horrible copy about the data
@@ -545,7 +548,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					d_l2_conn->diag_msg = amsg;
 					else
 					lastmsg->next = amsg;
-					
+
 					tmsg = amsg; /* Finish processing this one */
 				}
 
@@ -629,7 +632,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		fprintf(stderr, FLFMT "send: Message payload exceeds maximum allowed by protocol!\n", FL);
 		return -1;
 	}
-	
+
 	/*
 	 * Make sure enough time between last receive and this send
 	 * In fact, because of the timeout on recv(), this is pretty small, but
@@ -649,7 +652,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		buf[offset++] = 0x6A; //defined by spec;
 		buf[offset++] = dp->srcaddr;
 	}
-	
+
 	// Now copy in data, should check for buffer overrun really.
 	memcpy(&buf[offset], msg->data, msg->len);
 	offset += msg->len;
@@ -671,7 +674,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	// Send it over the L1 link:
 	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 			buf, (size_t)offset, d_l2_conn->diag_l2_p4min);
-	
+
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 	{
 		fprintf(stderr, "l2_iso9141_send: ");
@@ -717,7 +720,7 @@ diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *m
 	return rmsg;
 }
 
-static const struct diag_l2_proto diag_l2_proto_iso9141 = 
+static const struct diag_l2_proto diag_l2_proto_iso9141 =
 {
 	DIAG_L2_PROT_ISO9141,
 	DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_DATA_ONLY |  DIAG_L2_FLAG_DOESCKSUM,
@@ -730,7 +733,7 @@ static const struct diag_l2_proto diag_l2_proto_iso9141 =
 };
 
 
-int diag_l2_iso9141_add(void) 
+int diag_l2_iso9141_add(void)
 {
 	return diag_l2_add_protocol(&diag_l2_proto_iso9141);
 }

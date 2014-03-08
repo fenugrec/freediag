@@ -175,7 +175,8 @@ void	j1979_watch_rcv(void *handle, struct diag_msg *msg);
 void	l2raw_data_rcv(void *handle, struct diag_msg *msg);
 
 extern int		global_state;
-
+//these defines are for global_state and must be of
+//increasing values ! (ex.: if (global_state>=STATE_CONNECTED) {...}
 #define STATE_IDLE	0	/* Idle */
 #define STATE_WATCH	1	/* Watch mode */
 #define	STATE_CONNECTED	2	/* Connected to ECU */

@@ -31,7 +31,7 @@
  *
  * HOWEVER, if the L0 interface has multiple interfaces in it, which have
  * different flags, then this code needs some enhancements. One of the
- * interfaces we use does have this (multiplex engineering interface) 
+ * interfaces we use does have this (multiplex engineering interface)
  */
 
 
@@ -75,7 +75,7 @@ diag_l1_add_l0dev(const struct diag_l0 *l0dev) {
 		/*
 		 * No devices yet, create the root.
 		 */
-		if ( (rv = diag_calloc(&l0dev_list, 1)) ) 
+		if ( (rv = diag_calloc(&l0dev_list, 1)) )
 			return rv;
 
 		l0dev_list->l0dev = l0dev;
@@ -86,7 +86,7 @@ diag_l1_add_l0dev(const struct diag_l0 *l0dev) {
 		if (last_node->l0dev == l0dev)
 			return diag_iseterr(DIAG_ERR_GENERAL);	/* Already there. */
 
-	if ( (rv = diag_calloc(&new_node, 1)) ) 
+	if ( (rv = diag_calloc(&new_node, 1)) )
 		return rv;
 
 	for (last_node = l0dev_list; last_node->next != NULL; last_node = last_node->next)
@@ -154,6 +154,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 				return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
 
 			/* Call the open routine */
+			// Forward the requested L1 protocol
 			return (l0dev->diag_l0_open)(subinterface, l1protocol);
 		}
 	}
@@ -202,7 +203,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 	 * If p4 is zero and not in half duplex mode, or if
 	 * L1 is a "DOESL2" interface send the whole message to L0
 	 * as one write
-	 */ 
+	 */
 	l0flags = diag_l1_getflags(dl0d);
 
 	if (   ((p4 == 0) && ((l0flags & DIAG_L1_HALFDUPLEX) == 0)) ||

@@ -44,6 +44,9 @@ extern "C" {
 
 /*
  * Service Identifier (request) codes, names made up.
+ * Note : the strings are associated with the codes in diag_l3_iso14230.c
+ * Entries marked "SSF only !" are SIDs not defined in ISO 14230-3 but
+ * in the Swedish SSF 14230-3 document.
  */
 
 /* 00->0F SAE J1979 Diagnostic Test Modes */
@@ -63,8 +66,8 @@ extern "C" {
 #define DIAG_KW2K_SI_RDDBCI	0x22	/* readDataByCommonId */
 #define DIAG_KW2K_SI_RDMBA	0x23	/* readMemoryByAddress */
 
-#define DIAG_KW2K_SI_SRDT	0x25	/* stopRepeatedDataTransmission */
-#define DIAG_KW2K_SI_SDR	0x26	/* setDataRates */
+#define DIAG_KW2K_SI_SRDT	0x25	/* stopRepeatedDataTransmission - SSF only! */
+#define DIAG_KW2K_SI_SDR	0x26	/* setDataRates - SSF only!*/
 #define DIAG_KW2K_SI_SA		0x27	/* securityAccess */
 
 #define DIAG_KW2K_SI_DDLI	0x2C	/* dynamicallyDefineLocalId */
@@ -85,6 +88,7 @@ extern "C" {
 
 #define DIAG_KW2K_SI_WRMBA	0x3D	/* writeMemoryByAddress */
 #define DIAG_KW2K_SI_TP		0x3E	/* testerPresent */
+#define DIAG_KW2K_SI_ESC	0x80	/* EscCode */
 
 #define DIAG_KW2K_SI_SCR	0x81	/* startCommunication */
 #define DIAG_KW2K_SI_SPR	0x82	/* stopCommunication */
@@ -103,7 +107,7 @@ extern "C" {
  * Service response codes
  * names from ISO book
  */
- 
+
 /* Negative Responses */
 
 #define DIAG_KW2K_RC_GR		0x10	/* generalReject */
@@ -134,7 +138,8 @@ extern "C" {
 #define DIAG_KW2K_RC_BTCDE	0x77	/* blockTransferDataChecksumError */
 #define DIAG_KW2K_RC_RCR_RP	0x78	/* requestCorrectyRcvd-RspPending */
 #define DIAG_KW2K_RC_IBCDBT	0x79	/* incorrectByteCountDuringBlockTransfer */
-#define DIAG_KW2K_RC_SNSIADS	0x80	/* serviceNotSupportedInActiveDiagnosticMode */
+#define DIAG_KW2K_RC_SNSIADS	0x80	/* serviceNotSupportedInActiveDiagnosticMode - SSF only !*/
+// Note : responses >= 0x80 are MfgSpecifiCodes in ISO14230 !
 
 /* Positive Responses */
 

@@ -88,7 +88,7 @@ diag_l2_proto_vag_decode(char *data, int len,
 
 		fprintf(stderr, "\n");
 	}
-	
+
 	dl = data[0] & 0x3f;
 	if (dl == 0)
 	{
@@ -193,15 +193,15 @@ diag_l2_proto_vag_decode(char *data, int len,
  */
 #ifdef WIN32
 static int
-diag_l2_proto_vag_int_recv(struct diag_l2_conn *d_l2_conn, 
+diag_l2_proto_vag_int_recv(struct diag_l2_conn *d_l2_conn,
 int timeout,
-uint8_t *data, 
+uint8_t *data,
 int *datalen)
 #else
 static int
-diag_l2_proto_vag_int_recv(struct diag_l2_conn *d_l2_conn, 
+diag_l2_proto_vag_int_recv(struct diag_l2_conn *d_l2_conn,
 int timeout __attribute__((unused)),
-uint8_t *data __attribute__((unused)), 
+uint8_t *data __attribute__((unused)),
 int *datalen __attribute__((unused)))
 #endif
 {
@@ -251,7 +251,7 @@ int *datalen __attribute__((unused)))
 				tmsg->len,
 				&hdrlen, &datalen, &source, &dest,
 				dp->first_frame);
-			
+
 			if (rv < 0)		/* decode failure */
 			{
 				return(rv);
@@ -369,7 +369,7 @@ struct diag_l2_conn *d_l2_conn,
 	/* And send 0x03 as end of frame */
 
 
-	
+
 	/* And switch to show ECU is master */
 	dp->master = 0;
 
@@ -449,25 +449,31 @@ int bitrate, target_type target, source_type source __attribute__((unused)))
 	in.type = DIAG_L1_INITBUS_5BAUD;
 	in.addr = target;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
-	if (rv < 0)
-		return(-1); /* XXX */
+	if (rv < 0) {
+		free(dp);
+		return rv;
+	}
 
 
 	/* Mode bytes are in 7-Odd-1, read as 8N1 and ignore parity */
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		cbuf, 1, 100);
-	if (rv < 0)
-		return(-1); /* XXX */
+	if (rv < 0) {
+		free(dp);
+		return rv;
+	}
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		&cbuf[1], 1, 100);
-	if (rv < 0)
-		return(-1); /* XXX */
+	if (rv < 0) {
+		free(dp);
+		return rv;
+	}
 
 	/* Keybytes are 0x1 0x8a for VAG protocol */
-	if (cbuf[0] != 0x01)
+	if ((cbuf[0] != 0x01) || (cbuf[1] != 0x8a)) {
+		free(dp);
 		return(diag_iseterr(DIAG_ERR_WRONGKB));
-	if (cbuf[0] != 0x8a)
-		return(diag_iseterr(DIAG_ERR_WRONGKB));
+	}
 
 	/* Note down the mode bytes */
 	d_l2_conn->diag_l2_kb1 = cbuf[0] & 0x7f;

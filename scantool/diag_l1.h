@@ -31,6 +31,11 @@
 
 #include "diag.h"		//we need this for uint8_t
 
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /*
  * Layer 1/0 device flags
  *
@@ -46,9 +51,6 @@
  * Can be read by higher layers using ..._ioctl(GET_L1_FLAGS)
  */
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 #define DIAG_L1_SLOW		0x01	/* Supports SLOW (5 baud) Start */
 #define DIAG_L1_FAST		0x02	/* Supports FAST Start */
@@ -133,17 +135,17 @@ extern "C" {
 struct diag_l1_initbus_args
 {
 	uint8_t	type;	/* Init type */
-	uint8_t	addr;	/* Address for 5 baud init */
+	uint8_t	addr;	/* Address, if 5 baud init */
 };
 
 #define DIAG_L1_INITBUS_NONE	0	/* Not needed */
 #define DIAG_L1_INITBUS_FAST	1	/* Fast init (25ms low, 25ms high) */
 #define DIAG_L1_INITBUS_5BAUD	2	/* 5 baud init */
-#define DIAG_L1_INITBUS_2SLOW	3	/* 2 second low on bus */
+#define DIAG_L1_INITBUS_2SLOW	3	/* 2 second low on bus, ISO9141-1989 style ? */
 
 /*
  * init(), returns 0 on success (always succeeds)
- * open(), returns a fd on success, 0 on failure (pseterr)
+ * open(), returns a *diag_l0_device on success, 0 on failure (pseterr)
  * close(), always succeeds and returns 0
  * send() Send data, same args as Unix write() + the sub interface,
  * 	returns 0 on OK, -1 on success
@@ -152,19 +154,20 @@ struct diag_l1_initbus_args
  *	 stopbits (1, 2), parflag as above
  * getflags(), return the flags as above
  * gettype(), return the type as above
- */ 
+ */
 
-struct diag_l0_device;
+struct diag_l0_device;  // this contains platform-specific members, so it's in diag_tty_???.h
 struct diag_serial_settings;
 
 
-struct diag_l0 //XXX this used to be in diag_tty.h !?
+// diag_l0 : every diag_l0_???.c "driver" fills in one of these to describe itself.
+struct diag_l0
 {
 	const char	*diag_l0_textname;	/* Useful textual name */
 	const char	*diag_l0_name;	/* Short, unique text name for user interface */
 
 	int 	diag_l0_type;			/* See L1protocol defines above*/
-	
+
 	/* function pointers to L0 code */
 	int	(*diag_l0_init)(void);	//should not be used to allocate memory or open handles !
 	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
@@ -185,6 +188,7 @@ struct diag_l0 //XXX this used to be in diag_tty.h !?
 int diag_l1_init(void);
 int diag_l1_end(void);
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
+//diag_l1_open : calls diag_l0_open with the specified L1 protocol
 struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, int L1protocol);
 int diag_l1_close(struct diag_l0_device **);
 int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, int p4);

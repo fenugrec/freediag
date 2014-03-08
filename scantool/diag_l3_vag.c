@@ -28,7 +28,7 @@
  * with 5 baud init using specific keywords)
  *
  *
- * XXX NOT YET WRITTEN
+ * XXX NOT YET WRITTEN, is it the same thing as KWP1281 ?
  */
 
 #include <string.h>
@@ -47,7 +47,7 @@ CVSID("$Id$");
 
 /*
  * Insert the L3 layer on top of the layer 2 connection
- * 
+ *
  */
 static int
 diag_l3_vag_start(struct diag_l3_conn *d_l3_conn)
@@ -95,7 +95,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 	const char *s;
 	int i;
 
-	/* XXX What is supposed to go here for arguments?	
+	/* XXX What is supposed to go here for arguments?
 	 * The "sprintf(" that follows had no arguments for the format, I added the "0, 0".
 	 */
 

@@ -14,14 +14,14 @@ static LARGE_INTEGER perfo_freq;	//for use with QueryPerformanceFrequency and Qu
 //maybe they could go in diag_os eventually, for now they're here just for tests
 
 //diag_tty_open : load the diag_l0_device with the correct stuff
-int diag_tty_open(struct diag_l0_device **ppdl0d, 
+int diag_tty_open(struct diag_l0_device **ppdl0d,
 	const char *subinterface,
 	const struct diag_l0 *dl0,
 	void *dl0_handle)
 {
 	int rv;
 	struct diag_l0_device *dl0d;
-	
+
 	if (! QueryPerformanceFrequency(&perfo_freq)) {
 		fprintf(stderr, FLFMT "Could not QPF. Please report this !\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -52,17 +52,17 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	}
 	strncpy(dl0d->name, subinterface, n);
 
-	dl0d->fd=CreateFile(subinterface, GENERIC_READ | GENERIC_WRITE, 0, NULL, 
+	dl0d->fd=CreateFile(subinterface, GENERIC_READ | GENERIC_WRITE, 0, NULL,
 		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	//File hande is created as non-overlapped. This may change eventually.
 
 	if (dl0d->fd != INVALID_HANDLE_VALUE) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr, FLFMT "Device %s opened, fd %p\n", 
+			fprintf(stderr, FLFMT "Device %s opened, fd %p\n",
 				FL, dl0d->name, dl0d->fd);
 	} else {
 		fprintf(stderr,
-			FLFMT "Open of device interface \"%s\" failed: %8d\n", 
+			FLFMT "Open of device interface \"%s\" failed: %8d\n",
 			FL, dl0d->name, (int) GetLastError());
 		fprintf(stderr, FLFMT
 			"(Make sure the device specified corresponds to the\n", FL );
@@ -72,13 +72,13 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		diag_tty_close(ppdl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	//purge & abort everything.
 	PurgeComm(dl0d->fd,PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
 
 	//as opposed to the unix diag_tty.c ; this one doesn't save previous commstate. The next program to use the COM port
 	//will need to deal with it...
-	
+
 	//We will load the DCB with the current comm state. This way we only need to call GetCommState once during a session
 	//and the DCB should contain coherent initial values
 	if (! GetCommState(dl0d->fd, dl0d->ttystate)) {
@@ -86,10 +86,10 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		diag_tty_close(ppdl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	//Finally set COMMTIMEOUTS to reasonable values (all in ms) ?
 	COMMTIMEOUTS devtimeouts;
-	devtimeouts.ReadIntervalTimeout=30;	//i.e. more than 30ms between received bytes 
+	devtimeouts.ReadIntervalTimeout=30;	//i.e. more than 30ms between received bytes
 	devtimeouts.ReadTotalTimeoutMultiplier=5;	//timeout per requested byte
 	devtimeouts.ReadTotalTimeoutConstant=20;	// (constant + multiplier*numbytes) = total timeout on read(buf, numbytes)
 	devtimeouts.WriteTotalTimeoutMultiplier=0;	//probably useless as all flow control will be disabled ??
@@ -99,7 +99,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		diag_tty_close(ppdl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	return 0;
 } //diag_tty_open
 
@@ -154,7 +154,7 @@ diag_l0_set_dl2_link(struct diag_l0_device *dl0d,
 int
 diag_tty_setup(struct diag_l0_device *dl0d,
 	const struct diag_serial_settings *pset)
-{	
+{
 	HANDLE devhandle=dl0d->fd;		//used just to clarify code
 	DCB *devstate=dl0d->ttystate;
 
@@ -176,7 +176,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	if ( !(supportedprops.dwMaxBaud & BAUD_USER))
 		fprintf(stderr, FLFMT "warning : device does not support custom baud rates !\n", FL);
 
-	
+
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 	{
@@ -185,7 +185,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 		fprintf(stderr, "speed=%d databits=%d stopbits=%d parity=%d\n",
 			pset->speed, pset->databits, pset->stopbits, pset->parflag);
 	}
-	
+
 	/*
 	 * Now load the DCB with the paramaters requested.
 	 */
@@ -246,7 +246,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 
 	//to be really thorough we do another GetCommState and check that the speed was set properly.
 	//I see no particular reason to check all the other fields though.
-	
+
 	DCB verif_dcb;
 	if (! GetCommState(devhandle, &verif_dcb)) {
 		fprintf(stderr, FLFMT "Could not verify with GetCommState\n", FL);
@@ -264,19 +264,19 @@ diag_tty_setup(struct diag_l0_device *dl0d,
  * Set/Clear DTR and RTS lines, as specified
  * on Win32 I think this can't be done in one operation, so EscapeCommFunction is called twice.
  * Unless we change the DCB ? updating it with SetCommState would then set both pins at the same time...
- * 
+ *
  * ret 0 if ok
  */
 int
 diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 {
 	int escapefunc;
-	
+
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	if (dtr)
 		escapefunc=SETDTR;
 	else
@@ -285,17 +285,17 @@ diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 		fprintf(stderr, FLFMT "Could not change DTR !\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	if (rts)
 		escapefunc=SETRTS;
 	else
 		escapefunc=CLRRTS;
-	
+
 	if (! EscapeCommFunction(dl0d->fd,escapefunc)) {
 		fprintf(stderr, FLFMT "Could not change DTR !\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-		
+
 	if (diag_l0_debug & (DIAG_DEBUG_TIMER | DIAG_DEBUG_IOCTL)) {
 		fprintf(stderr, FLFMT "@ ~%d : DTR/RTS changed\n", FL, (int) GetTickCount());
 	}
@@ -309,7 +309,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 //test #1 :  non-overlapped write, until I know what I'm doing.
 
 ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count) {
-		
+
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -324,7 +324,7 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "wrote %d bytes out of %d\n", FL, (int) byteswritten, count );
 	}
-	
+
 	return byteswritten;
 } //diag_tty_write
 
@@ -340,12 +340,12 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	OVERLAPPED *pOverlap;
 	pOverlap=0;
 	COMMTIMEOUTS devtimeouts;
-	
+
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 //	GetCommTimeouts(dl0d->fd, &devtimeouts);	//get current timeouts
 	//and modify them
 	devtimeouts.ReadIntervalTimeout=0;	//disabled
@@ -357,7 +357,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		fprintf(stderr, FLFMT "Could not set comm timeouts !\n",FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	if (! ReadFile(dl0d->fd, buf, count, &bytesread, pOverlap)) {
 		fprintf(stderr, FLFMT "ReadFile error\n",FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -384,7 +384,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 	{
 		fprintf(stderr, FLFMT "at least %d junk bytes discarded: ", FL, rv);
 		for (i=0; i<rv; i++)
-			fprintf(stderr, "%02x ", buf[i]); 
+			fprintf(stderr, "%02x ", buf[i]);
 		fprintf(stderr,"\n");
 	}
 	PurgeComm(dl0d->fd, PURGE_RXCLEAR);
@@ -394,7 +394,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 
 
 
-//different tty_break implementations. 
+//different tty_break implementations.
 //ret 0 if ok
 //TODO : add verification of timing with QueryPerformanceCounter etc.
 
@@ -416,7 +416,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms) {
 		//if either of the calls failed
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	return 0;
 }
 
@@ -424,23 +424,23 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms) {
 
 /*
  * diag_tty_break #2 : send 0x00 at 360bps => fixed 25ms break; return as soon as break is cleared.
- * 
+ *
  */
 
 int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 {
 	if (ms==0)		//very funny
 		return diag_iseterr(DIAG_ERR_GENERAL);
-	
+
 	DCB tempDCB; 	//for sabotaging the settings just to do the break
 	DCB origDCB;
 	LARGE_INTEGER qpc1, qpc2;	//to time the break period
 	LONGLONG timediff;		//64bit delta
 	long int tremain,counts;
-	
+
 	char cbuf;
 	int xferd;
-	
+
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -448,13 +448,13 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 
 	GetCommState(dl0d->fd, &origDCB);
 	GetCommState(dl0d->fd, &tempDCB); //I didn't feel like memcpy-ing one structure to the other...
-	
+
 	tempDCB.BaudRate=360;
 	tempDCB.ByteSize=8;
 	tempDCB.fParity=0;
 	tempDCB.Parity=NOPARITY;
 	tempDCB.StopBits=ONESTOPBIT;
-	
+
 	if (! SetCommState(dl0d->fd, &tempDCB)) {
 		fprintf(stderr, FLFMT "SetCommState error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -482,7 +482,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
-	QueryPerformanceCounter(&qpc2);		//and current time. 
+	QueryPerformanceCounter(&qpc2);		//and current time.
 	timediff=qpc2.QuadPart-qpc1.QuadPart;	//elapsed counts since diag_tty_write
 	counts=(2*ms*perfo_freq.QuadPart)/1000;		//total # of counts for requested ( setbreak + clearbreak ) cycle time
 	tremain=counts-timediff;	//counts remaining
@@ -493,6 +493,12 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	QueryPerformanceCounter(&qpc2);
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "%09ld : approx end of break\n", FL, qpc2.LowPart);
+	}
+
+	//and now reset original settings !
+	if (! SetCommState(dl0d->fd, &origDCB)) {
+		fprintf(stderr, FLFMT "tty_break: could not restore settings!\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	return 0;

@@ -51,12 +51,12 @@ int diag_init(void)	//returns 0 if normal exit
 
 	if ((rv=diag_l0_config()))
 		return diag_iseterr(rv);
-	
+
 	if ((rv=diag_l2_config()))
 		return diag_iseterr(rv);
-	
+
 	//XXX This is interesting: the following functions only ever return 0...
-	
+
 	if ((rv = diag_l1_init()))
 		return diag_iseterr(rv);
 	if ((rv = diag_l2_init()))
@@ -87,7 +87,7 @@ int diag_close() {
 		rv=-1;
 	}
 	//nothing to do for diag_dtc_init
-	
+
 	diag_initialized=0;
 	return rv;
 }
@@ -144,7 +144,7 @@ diag_dupmsg(struct diag_msg *msg)
 	newmsg->src = msg->src;
 	newmsg->len = msg->len;
 	newmsg->rxtime = msg->rxtime;
-	
+
 	/* Dup data */
 	memcpy(newmsg->data, msg->data, msg->len);
 
@@ -235,9 +235,11 @@ diag_data_dump(FILE *out, const void *data, size_t len)
 	const uint8_t *p = (const uint8_t *)data;
 	size_t i;
 	for (i=0; i<len; i++)
-		fprintf(out, "0x%02x ", p[i] & 0xff); 
+		fprintf(out, "0x%02x ", p[i] & 0xff);
 }
 
+//smartcat() : make sure s1 is not too large, then strncat
+//it does NOT verify if *p1 is large enough !
 void smartcat(char *p1, const size_t s1, const char *p2 )
 {
 	assert ( s1 > strlen(p1) + strlen (p2) + 1 ) ;
@@ -346,7 +348,7 @@ int diag_flmalloc(const char *name, const int line, void **pp, size_t s) {
 
 	if (p == 0) {
 		fprintf(stderr,
-			"%s:%d: malloc(%ld) failed: %s\n", name, line, 
+			"%s:%d: malloc(%ld) failed: %s\n", name, line,
 			(long)s, strerror(errno));
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	}

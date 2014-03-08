@@ -180,13 +180,13 @@ static void aif_set ( void *data )
 			int units = ((unsigned char *) data) [ 1 ] ;
 
 			if ( debugging )
-				fprintf ( stderr, "Setting units to %d\n", units ) ; 
+				fprintf ( stderr, "Setting units to %d\n", units ) ;
 
 			switch ( units )
 			{
-				case FREEDIAG_AIF_SET_UNITS_US     : set_display = 1 ; break ; 
-				case FREEDIAG_AIF_SET_UNITS_METRIC : set_display = 0 ; break ; 
-				default                            : BadToApp () ; return ;
+				case FREEDIAG_AIF_SET_UNITS_US     : set_display = 1 ; break ;
+				case FREEDIAG_AIF_SET_UNITS_METRIC : set_display = 0 ; break ;
+				default        					: BadToApp () ; return ;
 			}
 			break ;
 		}
@@ -195,9 +195,9 @@ static void aif_set ( void *data )
 			int port = ((unsigned char *) data) [ 1 ] ;
 
 			if ( debugging )
-				fprintf ( stderr, "Setting port to %d\n", port ) ; 
+				fprintf ( stderr, "Setting port to %d\n", port ) ;
 
-			if ( port < 0 || port > 9 ) 
+			if ( port < 0 || port > 9 )
 			{
 				BadToApp () ;
 				return ;
@@ -208,7 +208,7 @@ static void aif_set ( void *data )
 		}
 		default :
 			if ( debugging )
-				fprintf ( stderr, "Illegal 'Set' command: %d\n", sub_command ) ; 
+				fprintf ( stderr, "Illegal 'Set' command: %d\n", sub_command ) ;
 
 			BadToApp () ;
 			return ;
@@ -273,7 +273,7 @@ static void aif_scan ( void *data)
 	if ( ecu_connect() == 0 )
 	{
 		do_j1979_basics () ; /* Ask basic info from ECU */
-		do_j1979_cms    () ; /* Get test results for monitored systems */
+		do_j1979_cms	() ; /* Get test results for monitored systems */
 		do_j1979_ncms  (0) ; /* And non-continuously monitored tests   */
 
 		OkToApp () ;
@@ -282,10 +282,10 @@ static void aif_scan ( void *data)
 	{
 		fprintf ( stderr, "Connection to ECU failed\n" ) ;
 		fprintf ( stderr, "Please check :-\n" ) ;
-		fprintf ( stderr, "        Adapter is connected to PC\n" ) ;
-		fprintf ( stderr, "        Cable is connected to Vehicle\n" ) ;
-		fprintf ( stderr, "        Vehicle is switched on\n" ) ;
-		fprintf ( stderr, "        Vehicle is OBDII compliant\n" ) ;
+		fprintf ( stderr, "		Adapter is connected to PC\n" ) ;
+		fprintf ( stderr, "		Cable is connected to Vehicle\n" ) ;
+		fprintf ( stderr, "		Vehicle is switched on\n" ) ;
+		fprintf ( stderr, "		Vehicle is OBDII compliant\n" ) ;
 
 		BadToApp () ;
 	}
@@ -307,28 +307,28 @@ typedef void (*aif_func) ( void * ) ;
 
 struct AIFcommand
 {
-	const int       code   ;
-	const int       length ;
-	const char     *name   ;
+	const int	   code   ;
+	const int	   length ;
+	const char	 *name   ;
 	const aif_func  func   ;
 } ;
 
 
 struct AIFcommand aif_commands [] =
 {
-	{ FREEDIAG_AIF_NO_OP    , 0, "Do Nothing"            , aif_noop      },
-	{ FREEDIAG_AIF_EXIT     , 0, "Exit ScanTool"         , aif_exit      },
-	{ FREEDIAG_AIF_MONITOR  , 0, "Monitor"               , aif_monitor   },
-	{ FREEDIAG_AIF_WATCH    , 0, "Watch diagnostic bus"  , aif_watch     },
+	{ FREEDIAG_AIF_NO_OP	, 0, "Do Nothing"			, aif_noop	  },
+	{ FREEDIAG_AIF_EXIT	 , 0, "Exit ScanTool"		 , aif_exit	  },
+	{ FREEDIAG_AIF_MONITOR  , 0, "Monitor"			   , aif_monitor   },
+	{ FREEDIAG_AIF_WATCH	, 0, "Watch diagnostic bus"  , aif_watch	 },
 	{ FREEDIAG_AIF_CLEAR_DTC, 0, "Clear DTC's from ECU"  , aif_clear_dtc },
-	{ FREEDIAG_AIF_ECUS     , 0, "Show ECU information"  , aif_ecus      },
-	{ FREEDIAG_AIF_SET      , 2, "Set various options"   , aif_set       },
-	{ FREEDIAG_AIF_TEST     , 0, "Perform various tests" , aif_test      },
-	{ FREEDIAG_AIF_SCAN     , 0, "Scan for Connection"   , aif_scan      },
-	{ FREEDIAG_AIF_DIAG     , 0, "Extended diagnostics"  , aif_diag      },
-	{ FREEDIAG_AIF_VW       , 0, "VW diagnostic protocol", aif_vw        },
-	{ FREEDIAG_AIF_DYNO     , 0, "Dyno functions"        , aif_dyno      },
-	{ FREEDIAG_AIF_DEBUG    , 1, "Set/Unset debug"       , aif_debug     },
+	{ FREEDIAG_AIF_ECUS	 , 0, "Show ECU information"  , aif_ecus	  },
+	{ FREEDIAG_AIF_SET	  , 2, "Set various options"   , aif_set	   },
+	{ FREEDIAG_AIF_TEST	 , 0, "Perform various tests" , aif_test	  },
+	{ FREEDIAG_AIF_SCAN	 , 0, "Scan for Connection"   , aif_scan	  },
+	{ FREEDIAG_AIF_DIAG	 , 0, "Extended diagnostics"  , aif_diag	  },
+	{ FREEDIAG_AIF_VW	   , 0, "VW diagnostic protocol", aif_vw		},
+	{ FREEDIAG_AIF_DYNO	 , 0, "Dyno functions"		, aif_dyno	  },
+	{ FREEDIAG_AIF_DEBUG	, 1, "Set/Unset debug"	   , aif_debug	 },
 	{ FREEDIAG_AIF_DISCONNECT,0, "Disconnect from car"   , aif_disconnect},
 	{ 0, 0, NULL, NULL }
 } ;

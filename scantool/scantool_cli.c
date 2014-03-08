@@ -220,7 +220,7 @@ command_line_input(const char *prompt)
 	return basic_get_input(NULL);
 }
 
-int 
+int
 help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
 {
 /*	int i;*/
@@ -241,8 +241,8 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
 		}
 		if (!found)
 			printf("help: %s: no such command\n", argv[1]);
-		
-	} else {	
+
+	} else {
 		/* Print help */
 		printf("Available commands are :-\n");
 		ctp = cmd_table;
@@ -417,7 +417,7 @@ cmd_play(int argc, char **argv)
 	/* XXX logging */
 
 	/* Loop and call display routines */
-	while (1) {	
+	while (1) {
 		int ch;
 		printf("Warning : incomplete code");
 		printf("DATE:	+/- to step, S/E to goto start or end, Q to quit\n");
@@ -433,7 +433,7 @@ cmd_play(int argc, char **argv)
 			case 'q':
 				break;
 		}
-		
+
 	}
 	fclose(fp);
 
@@ -484,8 +484,8 @@ cmd_watch(int argc, char **argv)
 	}
 	if (rawmode)
 		d_l2_conn = diag_l2_StartCommunications(dl0d, DIAG_L2_PROT_RAW,
-			0, set_speed, 
-			set_destaddr, 
+			0, set_speed,
+			set_destaddr,
 			set_testerid);
 	else
 		d_l2_conn = diag_l2_StartCommunications(dl0d, set_L2protocol,
@@ -573,7 +573,7 @@ print_current_data(int english)
 						ep->mode1_data, 2);
 				else
 					sprintf(buf, "-----");
-				
+
 				printf("%-15.15s ", buf);
 
 				if (DATA_VALID(p, ep->mode2_data))
@@ -581,7 +581,7 @@ print_current_data(int english)
 						ep->mode2_data, 3);
 				else
 					sprintf(buf, "-----");
-				
+
 				printf("%-15.15s\n", buf);
 			}
 		}
@@ -699,6 +699,8 @@ cmd_scan(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 
 	if (global_state >= STATE_CONNECTED) {
 		printf("Already connected, please disconnect first\n");
+		// XXX maybe if we're already connected we can just skip
+		// ecu_connect but proceed with the rest ?
 		return CMD_FAILED;
 	}
 
@@ -717,10 +719,10 @@ cmd_scan(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 	} else {
 		printf("Connection to ECU failed\n");
 		printf("Please check :-\n");
-		printf("	Adapter is connected to PC\n");
-		printf("	Cable is connected to Vehicle\n");
-		printf("	Vehicle is switched on\n");
-		printf("	Vehicle is OBDII compliant\n");
+		printf("\tAdapter is connected to PC\n");
+		printf("\tCable is connected to Vehicle\n");
+		printf("\tVehicle is switched on\n");
+		printf("\tVehicle is OBDII compliant\n");
 		return CMD_FAILED;
 	}
 	return CMD_OK;
@@ -895,7 +897,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 			if (ctp->command == NULL) {
 				printf("Huh? Try \"help\"\n");
 			}
-			if (argc) {	
+			if (argc) {
 				/* Single command */
 				done = 1;
 				break;
@@ -1090,7 +1092,7 @@ int htoi(char *buf)
 			return 0;
 		rv *= base;
 		rv += val;
-		
+
 		buf++;
 	}
 	return rv;

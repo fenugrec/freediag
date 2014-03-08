@@ -45,19 +45,25 @@ static const char *l3_iso14230_neglookup(const int id);
 /*
  * We'll use a big switch statement here, and rely on the compiler
  * to make it efficient
+ * it assumes the packet in *buf has no more headers ! i.e. buf[0]
+ * is the service ID byte.
  */
 char *
 diag_l3_iso14230_decode_response(struct diag_msg *msg,
 char *buf, const size_t bufsize)
 {
+	//TODO : change the chars for uint8_t, probably safer:
+	// we do a few >< comparisons on chars... which are signed
 	char buf2[80];
 
 	switch (*msg->data)
 	{
 	default:
+		// XXX aren't we comparing *signed* chars here ??
+		// (the responses to StartComm, StopComm and AccessTimingP are >0x80 )
 		if ((msg->data[0] >= 0x50) && (msg->data[0] <= 0x7e))
 		{
-			snprintf(buf, bufsize, "Positive response, %s ", 
+			snprintf(buf, bufsize, "Positive response, %s ",
 					l3_iso14230_sidlookup(msg->data[0] & ~0x40));
 			if ((msg->data[0] & ~0x40) == DIAG_KW2K_SI_REID)
 			{
@@ -72,7 +78,7 @@ char *buf, const size_t bufsize)
 		}
 		else
 		{
-			snprintf(buf, bufsize, "Unknown_response_code 0x%x", 
+			snprintf(buf, bufsize, "Unknown_response_code 0x%x",
 					msg->data[0]);
 		}
 		break;
@@ -89,36 +95,15 @@ char *buf, const size_t bufsize)
 	case DIAG_KW2K_RC_NR:
 		if (msg->len < 3)
 		{
-			snprintf(buf, bufsize,  "General_Error no response code");
-		} 
-		else 
+			snprintf(buf, bufsize,  "General_Error, no response code");
+		}
+		else
 		{
 
-			snprintf(buf, bufsize,  "General_Error, Request_ID_%s ", 
+			snprintf(buf, bufsize,  "General_Error, Requested_SID_%s ",
 						l3_iso14230_sidlookup(msg->data[1]));
-			/*switch (msg->data[2])
-			{
-			default:
-				snprintf(buf2, sizeof(buf2), "Error_0x%x", msg->data[2]);
-				break;
-			case DIAG_KW2K_RC_GR:
-				snprintf(buf2, sizeof(buf2), "General_Reject");
-			case DIAG_KW2K_RC_SNS:
-				snprintf(buf2, sizeof(buf2), "Service_Not_Supported");
-			case DIAG_KW2K_RC_SFNS_IF:
-				snprintf(buf2, sizeof(buf2), "SubFunction_Not_Supported");
-				break;
-			case DIAG_KW2K_RC_B_RR:
-				snprintf(buf2, sizeof(buf2), "Busy_Repeat_Request");
-				break;
-			case DIAG_KW2K_RC_CNCORSE:
-				snprintf(buf2, sizeof(buf2), "Conditions_Not_Correct");
-				break;
-			case DIAG_KW2K_RC_RNC:
-				snprintf(buf2, sizeof(buf2), "Routine_Not_Complete");
-				break;
-			}*/
-			snprintf(buf2, sizeof(buf2), "Error_%s", 
+
+			snprintf(buf2, sizeof(buf2), "Error_%s",
 						l3_iso14230_neglookup(msg->data[2]));
 
 			/* Don't overflow our buffers. */
@@ -154,7 +139,7 @@ for(cnt=0;cnt<msg->len;cnt++) printf("0x%02x ",msg->data[cnt]);printf("\n");}*/
 	/* Note source address on 1st send */
 	if (d_l3_conn->src == 0)
 		d_l3_conn->src = msg->src;
-
+	//TODO : clarify the following, do we need to check flags etc.
 
 	if (1)// CJH (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_DATA_ONLY)
 	{
@@ -226,17 +211,17 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
 	 * message is complete call next layer callback routine
 	 */
 	struct diag_l3_conn *d_l3_conn = (struct diag_l3_conn *)handle;
-char buffer[200];
+	char buffer[200];
 
 	if (diag_l3_debug & DIAG_DEBUG_READ)
 	{
 		fprintf(stderr,FLFMT "rcv_callback for %d bytes fmt 0x%x conn rxoffset %d\n",
 			FL, msg->len, msg->fmt, d_l3_conn->rxoffset);
 	}
-if (diag_l3_iso14230_decode_response(msg, buffer, sizeof(buffer)))
-{
- fprintf(stderr, "DECODED: %s\n",buffer);
-}
+	if (diag_l3_iso14230_decode_response(msg, buffer, sizeof(buffer)))
+	{
+	 fprintf(stderr, "DECODED: %s\n",buffer);
+	}
 
 	if (msg->fmt & DIAG_FMT_FRAMED)
 	{
@@ -276,12 +261,12 @@ if (diag_l3_iso14230_decode_response(msg, buffer, sizeof(buffer)))
 	}
 	else
 	{
-printf("[CJH] WARNING!! Should we be here?   %s %d\n",__FUNCTION__,__LINE__);
-		/* Add data to the receive buffer on the L3 connection */
-		memcpy(&d_l3_conn->rxbuf[d_l3_conn->rxoffset],
-			msg->data, msg->len);
-		d_l3_conn->rxoffset += msg->len;
-	}
+	printf("[CJH] WARNING!! Should we be here? %s %d\n",__FUNCTION__,__LINE__);
+			/* Add data to the receive buffer on the L3 connection */
+			memcpy(&d_l3_conn->rxbuf[d_l3_conn->rxoffset],
+				msg->data, msg->len);
+			d_l3_conn->rxoffset += msg->len;
+		}
 }
 
 
@@ -456,6 +441,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 /*
  * Timer routine, called with time (in ms) since the "timer" value in
  * the L3 structure
+ * This handles only P3 timeout (keepalive => TesterPresent)
  */
 static void
 diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
@@ -464,6 +450,9 @@ diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
 	uint8_t data[6];
 
 	/* ISO14230 ? XXX J1979 needs keepalive at least every 5 seconds, we use 3.5s */
+	// "keepalive" corresponds to P3max, defined as 5000 ms by iso9141 and
+	// ISO14230 (unless it has been adjusted with AccessTimingParameters)
+	//P3 starts withthe last bit of all responses from the vehicle.
 	if (ms < ISO14230_KEEPALIVE)
 		return;
 
@@ -476,7 +465,7 @@ diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
 	if (diag_l3_debug & DIAG_DEBUG_TIMER)
 	{
 		/* XXX Not async-signal-safe */
-		fprintf(stderr, FLFMT "timeout impending for %p %d ms\n",
+		fprintf(stderr, FLFMT "P3 timeout impending for %p %d ms\n",
 				FL, d_l3_conn, ms);
 	}
 
@@ -486,7 +475,7 @@ diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
 
 	/*
 	 * And set the source address, if no sends have happened, then
-	 * the src advdress will be 0, so use the default used in J1979
+	 * the src address will be 0, so use the default used in J1979
 	 */
 	if (d_l3_conn->src)
 		msg.src = d_l3_conn->src;
@@ -498,6 +487,8 @@ diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
 
 	/* Get and ignore the response */
 	(void)diag_l3_recv(d_l3_conn, 50, NULL, NULL);
+	// TODO : actually check if it responded positively !
+	// And signal to close the connection if it didn't respond...
 
 	return;
 }
@@ -544,6 +535,7 @@ static const struct
 	{DIAG_KW2K_SI_WRDBLI, 	"writeDataByLocalId"},
 	{DIAG_KW2K_SI_WRMBA, 	"writeMemoryByAddress"},
 	{DIAG_KW2K_SI_TP, 	"testerPresent"},
+	{DIAG_KW2K_SI_ESC,	"EscCode"},
 	{DIAG_KW2K_SI_SCR, 	"startCommunication"},
 	{DIAG_KW2K_SI_SPR, 	"stopCommunication"},
 	{DIAG_KW2K_SI_ATP, 	"accessTimingParameters"},
@@ -596,7 +588,7 @@ static const struct
 	{DIAG_KW2K_RC_BTCDE,	"blockTransferDataChecksumError"},
 	{DIAG_KW2K_RC_RCR_RP,	"requestCorrectyRcvd-RspPending"},
 	{DIAG_KW2K_RC_IBCDBT,	"incorrectByteCountDuringBlockTransfer"},
-	{DIAG_KW2K_RC_SNSIADS,	"serviceNotSupportedInActiveDiagnosticMode"},
+	{DIAG_KW2K_RC_SNSIADS,	"serviceNotSupportedInActiveDiagnosticMode//Mfg-Specific"},
 	{0, 			NULL},
 };
 
@@ -614,5 +606,5 @@ static const char *l3_iso14230_neglookup(const int id)
 const diag_l3_proto_t diag_l3_iso14230 = {
 	"ISO14230", diag_l3_base_start, diag_l3_base_stop,
 	diag_l3_iso14230_send, diag_l3_iso14230_recv, NULL,
-	diag_l3_iso14230_decode, diag_l3_iso14230_timer 
+	diag_l3_iso14230_decode, diag_l3_iso14230_timer
 };

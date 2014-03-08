@@ -39,7 +39,7 @@
  *
  * WIN32 will use CreateTimerQueueTimer instead of the SIGALRM handler of unix.
  * Right now there's no self-checking but it should be of OK accuracy for basic stuff ( keepalive messages probably?)
- * NOTE : that means at least WinXP is required. 
+ * NOTE : that means at least WinXP is required.
  */
 
 
@@ -59,7 +59,7 @@
 #ifdef WIN32
 	#include <process.h>
 	#include <windows.h>
-	#include <inttypes.h> 	//for PRIu64 formatters 
+	#include <inttypes.h> 	//for PRIu64 formatters
 #else
 	#include <unistd.h>
 	#include <sys/ioctl.h>
@@ -100,7 +100,7 @@ VOID CALLBACK timercallback(PVOID lpParam, BOOLEAN timedout) {
 			timerproblem=1;	//so we dont flood the screen with errors
 		}
 		//SetEvent(timingprob) // probably not needed ?
-	} else {		
+	} else {
 		diag_l3_timer();	/* Call L3 Timer */
 		diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
 	}
@@ -136,13 +136,13 @@ diag_os_init(void)
 	//probably the nearest equivalent to a unix interval timer + associated alarm handler
 	//is the timer queue... so that's what we do.
 	//we create the timer in the default timerqueue
-	if (! CreateTimerQueueTimer(&hDiagTimer, NULL, 
-			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo, 
+	if (! CreateTimerQueueTimer(&hDiagTimer, NULL,
+			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo,
 			WT_EXECUTEDEFAULT)) {
 		fprintf(stderr, FLFMT "CTQT error.\n", FL);
 		return -1;
 	}
-	
+
 	//and set the current process to high priority.
 	//the resultant "base priority" is a combination of process priority and thread priority.
 	HANDLE curprocess=GetCurrentProcess();
@@ -171,7 +171,7 @@ diag_os_init(void)
 #endif
 
 	sigaction(SIGALRM, &stNew, NULL);	//install handler for SIGALRM
-	/* 
+	/*
 	 * Start repeating timer
 	 */
 	tv.it_interval.tv_sec = tmo / 1000;	/* Seconds */
@@ -213,14 +213,14 @@ int diag_os_close() {
 	//stop the interval timer:
 	struct itimerval tv={{0,0},{0, 0}};
 	setitimer(ITIMER_REAL, &tv, 0);
-	
+
 	//and  set the SIGALRM handler to default, whatever that is
 	struct sigaction disable_tmr;
 	memset(&disable_tmr, 0, sizeof(disable_tmr));
 	disable_tmr.sa_handler=SIG_DFL;
 	sigaction(SIGALRM, &disable_tmr, NULL);
 	return 0;
-	
+
 #endif //WIN32
 }
 
@@ -407,11 +407,11 @@ diag_os_millisleep(int ms) {
 
 /*
  * diag_os_ipending: Is input available on stdin. ret 1 if yes.
- * 
- * currently (like 2014), it is only used a few places to break long loops ? 
+ *
+ * currently (like 2014), it is only used a few places to break long loops ?
  * the effect is that diag_os_ipending returns immediately, and it returns 1 only if Enter was pressed.
  * the WIN32 version of this is clumsier : it returns 1 if Enter was pressed since the last time diag_os_ipending() was called.
- * 
+ *
  */
 int
 diag_os_ipending() {
@@ -439,7 +439,7 @@ diag_os_ipending() {
 	// in that case, it would NOT return until something is ready, in this case readset.
 
 	return rv == 1 ;
-	
+
 #endif	//WIN32
 }
 
@@ -509,17 +509,17 @@ int
 diag_os_sched(void)
 {
 
-    //
-    // Must start a callback timer. Not sure about the frequency yet.
+	//
+	// Must start a callback timer. Not sure about the frequency yet.
 	// XXX and to do what ?
-    //
+	//
 
 #warning No special scheduling support in diag_os.c !
 
 	fprintf(stderr,
 		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
 	return -1;
-	
+
 }
 #endif	//(POSIX_PRIO_SCHED)
 
@@ -537,7 +537,7 @@ int gettimeofday(struct timeval *tv, struct timezone *tz) {
 		GetSystemTimeAsFileTime(&ft);	//getnb of 100ns intvals since 1601-01-01
 		longtime.HighPart=ft.dwHighDateTime;
 		longtime.LowPart=ft.dwLowDateTime;	//load 64bit val
-		
+
 		longtime.QuadPart /=10;	// convert to 1E-6s; use 64bit member of union
 
 		longtime.QuadPart -= delta_epoch; 	//convert to unix timeframe
