@@ -73,7 +73,7 @@ option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
 
 
 ###### Includes
-#proj_bin_dir = needed to find config.h (not in src_dir)
+#proj_bin_dir = needed to find cconf.h (not in src_dir)
 include_directories("${PROJECT_BINARY_DIR}")
 #src_dir/include : to find freediag_aif.h
 include_directories("${PROJECT_SOURCE_DIR}/include")
@@ -86,10 +86,7 @@ if (USE_RCFILE)
 	#TODO : Avoid not changing the code so the opposite of the flag isn't used, i.e. "#ifdef USE_RCFILE"
 endif (USE_RCFILE)
 
-configure_file (
-  "${PROJECT_SOURCE_DIR}/cconf.h.in"
-  "${PROJECT_BINARY_DIR}/cconf.h"
-)
+configure_file (cconf.h.in cconf.h)
 #parse cconf.h.in and produce cconf.h in builddir
 
 

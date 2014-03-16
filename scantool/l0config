@@ -1,5 +1,6 @@
 # L0 devices to configure:
 # Any of these may be commented out before running make
+# lines beginning with a # are ignored
 
 muleng
 dumb

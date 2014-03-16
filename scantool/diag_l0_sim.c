@@ -337,7 +337,7 @@ uint8_t cs1(uint8_t *data, uint8_t pos)
 
 // Returns a value between 0x00 and 0xFF calculated as the trigonometric
 // sine of the current system time (with a period of one second).
-uint8_t sine1(uint8_t *data, uint8_t pos)
+uint8_t sine1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
 {
 	struct timeval now;
 	(void)gettimeofday(&now, NULL);
@@ -346,7 +346,7 @@ uint8_t sine1(uint8_t *data, uint8_t pos)
 
 // Returns a value between 0x00 and 0xFF directly proportional
 // to the value of the current system time (with a period of one second).
-uint8_t sawtooth1(uint8_t *data, uint8_t pos)
+uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
 {
 	struct timeval now;
 	(void)gettimeofday(&now, NULL);

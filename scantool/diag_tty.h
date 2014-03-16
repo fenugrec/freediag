@@ -47,17 +47,16 @@ struct diag_serial_settings {
 #endif //WIN32
 
 
-// this returns dl0d->dl0_handle
+// this returns dl0d->dl0_handle; I'm not sure why we need a function to do that ?
 void *diag_l0_dl0_handle(struct diag_l0_device *dl0d);
 
+//similar; this returns dl0d->dl2_link. 
 struct diag_l2_link *
 diag_l0_dl2_link(struct diag_l0_device *dl0d);
 
 void
 diag_l0_set_dl2_link(struct diag_l0_device *dl0d,
 	struct diag_l2_link *dl2_link);
-
-const struct diag_l0 *diag_l0_device_dl0(struct diag_l0_device *dl0d);
 
 extern int diag_l0_debug;
 
@@ -89,7 +88,7 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d,
 	const void *buf, const size_t count);
 	
 // send break on TX during [ms], return after clearing break
-int diag_tty_break(struct diag_l0_device *dl0d, const int ms);
+int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms);
 
 
 #endif /* _DIAG_TTY_H_ */

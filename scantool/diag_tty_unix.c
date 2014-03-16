@@ -1,24 +1,15 @@
-#ifdef WIN32
-#include <process.h>
-#else
-#include <unistd.h>
-#endif
-
 #if defined(__linux__) && (TRY_POSIX == 0)
 #include <linux/serial.h>	/* For Linux-specific struct serial_struct */
 #endif
 
+#include <unistd.h>
 #include <sys/types.h>
-#ifndef WIN32
 #include <sys/ioctl.h>
-#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef WIN32
 #include <termios.h>	/* For struct termios */
-#endif
 
 #if !defined(__linux__) || (TRY_POSIX == 1)
 #include <time.h>		/* For POSIX timers */
@@ -31,10 +22,6 @@
 #include "diag_l1.h"
 #include "diag_err.h"
 #include "diag_tty.h"
-
-//~ const struct diag_l0 *diag_l0_device_dl0(struct diag_l0_device *dl0d) {
-	//~ return dl0d->dl0;
-//~ } // XXXthis has been moved to diag_l1.c ... why was it in here in the first place ?
 
 int diag_tty_open(struct diag_l0_device **ppdl0d, 
 	const char *subinterface,
@@ -889,6 +876,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 
 
 //different tty_break implementations depending on __linux__ ; TRY_POSIX; TIOCSBRK; __CYGWIN__
+
 #if defined(__linux__) && (TRY_POSIX == 0)
 
 #warning ******* Compiling diag_tty_break with a fixed 25ms setbreak !
@@ -897,10 +885,10 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
  * diag_tty_break
  * fixed 25ms (1 byte @ 360bps) break and returns after [ms] !!
  * this makes it unusable for the manual 5bps init.
- * However, it possibly makes tWUP more precise; in ISO 14230 tWUP
- * must be 50ms +/- 1ms !
+ * However, it possibly makes tWUP more precise; in ISO 14230, tWUP
+ * should be 50ms +/- 1ms !
  */
-int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
+int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 {
 	char cbuf;
 	struct timeval tv;
@@ -971,7 +959,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
  * This one returns right after clearing the break. This is more generic and
  * can be used to bit-bang a 5bps byte.
  */
-int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
+int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 {
 	if (tcdrain(dl0d->fd)) {
 			fprintf(stderr, FLFMT "tcdrain returned %s.\n",
@@ -996,14 +984,19 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	return 0;
 }
 #elif defined(__CYGWIN__)
-/* I really should submit patches to implement TIO[SC]BRK */
+//This was needed before ~2004, but cygwin apparently supports TIOC*BRK now.
+// XXX:This implementation can probably be deleted if the native win32 port
+// proves to work reliably; would there be any other reason to use cygwin ?
+// 
 
 #include <io.h>
 #include <w32api/windows.h>
 
 #warning diag_tty_break on CYGWIN is untested but might work.
+#warning Please note freediag can be compiled as a native win32
+#warning application, cygwin is not required !
 //This one also returns right after clearing the break, which is the correct method.
-int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
+int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 {
 	HANDLE hd;
 	long h;

@@ -78,6 +78,13 @@ CVSID("$Id$");
 
 
 int diag_os_init_done;
+#ifdef WIN32
+	LARGE_INTEGER perfo_freq;	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
+	float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds
+	#define ALARM_TIMEOUT 20	//20 ms interval timeout for diag_os_sigalrm callback
+#else
+	#define ALARM_TIMEOUT 1		//1ms ? why so short ?
+#endif
 
 /*
  * SIGALRM handler.
@@ -90,17 +97,18 @@ int diag_os_init_done;
  */
 #ifdef WIN32
 HANDLE hDiagTimer;
-int timerproblem;
 
 VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
+	static int timerproblem=0;
 	if (!timedout) {
 		//this should not happen...
 		if (!timerproblem) {
 			fprintf(stderr, FLFMT "Problem with OS timer callback!\n", FL);
 			timerproblem=1;	//so we dont flood the screen with errors
 		}
-		//SetEvent(timingprob) // probably not needed ?
+		//SetEvent(timerproblem) // probably not needed ?
 	} else {
+		timerproblem=0;
 		diag_l3_timer();	/* Call L3 Timer */
 		diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
 	}
@@ -121,11 +129,11 @@ diag_os_init(void)
 {
 #ifdef WIN32
 //	struct sigaction_t stNew;
-	long tmo=20;	//20ms seems reasonable on WIN32. XXX change this for a #define
+	long tmo=ALARM_TIMEOUT;	//20ms seems reasonable on WIN32. XXX change this for a #define
 #else
 	struct sigaction stNew;
 	struct itimerval tv;
-	long tmo = 1;	/* 1 ms,  why such a high frequency ? */
+	long tmo = ALARM_TIMEOUT;	/* 1 ms,  why such a high frequency ? */
 #endif
 
 	if (diag_os_init_done)
@@ -143,7 +151,7 @@ diag_os_init(void)
 		return -1;
 	}
 
-	//and set the current process to high priority.
+	//set the current process to high priority.
 	//the resultant "base priority" is a combination of process priority and thread priority.
 	HANDLE curprocess=GetCurrentProcess();
 	if (! SetPriorityClass(curprocess, HIGH_PRIORITY_CLASS)) {
@@ -152,6 +160,18 @@ diag_os_init(void)
 	HANDLE curthread=GetCurrentThread();
 	if (! SetThreadPriority(curthread, THREAD_PRIORITY_HIGHEST)) {
 		fprintf(stderr, FLFMT "Warning : could not increase thread priority. Timing may be impaired.\n", FL);
+	}
+	
+	//and get the current performance counter frequency.
+	if (! QueryPerformanceFrequency(&perfo_freq)) {
+		fprintf(stderr, FLFMT "Could not QPF. Please report this !\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	if (perfo_freq.QuadPart !=0) {
+		pf_conv=1.0E6 / perfo_freq.QuadPart;
+	}
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, FLFMT "Performance counter frequency : %9"PRIu64"Hz\n", FL, perfo_freq.QuadPart);
 	}
 	return 0;
 #else // not WIN32
@@ -392,14 +412,22 @@ diag_os_millisleep(int ms) {
 	}
 #else		//so it's WIN32
 	LARGE_INTEGER qpc1, qpc2;
+	long real_t;
+	QueryPerformanceCounter(&qpc1);
+	Sleep(ms);
+	QueryPerformanceCounter(&qpc2);
+	real_t=(long) (pf_conv * (qpc2.QuadPart-qpc1.QuadPart));
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		QueryPerformanceCounter(&qpc1);
-		Sleep(ms);
-		QueryPerformanceCounter(&qpc2);
-		fprintf(stderr, FLFMT "diag_os_millisleep slept for %9"PRIu64" counts\n", FL, qpc2.QuadPart-qpc1.QuadPart);
-	} else {
-		Sleep(ms);
+		fprintf(stderr, FLFMT "diag_os_millisleep slept for %ldus\n", FL,
+			real_t);
 	}
+	//verify if within 1ms of requested.
+	real_t = real_t - (ms*1000);
+	if ((real_t < -1000) || (real_t > 1000)) {
+		fprintf(stderr, FLFMT "Warning : diag_os_millisleep out of spec by %ldus !.\n",
+			FL, real_t);
+	}
+
 #endif
 	return 0;
 }

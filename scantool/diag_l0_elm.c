@@ -1,36 +1,24 @@
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
- *
- * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *************************************************************************
- *
  * Diag, Layer 0, interface for Scantool.net's ELM32x Interface
  * Work in progress, will not work yet.
  *
- *This is meant to support ELM323 & 327 devices. For now, only 9600 comms
- *will be supported. See diag_l0_elm_setspeed
+ *This is meant to support ELM323 & 327 devices; clones and originals.
+ * COM speed is "autodetected" (it tries 9600 and 38400bps).
  *
- *This interface is particular in that it handles the header bytes + checksum internally.
+ *ELM interfaces are particular in that they handle the header bytes + checksum internally.
  *Data is transferred in ASCII hex format, i.e. 0x46 0xFE is sent and received as "46FE"
+ *This could be modified by enabling the "packed data" mode but I think ELM327 devices
+ *don't support that, and clones are equally hopeless.
  *
  *The ELM327 has non-volatile settings; this will require special treatment. Not
- * implemented at the moment -> the _open function will reset factory settings.
+ * completely implemented at the moment.
+
+ *Note conserting non-volatile settings : it appears only these are stored to the EEPROM:
+ * -327: AT SP (set protocol)
+ * -327: PP 0C (custom baudrate)
+ * -323: these have no EEPROM so "ATZ" should really reset all to default
  *
  *These devices handle the periodic wake-up commands on the bus. This is the only l0
  *device with that feature; upper levels (esp L2) need to be modified to take this into account. See
@@ -346,6 +334,8 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	//We'll try 9600 bps first, then 38.4k if it didn't work.
 	//The following options will be set :
 	//ATE0	(disable echo)
+	//TODO : clear linefeeds and reset default protocol (for 327)
+	//TODO detect ELM327 vs 323 vs clones
 
 	dev->elmflags=0;	//we know nothing about it yet
 	if (diag_l0_debug&DIAG_DEBUG_OPEN) {

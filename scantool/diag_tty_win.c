@@ -8,10 +8,10 @@
 #include "diag_tty.h"
 
 #include <windows.h>
-#include <inttypes.h>	//for PRIu64 formatter
 
-static LARGE_INTEGER perfo_freq;	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
-//maybe they could go in diag_os eventually, for now they're here just for tests
+extern LARGE_INTEGER perfo_freq;
+extern float pf_conv;	//these two are defined in diag_os
+
 
 //diag_tty_open : load the diag_l0_device with the correct stuff
 int diag_tty_open(struct diag_l0_device **ppdl0d,
@@ -21,14 +21,6 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 {
 	int rv;
 	struct diag_l0_device *dl0d;
-
-	if (! QueryPerformanceFrequency(&perfo_freq)) {
-		fprintf(stderr, FLFMT "Could not QPF. Please report this !\n", FL);
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "Performance counter frequency : %9"PRIu64"\n", FL, perfo_freq.QuadPart);
-	}
 
 	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
@@ -262,19 +254,30 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 
 /*
  * Set/Clear DTR and RTS lines, as specified
- * on Win32 I think this can't be done in one operation, so EscapeCommFunction is called twice.
- * Unless we change the DCB ? updating it with SetCommState would then set both pins at the same time...
- *
+ * on Win32 this can easily be done by calling EscapeCommFunction twice.
+ * This takes around ~15-20us to do; probably with ~10 us skew between setting RTS and DTR.
+ * If it proves to be a problem, it's possible to change both RTS and DTR at once by updating
+ * the DCB and calling SetCommState. That call would take around 30-40us.
+  *
  * ret 0 if ok
  */
 int
 diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 {
+	LARGE_INTEGER perftest;	// making sure the frequency is the same
 	int escapefunc;
 
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	
+	QueryPerformanceFrequency(&perftest);
+	if (perfo_freq.QuadPart != perftest.QuadPart) {
+		//this sanity check takes ~ 4us on my system
+		fprintf(stderr, FLFMT "Warning: your system changed its performance counter frequency !\n", FL);
+		perfo_freq.QuadPart = perftest.QuadPart;
+		//we update the global setting, since it's just use for validation at the moment (not control)
 	}
 
 	if (dtr)
@@ -306,7 +309,14 @@ diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 
 //diag_tty_write : return # of bytes or <0 if error?
 //this is an intimidating function to design.
-//test #1 :  non-overlapped write, until I know what I'm doing.
+//test #1 :  non-overlapped write (i.e. blocking AKA synchronous), until I know what I'm doing.
+//It may be useful to make this overlapped instead : that way the caller regains control
+// at the approx moment the actual transmission would begin.  As it stands, there is no
+// correlation between the moment WriteFile returns and when transmission actually
+// takes place. I..e. WriteFile will probably return after dumping the bytes in the
+// UART's buffer (most likely) which doesn't mean they were sent yet.
+// *However*, changing this to an Overlapped operation has wide implications on the
+// rest of the code, and may require a lot of changes to the UNIX tty stuff too.
 
 ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count) {
 
@@ -329,9 +339,12 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 } //diag_tty_write
 
 
+// diag_tty_read
 //this is also scary.
 //attempt to read (count) bytes until (timeout) passes.
-//This is non-overlapped for now; it's also probably broken
+//Note : setting timeout to 0 is like setting an infinite timeout on win32.
+//TODO : unify diag_tty_read timeouts between win32 and unix
+//This is non-overlapped for now; it's also probably broken;
 //timeouts and incomplete data are not handled properly. This is not even pre-alpha.
 
 ssize_t
@@ -372,6 +385,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
  *  flush input buffer and display some of the discarded data
  * ret 0 if ok
  * a short timeout (30ms) is used in case the caller needs to receive a byte soon (like after a iso9141 slow init)
+ * 
  */
 int diag_tty_iflush(struct diag_l0_device *dl0d)
 {
@@ -396,25 +410,49 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 
 //different tty_break implementations.
 //ret 0 if ok
-//TODO : add verification of timing with QueryPerformanceCounter etc.
 
 // diag_tty_break #1 : use Set / ClearCommBreak
 // and return as soon as break is cleared.
 #if 1
-int diag_tty_break(struct diag_l0_device *dl0d, const int ms) {
+int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
+	LARGE_INTEGER qpc1, qpc2, perftest;	//for timing verification
+	long real_t;	//"real" duration measured in us
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	int errval=0;
+
+	QueryPerformanceFrequency(&perftest);
+	if (perfo_freq.QuadPart != perftest.QuadPart) {
+		//this sanity check takes ~ 4us on my system
+		fprintf(stderr, FLFMT "Warning: your system changed its performance counter frequency !\n", FL);
+		perfo_freq.QuadPart = perftest.QuadPart;
+		pf_conv=1.0E6 / perftest.QuadPart;
+		//we update the global settings, since it's just use for validation at the moment (not control)
+	}
+
+	QueryPerformanceCounter(&qpc1);
 	errval=!SetCommBreak(dl0d->fd);
 	diag_os_millisleep(ms);	//probably the most inadequate way of doing this on win32 platforms, but it might work
 	//one improvement would be to always add a configurable offset to every diag_os_millisleep
 	//it could even be auto-calibrated to some extent
+	QueryPerformanceCounter(&qpc2);
 	errval += !ClearCommBreak(dl0d->fd);
 	if (errval) {
 		//if either of the calls failed
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	real_t=(int) (pf_conv * qpc2.QuadPart-qpc1.QuadPart);
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, FLFMT "diag_tty_break: duration = %ldus.\n",
+			FL, real_t);
+	}
+	//now verify if it's within 1ms of the requested delay.
+	real_t = real_t - (ms*1000);
+	if ((real_t < -1000) || (real_t > 1000)) {
+		fprintf(stderr, FLFMT "Warning : break duration out of spec by %ldus !.\n",
+			FL, real_t);
 	}
 
 	return 0;
@@ -423,18 +461,20 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms) {
 #else //alternate diag_tty_break
 
 /*
- * diag_tty_break #2 : send 0x00 at 360bps => fixed 25ms break; return as soon as break is cleared.
- *
+ * diag_tty_break #2 : send 0x00 at 360bps => fixed 25ms break; return [ms] after starting break.
+ * This is neat for ISO14230 fast init, but useless for bit-banging the 5bps address in a slow init.
  */
 
-int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
+#warning Compiling fixed 25ms diag_tty_break ! DUMB interfaces might not work !
+
+int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 {
 	if (ms==0)		//very funny
 		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	DCB tempDCB; 	//for sabotaging the settings just to do the break
 	DCB origDCB;
-	LARGE_INTEGER qpc1, qpc2;	//to time the break period
+	LARGE_INTEGER qpc1, qpc2, qpc3;	//to time the break period
 	LONGLONG timediff;		//64bit delta
 	long int tremain,counts;
 
@@ -463,9 +503,6 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 	/* Send a 0x00 byte message */
 	QueryPerformanceCounter(&qpc1);		//get starting time
 	diag_tty_write(dl0d, '\0', 1);
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "%09ld : approx start of break\n", FL, qpc1.LowPart);
-	}
 
 	/*
 	 * And read back the single byte echo, which shows TX completes
@@ -482,18 +519,24 @@ int diag_tty_break(struct diag_l0_device *dl0d, const int ms)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
-	QueryPerformanceCounter(&qpc2);		//and current time.
+	QueryPerformanceCounter(&qpc2);		//and current time. The break probably just ended now
 	timediff=qpc2.QuadPart-qpc1.QuadPart;	//elapsed counts since diag_tty_write
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, FLFMT "tty_break: approx duration=%ldus\n", FL, (long)(pf_conv*timediff));
+	}
 	counts=(2*ms*perfo_freq.QuadPart)/1000;		//total # of counts for requested ( setbreak + clearbreak ) cycle time
 	tremain=counts-timediff;	//counts remaining
 	if (tremain<=0)
 		return 0;
 	tremain = ((LONGLONG) tremain*1000)/perfo_freq.QuadPart;	//convert to ms; imprecise but that should be OK.
 	diag_os_millisleep(tremain);
-	QueryPerformanceCounter(&qpc2);
+	QueryPerformanceCounter(&qpc3);
+	
+	timediff=qpc3.QuadPart-qpc1.QuadPart;	//total cycle time.
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "%09ld : approx end of break\n", FL, qpc2.LowPart);
+		fprintf(stderr, FLFMT "tty_break: tWUP=%ldus\n", FL, (long)(pf_conv*timediff));
 	}
+
 
 	//and now reset original settings !
 	if (! SetCommState(dl0d->fd, &origDCB)) {
