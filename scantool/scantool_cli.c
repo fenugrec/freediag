@@ -320,11 +320,11 @@ cmd_log(int argc, char **argv)
 {
 	char autofilename[20]="";
 	char *file;
-	file=autofilename;
 	struct stat buf;
 	time_t now;
 	int i;
-
+	
+	file=autofilename;
 	if (global_logfp != NULL) {
 		printf("Already logging\n");
 		return CMD_FAILED;
@@ -928,14 +928,11 @@ rc_file(void)
 
 	/*
 	 * "." files don't play that well on some systems.
-	 * You can turn it off and turn on a .ini file by setting both
-	 *	"DONT_USE_RCFILE" and "USE_INIFILE",
-	 * or support both by setting USE_INIFILE.
-	* as set by ./configure
+	 * USE_RCFILE is not defined by default
 	* (see configure.ac)
 	 */
 
-#ifndef DONT_USE_RCFILE
+#ifdef USE_RCFILE
 	char *rchomeinit;
 	char *homedir;
 	homedir = getenv("HOME");

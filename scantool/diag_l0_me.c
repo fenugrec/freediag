@@ -204,7 +204,7 @@ diag_l0_muleng_close(struct diag_l0_device **pdl0d)
 
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, FLFMT "link %p closing\n",
-				FL, dl0d);
+				FL, (void *)dl0d);
 
 		if (dev)
 			free(dev);
@@ -227,7 +227,7 @@ diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) )
 	{
 		fprintf(stderr, FLFMT "device link %p sending to ME device: ",
-			FL, dl0d);
+			FL, (void *)dl0d);
 		diag_data_dump(stderr, dp, txlen);
 		fprintf(stderr, "\n");
 	}
@@ -328,7 +328,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "device link %p setting baud to %d\n",
-				FL, dl0d, baud);
+				FL, (void *)dl0d, baud);
 
 		if (baud) {
 			struct diag_serial_settings set;
@@ -403,7 +403,7 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d proto %d\n",
-			FL, dl0d, dev, in->type,
+			FL, (void *)dl0d, (void *)dev, in->type,
 			dev ? dev->protocol : -1);
 
 	if (!dev)
@@ -435,11 +435,11 @@ static int
 diag_l0_muleng_setspeed(struct diag_l0_device *dl0d,
 		const struct diag_serial_settings *pset)
 {
+	struct diag_serial_settings set;
+	
 	fprintf(stderr, FLFMT "Warning: attempted to override com speed (%d)! Report this !\n", FL,pset->speed);
 	return 0;
-
-	struct diag_serial_settings set;
-
+	// I see no need to force another diag_tty_setup
 	set.speed = 19200;
 	set.databits = diag_databits_8;
 	set.stopbits = diag_stopbits_1;
@@ -495,7 +495,7 @@ const void *data, size_t len)
 	if (diag_l0_debug & DIAG_DEBUG_WRITE)
 	{
 		fprintf(stderr, FLFMT "device link %p send %ld bytes protocol %d ",
-			FL, dl0d, (long)len, dev->protocol);
+			FL, (void *)dl0d, (long)len, dev->protocol);
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 		{
 			diag_data_dump(stderr, data, len);
@@ -588,7 +588,7 @@ void *data, size_t len, int timeout)
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
 			FLFMT "link %p recv upto %ld bytes timeout %d, rxlen %d offset %d\n",
-			FL, dl0d, (long)len, timeout, dev->dev_rxlen, dev->dev_rdoffset);
+			FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen, dev->dev_rdoffset);
 
 	/*
 	 * Deal with 5 Baud init states where first two bytes read by
@@ -628,7 +628,7 @@ void *data, size_t len, int timeout)
 		xferd = diag_tty_read(dl0d, data, len, timeout);
 		if (diag_l0_debug & DIAG_DEBUG_READ)
 			fprintf(stderr, FLFMT "link %p read %ld bytes\n", FL,
-				dl0d, (long)xferd);
+				(void *)dl0d, (long)xferd);
 		return xferd;
 
 	case MULENG_STATE_FASTSTART:
@@ -699,7 +699,7 @@ void *data, size_t len, int timeout)
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 	{
 		fprintf(stderr,
-			FLFMT "link %p received from ME: ", FL, dl0d);
+			FLFMT "link %p received from ME: ", FL, (void *)dl0d);
 		for (i=0; i < dev->dev_rxlen; i++)
 				fprintf(stderr, "0x%x ",
 					dev->dev_rxbuf[i] & 0xff);
@@ -735,8 +735,7 @@ void *data, size_t len, int timeout)
 		if (diag_l0_debug & DIAG_DEBUG_READ)
 			fprintf(stderr,
 				FLFMT "link %p ME returns err 0x%x : s/w v 0x%x i/f cap. 0x%x\n",
-
-				FL, dl0d, dev->dev_rxbuf[3],
+				FL, (void *)dl0d, dev->dev_rxbuf[3],
 				dev->dev_rxbuf[2], dev->dev_rxbuf[4]);
 
 		switch (dev->dev_rxbuf[3])
@@ -805,7 +804,7 @@ diag_l0_muleng_getflags(struct diag_l0_device *dl0d)
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr,
 			FLFMT "getflags link %p proto %d flags 0x%x\n",
-			FL, dl0d, dev->protocol, flags);
+			FL, (void *)dl0d, dev->protocol, flags);
 
 	return flags ;
 }

@@ -66,7 +66,7 @@ UNUSED(source_type source))
 
 	if (diag_l2_debug & DIAG_DEBUG_INIT)
 		fprintf(stderr,
-			FLFMT "startcomms conn %p\n", FL, d_l2_conn);
+			FLFMT "startcomms conn %p\n", FL, (void *)d_l2_conn);
 
 	/*
 	 * If 0 has been specified, use a suitable default
@@ -117,7 +117,7 @@ UNUSED(source_type source))
 
 	if (diag_l2_debug & DIAG_DEBUG_INIT)
 		fprintf(stderr, FLFMT "startcomms conn %p got kb 0x%x 0x%x\n",
-				FL, d_l2_conn, cbuf[0], cbuf[1]);
+				FL, (void *)d_l2_conn, cbuf[0], cbuf[1]);
 
 	/*
 	 * Check the received keybytes
@@ -269,7 +269,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
 			FLFMT "recv conn %p got %d byte message\n",
-				FL, d_l2_conn, rv);
+				FL, (void *)d_l2_conn, rv);
 	if (rv < 5)
 	{
 		/* Bad, minimum message is 5 bytes */
@@ -315,8 +315,8 @@ diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
-			FLFMT "diag_l2_send %p %p called\n",
-				FL, d_l2_conn, msg);
+			FLFMT "diag_l2_send %p, msg %p called\n",
+				FL, (void *)d_l2_conn, (void *)msg);
 
 	/*
 	 * Make sure enough time between last receive and this send
@@ -381,7 +381,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
 			FLFMT "msg receive conn %p got %d byte message\n",
-				FL, d_l2_conn, rv);
+				FL, (void *)d_l2_conn, rv);
 	if (rv < 5)
 	{
 		/* Bad, minimum message is 5 bytes, or error happened */
@@ -420,7 +420,7 @@ diag_l2_proto_mb1_timeout(struct diag_l2_conn *d_l2_conn)
 	/* XXX Not async-signal-safe */
 	if (diag_l2_debug & DIAG_DEBUG_TIMER)
 		fprintf(stderr, FLFMT "timeout conn %p\n",
-				FL, d_l2_conn);
+				FL, (void *)d_l2_conn);
 
 	txbuf[0] = 0x50;	/* Idle command */
 	txbuf[1] = 0x01;

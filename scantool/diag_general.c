@@ -35,6 +35,7 @@
 #include "diag_l1.h"
 #include "diag_l2.h"
 
+#define ERR_STR_LEN 30	//length of "i
 CVSID("$Id$");
 
 static int diag_initialized;
@@ -213,7 +214,7 @@ diag_freemsg(struct diag_msg *msg)
 	{
 		fprintf(stderr,
 			FLFMT "diag_freemsg called for non diag_allocmsg()'d message %p\n",
-			FL, msg);
+			FL, (void *)msg);
 		return;
 	}
 
@@ -284,12 +285,12 @@ static const struct {
 const char *
 diag_errlookup(const int code) {
 	unsigned i;
-	static char ill_str[30];		//...
+	static char ill_str[ERR_STR_LEN];
 	for (i = 0; i < ARRAY_SIZE(edesc); i++)
 		if (edesc[i].code == code)
 			return edesc[i].desc;
 
-	sprintf(ill_str,"Illegal error code: 0x%.2X\n",code);
+	snprintf(ill_str,ERR_STR_LEN,"Illegal error code: 0x%.2X\n",code);
 	return ill_str;
 }
 
@@ -325,12 +326,18 @@ diag_geterr(void) {
 /* Memory allocation */
 
 //diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
+// also checks for size !=0
 int diag_flcalloc(const char *name, const int line,
 void **pp, size_t n, size_t s) {
-	void *p = calloc(n, s);
+	void *p;
+	if (s !=0) {
+		p = calloc(n, s);
+	} else {
+		p=NULL;
+	}
 	*pp = p;
 
-	if (p == 0) {
+	if (p == NULL) {
 		fprintf(stderr,
 			"%s:%d: calloc(%ld, %ld) failed: %s\n", name, line,
 			(long)n, (long)s, strerror(errno));
@@ -341,12 +348,16 @@ void **pp, size_t n, size_t s) {
 }
 
 
-//flmalloc = malloc with logging (filename+line)
+//flmalloc = malloc with logging (filename+line) and size check (!=0)
 int diag_flmalloc(const char *name, const int line, void **pp, size_t s) {
-	void *p = malloc(s);
+	void *p;
+	if (s !=0) {
+		p = malloc(s);
+	} else {
+		p=NULL;
+	}
 	*pp = p;
-
-	if (p == 0) {
+	if (p == NULL) {
 		fprintf(stderr,
 			"%s:%d: malloc(%ld) failed: %s\n", name, line,
 			(long)s, strerror(errno));

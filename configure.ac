@@ -21,20 +21,22 @@ AC_CHECK_LIB(ncurses,tparm,,AC_CHECK_LIB(termcap,tgetent))
 
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h stdint.h stdlib.h string.h sys/ioctl.h sys/time.h termios.h unistd.h])
+AC_HEADER_STDC
+AC_CHECK_HEADERS([fcntl.h stdint.h sys/ioctl.h sys/time.h termios.h unistd.h])
+
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
+AC_TYPE_UINT8_T
 AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
-AC_TYPE_UINT8_T
 
 # Checks for functions.
 AC_FUNC_MALLOC
 
-#for some reason check_funcs doesn't work with timersub...
-AC_CHECK_FUNCS([alarm gettimeofday memset select strcasecmp strerror strtol])
+#for some reason ac_check_funcs doesn't work with timersub...
+AC_CHECK_FUNCS([alarm gettimeofday select strcasecmp])
 #so we'll force it's presence:
 AC_DEFINE(HAVE_TIMERSUB,,"Do we have timersub()")
 AC_WARNING([Warning : forcing HAVE_TIMERSUB !])
@@ -45,8 +47,8 @@ AC_ARG_ENABLE(scangui,
 	)
 	
 AC_ARG_ENABLE(rcfile,
-	[AS_HELP_STRING([--enable-rcfile],[Enable use of rc file in $home/ (default=disabled)])],
-	,AC_DEFINE(DONT_USE_RCFILE,,[Disable loading of .rc file])
+	[AS_HELP_STRING([--enable-rcfile],[Enable .rc file in $home/ (default=disabled)])],
+	AC_DEFINE(USE_RCFILE,,[Enable loading of ~/.rc file]),
 	)
 	
 AC_ARG_ENABLE(inifile,

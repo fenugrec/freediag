@@ -21,6 +21,8 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 {
 	int rv;
 	struct diag_l0_device *dl0d;
+	size_t n = strlen(subinterface) + 1;
+	COMMTIMEOUTS devtimeouts;
 
 	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
@@ -36,7 +38,6 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	*ppdl0d = dl0d;
 
-	size_t n = strlen(subinterface) + 1;
 	//allocate space for subinterface name
 	if ((rv=diag_malloc(&dl0d->name, n))) {
 		(void)diag_tty_close(ppdl0d);;
@@ -80,7 +81,6 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	}
 
 	//Finally set COMMTIMEOUTS to reasonable values (all in ms) ?
-	COMMTIMEOUTS devtimeouts;
 	devtimeouts.ReadIntervalTimeout=30;	//i.e. more than 30ms between received bytes
 	devtimeouts.ReadTotalTimeoutMultiplier=5;	//timeout per requested byte
 	devtimeouts.ReadTotalTimeoutConstant=20;	// (constant + multiplier*numbytes) = total timeout on read(buf, numbytes)
@@ -149,6 +149,8 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 {
 	HANDLE devhandle=dl0d->fd;		//used just to clarify code
 	DCB *devstate=dl0d->ttystate;
+	COMMPROP supportedprops;
+	DCB verif_dcb;
 
 	if (devhandle == INVALID_HANDLE_VALUE || dl0d->ttystate == 0) {
 		fprintf(stderr, FLFMT "setup: something is not right\n", FL);
@@ -159,7 +161,6 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	//i.e. some l0 devices try to set 5bps which isn't supported on some devices.
 	//For now let's just check if it supports custom baud rates. This check should be added to diag_tty_open where
 	//it would set appropriate flags to allow _l0 devices to adapt their functionality.
-	COMMPROP supportedprops;
 	if (! GetCommProperties(devhandle,&supportedprops)) {
 		fprintf(stderr, FLFMT "could not getcommproperties !\n",FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -173,7 +174,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 	{
 		fprintf(stderr, FLFMT "device handle=%p; &ttystate=%p ",
-			FL, devhandle, dl0d->ttystate);
+			FL, (void *)devhandle, (void *)dl0d->ttystate);
 		fprintf(stderr, "speed=%d databits=%d stopbits=%d parity=%d\n",
 			pset->speed, pset->databits, pset->stopbits, pset->parflag);
 	}
@@ -239,7 +240,6 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	//to be really thorough we do another GetCommState and check that the speed was set properly.
 	//I see no particular reason to check all the other fields though.
 
-	DCB verif_dcb;
 	if (! GetCommState(devhandle, &verif_dcb)) {
 		fprintf(stderr, FLFMT "Could not verify with GetCommState\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -319,14 +319,15 @@ diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 // rest of the code, and may require a lot of changes to the UNIX tty stuff too.
 
 ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count) {
+	DWORD byteswritten;
+	OVERLAPPED *pOverlap;
+	pOverlap=0;		//note : if overlap is eventually enabled, the CreateFile flags should be adjusted
 
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	DWORD byteswritten;
-	OVERLAPPED *pOverlap;
-	pOverlap=0;		//note : if overlap is eventually enabled, the CreateFile flags should be adjusted
+
 	if (! WriteFile(dl0d->fd, buf, count, &byteswritten, pOverlap)) {
 		fprintf(stderr, FLFMT "WriteFile error. %d bytes written, %d requested\n", FL, (int) byteswritten, count);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -417,11 +418,12 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 	LARGE_INTEGER qpc1, qpc2, perftest;	//for timing verification
 	long real_t;	//"real" duration measured in us
+	int errval=0;
+	
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	int errval=0;
 
 	QueryPerformanceFrequency(&perftest);
 	if (perfo_freq.QuadPart != perftest.QuadPart) {

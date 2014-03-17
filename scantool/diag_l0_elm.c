@@ -108,7 +108,7 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 		/* If debugging, print to strerr */
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, FLFMT "link %p closing\n",
-				FL, dl0d);
+				FL, (void *) dl0d);
 
 		if (dev)
 			free(dev);
@@ -138,6 +138,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 	int i, rv;
 	char buf[ELM_BUFSIZE];	//for receiving responses
 	struct diag_l0_elm_device *dev;
+	const char ** elm_errors;	//just used to select between the 2 error lists
 	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 	//we need access to diag_l0_elm_device to access .elmflags
 	if (!dev)
@@ -216,8 +217,6 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 
 	//let's null-terminate the reply first;
 	buf[rv]=0;
-
-	const char ** elm_errors;	//just used to select between the 2 error lists
 
 	//pick the right set of error messages. Although we could just systematically
 	//use the vaster ELM327 set of error messages...
@@ -567,10 +566,10 @@ void *data, size_t len, int timeout)
 {
 	int xferd;
 	char rxbuf[ELM_BUFSIZE];		//need max (7 digits *2chars) + (6 space *1) + 1(CR) + 1(>) + (NUL) bytes.
+	char *rptr, *bp;
+	unsigned int rbyte;
 
 	//possibly not useful until ELM323 vs 327 distinction is made :
-	//struct diag_l0_elm_device *dev;
-	//dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "Expecting %d bytes from ELM, %d ms timeout\n", FL, (int) len, timeout);
@@ -596,8 +595,6 @@ void *data, size_t len, int timeout)
 	}
 
 	//Here, rxbuf contains the string received from ELM. Parse it to get hex digits
-	char *rptr, *bp;
-	unsigned int rbyte;
 	xferd=0;
 	rptr=rxbuf+strspn(rxbuf, " \n\r");	//skip all leading spaces and linefeeds
 	while ((bp=strtok(rptr, " >\n\r")) !=NULL) {
@@ -620,27 +617,10 @@ void *data, size_t len, int timeout)
 * This function will do nothing
  */
 static int
-diag_l0_elm_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pss)
+diag_l0_elm_setspeed(UNUSED(struct diag_l0_device *dl0d),
+	const struct diag_serial_settings *pss)
 {
-	int rv;
 	fprintf(stderr, FLFMT "Warning: attempted to override ELM com speed (%d)! Report this !\n", FL,pss->speed);
-	return 0;
-
-	struct diag_serial_settings sset;
-	sset.speed=9600;
-	sset.databits = diag_databits_8;
-	sset.stopbits = diag_stopbits_1;
-	sset.parflag = diag_par_n;
-	struct diag_l0_elm_device *dev;
-
-	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
-
-	dev->serial = sset;
-
-	if ((rv=diag_tty_setup(dl0d, &sset)))
-		return diag_iseterr(rv);
-
 	return 0;
 }
 
@@ -672,7 +652,7 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr,
 			FLFMT "getflags link %p proto %d flags 0x%x\n",
-			FL, dl0d, dev->protocol, flags);
+			FL, (void *)dl0d, dev->protocol, flags);
 
 	return flags;
 

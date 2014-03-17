@@ -370,7 +370,7 @@ printf("[CJH] %s %d: No process_data function!\n",__FUNCTION__,__LINE__);
 
 			if (diag_l3_debug & DIAG_DEBUG_PROTO)
 				fprintf(stderr,FLFMT "recv process_data called, msg %p rxoffset %d\n",
-					FL, d_l3_conn->msg,
+					FL, (void *)d_l3_conn->msg,
 					d_l3_conn->rxoffset);
 
 			/*
@@ -461,7 +461,7 @@ diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
 	{
 		/* XXX Not async-signal-safe */
 		fprintf(stderr, FLFMT "P3 timeout impending for %p %d ms\n",
-				FL, d_l3_conn, ms);
+				FL, (void *)d_l3_conn, ms);
 	}
 
 	msg.data = data;

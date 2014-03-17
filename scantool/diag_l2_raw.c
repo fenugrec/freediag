@@ -80,8 +80,8 @@ diag_l2_proto_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
-			FLFMT "diag_l2_send %p %p len %d called\n",
-				FL, d_l2_conn, msg, msg->len);
+			FLFMT "diag_l2_send %p, msg %p len %d called\n",
+				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		msg->data, msg->len, d_l2_conn->diag_l2_p4min);
@@ -122,8 +122,8 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 	{
-		fprintf(stderr, FLFMT "rcv callback calling %p(%p)\n", FL,
-				callback, handle);
+		fprintf(stderr, FLFMT "rcv callback calling %d(%p)\n", FL,
+				(int) callback, (void *)handle);
 	}
 
 	/*

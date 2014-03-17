@@ -361,6 +361,7 @@ cmd_set_speed(int argc, char **argv)
 }
 
 static int cmd_set_dumbopts(int argc, char **argv) {
+	int tmp;
 	if (argc >1) {
 		if ( argv[1][0]=='?' ) {
 			printf("dumbopts: use \"set dumbopts [opts]\" where [opts] is the addition of the desired flags:\n"
@@ -377,7 +378,6 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 				"Note : these options are ignored on any non-DUMB interfaces.\n");
 			return CMD_OK;
 		}
-		int tmp;
 		if ( ! sscanf(argv[1], "%d", &tmp)) {	//interpret the options as decimal. I might change this to %x if I add a lot more flags
 			printf("could not parse \"%s\" ! verify input.\n\n", argv[1]);
 			return CMD_USAGE;

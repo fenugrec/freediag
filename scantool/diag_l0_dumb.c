@@ -130,7 +130,7 @@ diag_l0_dumb_close(struct diag_l0_device **pdl0d)
 
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, FLFMT "l0 link %p closing\n",
-				FL, dl0d);
+				FL, (void *)dl0d);
 
 		if (dev)
 			free(dev);
@@ -155,7 +155,7 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 	int rv=0;
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p fastinit\n",
-			FL, dl0d);
+			FL, (void *)dl0d);
 	//Tidle before break : W5 (>300ms) on poweron; P3 (>55ms) after a StopCommunication; or 0ms after a P3 timeout.
 	// We assume the caller took care of this.
 	/* Send 25/25 ms break as initialisation pattern (TiniL) */
@@ -293,7 +293,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "slowinit link %p address 0x%x\n",
-			FL, dl0d, in->addr);
+			FL, (void *)dl0d, in->addr);
 	}
 
 	/* Wait W0 (2ms or longer) leaving the bus at logic 1 */
@@ -387,7 +387,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 			if (xferd == DIAG_ERR_TIMEOUT) {
 				if (diag_l0_debug & DIAG_DEBUG_PROTO)
 					fprintf(stderr, FLFMT "slowinit link %p echo read timeout\n",
-						FL, dl0d);
+						FL, (void *)dl0d);
 				return diag_iseterr(DIAG_ERR_TIMEOUT);
 			}
 			if (xferd == 0) {
@@ -435,12 +435,12 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	if (rv < 0) {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit link %p read timeout, did not get Sync byte !\n",
-				FL, dl0d);
+				FL, (void *)dl0d);
 		return diag_iseterr(rv);
 	} else {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit link %p, got sync byte 0x%x\n",
-				FL, dl0d, cbuf);
+				FL, (void *)dl0d, cbuf);
 	}
 	return 0;
 }
@@ -460,7 +460,7 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n",
-			FL, dl0d, dev, in->type);
+			FL, (void *)dl0d, (void *)dev, in->type);
 
 	if (!dev)
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -517,7 +517,7 @@ const void *data, size_t len)
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "device link %p send %ld bytes ",
-			FL, dl0d, (long)len);
+			FL, (void *)dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 			diag_data_dump(stderr, data, len);
 	}
@@ -571,7 +571,7 @@ void *data, size_t len, int timeout)
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
 			FLFMT "link %p recv upto %ld bytes timeout %d\n",
-			FL, dl0d, (long)len, timeout);
+			FL, (void *)dl0d, (long)len, timeout);
 
 	while ( (xferd = diag_tty_read(dl0d, data, len, timeout)) <= 0) {
 		if (xferd == DIAG_ERR_TIMEOUT)

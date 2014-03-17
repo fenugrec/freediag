@@ -259,7 +259,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 	{
 		fprintf(stderr, FLFMT "setup: device fd %d dt %p ",
-			FL, fd, dt);
+			FL, fd, (void *)dt);
 		fprintf(stderr, "speed %d databits %d stopbits %d parity %d\n",
 			pset->speed, pset->databits, pset->stopbits, pset->parflag);
 	}

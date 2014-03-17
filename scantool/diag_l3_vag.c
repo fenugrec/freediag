@@ -94,10 +94,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 	 * The "sprintf(" that follows had no arguments for the format, I added the "0, 0".
 	 */
 
-#if NOWARNINGS==0
-	/* warning Obviously broken code */
-#endif
-	fprintf(stderr, "%s:%d: Obviously broken code\n", __FILE__, __LINE__);
+	fprintf(stderr, FLFMT "Obviously broken code !\n", FL);
 
 	snprintf(buf, bufsize, "Block Len 0x%x, Counter 0x%x ", 0, 0);
 

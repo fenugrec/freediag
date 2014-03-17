@@ -303,7 +303,7 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
 
 		if (diag_l2_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr,FLFMT "diag_l2_closelink %p called\n",
-				FL, dl2l);
+				FL, (void *)dl2l);
 
 		if (dl2l)
 		{
@@ -408,7 +408,7 @@ diag_l2_close(struct diag_l0_device *dl0d)
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr,FLFMT "Entering diag_l2_close for dl0d=%p\n",
-			FL, dl0d);
+			FL, (void *)dl0d);
 
 	/* XXX */
 
@@ -435,7 +435,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
 			FLFMT "diag_l2_startCommunications dl0d %p L2proto %d type %x baud %d target 0x%x src 0x%x called\n",
-			FL, dl0d, L2protocol, type ,
+			FL, (void *)dl0d, L2protocol, type ,
 			bitrate, target&0xff, source&0xff);
 
 	/*
@@ -556,7 +556,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
 			FLFMT "diag_l2_StartComms returns %p\n",
-				FL, d_l2_conn);
+				FL, (void *)d_l2_conn);
 
 	return d_l2_conn;
 }
@@ -621,7 +621,7 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
 			FLFMT "diag_l2_send %p msg %p msglen %d called\n",
-				FL, d_l2_conn, msg, msg->len);
+				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	diag_l2_sendstamp(d_l2_conn);	/* Save timestamps */
 
@@ -648,14 +648,14 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
 			FLFMT "diag_l2_msg %p %p called\n",
-				FL, d_l2_conn, msg);
+				FL, (void *)d_l2_conn, (void *)msg);
 
 	/* Call protocol specific send routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_request(d_l2_conn, msg, errval);
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr, FLFMT "diag_l2_request returns %p, err %d\n",
-				FL, rv, *errval);
+				FL, (void *)rv, *errval);
 
 	return rv;
 }
@@ -679,7 +679,7 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
 			FLFMT "diag_l2_recv %p timeout %d called\n",
-				FL, d_l2_conn, timeout);
+				FL, (void *)d_l2_conn, timeout);
 
 	/* Call protocol specific recv routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_recv(d_l2_conn, timeout, callback, handle);
@@ -703,7 +703,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, int cmd, void *data)
 	if (diag_l2_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr,
 			FLFMT "diag_l2_ioctl %p cmd %d\n",
-				FL, d_l2_conn, cmd);
+				FL, (void *)d_l2_conn, cmd);
 
 
 	dl0d = d_l2_conn->diag_link->diag_l2_dl0d ;

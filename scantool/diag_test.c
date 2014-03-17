@@ -46,6 +46,8 @@
 
 
 #define BAUD 5
+#define SLOWINIT
+#define DO_ISO
 
 CVSID("$Id$");
 
@@ -60,13 +62,8 @@ char *set_subinterface;
 
 uint8_t	global_pids[0x100];	/* Pids supported by ECU */
 
-#ifdef WIN32
 static void
-alarm_handler(int sig)
-#else
-static void
-alarm_handler(int sig __attribute__((unused)))
-#endif
+alarm_handler(UNUSED(int sig))
 {
 	alarm(1);
 }
@@ -120,13 +117,9 @@ main(int argc,  char **argv)
 	return 0;
 }
 
-#ifdef WIN32
+
 static void
-l2_rcv(void *handle, struct diag_msg *msg)
-#else
-static void
-l2_rcv(void *handle __attribute__((unused)), struct diag_msg *msg)
-#endif
+l2_rcv(UNUSED(void *handle), struct diag_msg *msg)
 {
 	size_t len = msg->len;
 	uint8_t *data = msg->data;
@@ -171,7 +164,7 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 		printf("could not open %s\n",set_subinterface);
 		return -1;
 	}
-	printf("open dl0d = %p\n", dl0d);
+	printf("open dl0d = %p\n", (void *)dl0d);
 
 	/*
 	 * Initiate a RAW communications layer on the
@@ -182,9 +175,7 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 
 	flags |= inittype;
 
-#define DO_ISO 1
-
-#if DO_ISO
+#ifdef DO_ISO
 	d_conn = diag_l2_StartCommunications(dl0d, DIAG_L2_PROT_ISO14230, flags,
 		10400, destecu, 0xF1);
 #else
@@ -194,18 +185,17 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 
 
 	if (d_conn) {
-		printf("Connection to ECU established (con. %p)\n", d_conn);
+		printf("Connection to ECU established (con. %p)\n", (void *)d_conn);
 printf("For %d %d\n", funcaddr, destecu);
 	}
 	else {
 		diag_l2_close(dl0d);
-		printf("Connection to ECU failed (con. %p)\n", d_conn);
+		printf("Connection to ECU failed (con. %p)\n", (void *)d_conn);
 		return -1;
 	}
 
-#if !DO_ISO
+#ifndef DO_ISO
 
-#define SLOWINIT
 
 #ifdef SLOWINIT
 	/* Now set it to 5 baud */
@@ -220,7 +210,7 @@ printf("For %d %d\n", funcaddr, destecu);
 	data[0] = destecu;
 	msg.len = 1;
 	msg.data = data;
-#else
+#else	//not SLOWINIT
 
 	/* Code block */
 	{
@@ -255,7 +245,7 @@ printf("For %d %d\n", funcaddr, destecu);
 		diag_l2_ioctl(d_conn, DIAG_IOCTL_INITBUS, &in);
 		/* And immediately send the StartCommunications msg */
 	}
-#endif
+#endif //ifdef SLOWINIT
 	diag_l2_send(d_conn, &msg);
 
 #ifdef SLOWINIT
@@ -266,9 +256,9 @@ printf("For %d %d\n", funcaddr, destecu);
 	ic.parityflag = diag_par_n ;
 
 	diag_l2_ioctl(d_conn, DIAG_IOCTL_SETSPEED, &ic);
-#endif
+#endif //ifdef SLOWINIT
 
-#endif /* DO_ISO */
+#endif /* ifndef DO_ISO */
 	sleep(5);
 
 	/* See what we got */
@@ -283,11 +273,8 @@ printf("For %d %d\n", funcaddr, destecu);
 	return 0;
 }
 
-#ifdef WIN32
-static int do_l1_test(void);
-#else
-static int do_l1_test(void) __attribute__((unused));
-#endif
+
+UNUSED(static int do_l1_test(void));
 
 static int
 do_l1_test(void)
@@ -304,7 +291,7 @@ do_l1_test(void)
 	dl0d = diag_l1_open("DUMB", set_subinterface, DIAG_L1_RAW);
 	if (dl0d==0)
 		return diag_iseterr(DIAG_ERR_GENERAL);
-	printf("open dl0d = %p\n", dl0d);
+	printf("open dl0d = %p\n", (void *)dl0d);
 
 	set.speed = BAUD;
 	set.databits = diag_databits_8;

@@ -155,20 +155,19 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 		if (rv < 0)
 		{
 			if (diag_l2_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr,
-				FLFMT "startcomms con %p rx error %d\n",
-				FL, d_l2_conn, rv);
+				fprintf(stderr,
+					FLFMT "startcomms con %p rx error %d\n",
+					FL, (void *)d_l2_conn, rv);
 			return rv;
 		}
 
 		// Check the received inverted address:
-		if ( inv_address != ~address )	//even though they're both uint8_t, gcc complains !
+		if ( inv_address != (uint8_t) ~address )	//even though they're both uint8_t, gcc complains !
 		{
 			if (diag_l2_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr,
-				FLFMT "startcomms 0x%02x != 0x%02x\n",
-				FL, inv_address,
-				~address);
+				fprintf(stderr,
+					FLFMT "startcomms 0x%02x != 0x%02x\n",
+					FL, inv_address, ~address);
 			return diag_iseterr(DIAG_ERR_WRONGKB);
 		}
 	}
@@ -178,7 +177,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
 			FLFMT "diag_l2_iso9141_wakeupECU con %p kb1 0x%x kb2 0x%x\n",
-			FL, d_l2_conn,
+			FL, (void *)d_l2_conn,
 			kb1, kb2);
 
 	return 0;
@@ -201,7 +200,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
 			FLFMT "diag_l2_iso9141_startcomms conn %p\n",
-			FL, d_l2_conn);
+			FL, (void *)d_l2_conn);
 
 	if (diag_calloc(&dp, 1))
 		return diag_iseterr(DIAG_ERR_NOMEM);
@@ -588,8 +587,8 @@ diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if ((rv >= 0) && d_l2_conn->diag_msg)
 	{
 		if (diag_l2_debug & DIAG_DEBUG_READ)
-			fprintf(stderr, FLFMT "rcv callback calling %p(%p)\n", FL,
-				callback, handle);
+			fprintf(stderr, FLFMT "rcv callback calling %d(%p)\n", FL,
+				(int)callback, (void *)handle);
 		/*
 		 * Call user callback routine
 		 */
@@ -624,7 +623,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
 		FLFMT "diag_l2_send 0p%p 0p%p called\n",
-		FL, d_l2_conn, msg);
+		FL, (void *)d_l2_conn, (void *)msg);
 
 	// Check if the payload plus the overhead (and checksum) exceed protocol packet size:
 	if(msg->len + OHLEN_ISO9141 > MAXLEN_ISO9141)

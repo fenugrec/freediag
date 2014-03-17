@@ -83,7 +83,7 @@ target_type target, source_type source)
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
 			FLFMT "diag_l2_j1850_startcomms conn %p\n",
-				FL, d_l2_conn);
+				FL, (void *)d_l2_conn);
 
 	if (diag_calloc(&dp, 1))
 		return(DIAG_ERR_NOMEM);
@@ -175,7 +175,7 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
 			FLFMT "diag_l2_j1850_send %p msg %p len %d called\n",
-				FL, d_l2_conn, msg, msg->len);
+				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
 	l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
@@ -327,9 +327,9 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	 */
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 	{
-		fprintf(stderr, FLFMT "calling rcv callback %p handle %p msg %p\n",
-			FL, d_l2_conn->diag_msg,
-			callback, handle);
+		fprintf(stderr, FLFMT "calling rcv msg=%p callback %d handle %p\n",
+			FL, (void *)d_l2_conn->diag_msg,
+			(int)callback, (void *)handle);
 	}
 
 	tmsg = d_l2_conn->diag_msg;

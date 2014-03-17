@@ -215,7 +215,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 
 	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
 		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src %x, dest %x; msgcnt %d\n",
-			handle, len, msg->src, msg->dest, msg->mcnt);
+			(void *)handle, len, msg->src, msg->dest, msg->mcnt);
 	}
 
 	/* Debug level for showing received data */
@@ -545,7 +545,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
 
 	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
 		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %x\n",
-			handle, d_conn, mode);
+			(void *)handle, (void *)d_conn, mode);
 
 	}
 
@@ -1647,7 +1647,7 @@ ecu_connect(void)
 
 	if (diag_cmd_debug)
 		fprintf(stderr, "debug: L2 connection ID %p, L3 ID %p\n",
-			global_l2_conn, global_l3_conn);
+			(void *)global_l2_conn, (void *)global_l3_conn);
 
 	return rv;
 }

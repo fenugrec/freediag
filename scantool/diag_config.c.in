@@ -1,5 +1,6 @@
 /*
  * diag_config.c.in is parsed by CMake to generate diag_config.c !
+ * Do not edit diag_config.c !
  *  
  */
 

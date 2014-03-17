@@ -235,6 +235,9 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 	uint8_t new_resp_count = 0;
 	uint8_t synth_req[11]; // 11 request bytes.
 	char line_buf[1280+1]; // 255 response bytes * 5 ("0xYY ") + tolerance for a token ("abc1 ") = 1280.
+	char end_responses = 0;
+	char request_found = 0;
+
 
 	// walk to the end of the list (last valid item).
 	struct sim_ecu_response* resp_p = *resp_pp;
@@ -247,8 +250,6 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 	}
 
 	// go to the beginning of the DB file.
-	char end_responses = 0;
-	char request_found = 0;
 	rewind(fp);
 
 	// search for the given request.
@@ -263,7 +264,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 		if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) != 0)
 			continue;
 		// synthesize up to 11 byte values from DB request line.
-		int reqvals[11];
+		unsigned int reqvals[11];
 		memset(reqvals, 0, 11);
 		int num = sscanf(line_buf+3, "%x %x %x %x %x %x %x %x %x %x %x",
 			 &reqvals[0], &reqvals[1], &reqvals[2], &reqvals[3],
@@ -366,12 +367,12 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 
 	uint8_t synth_resp[255];	// 255 response bytes.
 	char token[5];	// to get tokens from the text.
+	char* parse_offset = NULL;
+	int ret = 0;
+	uint8_t pos = 0;
 
 	// extract byte values from response line, allowing for tokens.
 	memset(synth_resp, 0, 255);
-	uint8_t pos = 0;
-	char* parse_offset = NULL;
-	int ret = 0;
 	do {
 		if ((size_t) pos*5 >= strlen(resp_p->text))
 			break;
@@ -385,13 +386,15 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 			synth_resp[pos] = sawtooth1(synth_resp, pos);
 		else if (strcmp(token, TOKEN_ISO9141CS) == 0)
 			synth_resp[pos] = cs1(synth_resp, pos);
-		else
+		else {
 			// failed. try scanning element as an Hex byte.
-			if ((ret = sscanf(parse_offset, "%x", ((int *)(&synth_resp[pos])))) != 1) {
+			ret = sscanf(parse_offset, "%x", ((unsigned int *)(&synth_resp[pos])));
+			if (ret != 1) {
 				// failed. something's wrong.
 				fprintf(stderr, FLFMT "Error parsing line: %s at position %d.\n", FL, resp_p->text, pos*5);
 				break;
 			}
+		}
 		// next byte.
 		pos++;
 	} while (ret != 0);
@@ -543,7 +546,7 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 
 		// If debugging, print to strerr.
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "link %p closing\n", FL, dl0d);
+			fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
 
 		if (dev) {
 			if (dev->fp != NULL)
@@ -570,13 +573,14 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 {
 	struct diag_l0_sim_device *dev;
 	uint8_t synch_patt[1];
+	const uint8_t sim_break = 0x00;
 
 	sim_free_ecu_responses(&sim_last_ecu_responses);
 
 	dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n", FL, dl0d, dev, in->type);
+		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n", FL, (void *)dl0d, (void *)dev, in->type);
 
 	if (!dev)
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
@@ -587,7 +591,6 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 		// We simulate a break with a single "0x00" char.
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 			fprintf(stderr, FLFMT "Sending: BREAK!\n", FL);
-		uint8_t sim_break = 0x00;
 		diag_l0_sim_send(dl0d, 0, &sim_break, 1);
 		break;
 	case DIAG_L1_INITBUS_5BAUD:
@@ -615,6 +618,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 const void *data, const size_t len)
 {
+	struct diag_l0_sim_device * dev = dl0d->dl0_handle;
 
 	if (sim_last_ecu_responses != NULL) {
 		fprintf(stderr, FLFMT "AAAHHH!!! You're sending a new request before reading all previous responses!!! \n", FL);
@@ -622,7 +626,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %ld bytes\n", FL, dl0d, (long)len);
+		fprintf(stderr, FLFMT "device link %p send %ld bytes\n", FL, (void *)dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "L0 sim sending: ", FL);
 			diag_data_dump(stderr, data, len);
@@ -632,7 +636,6 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 
 
 	// Build the list of responses for this request.
-	struct diag_l0_sim_device * dev = dl0d->dl0_handle;
 	sim_find_responses(&sim_last_ecu_responses, dev->fp, data, len);
 
 	if (diag_l0_debug & DIAG_DEBUG_DATA)
@@ -659,7 +662,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
 			FLFMT "link %p recv upto %ld bytes timeout %d\n",
-			FL, dl0d, (long)len, timeout);
+			FL, (void *)dl0d, (long)len, timeout);
 
 	// "Receive from the ECU" a response.
 	resp_p = sim_last_ecu_responses;
@@ -678,7 +681,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %ld bytes\n", FL, dl0d, (long)len);
+		fprintf(stderr, FLFMT "device link %p send %ld bytes\n", FL, (void *)dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "L0 sim receiving: ", FL);
 			diag_data_dump(stderr, data, xferd);

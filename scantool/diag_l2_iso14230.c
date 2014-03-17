@@ -735,7 +735,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
 			FLFMT "diag_l2_14230_send %p msg %p len %d called\n",
-				FL, d_l2_conn, msg, msg->len);
+				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 
@@ -756,7 +756,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	else
 		buf[2] = dp->srcaddr;
 
-/* XXX, check mode flag that specifies always use 4 byte hdr ,
+/* TODO:, check mode flag that specifies always use 4 byte hdr ,
 	or mode flag showing never use extended header, and
 		received keybytes */
 
@@ -766,15 +766,6 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		buf[0] |= msg->len;
 		offset = 3;
 	} else {
-//#if NOWARNINGS==0
-//	/* silly hack to get around compiler warning */ XXX what ?
-//	/* msg->len is an unsigned byte, this is a NOP */
-//#endif
-		len = msg->len;
-
-		/* Extended length */
-		if (len > 255)
-			return diag_iseterr(DIAG_ERR_BADLEN);
 		buf[3] = msg->len;
 		offset = 4;
 	}
@@ -833,8 +824,8 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		return rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "calling rcv callback %p handle %p\n", FL,
-			callback, handle);
+		fprintf(stderr, FLFMT "calling rcv callback %d handle %p\n", FL,
+			(int)callback, (void *)handle);
 
 	/*
 	 * Call user callback routine
@@ -932,7 +923,7 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 	/* XXX fprintf not async-signal-safe */
 	if (diag_l2_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "timeout impending for %p type %d\n",
-				FL, d_l2_conn, dp->type);
+				FL, (void *)d_l2_conn, dp->type);
 	}
 
 	msg.data = data;

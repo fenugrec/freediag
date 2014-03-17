@@ -73,7 +73,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 
 	if (diag_l3_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,FLFMT "start protocol %s l2 %p\n",
-			FL, protocol, d_l2_conn);
+			FL, protocol, (void *)d_l2_conn);
 
 
 	/* Find the protocol */
@@ -134,7 +134,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 
 	if (diag_l3_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,FLFMT "start returns %p\n",
-			FL, d_l3_conn);
+			FL, (void *)d_l3_conn);
 
 	return(d_l3_conn);
 }

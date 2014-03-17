@@ -43,7 +43,7 @@
 	#include <sys/time.h>	/* For timeval */
 #endif
 
-#include <stdint.h>		/* For uint8_t, etc. This is a C99 header? */
+#include <stdint.h>		/* For uint8_t, etc. This is a C99 header */
 #include <stdio.h>		/* For FILE */
 
 #if defined(__cplusplus)

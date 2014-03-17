@@ -144,6 +144,8 @@ diag_os_init(void)
 	//probably the nearest equivalent to a unix interval timer + associated alarm handler
 	//is the timer queue... so that's what we do.
 	//we create the timer in the default timerqueue
+	HANDLE curprocess, curthread;
+	
 	if (! CreateTimerQueueTimer(&hDiagTimer, NULL,
 			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo,
 			WT_EXECUTEDEFAULT)) {
@@ -153,11 +155,12 @@ diag_os_init(void)
 
 	//set the current process to high priority.
 	//the resultant "base priority" is a combination of process priority and thread priority.
-	HANDLE curprocess=GetCurrentProcess();
+	curprocess=GetCurrentProcess();
+	curthread=GetCurrentThread();
 	if (! SetPriorityClass(curprocess, HIGH_PRIORITY_CLASS)) {
 		fprintf(stderr, FLFMT "Warning: could not increase process priority. Timing may be impaired.\n", FL);
 	}
-	HANDLE curthread=GetCurrentThread();
+
 	if (! SetThreadPriority(curthread, THREAD_PRIORITY_HIGHEST)) {
 		fprintf(stderr, FLFMT "Warning : could not increase thread priority. Timing may be impaired.\n", FL);
 	}
@@ -209,11 +212,13 @@ diag_os_init(void)
 int diag_os_close() {
 	//delete alarm handlers / period timers
 #ifdef WIN32
+	DWORD err;
+	
 	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
 		//succes
 		return 0;
 	}
-	DWORD err=GetLastError();
+	err=GetLastError();
 	fprintf(stderr, FLFMT "Could not DTQT err=%d!\n", FL, (int) err);
 	if (err==ERROR_IO_PENDING) {
 		fprintf(stderr, FLFMT "But that's an ERROR_IO_PENDING so no worries.\n", FL);
@@ -488,9 +493,9 @@ diag_os_sched(void)
 	+* priority scheduling.
 	+* For example, you set the scheduling priority to 1.  Ouch.
 	 */
-#if NOWARNINGS == 0
-	#warning Scheduling setup should be examined
-#endif
+#warning Scheduling setup should be examined on your particular platform !
+#warning Please report this !
+
 	/* Code block */
 	{
 		static int setup_warned;
@@ -556,7 +561,7 @@ diag_os_sched(void)
 //#define DELTA_EPOCH_IN_MICROSECS  11644473600000000 // =  0x48864000, not compiler-friendly
 #define DELTA_EPOCH_H 0x4886	//so we'll cheat
 #define DELTA_EPOCH_L 0x4000
-int gettimeofday(struct timeval *tv, struct timezone *tz) {
+int gettimeofday(struct timeval *tv, UNUSED(struct timezone *tz)) {
 	FILETIME ft;
 	LARGE_INTEGER longtime;
 	const LONGLONG delta_epoch=((LONGLONG) DELTA_EPOCH_H <<32) + DELTA_EPOCH_L;

@@ -514,7 +514,7 @@ diag_l2_proto_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
 			FLFMT "diag_l2_vag_send %p msg %p len %d called\n",
-				FL, d_l2_conn, msg, msg->len);
+				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	//dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;	//not used ?
 
@@ -560,8 +560,8 @@ diag_l2_proto_vag_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 	{
-		fprintf(stderr, FLFMT "calling rcv callback %p handle %p\n", FL,
-			callback, handle);
+		fprintf(stderr, FLFMT "calling rcv callback %d handle %p\n", FL,
+			(int)callback, (void *)handle);
 	}
 
 	/*
@@ -632,7 +632,7 @@ diag_l2_proto_vag_timeout(struct diag_l2_conn *d_l2_conn)
 	if (diag_l2_debug & DIAG_DEBUG_TIMER)
 	{
 		fprintf(stderr, FLFMT "timeout impending for %p\n",
-				FL, d_l2_conn);
+				FL, (void *)d_l2_conn);
 	}
 
 	msg.data = data;
