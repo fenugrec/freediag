@@ -231,12 +231,12 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			d_conn = diag_l2_StartCommunications(dl0d,
 				DIAG_L2_PROT_ISO14230,
 				DIAG_L2_TYPE_FASTINIT | funcmode,
-				set_speed, i, set_testerid);
+				set_speed, (target_type) i, set_testerid);
 		else
 			d_conn = diag_l2_StartCommunications(dl0d,
 				DIAG_L2_PROT_ISO9141,
 				DIAG_L2_TYPE_SLOWINIT,
-				set_speed, i, set_testerid);
+				set_speed, (target_type) i, set_testerid);
 
 		if (d_conn != NULL)
 		{
@@ -376,8 +376,8 @@ static int
 cmd_diag_sendreq(int argc, char **argv)
 {
 	uint8_t	data[MAXRBUF];
-	unsigned int	len;
-	int	i, j, rv;
+	unsigned int	i,j,len;
+	int	rv;
 
 	if (global_state < STATE_CONNECTED)
 	{
@@ -393,8 +393,8 @@ cmd_diag_sendreq(int argc, char **argv)
 
 	memset(data, 0, sizeof(data));
 
-	for (i=1, j=0; i < argc; i++, j++)
-		data[j] = htoi(argv[i]);
+	for (i=1, j=0; i < (unsigned int) argc; i++, j++)
+		data[j] = (uint8_t) htoi(argv[i]);
 	len = j ;
 
 

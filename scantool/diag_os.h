@@ -40,8 +40,8 @@ extern "C" {
 void diag_os_sigalrm(int);
 int diag_os_init(void);
 int diag_os_close(void);
-int diag_os_millisleep(int ms);
-int diag_os_ipending();
+int diag_os_millisleep(unsigned int ms);
+int diag_os_ipending(void);
 
 /* Scheduler */
 int diag_os_sched(void);

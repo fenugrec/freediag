@@ -58,19 +58,6 @@ extern "C" {
 	#define UNUSED(X)	X	//how can we suppress "unused parameter" warnings on other compilers?
 #endif // __GNUC__
 
-#ifdef WIN32
-	#define SIGALRM 14
-
-	typedef int sigset_t;
-
-	typedef struct sigaction_t {
-		void (*sa_handler)();
-		sigset_t sa_mask;
-		int sa_flags;
-		void (*sa_restorer)(void);
-	} sigaction_t;
-
-#endif	//WIN32
 
 #ifdef HAVE_GETTIMEOFDAY
 	#include <sys/time.h>	//probably the right place where gettimeofday() would be defined ?
@@ -201,6 +188,7 @@ void diag_freemsg(struct diag_msg *);	/* Free a msg that we dup'ed */
  */
 int diag_init(void);
 int diag_close(void);
+//diag_data_dump : print (len) uin8_t bytes from data[], to FILE (i.e. stderr, etc.)
 void diag_data_dump(FILE *out, const void *data, size_t len);
 //smartcat : only verifies if s1 is not too large !
 void smartcat(char *p1, const size_t s1, const char *p2 );
@@ -239,9 +227,11 @@ const char *diag_errlookup(const int code);
  */
 
 //diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
+//do not call directly!
 int diag_flcalloc(const char *name, const int line,
 	void **p, size_t n, size_t s);
 
+//diag_flmalloc : do not call directly !
 int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 
 #define diag_calloc(P, N) diag_flcalloc(CURFILE, __LINE__, \

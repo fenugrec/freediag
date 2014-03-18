@@ -193,7 +193,7 @@ diag_l1_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
  * Returns 0 on success -1 on failure
  */
 int
-diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *data, size_t len, int p4)
+diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *data, size_t len, unsigned int p4)
 {
 	int rv = -1;
 	int l0flags;

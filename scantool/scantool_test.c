@@ -78,7 +78,7 @@ cmd_test_help(int argc, char **argv)
  * Guts of routine to ask for VIN/CID/CVN
  */
 static void
-get_vit_info(struct diag_l3_conn *d_conn, int rqst, const char *descr)
+get_vit_info(struct diag_l3_conn *d_conn, uint8_t rqst, const char *descr)
 {
 	char textbuf[MAXRBUF];
 	struct diag_msg *msg;

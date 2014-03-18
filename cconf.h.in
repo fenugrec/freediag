@@ -1,25 +1,21 @@
 #ifndef _CCONF_H
 #define _CCONF_H
-// cconf.h.in
-// this is to replace autotools' config.h.in + config.h files. 
-//usually @varname@ will be replaced by the contents of the cmake variable varname
+// cconf.h.in is processed by cmake to generate cconf.h
+// Replaces autotools' config.h.in + config.h combo. 
 
-// # cmakedefine asdf @varname@ will "#define asdf 1" if @varname@ is non-false ?
-// # cmakedefine asdf 1  will "#define asdf" 1 if ${asdf} is true ?
-// # cmakedefine asdf  will #define asdf" if ${asdf} is true ?
+//@varname@ or ${varname} will be replaced by the contents of the cmake variable varname
+//# cmakedefine generates the appropriate #define as required
 
 #cmakedefine HAVE_LIBREADLINE
 
 #cmakedefine HAVE_GETTIMEOFDAY
-#cmakedefine HAVE_MALLOC
 #cmakedefine HAVE_STRCASECMP
-#cmakedefine HAVE_STRERROR
-#cmakedefine HAVE_STRTOL
 #cmakedefine HAVE_ALARM
 #cmakedefine HAVE_SELECT
 #cmakedefine HAVE_TIMERSUB
 
 #cmakedefine USE_RCFILE
+#cmakedefine USE_INIFILE
 #cmakedefine OLD_DEVNAME
 
 #define PACKAGE_VERSION "@PKGVERSION@"

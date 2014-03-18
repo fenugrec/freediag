@@ -46,7 +46,7 @@ CVSID("$Id$");
 int
 diag_l2_proto_raw_startcomms( struct diag_l2_conn *d_l2_conn,
 UNUSED(flag_type flags),
-int bitrate,
+unsigned int bitrate,
 UNUSED(target_type target),
 UNUSED(source_type source))
 {
@@ -109,11 +109,11 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		rxbuf, sizeof(rxbuf), timeout);
 
-	if (rv <= 0)		/* Failure, or 0 bytes (which cant happen) */
+	if (rv <= 0 || rv > 255)		/* Failure, or 0 bytes (which cant happen) */
 		return(rv);
 
 
-	msg.len = rv;
+	msg.len = (uint8_t) rv;
 	msg.data = rxbuf;
 	/* This is raw, unframed data */
 	msg.fmt = 0;
@@ -157,7 +157,7 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d,
 		0, rxbuf, sizeof(rxbuf), 1000);
 
-	if (rv <= 0)
+	if (rv <= 0 || rv>255)
 	{
 		*errval = rv;
 	}
@@ -168,7 +168,7 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		 */
 		rmsg = diag_allocmsg((size_t)rv);
 		memcpy(&rmsg->data, rxbuf, (size_t)rv);	/* Data */
-		rmsg->len = rv;
+		rmsg->len = (uint8_t) rv;
 		rmsg->fmt = 0;
 		(void)gettimeofday(&rmsg->rxtime, NULL);
 	}

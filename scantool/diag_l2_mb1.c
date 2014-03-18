@@ -53,14 +53,14 @@ diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 static int
 diag_l2_proto_mb1_startcomms( struct diag_l2_conn *d_l2_conn,
 UNUSED(flag_type flags),
-int bitrate,
+unsigned int bitrate,
 target_type target,
 UNUSED(source_type source))
 {
 	struct diag_l1_initbus_args in;
 	uint8_t cbuf[2];
 	int rv;
-	int baud;
+	unsigned int baud;
 	unsigned char rxbuf[MAXRBUF];
 	struct diag_serial_settings set;
 
@@ -263,7 +263,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	rv = diag_l2_proto_mb1_int_recv(d_l2_conn, timeout, rxbuf,
 		sizeof(rxbuf));
 
-	if (rv < 0)
+	if (rv < 0 || rv>(255+4))
 		return(rv);
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
@@ -283,7 +283,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	msg->data[0] = rxbuf[1];		/* Command */
 	memcpy(&msg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
 	(void)gettimeofday(&msg->rxtime, NULL);
-	msg->len = rv - 4;
+	msg->len = (uint8_t) rv - 4;
 	msg->fmt = DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY;
 
 	/*
@@ -308,7 +308,7 @@ static int
 diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int rv;
-	int sleeptime;
+	unsigned int sleeptime;
 	uint8_t txbuf[MAXRBUF];
 	uint16_t cksum;
 	int i;
@@ -337,8 +337,8 @@ diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	for (i = 0, cksum = 0; i < (msg->len+2) ; i++)
 		cksum += txbuf[i];
 
-	txbuf[msg->len+2] = cksum & 0xff;
-	txbuf[msg->len+3] = (cksum>>8) & 0xff;
+	txbuf[msg->len+2] = (uint8_t) (cksum & 0xff);
+	txbuf[msg->len+3] = (uint8_t) ((cksum>>8) & 0xff);
 
 	if ( (diag_l2_debug & DIAG_DEBUG_WRITE) &&
 			(diag_l2_debug & DIAG_DEBUG_DATA))
@@ -382,7 +382,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		fprintf(stderr,
 			FLFMT "msg receive conn %p got %d byte message\n",
 				FL, (void *)d_l2_conn, rv);
-	if (rv < 5)
+	if (rv < 5 || rv > (255+4))
 	{
 		/* Bad, minimum message is 5 bytes, or error happened */
 		if (rv < 0)
@@ -399,7 +399,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		rmsg->data[0] = rxbuf[1];		/* Command */
 		memcpy(&rmsg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
 		(void)gettimeofday(&rmsg->rxtime, NULL);
-		rmsg->len = rv - 4;
+		rmsg->len = (uint8_t) rv - 4;
 		rmsg->fmt = DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY;
 	}
 	return(rmsg);

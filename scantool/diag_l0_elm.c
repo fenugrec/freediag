@@ -171,7 +171,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 		 * Successfully wrote xferd bytes (or 0 && EINTR),
 		 * so inc pointers and continue
 		 */
-		len -= xferd;
+		len -= (size_t) xferd;
 		//data = (const void *)((const char *)data + xferd);
 		data += xferd;
 	}
@@ -546,8 +546,8 @@ const void *data, size_t len)
 		 * Successfully wrote xferd bytes (or 0 && EINTR),
 		 * so inc pointers and continue
 		 */
-		len -= xferd;
-		data = (const void *)((const char *)buf + xferd);
+		len -= (size_t) xferd;
+		data = (const void *)((const uint8_t *)buf + xferd);
 	}
 
 	return 0;

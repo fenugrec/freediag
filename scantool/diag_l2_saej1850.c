@@ -75,7 +75,7 @@ uint8_t diag_l2_proto_j1850_crc(uint8_t *msg_buf, int nbytes);
 static int
 diag_l2_proto_j1850_startcomms(struct diag_l2_conn	*d_l2_conn,
 flag_type flags,
-UNUSED(int bitrate),
+UNUSED(unsigned int bitrate),
 target_type target, source_type source)
 {
 	struct diag_l2_j1850 *dp;

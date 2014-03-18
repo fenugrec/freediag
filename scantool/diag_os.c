@@ -129,7 +129,7 @@ diag_os_init(void)
 {
 #ifdef WIN32
 //	struct sigaction_t stNew;
-	long tmo=ALARM_TIMEOUT;	//20ms seems reasonable on WIN32. XXX change this for a #define
+	unsigned long tmo=ALARM_TIMEOUT;	//20ms seems reasonable on WIN32. XXX change this for a #define
 #else
 	struct sigaction stNew;
 	struct itimerval tv;
@@ -145,7 +145,7 @@ diag_os_init(void)
 	//is the timer queue... so that's what we do.
 	//we create the timer in the default timerqueue
 	HANDLE curprocess, curthread;
-	
+
 	if (! CreateTimerQueueTimer(&hDiagTimer, NULL,
 			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo,
 			WT_EXECUTEDEFAULT)) {
@@ -164,7 +164,7 @@ diag_os_init(void)
 	if (! SetThreadPriority(curthread, THREAD_PRIORITY_HIGHEST)) {
 		fprintf(stderr, FLFMT "Warning : could not increase thread priority. Timing may be impaired.\n", FL);
 	}
-	
+
 	//and get the current performance counter frequency.
 	if (! QueryPerformanceFrequency(&perfo_freq)) {
 		fprintf(stderr, FLFMT "Could not QPF. Please report this !\n", FL);
@@ -213,7 +213,7 @@ int diag_os_close() {
 	//delete alarm handlers / period timers
 #ifdef WIN32
 	DWORD err;
-	
+
 	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
 		//succes
 		return 0;
@@ -257,16 +257,17 @@ int diag_os_close() {
 #if defined(__linux__) && (TRY_POSIX == 0)
 
 int
-diag_os_millisleep(int ms)
+diag_os_millisleep(unsigned int ms)
 {
 
-	int i, fd, retval;
+	int fd, retval;
+	unsigned int i;
 	unsigned long tmp,data;
 	//struct rtc_time rtc_tm;	//not used ?
 
 	/* adjust time for 2048 rate */
 
-	ms *= 4096/2000;
+	ms = (unsigned int)((unsigned long) ms* 4096/2000);	//if we do it as uint the *4096 could overflow?
 
 	if (ms > 2)
 		ms-=2;
@@ -310,7 +311,7 @@ diag_os_millisleep(int ms)
 			exit(errno);
 		}
 		data >>= 8;
-		i+=(int)data;
+		i += (unsigned int) data;
 		if (i>=(ms*2))
 			break;
 	}
@@ -353,7 +354,7 @@ diag_os_millisleep(int ms)
 +* than it needs to be.
  */
 int
-diag_os_millisleep(int ms)
+diag_os_millisleep(unsigned int ms)
 {
 	struct timespec rqst, resp;
 
@@ -399,7 +400,7 @@ diag_os_millisleep(int ms)
  * I think this implementation works in all cases, with less overhead.
  */
 int
-diag_os_millisleep(int ms) {
+diag_os_millisleep(unsigned int ms) {
 #ifndef WIN32
 	struct timespec rqst, resp;
 
@@ -433,7 +434,7 @@ diag_os_millisleep(int ms) {
 			FL, real_t);
 	}
 
-#endif
+#endif	//ifndef win32
 	return 0;
 }
 #endif	//initial "if linux && !posix"
@@ -447,7 +448,7 @@ diag_os_millisleep(int ms) {
  *
  */
 int
-diag_os_ipending() {
+diag_os_ipending(void) {
 #if WIN32
 	SHORT rv=GetAsyncKeyState(0x0D);	//sketchy !
 	//LSB of rv ==1 :  key was pressed since the last call to GAKS.
@@ -517,8 +518,7 @@ diag_os_sched(void)
 			fprintf(stderr,
 				FLFMT "WARNING: Not running as superuser\n", FL);
 			fprintf(stderr,
-				FLFMT "WARNING:  "
-				"Could not set real-time mode.  "
+				FLFMT "WARNING: Could not set real-time mode. "
 				"Things will not work correctly\n", FL);
 		}
 	}

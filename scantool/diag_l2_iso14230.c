@@ -85,10 +85,10 @@ struct diag_l2_14230
  */
 static int
 diag_l2_proto_14230_decode(uint8_t *data, int len,
-		 int *hdrlen, int *datalen, int *source, int *dest,
+		 uint8_t *hdrlen, int *datalen, uint8_t *source, uint8_t *dest,
 		int first_frame)
 {
-	int dl;
+	uint8_t dl;
 
 	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
 		int i;
@@ -257,10 +257,11 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		}
 
 		/* Receive data into the buffer */
-#if FULL_DEBUG
-		fprintf(stderr, FLFMT "before recv, state %d timeout %d, rxoffset %d\n",
-			FL, state, tout, dp->rxoffset);
-#endif
+
+		if (diag_l2_debug & DIAG_DEBUG_PROTO)
+			fprintf(stderr, FLFMT "before recv, state %d timeout %d, rxoffset %d\n",
+				FL, state, tout, dp->rxoffset);
+
 
 		/*
 		 * In l1_doesl2frame mode, we get full frames, so we don't
@@ -273,10 +274,11 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				&dp->rxbuf[dp->rxoffset],
 				sizeof(dp->rxbuf) - dp->rxoffset,
 				tout);
-#if FULL_DEBUG
-		fprintf(stderr,
-			FLFMT "after recv, rv %d rxoffset %d\n", FL, rv, dp->rxoffset);
-#endif
+
+		if (diag_l2_debug & DIAG_DEBUG_PROTO)
+			fprintf(stderr,
+				FLFMT "after recv, rv %d rxoffset %d\n", FL, rv, dp->rxoffset);
+
 
 		if (rv == DIAG_ERR_TIMEOUT) {
 			/* Timeout, end of message, or end of responses */
@@ -300,7 +302,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				 * Copy data into a message
 				 */
 				tmsg = diag_allocmsg((size_t)dp->rxoffset);
-				tmsg->len = dp->rxoffset;
+				tmsg->len = (uint8_t) dp->rxoffset;
 				memcpy(tmsg->data, dp->rxbuf, (size_t)dp->rxoffset);
 				(void)gettimeofday(&tmsg->rxtime, NULL);
 				dp->rxoffset = 0;
@@ -309,14 +311,14 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				 */
 				diag_l2_addmsg(d_l2_conn, tmsg);
 				if (d_l2_conn->diag_msg == tmsg) {
-#if FULL_DEBUG
-					int i;
-					fprintf(stderr, FLFMT "Copying %d bytes to data\n",
-						FL, tmsg->len);
-					for (i=0; i<tmsg->len; i++)
-						fprintf(stderr, "0x%x ",tmsg->data[i]);
-					fprintf(stderr, "\n");
-#endif
+
+					if ((diag_l2_debug & DIAG_DEBUG_DATA) && (diag_l2_debug & DIAG_DEBUG_PROTO)) {
+						fprintf(stderr, FLFMT "Copying %u bytes to data\n",
+							FL, tmsg->len);
+						diag_data_dump(stderr, tmsg->data, tmsg->len);
+						fprintf(stderr, "\n");
+					}
+
 					/* 1st one */
 					if (data) {
 						memcpy(data, tmsg->data,
@@ -372,7 +374,8 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		lastmsg = NULL;
 
 		while (tmsg) {
-			int hdrlen, datalen, source, dest;
+			int datalen;
+			uint8_t hdrlen, source, dest;
 
 			/*
 			 * We have the message with the header etc, we
@@ -384,7 +387,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				&hdrlen, &datalen, &source, &dest,
 				dp->first_frame);
 
-			if (rv < 0)		/* decode failure */
+			if (rv < 0 || rv>255)		/* decode failure */
 				return diag_iseterr(rv);
 
 			/*
@@ -402,8 +405,8 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				 */
 				struct diag_msg	*amsg;
 				amsg = diag_dupsinglemsg(tmsg);
-				amsg->len = rv;
-				tmsg->len -=rv;
+				amsg->len = (uint8_t) rv;
+				tmsg->len -= (uint8_t) rv;
 				tmsg->data += rv;
 
 				/*  Insert new amsg before old msg */
@@ -416,11 +419,11 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				tmsg = amsg; /* Finish processing this one */
 			}
 
-#if FULL_DEBUG
-			fprintf(stderr,
-			FLFMT "msg %x decode/rejig done rv %d hdrlen %d datalen %d source %02x dest %02x\n",
-				FL, tmsg, rv, hdrlen, datalen, source, dest);
-#endif
+			if (diag_l2_debug & DIAG_DEBUG_PROTO)
+				fprintf(stderr,
+				FLFMT "msg %p decode/rejig done rv %d hdrlen %u datalen %d source %02x dest %02x\n",
+					FL, (void *)tmsg, rv, hdrlen, datalen, source, dest);
+
 
 			if ((tmsg->data[0] & 0xC0) == 0xC0) {
 				tmsg->fmt = DIAG_FMT_ISO_FUNCADDR;
@@ -467,13 +470,14 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  */
 static int
 diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
-	int bitrate, target_type target, source_type source)
+	unsigned int bitrate, target_type target, source_type source)
 {
 	struct diag_l2_14230 *dp;
 	struct diag_msg	msg;
 	uint8_t data[MAXRBUF];
 	int rv, wait_time;
-	int hdrlen, datalen, datasrc;
+	int datalen;
+	uint8_t datasrc, hdrlen;
 	uint8_t cbuf[MAXRBUF];
 	int len;
 	int timeout;
@@ -725,7 +729,8 @@ diag_l2_proto_14230_stopcomms(UNUSED(struct diag_l2_conn* pX))
 static int
 diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
-	int rv, csum;
+	int rv;
+	uint8_t csum;
 	unsigned int i;
 	size_t len;
 	uint8_t buf[MAXRBUF];

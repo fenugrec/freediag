@@ -190,7 +190,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
  */
 static int
 diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
-				 flag_type flags, int bitrate,
+				 flag_type flags, unsigned int bitrate,
 				 target_type target, source_type source)
 {
 	int rv;
@@ -276,7 +276,7 @@ diag_l2_proto_iso9141_stopcomms(struct diag_l2_conn* d_l2_conn)
  */
 static int
 diag_l2_proto_iso9141_decode(uint8_t *data, int len,
-				 int *hdrlen, int *datalen, int *source, int *dest)
+				 uint8_t *hdrlen, int *datalen, uint8_t *source, uint8_t *dest)
 {
 	//int dl;
 
@@ -472,12 +472,12 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		}
 
 		// Other reception errors.
-		if (rv < 0)
+		if (rv < 0 || rv > 255)
 			break;
 
 		// Data received OK.
 		// Add length to offset.
-		dp->rxoffset += rv;
+		dp->rxoffset += (uint8_t) rv;
 
 		// This is where some tweaking might be needed if
 		// we are in monitor mode... but not yet.
@@ -498,7 +498,8 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 		while (tmsg)
 		{
-			int hdrlen, datalen, source, dest;
+			int datalen;
+			uint8_t hdrlen, source, dest;
 
 			dp = (struct diag_l2_iso9141 *)d_l2_conn->diag_l2_proto_data;
 
@@ -523,7 +524,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 								tmsg->len,
 								&hdrlen, &datalen, &source, &dest);
 
-				if (rv < 0) // decode failure!
+				if (rv < 0 || rv > 255) // decode failure!
 					return rv;
 
 				//It is possible we have misframed this message and it is infact
@@ -537,8 +538,8 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					// things ....
 					struct diag_msg	*amsg;
 					amsg = diag_dupsinglemsg(tmsg);
-					amsg->len = rv;
-					tmsg->len -=rv;
+					amsg->len = (uint8_t) rv;
+					tmsg->len -= (uint8_t) rv;
 					tmsg->data += rv;
 
 					/*  Insert new amsg before old msg */
@@ -613,7 +614,7 @@ static int
 diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int rv;
-	int sleeptime;
+	unsigned int sleeptime;
 	uint8_t buf[MAXLEN_ISO9141];
 	int offset;
 	struct diag_l2_iso9141 *dp;
@@ -659,7 +660,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	// If the interface doesn't do ISO9141-2 checksum, add it in:
 	if ((d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2CKSUM) == 0)
 	{
-		uint8_t curoff = offset;
+		uint8_t curoff = (uint8_t) offset;
 		buf[offset++] = diag_l2_proto_iso9141_cs(buf, curoff);
 	}
 

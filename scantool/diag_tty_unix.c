@@ -460,7 +460,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
  * Set/Clear DTR and RTS lines, as specified
  */
 int
-diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
+diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rts)
 {
 	int flags;	/* Current flag values. */
 	struct timeval tv;	//for getting timestamps

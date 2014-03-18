@@ -266,7 +266,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 		// synthesize up to 11 byte values from DB request line.
 		unsigned int reqvals[11];
 		memset(reqvals, 0, 11);
-		int num = sscanf(line_buf+3, "%x %x %x %x %x %x %x %x %x %x %x",
+		unsigned int num = (unsigned int) sscanf(line_buf+3, "%x %x %x %x %x %x %x %x %x %x %x",
 			 &reqvals[0], &reqvals[1], &reqvals[2], &reqvals[3],
 			 &reqvals[4], &reqvals[5], &reqvals[6], &reqvals[7],
 			 &reqvals[8], &reqvals[9], &reqvals[10]);
@@ -342,7 +342,7 @@ uint8_t sine1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
 {
 	struct timeval now;
 	(void)gettimeofday(&now, NULL);
-	return 0xFF * sin(now.tv_usec / 1000000 * 6.283185);
+	return (uint8_t) (0xFF * sin(now.tv_usec / 1000000 * 6.283185));
 }
 
 // Returns a value between 0x00 and 0xFF directly proportional
@@ -351,7 +351,7 @@ uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
 {
 	struct timeval now;
 	(void)gettimeofday(&now, NULL);
-	return 0xFF * now.tv_usec / 1000000;
+	return (uint8_t) (0xFF * now.tv_usec / 1000000);
 }
 
 // Parses a response's text to data.
@@ -364,15 +364,16 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 #define TOKEN_SINE1	 "sin1"
 #define TOKEN_SAWTOOTH1 "swt1"
 #define TOKEN_ISO9141CS "cks1"
+#define SRESP_SIZE 255
 
-	uint8_t synth_resp[255];	// 255 response bytes.
+	uint8_t synth_resp[SRESP_SIZE];	// 255 response bytes.
 	char token[5];	// to get tokens from the text.
 	char* parse_offset = NULL;
 	int ret = 0;
 	uint8_t pos = 0;
 
 	// extract byte values from response line, allowing for tokens.
-	memset(synth_resp, 0, 255);
+	memset(synth_resp, 0, SRESP_SIZE);
 	do {
 		if ((size_t) pos*5 >= strlen(resp_p->text))
 			break;
@@ -620,13 +621,18 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 {
 	struct diag_l0_sim_device * dev = dl0d->dl0_handle;
 
+	if (len > 255) {
+		fprintf(stderr, FLFMT "Error : calling diag_l0_sim_send with len >255 bytes! (%u)\n", FL, len);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
 	if (sim_last_ecu_responses != NULL) {
 		fprintf(stderr, FLFMT "AAAHHH!!! You're sending a new request before reading all previous responses!!! \n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %ld bytes\n", FL, (void *)dl0d, (long)len);
+		fprintf(stderr, FLFMT "device link %p send %u bytes\n", FL, (void *)dl0d, len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "L0 sim sending: ", FL);
 			diag_data_dump(stderr, data, len);
@@ -636,7 +642,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 
 
 	// Build the list of responses for this request.
-	sim_find_responses(&sim_last_ecu_responses, dev->fp, data, len);
+	sim_find_responses(&sim_last_ecu_responses, dev->fp, data, (uint8_t) len);
 
 	if (diag_l0_debug & DIAG_DEBUG_DATA)
 		sim_dump_ecu_responses(sim_last_ecu_responses);
@@ -653,7 +659,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		void *data, size_t len, int timeout)
 {
-	int xferd;
+	size_t xferd;
 	//struct diag_l0_sim_device *dev;
 	struct sim_ecu_response* resp_p = NULL;
 
@@ -689,7 +695,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		}
 	}
 
-	return (xferd == 0 ? DIAG_ERR_TIMEOUT : xferd);
+	return (xferd == 0 ? DIAG_ERR_TIMEOUT : (int) xferd);
 }
 
 

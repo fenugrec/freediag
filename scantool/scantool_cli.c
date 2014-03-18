@@ -323,7 +323,7 @@ cmd_log(int argc, char **argv)
 	struct stat buf;
 	time_t now;
 	int i;
-	
+
 	file=autofilename;
 	if (global_logfp != NULL) {
 		printf("Already logging\n");
@@ -976,7 +976,7 @@ rc_file(void)
 
 
 #ifdef USE_INIFILE
-	char * inihome
+	char * inihomeinit;
 	if (diag_malloc(&inihomeinit, strlen(progname) + strlen(".ini") + 1)) {
 		return diag_iseterr(DIAG_ERR_RCFILE);
 	}

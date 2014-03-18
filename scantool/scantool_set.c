@@ -47,10 +47,10 @@ CVSID("$Id$");
 
 #define PROTO_NONE	"<not_used>"
 
-int 	set_speed;	/* Comms speed */
-unsigned char	set_testerid;	/* Our tester ID */
+unsigned int set_speed;	/* Comms speed */
+uint8_t set_testerid;	/* Our tester ID */
 int	set_addrtype;	/* Use virtual addressing */
-unsigned char	set_destaddr;	/* Dest ECU address */
+uint8_t set_destaddr;	/* Dest ECU address */
 int	set_L1protocol;	/* L1 protocol type */
 int	set_L2protocol;	/* Protocol type */
 int	set_initmode;
@@ -71,8 +71,8 @@ char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
 
 char *set_simfile;	//source for simulation data
 extern void diag_l0_sim_setfile(char * fname);
-extern int diag_l0_dumb_getopts(void);
-extern void diag_l0_dumb_setopts(int);
+extern unsigned int diag_l0_dumb_getopts(void);
+extern void diag_l0_dumb_setopts(unsigned int);
 
 /*
  * XXX All commands should probably have optional "init" hooks.
@@ -227,7 +227,7 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 	if (set_interface==CARSIM)
 		printf("simfile: %s\n", set_simfile);
 	if (set_interface==DUMB)
-		printf("dumbopts: %d\n", diag_l0_dumb_getopts());
+		printf("dumbopts: %u\n", diag_l0_dumb_getopts());
 	printf("speed:    Connect speed: %d\n", set_speed);
 	printf("display:  %s units\n", set_display?"english":"metric");
 	printf("testerid: Source ID to use: 0x%x\n", set_testerid);
@@ -361,7 +361,7 @@ cmd_set_speed(int argc, char **argv)
 }
 
 static int cmd_set_dumbopts(int argc, char **argv) {
-	int tmp;
+	unsigned int tmp;
 	if (argc >1) {
 		if ( argv[1][0]=='?' ) {
 			printf("dumbopts: use \"set dumbopts [opts]\" where [opts] is the addition of the desired flags:\n"
@@ -378,14 +378,14 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 				"Note : these options are ignored on any non-DUMB interfaces.\n");
 			return CMD_OK;
 		}
-		if ( ! sscanf(argv[1], "%d", &tmp)) {	//interpret the options as decimal. I might change this to %x if I add a lot more flags
+		if ( ! sscanf(argv[1], "%u", &tmp)) {	//interpret the options as decimal. I might change this to %x if I add a lot more flags
 			printf("could not parse \"%s\" ! verify input.\n\n", argv[1]);
 			return CMD_USAGE;
 		}
 		//we just set the l0 flags to whatever sscanf parsed. Let diag_l0_dumb do the parsing
 		diag_l0_dumb_setopts(tmp);
 	} else {
-		printf("Current dumbopts=%d\n", diag_l0_dumb_getopts());
+		printf("Current dumbopts=%u\n", diag_l0_dumb_getopts());
 	}
 
 	return (CMD_OK);
@@ -402,13 +402,14 @@ cmd_set_testerid(int argc, char **argv)
 		if ( (tmp < 0) || (tmp > 0xff))
 			printf("testerid: must be between 0 and 0xff\n");
 		else
-			set_testerid = tmp;
+			set_testerid = (uint8_t) tmp;
 	}
 	else
 		printf("testerid: Source ID to use: 0x%x\n", set_testerid);
 
 	return (CMD_OK);
 }
+
 static int
 cmd_set_destaddr(int argc, char **argv)
 {
@@ -419,7 +420,7 @@ cmd_set_destaddr(int argc, char **argv)
 		if ( (tmp < 0) || (tmp > 0xff))
 			printf("destaddr: must be between 0 and 0xff\n");
 		else
-			set_destaddr = tmp;
+			set_destaddr = (uint8_t) tmp;
 	}
 	else
 	{

@@ -249,10 +249,10 @@ UNUSED(int *datalen))
 			{
 				return(rv);
 			}
-#if FULL_DEBUG
-			fprintf(stderr, "msg %x decode done rv %d hdrlen %d datalen %d source %02x dest %02x\n",
-				tmsg, rv, hdrlen, datalen, source, dest);
-#endif
+
+			if (diag_l2_debug & DIAG_DEBUG_PROTO)
+				fprintf(stderr, "msg %x decode done rv %d hdrlen %d datalen %d source %02x dest %02x\n",
+					tmsg, rv, hdrlen, datalen, source, dest);
 
 			if (tmsg->data[0] & 0xC0 == 0xC0)
 			{
@@ -383,7 +383,7 @@ struct diag_l2_conn *d_l2_conn,
 static int
 diag_l2_proto_vag_startcomms( struct diag_l2_conn *d_l2_conn,
 UNUSED(flag_type flags),
-int bitrate, target_type target, UNUSED(source_type source))
+unsigned int bitrate, target_type target, UNUSED(source_type source))
 {
 	struct diag_serial_settings set;
 	struct diag_l2_vag *dp;

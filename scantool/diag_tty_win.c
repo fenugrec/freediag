@@ -262,16 +262,16 @@ diag_tty_setup(struct diag_l0_device *dl0d,
  * ret 0 if ok
  */
 int
-diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
+diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rts)
 {
 	LARGE_INTEGER perftest;	// making sure the frequency is the same
-	int escapefunc;
+	unsigned int escapefunc;
 
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	QueryPerformanceFrequency(&perftest);
 	if (perfo_freq.QuadPart != perftest.QuadPart) {
 		//this sanity check takes ~ 4us on my system
@@ -300,7 +300,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  int dtr, int rts)
 	}
 
 	if (diag_l0_debug & (DIAG_DEBUG_TIMER | DIAG_DEBUG_IOCTL)) {
-		fprintf(stderr, FLFMT "@ ~%d : DTR/RTS changed\n", FL, (int) GetTickCount());
+		fprintf(stderr, FLFMT "~@%lums : DTR/RTS changed\n", FL, (unsigned long) GetTickCount());
 	}
 
 	return 0;
@@ -386,7 +386,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
  *  flush input buffer and display some of the discarded data
  * ret 0 if ok
  * a short timeout (30ms) is used in case the caller needs to receive a byte soon (like after a iso9141 slow init)
- * 
+ *
  */
 int diag_tty_iflush(struct diag_l0_device *dl0d)
 {
@@ -419,7 +419,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 	LARGE_INTEGER qpc1, qpc2, perftest;	//for timing verification
 	long real_t;	//"real" duration measured in us
 	int errval=0;
-	
+
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -445,7 +445,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 		//if either of the calls failed
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	real_t=(int) (pf_conv * qpc2.QuadPart-qpc1.QuadPart);
+	real_t=(long) (pf_conv * (qpc2.QuadPart-qpc1.QuadPart));
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "diag_tty_break: duration = %ldus.\n",
 			FL, real_t);
@@ -531,9 +531,9 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 	if (tremain<=0)
 		return 0;
 	tremain = ((LONGLONG) tremain*1000)/perfo_freq.QuadPart;	//convert to ms; imprecise but that should be OK.
-	diag_os_millisleep(tremain);
+	diag_os_millisleep((unsigned int) tremain);
 	QueryPerformanceCounter(&qpc3);
-	
+
 	timediff=qpc3.QuadPart-qpc1.QuadPart;	//total cycle time.
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "tty_break: tWUP=%ldus\n", FL, (long)(pf_conv*timediff));

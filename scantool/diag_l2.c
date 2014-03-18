@@ -422,7 +422,7 @@ diag_l2_close(struct diag_l0_device *dl0d)
  */
 struct diag_l2_conn *
 diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_t type,
-	int bitrate, target_type target, source_type source)
+	unsigned int bitrate, target_type target, source_type source)
 {
 	struct diag_l2_conn	*d_l2_conn;
 	struct diag_l2_node *node;
@@ -434,7 +434,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_startCommunications dl0d %p L2proto %d type %x baud %d target 0x%x src 0x%x called\n",
+			FLFMT "diag_l2_startCommunications dl0d %p L2proto %d type %x baud %u target 0x%x src 0x%x called\n",
 			FL, (void *)dl0d, L2protocol, type ,
 			bitrate, target&0xff, source&0xff);
 

@@ -66,7 +66,7 @@ struct diag_l0_br_device
 	int		dev_rdoffset;	/* Offset to read from to */
 
 	uint8_t	dev_txbuf[16];	/* Copy of last sent frame */
-	int		dev_txlen;	/* And length */
+	unsigned int		dev_txlen;	/* And length */
 
 	uint8_t	dev_framenr;	/* Frame nr for vpw/pwm */
 };
@@ -86,10 +86,10 @@ static int diag_l0_br_getmsg(struct diag_l0_device *dl0d,
 	uint8_t *dp, int timeout);
 
 static int diag_l0_br_initialise(struct diag_l0_device *dl0d,
-	int type, int addr);
+	uint8_t type, uint8_t addr);
 
 static int diag_l0_br_writemsg(struct diag_l0_device *dl0d,
-	int type, const void *dp, size_t txlen);
+	uint8_t type, const void *dp, size_t txlen);
 
 /* Types for writemsg - corresponds to top bit values for the control byte */
 #define BR_WRTYPE_DATA	0x00
@@ -153,7 +153,7 @@ diag_l0_br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 		 * Successfully wrote xferd bytes (or 0 bytes if EINTR),
 		 * so increment the pointers and continue
 		 */
-		txlen -= xferd;
+		txlen -= (size_t) xferd;
 		dp = (const void *)((const char *)dp + xferd);
 	}
 	return 0;
@@ -279,7 +279,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
  * returns -1 on error or the keybyte value
  */
 static int
-diag_l0_br_initialise(struct diag_l0_device *dl0d, int type, int addr)
+diag_l0_br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr)
 {
 	struct diag_l0_br_device *dev =
 		(struct diag_l0_br_device *)diag_l0_dl0_handle(dl0d);
@@ -534,7 +534,7 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, int timeout)
 			}
 			return diag_iseterr(DIAG_ERR_TIMEOUT);
 		}
-		offset += xferd;
+		offset += (size_t) xferd;
 	}
 
 	if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
@@ -559,7 +559,7 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, int timeout)
 	if (readlen == 0)	/* Should never happen */
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
 
-	return readlen;
+	return (int) readlen;
 }
 
 
@@ -572,7 +572,7 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, int timeout)
  * txlen must be <= 15
  */
 static int
-diag_l0_br_writemsg(struct diag_l0_device *dl0d, int type,
+diag_l0_br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 		 const void *dp, size_t txlen)
 {
 	struct diag_l0_br_device *dev =
@@ -593,10 +593,10 @@ diag_l0_br_writemsg(struct diag_l0_device *dl0d, int type,
 	if ((dev->protocol == DIAG_L1_J1850_VPW) ||
 		(dev->protocol == DIAG_L1_J1850_PWM)) {
 		j1850mode = 1;
-		outb = txlen + 1; /* We also send a frame number */
+		outb = (uint8_t) txlen + 1; /* We also send a frame number */
 	} else {
 		j1850mode = 0;
-		outb = txlen;
+		outb = (uint8_t) txlen;
 	}
 
 	outb |= type;	/* Set the type bits on the control byte */
@@ -839,11 +839,11 @@ void *data, size_t len, int timeout)
 			if (bufbytes <= len) {
 				memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], bufbytes);
 				dev->dev_rxlen = dev->dev_rdoffset = 0;
-				return bufbytes;
+				return (int) bufbytes;
 			} else {
 				memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], len);
 				dev->dev_rdoffset += len;
-				return len;
+				return (int) len;
 			}
 		}
 		xferd = 0;

@@ -50,9 +50,9 @@ struct diag_l0_dumb_device
 static int diag_l0_dumb_initdone;
 
 #define BPS_PERIOD 200		//length of 5bps bits. The idea is to make this configurable eventually by adding a user-settable offset
-#define MSDELAY 180	//length of 5bps bits used in _dumb_lline. Nominally 200ms, less a small margin.
+
 // flags set according to particular interface type (VAGtool vs SE etc.)
-static int dumb_flags=0;
+static unsigned int dumb_flags=0;
 #define USE_LLINE	0x01		//interface maps L line to RTS : setting RTS pulls L down to 0 .
 #define CLEAR_DTR 0x02		//have DTR cleared constantly (unusual, disabled by default)
 #define SET_RTS 0x04			//have RTS set constantly (also unusual, disabled by default).
@@ -143,7 +143,7 @@ diag_l0_dumb_close(struct diag_l0_device **pdl0d)
 
 /*
  * Fastinit: ISO14230-2 sec 5.2.4.2.3
- * Caller should have waited W5 (>300ms) before calling this.
+ * Caller should have waited W5 (>300ms) before calling this (from _initbus only!)
  * NOTE : this "ignores" some dumb_flags, i.e. the L-Line polarity is hardcoded.
  * TODO : check the actual polarity of the L line, it may be backwards...
  * we suppose the L line was at the correct state (1) before starting.
@@ -194,7 +194,7 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 
 /* Do the 5 BAUD L line stuff while the K line is twiddling */
 // Only called for slow init if USE_LLINE is set in dumb_flags (VAGTOOL, Jeff Noxon, other K+L interfaces)
-// setting RTS will pull L down.
+// setting RTS will pull L down. Caller has waited before calling
 // Exits after stop bit is finished + time for diag_tty_read to get 1 echo byte (max 20ms) (NOT the sync byte!)
 // note : this isn't called if we're doing the K line manually ! (see MAN_BREAK)
 // TODO : check the actual polarity...
@@ -234,7 +234,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 			FL);
 		return;
 	}
-	diag_os_millisleep(MSDELAY);		/* 200ms -5% */
+	diag_os_millisleep(BPS_PERIOD);		/* 200ms -5% */
 
 	for (i=0; i<8; i++) {
 		if (ecuaddr & (1<<i)) {
@@ -250,7 +250,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 				FL);
 			return;
 		}
-		diag_os_millisleep(MSDELAY);		/* 200ms -5% */
+		diag_os_millisleep(BPS_PERIOD);		/* 200ms -5% */
 	}
 	/* And set high for the stop bit */
 	if (diag_tty_control(dl0d, 0, 1) < 0) {
@@ -258,7 +258,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 			FL);
 		return;
 	}
-	diag_os_millisleep(MSDELAY);		/* 200ms -5% */
+	diag_os_millisleep(BPS_PERIOD);		/* 200ms -5% */
 
 	/* Now put DTR/RTS back correctly so RX side is enabled */
 	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
@@ -277,7 +277,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
  *	We need to send a byte (the address) at 5 baud, then
  *	switch back to 10400 baud
  *	and then wait W1 (60-300ms) until we get Sync byte 0x55.
- * We must have waited Tidle (300ms) before; caller should  make sure of this !
+ * Caller must have waited with bus=idle ! Tidle>300ms for 9141& 14230
  * this optionally does the L_line stuff according to the flags in dumb_flags.
  * Ideally returns 0 (success) immediately after recieving Sync byte.
  *
@@ -296,17 +296,14 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 			FL, (void *)dl0d, in->addr);
 	}
 
-	/* Wait W0 (2ms or longer) leaving the bus at logic 1 */
-	diag_os_millisleep(2);
-
 
 	//two methods of sending at 5bps. Most USB-serial converts don't support such a slow bitrate !
 	//It might be possible to auto-detect this capability ?
 	if (dumb_flags & MAN_BREAK) {
+		//MAN_BREAK means we bitbang K and optionally L as well.
 		if (dumb_flags & USE_LLINE) {
-			//do manual 5bps init (bit-banged) on K and L.
-			//we need to send the byte at in->addr, bit by bit. Usually this will be 0x33 but for
-			//"generic-ness" we'll do it the hard way
+			//do manual 5bps init on K and L.
+			//we need to send the byte at in->addr, bit by bit.
 
 			int bitcounter;
 			uint8_t tempbyte=in->addr;
@@ -322,14 +319,12 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 					diag_tty_break(dl0d, BPS_PERIOD);
 				}
 				tempbyte = tempbyte >>1;
-					}
+			}
 			//at this point we just finished the last bit, we'll wait the duration of the stop bit.
 			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0);	//release L
-			diag_os_millisleep(BPS_PERIOD);
+			diag_os_millisleep(BPS_PERIOD);	//stop bit
 		} else {
 			//do manual break on K only.
-			/* Wait W0 (2ms or longer) leaving the bus at logic 1 */
-			diag_os_millisleep(2);
 			int bitcounter;
 			uint8_t tempbyte=in->addr;
 			diag_tty_break(dl0d, BPS_PERIOD);	//start startbit
@@ -341,10 +336,11 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 					diag_tty_break(dl0d, BPS_PERIOD);
 				}
 				tempbyte = tempbyte >>1;
-			}	//for bitcounter
+			}	//for
+			diag_os_millisleep(BPS_PERIOD);	//stop bit
 		}	//if use_lline
 		//at this point the stop bit just finished. We could just purge the input buffer ?
-		//Usually the next thing to happen is the ECU will send the sync byte (0x55) with W1
+		//Usually the next thing to happen is the ECU will send the sync byte (0x55) within W1
 		// (60 to 300ms)
 		// so we have 60ms to diag_tty_iflush, the risk is if it takes too long
 		// TODO : add before+after timing check to see if diag_tty_iflush takes too long
@@ -537,10 +533,8 @@ const void *data, size_t len)
 		 * Successfully wrote xferd bytes (or 0 && EINTR),
 		 * so inc pointers and continue
 		 */
-		len -= xferd;
-		//XXX should we cast data to (const uin8_t) instead of char ?
-		//in case char isn't 8 bit on a platform...
-		data = (const void *)((const char *)data + xferd);
+		len -= (size_t) xferd;
+		data = (const void *)((const uint8_t *)data + xferd);
 	}
 	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
@@ -615,11 +609,11 @@ const struct diag_serial_settings *pset)
 
 // Update interface options to customize particular interface type (K-line only or K&L)
 // Not related to the "getflags" function which returns the interface capabilities.
-void diag_l0_dumb_setopts(int newflags)
+void diag_l0_dumb_setopts(unsigned int newflags)
 {
 	dumb_flags=newflags;
 }
-int diag_l0_dumb_getopts() {
+unsigned int diag_l0_dumb_getopts(void) {
 	return dumb_flags;
 }
 

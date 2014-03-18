@@ -33,9 +33,18 @@ set (SCANTOOL_PROGNAME "scantool")
 
 # define CMAKE_ENABLED to toggle between autotools' config.h(.in) and our cconf.h(.in)
 add_definitions (-DCMAKE_ENABLED)
+###### Compiler flags & build types
+
+if (NOT CMAKE_BUILD_TYPE)
+	message(STATUS "No build type selected, defaulting to Debug")
+	set(CMAKE_BUILD_TYPE "DEBUG")
+endif ()
+
 
 if (CMAKE_COMPILER_IS_GNUCC)
-	#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -std=gnu99" 
+	set (CMAKE_C_FLAGS_DEBUG "-pedantic -std=gnu99 -Wstrict-prototypes -Wsign-compare -Wredundant-decls")
+	set (CMAKE_C_FLAGS_RELEASE "-DNDEBUG")
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra" )
 #else (CMAKE_COMPILER_IS_GNUCC)
 	#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
 endif (CMAKE_COMPILER_IS_GNUCC)

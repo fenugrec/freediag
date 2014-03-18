@@ -50,7 +50,7 @@ struct diag_serial_settings {
 // this returns dl0d->dl0_handle; I'm not sure why we need a function to do that ?
 void *diag_l0_dl0_handle(struct diag_l0_device *dl0d);
 
-//similar; this returns dl0d->dl2_link. 
+//similar; this returns dl0d->dl2_link.
 struct diag_l2_link *
 diag_l0_dl2_link(struct diag_l0_device *dl0d);
 
@@ -75,7 +75,7 @@ int diag_tty_setup(struct diag_l0_device *dl0d,
 //set DTR and RTS lines :
  //~  terminology : rts=1 or dtr=1  ==> set DTR/RTS ==> set pin at positive voltage ?
  //~  (opposite polarity of the TX/RX pins!!)
-int diag_tty_control(struct diag_l0_device *dl0d, int dtr, int rts);
+int diag_tty_control(struct diag_l0_device *dl0d, unsigned int dtr, unsigned int rts);
 
 /* Flush pending input */
 // ret 0 if ok
@@ -86,7 +86,7 @@ ssize_t diag_tty_read(struct diag_l0_device *dl0d,
 	void *buf, size_t count, int timeout);
 ssize_t diag_tty_write(struct diag_l0_device *dl0d,
 	const void *buf, const size_t count);
-	
+
 // send break on TX during [ms], return after clearing break
 int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms);
 

@@ -52,7 +52,7 @@ extern const struct diag_l0 diag_l0_muleng;
  * baud rate. Note the single byte value is count in 2.5microseconds for
  * receiving a bit of the 0x55
  */
-static const int me_baud_table[] = { 0, 400000, 200000, 133333, 100000, 80000,
+static const unsigned int me_baud_table[] = { 0, 400000, 200000, 133333, 100000, 80000,
 			66666, 57142, 50000, 44444,
 	/* 10 */ 40000, 36363, 33333, 30769, 28571, 26666,
 			25000, 23529, 22222, 21052,
@@ -253,7 +253,7 @@ diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 		 * Successfully wrote xferd bytes (or 0 && EINTR),
 		 * so inc pointers and continue
 		 */
-		txlen -= xferd;
+		txlen -= (size_t) xferd;
 		dp = (const void *)((const char *)dp + xferd);
 	}
 	return 0;
@@ -278,7 +278,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 	uint8_t txbuf[15];
 	uint8_t rxbuf[15];
 	int rv;
-	int baud;
+	unsigned int baud;
 
 	memset(txbuf, 0, sizeof(txbuf));
 	txbuf[0] = INTERFACE_ADDRESS;
@@ -327,7 +327,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		baud = me_baud_table[rxbuf[0]];
 
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "device link %p setting baud to %d\n",
+			fprintf(stderr, FLFMT "device link %p setting baud to %u\n",
 				FL, (void *)dl0d, baud);
 
 		if (baud) {
@@ -436,7 +436,7 @@ diag_l0_muleng_setspeed(struct diag_l0_device *dl0d,
 		const struct diag_serial_settings *pset)
 {
 	struct diag_serial_settings set;
-	
+
 	fprintf(stderr, FLFMT "Warning: attempted to override com speed (%d)! Report this !\n", FL,pset->speed);
 	return 0;
 	// I see no need to force another diag_tty_setup
@@ -466,9 +466,9 @@ diag_l0_muleng_getmsg(struct diag_l0_device *dl0d, uint8_t *dp)
 		xferd = diag_tty_read(dl0d, &dp[offset], 14 - offset, 200);
 		if (xferd < 0)
 			return xferd;
-		offset += xferd;
+		offset += (size_t) xferd;
 	}
-	return offset;
+	return (int) offset;
 }
 
 
@@ -485,12 +485,18 @@ diag_l0_muleng_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 const void *data, size_t len)
 {
-	int cmd, rv;
+	int rv;
+	uint8_t cmd;
 
 	uint8_t txbuf[MAXRBUF];
 	struct diag_l0_muleng_device *dev;
 
 	dev = (struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);
+
+	if (len > 255) {
+		fprintf(stderr, FLFMT "_send : requesting too many bytes !\n", FL);
+		return -1;
+	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE)
 	{
@@ -552,7 +558,7 @@ const void *data, size_t len)
 
 	txbuf[0] = INTERFACE_ADDRESS;
 	txbuf[1] = cmd;
-	txbuf[2] = len;
+	txbuf[2] = (uint8_t) len;
 	memcpy(&txbuf[3], data, len);
 
 	(void)diag_l0_muleng_txcksum(txbuf);
@@ -657,13 +663,13 @@ void *data, size_t len, int timeout)
 		{
 			memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], bufbytes);
 			dev->dev_rxlen = dev->dev_rdoffset = 0;
-			return bufbytes;
+			return (int) bufbytes;
 		}
 		else
 		{
 			memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], len);
 			dev->dev_rdoffset += len;
-			return len;
+			return (int) len;
 		}
 	}
 

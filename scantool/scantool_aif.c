@@ -42,7 +42,7 @@
 #include "scantool_aif.h"
 #include "freediag_aif.h"
 
-static void do_aif_command () ;
+static void do_aif_command (void) ;
 static int debugging = 0 ;
 
 static void toApp ( char command )
@@ -334,7 +334,7 @@ struct AIFcommand aif_commands [] =
 } ;
 
 
-static void do_aif_command ()
+static void do_aif_command (void)
 {
 	char data_buffer [ FREEDIAG_AIF_INPUT_MAX ] ;
 	int i, j ;
@@ -377,7 +377,7 @@ static void do_aif_command ()
 	! feof ( stdin ) ; j++ )
 		data_buffer [ j ] = getc ( stdin ) ;
 
-	command -> func ( data_buffer ) ;
+	command->func( data_buffer ) ;
 
 	fflush ( stdout ) ;
 }

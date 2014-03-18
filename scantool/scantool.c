@@ -115,10 +115,10 @@ struct diag_l0_device *		global_l2_dl0d;		/* L2 dl0d */
 
 /* Prototypes */
 int print_single_dtc(databyte_type d0, databyte_type d1) ;
-void do_j1979_getmodeinfo(int mode, int response_offset) ;
+void do_j1979_getmodeinfo(uint8_t mode, int response_offset) ;
 
 struct diag_l2_conn *do_common_start(int L1protocol, int L2protocol,
-	uint32_t type, int bitrate, target_type target, source_type source );
+	uint32_t type, unsigned int bitrate, target_type target, source_type source );
 
 int do_l3_md1pid0_rqst( struct diag_l2_conn *d_conn ) ;
 void initialse_ecu_data(void);
@@ -526,7 +526,7 @@ l2_check_pid_bits(uint8_t *data, int pid)
  * XXX why is there "mode" + 7 bytes ? J1979 messages are 7 data bytes long (includes any mode / SID byte)
   */
 int
-l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
+l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t p2,
 	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle)
 {
 	struct diag_msg	msg;
@@ -540,7 +540,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
 	struct diag_msg *rxmsg;
 
 	/* Lengths of msg for each mode, 0 = this routine doesn't support */
-	char mode_lengths[] = { 0, 2, 3, 1, 1, 3, 2, 1, 7, 2 };
+	uint8_t mode_lengths[] = { 0, 2, 3, 1, 1, 3, 2, 1, 7, 2 };
 #define J1979_MODE_MAX 9
 
 	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
@@ -639,13 +639,14 @@ l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle)
 {
 	struct diag_msg	msg;
 	int rv;
-
+	if (len > 255)
+		return DIAG_ERR_GENERAL;
 
 	/* Put in src/dest etc, L3 or L2 may override/ignore them */
 	msg.src = set_testerid;
 	msg.dest = set_destaddr;
 
-	msg.len = len;
+	msg.len = (uint8_t) len;
 	msg.data = (uint8_t *)data;
 	diag_l3_send(d_conn, &msg);
 
@@ -662,6 +663,8 @@ l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle)
 {
 	struct diag_msg	msg;
 	int rv;
+	if (len > 255)
+		return DIAG_ERR_GENERAL;
 
 	/* Put in src/dest etc, L2 may override/ignore them */
 	msg.src = set_testerid;
@@ -701,7 +704,7 @@ clear_data(void)
  * returns L2 file descriptor
  */
 static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
-	uint32_t type, int bitrate, target_type target, source_type source )
+	uint32_t type, unsigned int bitrate, target_type target, source_type source )
 {
 	int rv;
 	struct diag_l0_device *dl0d;
@@ -964,7 +967,7 @@ do_j1979_getdata(int interruptible)
 	for (i=3; i<0x100; i++) {
 		if (merged_mode1_info[i]) {
 			fprintf(stderr, "Requesting Mode 1 Pid 0x%02x...\n", i);
-			rv = l3_do_j1979_rqst(d_conn, 0x1, (int)i, 0x00,
+			rv = l3_do_j1979_rqst(d_conn, 0x1, (uint8_t) i, 0x00,
 				0x00, 0x00, 0x00, 0x00, (void *)0);
 			if (rv < 0) {
 				fprintf(stderr, "Mode 1 Pid 0x%02x request failed (%d)\n",
@@ -1006,7 +1009,7 @@ do_j1979_getdata(int interruptible)
 			for (i=3; i<=0x100; i++) {
 				if (ep->mode2_info[i]) {
 					fprintf(stderr, "Requesting Mode 0x02 Pid 0x%02x...\n", i);
-					rv = l3_do_j1979_rqst(d_conn, 0x2, (int)i, 0x00,
+					rv = l3_do_j1979_rqst(d_conn, 0x2, (uint8_t)i, 0x00,
 						0x00, 0x00, 0x00, 0x00, (void *)0);
 					if (rv < 0) {
 						fprintf(stderr, "Mode 0x02 Pid 0x%02x request failed (%d)\n", i, rv);
@@ -1230,7 +1233,7 @@ do_j1979_ncms(int printall)
 		if ((merged_mode6_info[i]) && ((i & 0x1f) != 0)) {
 			/* Do test */
 			fprintf(stderr, "Requesting Mode 6 TestID 0x%02x...\n", i);
-			rv = l3_do_j1979_rqst(d_conn, 6, (int)i, 0x00,
+			rv = l3_do_j1979_rqst(d_conn, 6, (uint8_t)i, 0x00,
 				0x00, 0x00, 0x00, 0x00,
 				(void *)(printall?RQST_HANDLE_NCMS:RQST_HANDLE_NCMS2));
 			if (rv < 0) {
@@ -1246,7 +1249,7 @@ do_j1979_ncms(int printall)
  * response_offset : index into received packet where the the supported_pid bytemasks start.
  */
 void
-do_j1979_getmodeinfo(int mode, int response_offset)
+do_j1979_getmodeinfo(uint8_t mode, int response_offset)
 {
 	int rv;
 	struct diag_l3_conn *d_conn;
@@ -1270,7 +1273,7 @@ do_j1979_getmodeinfo(int mode, int response_offset)
 		 * what is supported
 		 */
 		fprintf(stderr, "Exploring Mode 0x%02x supported PIDs (block 0x%02x)...\n", mode, pid);
-		rv = l3_do_j1979_rqst(d_conn, mode, pid, 0x00,
+		rv = l3_do_j1979_rqst(d_conn, mode, (uint8_t) pid, 0x00,
 			0x00, 0x00, 0x00, 0x00, (void *)0);
 		if (rv != 0) {
 			/* No response */
@@ -1417,7 +1420,7 @@ do_j1979_getO2tests(int O2sensor)
 		if ((merged_mode5_info[i]) && ((i & 0x1f) != 0)) {
 			/* Do test for of i + testID */
 			fprintf(stderr, "Requesting Mode 0x05 TestID 0x%02x...\n", i);
-			rv = l3_do_j1979_rqst(d_conn, 5, i, o2s,
+			rv = l3_do_j1979_rqst(d_conn, 5, (uint8_t) i, o2s,
 				0x00, 0x00, 0x00, 0x00,
 				(void *)RQST_HANDLE_O2S);
 			if ((rv < 0) || (find_ecu_msg(0, 0x45)==NULL)) {
@@ -1666,7 +1669,7 @@ do_init(void)
 /*
  * Explain command line usage
  */
-static void do_usage ()
+static void do_usage (void)
 {
 	fprintf ( stderr, "FreeDiag ScanTool:\n\n" ) ;
 	fprintf ( stderr, "  Usage -\n" ) ;

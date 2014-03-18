@@ -377,7 +377,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			fprintf(stderr,"\n");
 		}
 
-		if (sae_msglen < 0) {
+		if (sae_msglen < 0 || sae_msglen > (255+4)) {
 			if (sae_msglen == DIAG_ERR_INCDATA) {
 				/* Not enough data in this frame */
 				return;
@@ -421,7 +421,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				d_l3_conn->rxoffset -= sae_msglen;
 
 				msg->data = data;
-				msg->len = sae_msglen - 4;
+				msg->len = (uint8_t) sae_msglen - 4;
 			}
 			free(data);
 

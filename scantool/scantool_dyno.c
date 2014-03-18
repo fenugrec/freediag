@@ -117,7 +117,7 @@ static int cmd_dyno_mass(int argc, char **argv)
 #define SPEED_ISO_TO_KMH(_speed_) ((_speed_)*36/10000)
 
 /* measure speed */
-static int measure_data(int data_pid, ecu_data_t *ep)
+static int measure_data(uint8_t data_pid, ecu_data_t *ep)
 {
   int rv;
 

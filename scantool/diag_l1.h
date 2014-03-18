@@ -191,7 +191,7 @@ int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 //diag_l1_open : calls diag_l0_open with the specified L1 protocol
 struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, int L1protocol);
 int diag_l1_close(struct diag_l0_device **);
-int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, int p4);
+int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, unsigned int p4);
 int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, int timeout);
 int diag_l1_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset);

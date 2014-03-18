@@ -112,7 +112,7 @@ int diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout);
 
 int diag_l2_proto_9141_sc_common (
 		struct diag_l2_conn *d_l2_conn,
-		int bitrate,
+		unsigned int bitrate,
 		target_type target,
 		UNUSED(source_type source),
 		int kb1, int kb2 ) ;

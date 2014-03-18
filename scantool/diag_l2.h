@@ -94,7 +94,7 @@ struct diag_l2_conn
 	void	*diag_l2_proto_data;
 
 	/* Speed we're using (baud) */
-	int		diag_l2_speed;
+	unsigned int		diag_l2_speed;
 
 	/*
 	 * Physical ECU address (useful if doing logical addressing
@@ -351,7 +351,7 @@ struct diag_l0_device * diag_l2_open(const char *device_name, const char *subint
 int diag_l2_close(struct diag_l0_device *);
 
 struct diag_l2_conn * diag_l2_StartCommunications(struct diag_l0_device *, int L2protocol,
-	uint32_t type, int bitrate, target_type target, source_type source );
+	uint32_t type, unsigned int bitrate, target_type target, source_type source );
 
 int diag_l2_StopCommunications(struct diag_l2_conn *);
 
@@ -380,7 +380,7 @@ struct diag_l2_proto {
 
 	/* Individual L2 routines, see description of interface in diag_l2.h */
 	int (*diag_l2_proto_startcomms)(struct diag_l2_conn*,
-		flag_type, int, target_type, source_type);
+		flag_type, unsigned int bitrate, target_type, source_type);
 	int (*diag_l2_proto_stopcomms)(struct diag_l2_conn*);
 	int (*diag_l2_proto_send)(struct diag_l2_conn*, struct diag_msg*);
 	int (*diag_l2_proto_recv)(struct diag_l2_conn *d_l2_conn,

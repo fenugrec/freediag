@@ -230,13 +230,15 @@ diag_freemsg(struct diag_msg *msg)
 	return;
 }
 
+//diag_data_dump : print (len) bytes of uint8_t *data
+//to the specified FILE (stderr, etc.)
 void
 diag_data_dump(FILE *out, const void *data, size_t len)
 {
 	const uint8_t *p = (const uint8_t *)data;
 	size_t i;
 	for (i=0; i<len; i++)
-		fprintf(out, "0x%02x ", p[i] & 0xff);
+		fprintf(out, "0x%02x ", p[i]);
 }
 
 //smartcat() : make sure s1 is not too large, then strncat

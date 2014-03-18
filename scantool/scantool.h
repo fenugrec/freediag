@@ -129,7 +129,7 @@ struct diag_l3_conn;
 /*
  * Do a J1979 request
  */
-int l3_do_j1979_rqst(struct diag_l3_conn *d_conn, int mode, uint8_t p1, uint8_t p2,
+int l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t p2,
 	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle);
 
 /*
@@ -185,10 +185,10 @@ extern int		global_state;
 
 
 /* Parameters set by user interface (and their defaults) */
-extern int 	set_speed ;	/* Comms speed */
-extern unsigned char	set_testerid ;	/* Our tester ID */
+extern unsigned int 	set_speed ;	/* Comms speed */
+extern uint8_t	set_testerid ;	/* Our tester ID */
 extern int	set_addrtype ;	/* Address type, 1 = functional */
-extern unsigned char	set_destaddr ;	/* Dest ECU address */
+extern uint8_t	set_destaddr ;	/* Dest ECU address */
 extern int	set_L1protocol ;	/* L1 (H/W) Protocol type */
 extern int	set_L2protocol ;	/* L2 (S/W) Protocol type */
 extern int	set_initmode ;
