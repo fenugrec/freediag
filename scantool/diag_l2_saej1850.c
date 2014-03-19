@@ -119,7 +119,7 @@ diag_l2_proto_j1850_stopcomms(struct diag_l2_conn* d_l2_conn)
 
 	if (dp)
 		free(dp);
-
+	d_l2_conn->diag_l2_proto_data=NULL;
 
 	/* Always OK for now */
 	return (0);

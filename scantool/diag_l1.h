@@ -163,10 +163,10 @@ struct diag_serial_settings;
 // diag_l0 : every diag_l0_???.c "driver" fills in one of these to describe itself.
 struct diag_l0
 {
-	const char	*diag_l0_textname;	/* Useful textual name */
+	const char	*diag_l0_textname;	/* Useful textual name, unused at the moment */
 	const char	*diag_l0_name;	/* Short, unique text name for user interface */
 
-	int 	diag_l0_type;			/* See L1protocol defines above*/
+	int 	diag_l0_type;			/* supported L1protocols, defined above*/
 
 	/* function pointers to L0 code */
 	int	(*diag_l0_init)(void);	//should not be used to allocate memory or open handles !
@@ -190,6 +190,7 @@ int diag_l1_end(void);
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 //diag_l1_open : calls diag_l0_open with the specified L1 protocol
 struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, int L1protocol);
+//diag_l1_close : calls diag_l0_close as required
 int diag_l1_close(struct diag_l0_device **);
 int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, unsigned int p4);
 int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, int timeout);

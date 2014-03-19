@@ -390,19 +390,18 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
  */
 int diag_tty_iflush(struct diag_l0_device *dl0d)
 {
-	char buf[10];
-	int i, rv;
+	uint8_t buf[10];
+	int rv;
 
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(dl0d, buf, sizeof(buf), 30);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_OPEN))
 	{
 		fprintf(stderr, FLFMT "at least %d junk bytes discarded: ", FL, rv);
-		for (i=0; i<rv; i++)
-			fprintf(stderr, "%02x ", buf[i]);
+		diag_data_dump(stderr, (void *) buf, (size_t) rv);
 		fprintf(stderr,"\n");
 	}
-	PurgeComm(dl0d->fd, PURGE_RXCLEAR);
+	PurgeComm(dl0d->fd, PURGE_RXABORT | PURGE_RXCLEAR);
 
 	return 0;
 }

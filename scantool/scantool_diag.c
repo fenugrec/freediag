@@ -201,7 +201,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	if (rv < 0)
 	{
 		printf("Failed to initialise diagnostic layer\n");
-		diag_close();
+		diag_end();
 		return CMD_OK;
 	}
 	/* Open interface using hardware type ISO9141 */
@@ -272,10 +272,10 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 
 			/* XXX until we can disconnect from an ECU */
 			return CMD_OK;
-		}
-	}
+		} // d_con !=null
+	}	//for addresses
 	diag_l2_close(dl0d);
-	diag_close();	//opposite of diag_init()
+	diag_end();	//opposite of diag_init()
 	printf("\n");
 	return CMD_OK;
 }

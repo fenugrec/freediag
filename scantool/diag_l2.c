@@ -311,6 +311,7 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
 			diag_l2_rmlink(dl2l);	/* Take off list */
 			diag_l1_close(&dl2l->diag_l2_dl0d);
 			free(dl2l);
+			//XXX should we set *pdl2l to NULL ?
 		}
 
 		*pdl2l = 0;
@@ -323,7 +324,7 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
 /*
  * Open a link to a Layer 1 device, returns dl0d, if device is already
  * open, close and then re-open it (as we need to pass it a new "protocol"
- * field if the l1 protocol is different
+ * field if the l1 protocol is different)
  *
  * The subinterface indicates the device to use
  *
@@ -352,6 +353,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 		{
 			/* Wrong L1 protocol, close link */
 			diag_l2_closelink(&dl2l);
+			free(dl2l);
 		}
 		else
 		{
@@ -362,11 +364,12 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 
 
 	/* Else, create the link */
-	if ((rv=diag_calloc(&dl2l, 1)))
+	if ((rv=diag_calloc(&dl2l, 1))) {
 		return (struct diag_l0_device *)diag_pseterr(rv);
+	}
 
 	dl0d = diag_l1_open(dev_name, subinterface, L1protocol);
-	if (dl0d == 0)	//pointer to 0 => failure
+	if (dl0d == NULL)
 	{
 		rv=diag_geterr();
 		free(dl2l);
@@ -419,6 +422,7 @@ diag_l2_close(struct diag_l0_device *dl0d)
  * startCommunication routine, establishes a connection to
  * an ECU by sending fast/slow start (or whatever the protocol is),
  * and sets all the timer parameters etc etc
+ * this creates & alloc's a new diag_l2_conn (freed in diag_l2_stopcomm)
  */
 struct diag_l2_conn *
 diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_t type,
@@ -462,14 +466,16 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	{
 		/* New connection */
 		if (diag_calloc(&d_l2_conn, 1))
-			return 0;
+			return (struct diag_l2_conn *)diag_pseterr(DIAG_ERR_NOMEM);
 
 		reusing = 0;
 	}
 
 	dl2l = diag_l0_dl2_link(dl0d);
-	if (dl2l == NULL)
-		return NULL;
+	if (dl2l == NULL) {
+		free(d_l2_conn);
+		return (struct diag_l2_conn *)diag_pseterr(DIAG_ERR_GENERAL);
+	}
 
 	/* Link to the L1 device info that we keep (name, type, flags, dl0d) */
 	d_l2_conn->diag_link = dl2l;
@@ -488,7 +494,8 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	if (d_l2_conn->l2proto == 0) {
 		fprintf(stderr,
 			FLFMT "Protocol %d not installed.\n", FL, L2protocol);
-		return NULL;
+		free(d_l2_conn);
+		return (struct diag_l2_conn *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	d_l2_conn->diag_l2_type = type ;
@@ -528,9 +535,6 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 		if (reusing == 0)
 			free(d_l2_conn);
 
-		/* XXX tidy structures... We possibly freed d_l2_conn but we set to NULL anyway ?? */
-
-		d_l2_conn = NULL;
 		return (struct diag_l2_conn *)diag_pseterr(rv);
 	}
 
@@ -565,6 +569,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
  * Stop communications - stop talking to an ECU
  * - some L2 protocols have an ordered mechanism to do this, others are
  * just timeout based (i.e don't send anything for 5 seconds)
+ * this also free()s d_l2_conn (alloced in startcomm)
  */
 int
 diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
@@ -577,7 +582,10 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 	if (d_l2_conn->l2proto->diag_l2_proto_stopcomms)
 		(void)d_l2_conn->l2proto->diag_l2_proto_stopcomms(d_l2_conn);
 
-	d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSED;
+	//d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSED;
+	if (d_l2_conn)
+		free(d_l2_conn);
+
 	return 0;
 }
 

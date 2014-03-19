@@ -717,7 +717,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 	rv = diag_init();
 	if (rv != 0) {
 		fprintf(stderr, "diag_init failed\n");
-		diag_close();
+		diag_end();
 		return NULL;
 	}
 
@@ -899,11 +899,11 @@ do_l2_generic_start(void)
 	rv = diag_init();
 	if (rv != 0) {
 		fprintf(stderr, "diag_init failed\n");
-		diag_close();
+		diag_end();
 		return diag_iseterr(rv);
 	}
 
-	/* Open interface using hardware type ISO14230 */
+	/* Open interface using current L1 proto and hardware */
 	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);
 	if (dl0d == 0) {
 		//indicating an error
@@ -911,6 +911,7 @@ do_l2_generic_start(void)
 		//if ((rv != DIAG_ERR_BADIFADAPTER) && (rv != DIAG_ERR_PROTO_NOTSUPP))
 		fprintf(stderr, "Failed to open hardware interface protocol %d with %s on %s\n",
 			set_L1protocol,l0_names[set_interface_idx].longname,set_subinterface);
+		diag_end();
 		return diag_iseterr(rv);
 	}
 
@@ -927,6 +928,7 @@ do_l2_generic_start(void)
 	if (d_conn == NULL) {
 	rv=diag_geterr();
 		diag_l2_close(dl0d);
+		diag_end();
 		return diag_iseterr(rv);
 	}
 

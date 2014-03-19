@@ -453,7 +453,7 @@ cmd_watch(int argc, char **argv)
 	rv = diag_init();
 	if (rv != 0) {
 		fprintf(stderr, "diag_init failed\n");
-		diag_close();
+		diag_end();
 		return -1;
 	}
 	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);

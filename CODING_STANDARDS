@@ -64,3 +64,8 @@ use the diag_*alloc wrappers defined in diag.h and diag_general.c
   In freediag this happened with debug message printfs, so in
   the meantime I am casting function pointers to (int) just to display
   a (possibly incorrect) value.
+  
+11- any function that can fail, should free() everything it successfully
+ alloc'ed so far, *before* returning an error. Similarly, it should "undo"
+ all previous succesful operations : if it open()ed something, it should
+ close() before returning; etc.

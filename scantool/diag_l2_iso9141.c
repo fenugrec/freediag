@@ -226,6 +226,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 
 	if ((rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set))) {
 		free(dp);
+		d_l2_conn->diag_l2_proto_data=NULL;
 		return diag_iseterr(rv);
 	}
 
@@ -241,6 +242,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 
 	if (rv) {
 		free(dp);
+		d_l2_conn->diag_l2_proto_data=NULL;
 		return diag_iseterr(rv);
 	}
 
@@ -261,6 +263,7 @@ diag_l2_proto_iso9141_stopcomms(struct diag_l2_conn* d_l2_conn)
 	dp = (struct diag_l2_iso9141 *)d_l2_conn->diag_l2_proto_data;
 	if (dp)
 		free(dp);
+	d_l2_conn->diag_l2_proto_data=NULL;
 
 	//Always OK for now.
 	return 0;

@@ -187,7 +187,8 @@ void diag_freemsg(struct diag_msg *);	/* Free a msg that we dup'ed */
  * General functions
  */
 int diag_init(void);
-int diag_close(void);
+int diag_end(void);
+
 //diag_data_dump : print (len) uin8_t bytes from data[], to FILE (i.e. stderr, etc.)
 void diag_data_dump(FILE *out, const void *data, size_t len);
 //smartcat : only verifies if s1 is not too large !

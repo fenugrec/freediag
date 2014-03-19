@@ -444,6 +444,8 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 /*
  * Do wakeup on the bus
  * return 0 on success, after reading of a sync byte, before receiving any keyword.
+ * since at the L0 level we have no knowledge of 9141 / 14230, the caller is
+ * responsible for waiting W5, W0 or Tidle before calling initbus().
  */
 static int
 diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
@@ -463,8 +465,6 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
 
 
 	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
-	/* Wait the idle time (W5 > 300ms) */
-	diag_os_millisleep(300);
 
 	switch (in->type) {
 		case DIAG_L1_INITBUS_FAST:

@@ -46,7 +46,6 @@ int diag_init(void)	//returns 0 if normal exit
 
 	if (diag_initialized)
 		return 0;
-	diag_initialized = 1;
 
 	/* Add the supported protocols and links */
 
@@ -66,12 +65,14 @@ int diag_init(void)	//returns 0 if normal exit
 		return diag_iseterr(rv);
 
 	diag_dtc_init();
+	diag_initialized = 1;
 
 	return 0;
 }
 
 //must be called before exiting. Ret 0 if ok
-int diag_close() {
+//this is the "opposite" of diag_init
+int diag_end(void) {
 	int rv=0;
 	if (! diag_initialized)
 		return 0;
@@ -303,7 +304,7 @@ diag_pflseterr(const char *name, const int line, const int code) {
 	if (latchedCode == 0)
 		latchedCode = code;
 
-	return (void *)0;
+	return NULL;
 }
 
 int

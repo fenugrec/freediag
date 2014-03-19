@@ -516,7 +516,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	if ((rv=diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set)))
 	{
 		free(dp);
-		dp=0;
+		d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
 		return diag_iseterr(rv);
 	}
 
@@ -567,6 +567,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 				timeout, data, &len);
 		if (rv < 0) {
 			free(dp);
+			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
 			return diag_iseterr(rv);
 		}
 
@@ -574,6 +575,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			&hdrlen, &datalen, &datasrc, NULL, dp->first_frame);
 		if (rv < 0) {
 			free(dp);
+			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
 			return diag_iseterr(rv);
 		}
 
@@ -604,6 +606,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 				fprintf(stderr, " got -ve response\n");
 			}
 			free(dp);
+			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
 			return diag_iseterr(DIAG_ERR_ECUSAIDNO);
 		default:
 			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
@@ -614,6 +617,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 					data[hdrlen]);
 			}
 			free(dp);
+			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
 			return diag_iseterr(DIAG_ERR_ECUSAIDNO);
 		}
 		break;
@@ -636,8 +640,11 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			break;
 
 		/* ISO14230 uses KB2 of 0x8F */
-		if (cbuf[1] != 0x8f)
+		if (cbuf[1] != 0x8f) {
+			free(dp);
+			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
 			return diag_iseterr(DIAG_ERR_WRONGKB);
+		}
 
 		/* Note down the mode bytes */
 		d_l2_conn->diag_l2_kb1 = cbuf[0] & 0x7f;
@@ -659,8 +666,11 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 				cbuf, 1, 350);
 
-			if (cbuf[0] != ((~target) & 0xFF) )
+			if (cbuf[0] != ((~target) & 0xFF) ) {
+				free(dp);
+				d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
 				return diag_iseterr(DIAG_ERR_WRONGKB);
+			}
 		}
 
 		dp->state = STATE_ESTABLISHED ;
@@ -677,6 +687,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 	if (rv < 0) {
 		free(dp);
+		d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
 		return diag_iseterr(rv);
 	}
 
@@ -704,15 +715,23 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 }
 
 
+//stopcomms : incomplete. For the moment it only undoes
+// what _startcomms did (alloc)
 static int
-diag_l2_proto_14230_stopcomms(UNUSED(struct diag_l2_conn* pX))
+diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
 {
 	/*
 	 * Send a stopcomms message, and wait for the +ve response, for upto
 	 * p3max - the layer 2 code that called this already turned off the
 	 * idle timer
 	 */
-/* XXX */
+/* TODO : implement StopComm request! */
+	fprintf(stderr, FLFMT "14230_stopcomms: warning, incomplete code !\n", FL);
+	//at least we'll free() what startcomms alloc'ed.
+	if (pX->diag_l2_proto_data) {
+		free(pX->diag_l2_proto_data);
+		pX->diag_l2_proto_data=NULL;
+	}
 
 	return 0;
 }

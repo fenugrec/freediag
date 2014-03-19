@@ -1,7 +1,7 @@
 #ifndef _DIAG_TTY_WIN_H_
 #define _DIAG_TTY_WIN_H_
 
-/* This is of course win32-exclusive. There's actually a microscopic chance that it may work on win64 but 
+/* This is of course win32-exclusive. There's actually a microscopic chance that it may work on win64 but
  * it is entirely hypothetical and untested.  This should not be included by any file except diag_tty.h
  */
 #if defined(__cplusplus)
@@ -24,8 +24,10 @@ extern "C" {
 typedef HANDLE dl0d_handletype;	//just used for casts
 
 //diag_l0_device : some parts of this are the same for every OS.
-// the platform-specific stuff should probably only be used in the associated diag_ttyXXX.c file
+// the platform-specific stuff should only be used in the associated diag_ttyXXX.c file !
 // diag_l0_sim.c is an offender of this : it uses "fd" for some nefarious purpose
+// a "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
+// and a given serial port.
 struct diag_l0_device
 {
 	void *dl0_handle;					/* Handle for the L0 switch */
@@ -33,7 +35,7 @@ struct diag_l0_device
 	struct diag_l2_link *dl2_link;	/* The L2 link */
 
 	HANDLE fd;						/* File handle */
-	char *name;					/* device name */
+	char *name;					/* device name, like /dev/ttyS0 or \\.\COM3*/
 	DCB *ttystate;	/* Holds OS specific tty info; a DCB on windoze */
 
 };

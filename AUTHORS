@@ -24,5 +24,5 @@ Steve Baker.
                                --ooOoo--
 
 Since ~2011, fenugrec has loosely maintained the package on sourceforge and kept
-the mailing lists & forums clean.
-
+the mailing lists & forums clean. He also made a first native win32 port of
+freediag and added initial ELM32x support.

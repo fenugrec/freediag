@@ -424,6 +424,7 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 	if (rv < 0)
 	{
 		free(dp);
+		d_l2_conn->diag_l2_proto_data=NULL;
 		return (rv);
 	}
 
@@ -438,6 +439,7 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 	if (rv < 0) {
 		free(dp);
+		d_l2_conn->diag_l2_proto_data=NULL;
 		return rv;
 	}
 
@@ -447,18 +449,21 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 		cbuf, 1, 100);
 	if (rv < 0) {
 		free(dp);
-		return rv;
+		d_l2_conn->diag_l2_proto_data=NULL;
+		return diag_iseterr(rv);
 	}
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		&cbuf[1], 1, 100);
 	if (rv < 0) {
 		free(dp);
-		return rv;
+		d_l2_conn->diag_l2_proto_data=NULL;
+		return diag_iseterr(rv);
 	}
 
 	/* Keybytes are 0x1 0x8a for VAG protocol */
 	if ((cbuf[0] != 0x01) || (cbuf[1] != 0x8a)) {
 		free(dp);
+		d_l2_conn->diag_l2_proto_data=NULL;
 		return(diag_iseterr(DIAG_ERR_WRONGKB));
 	}
 
@@ -487,6 +492,16 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 
 
 	return(0);
+}
+
+//free what _startcomms alloc'ed
+static int diag_l2_proto_vag_stopcomms(struct diag_l2_conn *d_l2_conn) {
+
+	if (d_l2_conn->diag_l2_proto_data)
+		free(d_l2_conn->diag_l2_proto_data);
+	d_l2_conn->diag_l2_proto_data=NULL;
+
+	return 0;
 }
 
 /*
@@ -653,7 +668,7 @@ diag_l2_proto_vag_timeout(struct diag_l2_conn *d_l2_conn)
 static const struct diag_l2_proto diag_l2_proto_vag = {
 	DIAG_L2_PROT_VAG, DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_DOESCKSUM,
 	diag_l2_proto_vag_startcomms,
-	diag_l2_proto_raw_stopcomms,
+	diag_l2_proto_vag_stopcomms,
 	diag_l2_proto_vag_send,
 	diag_l2_proto_vag_recv,
 	diag_l2_proto_vag_request,

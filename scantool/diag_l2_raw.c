@@ -67,7 +67,7 @@ UNUSED(source_type source))
 int
 diag_l2_proto_raw_stopcomms(UNUSED(struct diag_l2_conn* pX))
 {
-	return (0);
+	return 0;
 }
 
 /*
