@@ -603,7 +603,8 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	unsigned long data;
 
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
-			fprintf(stderr, FLFMT "Entered diag_tty_read with count=%d, timeout=%dms\n", FL, count, timeout);
+		fprintf(stderr, FLFMT "Entered diag_tty_read with count=%u, timeout=%dms\n", FL,
+			(unsigned int) count, timeout);
 	}
 
 	errno = 0;

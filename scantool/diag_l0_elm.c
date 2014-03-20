@@ -74,7 +74,7 @@ static const struct diag_l0 diag_l0_elm;
 static int diag_l0_elm_send(struct diag_l0_device *dl0d,
 	UNUSED(const char *subinterface), const void *data, size_t len);
 
-void elm_parse_cr(char *data, int len);	//change 0x0A to 0x0D
+void elm_parse_cr(uint8_t *data, int len);	//change 0x0A to 0x0D
 
 /*
  * Init must be callable even if no physical interface is
@@ -130,13 +130,13 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 //are not verified in detail; only the prompt character ">" must be present at the end of the data.
 //_sendcmd should not be called from outside diag_l0_elm.c.
 static int
-diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, int timeout)
+diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, int timeout)
 {
 	//note : we better not request (len == (size_t) -1) bytes ! The casts between ssize_t and size_t are
 	// "muddy" in here
 	ssize_t xferd;
 	int i, rv;
-	char buf[ELM_BUFSIZE];	//for receiving responses
+	uint8_t buf[ELM_BUFSIZE];	//for receiving responses
 	struct diag_l0_elm_device *dev;
 	const char ** elm_errors;	//just used to select between the 2 error lists
 	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
@@ -147,12 +147,12 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 
 	if (data[len-1] != 0x0D) {
 		//Last byte is not a carriage return, this would die.
-		fprintf(stderr, FLFMT "elm_sendcmd: non-terminated command : %.*s\n", FL, (int) len, data);
+		fprintf(stderr, FLFMT "elm_sendcmd: non-terminated command : %.*s\n", FL, (int) len, (char *) data);
 		//the %.*s is pure magic : limits the string length to len, even if the string is not null-terminated.
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "sending command to ELM: %.*s\n", FL, (int) len-1, data);
+		fprintf(stderr, FLFMT "sending command to ELM: %.*s\n", FL, (int) len-1, (char *)data);
 	}
 
 	while ((xferd = diag_tty_write(dl0d, data, len)) != (ssize_t) len) {
@@ -227,7 +227,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 		elm_errors=elm327_errors;
 
 	for (i=0; elm_errors[i]; i++) {
-			if (strstr(buf, elm_errors[i])) {
+			if (strstr((char *)buf, elm_errors[i])) {
 					//we found an error msg : print the whole buffer
 					fprintf(stderr, FLFMT "ELM returned error : %s\n", FL, elm_errors[i]);
 					return diag_iseterr(DIAG_ERR_GENERAL);
@@ -283,7 +283,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	struct diag_l0_device *dl0d;
 	struct diag_l0_elm_device *dev;
 	struct diag_serial_settings sset;
-	const char *buf;	//[ELM_BUFSIZE];
+	const uint8_t *buf;	//[ELM_BUFSIZE];
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
@@ -341,7 +341,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		fprintf(stderr, FLFMT "elm_open : sending ATZ @ 9600..\n", FL);
 	}
 
-	buf="ATZ\x0D";
+	buf=(uint8_t *)"ATZ\x0D";
 	if (diag_l0_elm_sendcmd(dl0d, buf, 4, 1000)) {
 		//failed @ 9600:
 		fprintf(stderr, FLFMT "sending ATZ @ 9600 failed; trying @ 38400...\n", FL);
@@ -375,7 +375,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	}
 
 	//now send "ATE0\n" command to disable echo.
-	buf="ATE0\x0D";
+	buf=(uint8_t *)"ATE0\x0D";
 	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 500)) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATE0\" failed\n", FL);
@@ -402,7 +402,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 static int
 diag_l0_elm_fastinit(struct diag_l0_device *dl0d)
 {
-	char * cmds="ATFI\x0D";
+	uint8_t * cmds= (uint8_t *) "ATFI\x0D";
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr, FLFMT "ELM forced fastinit...\n", FL);
@@ -419,7 +419,7 @@ diag_l0_elm_fastinit(struct diag_l0_device *dl0d)
 static int
 diag_l0_elm_slowinit(struct diag_l0_device *dl0d)
 {
-	char * cmds="ATSI\x0D";
+	uint8_t * cmds=(uint8_t *)"ATSI\x0D";
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "ELM forced slowinit...\n", FL);
@@ -502,7 +502,7 @@ UNUSED(const char *subinterface),
 const void *data, size_t len)
 
 {
-	char buf[ELM_BUFSIZE];
+	uint8_t buf[ELM_BUFSIZE];
 	ssize_t xferd;
 	unsigned int i;
 
@@ -521,14 +521,14 @@ const void *data, size_t len)
 
 	for (i=0; i<len; i++) {
 		//fill buffer with ascii-fied hex data
-		snprintf(&buf[2*i], 3, "%02x", (size_t) ((char *)data)[i]);
+		snprintf((char *) &buf[2*i], 3, "%02x", (unsigned int)((uint8_t *)data)[i] );
 	}
 	i=2*len;
 	buf[i]=0x0D;
 	buf[i+1]=0x00;	//terminate string
 
 	if ((diag_l0_debug & DIAG_DEBUG_WRITE) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
-		fprintf(stderr, FLFMT "ELM: sending %s\n", FL, buf);
+		fprintf(stderr, FLFMT "ELM: sending %s\n", FL, (char *) buf);
 	}
 
 	while ((xferd = diag_tty_write(dl0d, buf, i+1)) != (ssize_t)(i+1)) {
@@ -547,7 +547,7 @@ const void *data, size_t len)
 		 * so inc pointers and continue
 		 */
 		len -= xferd;
-		data = (const void *)((const char *)buf + xferd);
+		data = (void *)((uint8_t *)data + xferd);
 	}
 
 	return 0;
@@ -565,7 +565,7 @@ UNUSED(const char *subinterface),
 void *data, size_t len, int timeout)
 {
 	int xferd;
-	char rxbuf[ELM_BUFSIZE];		//need max (7 digits *2chars) + (6 space *1) + 1(CR) + 1(>) + (NUL) bytes.
+	uint8_t rxbuf[ELM_BUFSIZE];		//need max (7 digits *2chars) + (6 space *1) + 1(CR) + 1(>) + (NUL) bytes.
 	char *rptr, *bp;
 	unsigned int rbyte;
 
@@ -596,12 +596,12 @@ void *data, size_t len, int timeout)
 
 	//Here, rxbuf contains the string received from ELM. Parse it to get hex digits
 	xferd=0;
-	rptr=rxbuf+strspn(rxbuf, " \n\r");	//skip all leading spaces and linefeeds
+	rptr=(char *)(rxbuf + strspn((char *)rxbuf, " \n\r"));	//skip all leading spaces and linefeeds
 	while ((bp=strtok(rptr, " >\n\r")) !=NULL) {
 		//process token delimited by spaces or prompt character
 		//this is very sketchy and deserves to be tested more...
 		sscanf(bp, "%02x", &rbyte);
-		((char *)data)[xferd]=(char) rbyte;
+		((uint8_t *)data)[xferd]=(uint8_t) rbyte;
 		xferd++;
 		if ( (size_t)xferd==len)
 			break;
@@ -659,7 +659,7 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 }
 
 //elm_parse_cr : change 0x0A to 0x0D in datastream.
-void elm_parse_cr(char *data, int len) {
+void elm_parse_cr(uint8_t *data, int len) {
 	int i=0;
 	for (;i<len; i++) {
 		if (*data==0x0D)

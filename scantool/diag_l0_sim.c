@@ -622,7 +622,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 	struct diag_l0_sim_device * dev = dl0d->dl0_handle;
 
 	if (len > 255) {
-		fprintf(stderr, FLFMT "Error : calling diag_l0_sim_send with len >255 bytes! (%u)\n", FL, len);
+		fprintf(stderr, FLFMT "Error : calling diag_l0_sim_send with len >255 bytes! (%u)\n", FL, (unsigned int) len);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -632,7 +632,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %u bytes\n", FL, (void *)dl0d, len);
+		fprintf(stderr, FLFMT "device link %p send %u bytes\n", FL, (void *)dl0d, (unsigned int)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "L0 sim sending: ", FL);
 			diag_data_dump(stderr, data, len);
