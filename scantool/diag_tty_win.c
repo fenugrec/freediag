@@ -40,7 +40,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	//allocate space for subinterface name
 	if ((rv=diag_malloc(&dl0d->name, n))) {
-		(void)diag_tty_close(ppdl0d);;
+		(void)diag_tty_close(ppdl0d);
 		return diag_iseterr(rv);
 	}
 	strncpy(dl0d->name, subinterface, n);
@@ -103,12 +103,12 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 		if (dl0d) {
 			if (dl0d->ttystate) {
 				free(dl0d->ttystate);
-				dl0d->ttystate = 0;
+				dl0d->ttystate = NULL;
 			}
 
 			if (dl0d->name) {
 				free(dl0d->name);
-				dl0d->name = 0;
+				dl0d->name = NULL;
 			}
 			if (dl0d->fd != INVALID_HANDLE_VALUE) {
 				PurgeComm(dl0d->fd,PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
@@ -116,7 +116,7 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 				dl0d->fd = INVALID_HANDLE_VALUE;
 			}
 			free(dl0d);
-			*ppdl0d = 0;
+			*ppdl0d = NULL;
 		}
 	}
 	return;
@@ -238,6 +238,8 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	}
 
 	//to be really thorough we do another GetCommState and check that the speed was set properly.
+	//This *may* help to detect if the serial port supports non-standard baudrates (5bps being
+	//particularly problematic with USB->serial converters)
 	//I see no particular reason to check all the other fields though.
 
 	if (! GetCommState(devhandle, &verif_dcb)) {
@@ -245,7 +247,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	if (verif_dcb.BaudRate != pset->speed) {
-		fprintf(stderr, FLFMT "SetCommState failed : speed is currently %d\n", FL, (int) verif_dcb.BaudRate);
+		fprintf(stderr, FLFMT "SetCommState failed : speed is currently %u\n", FL, (unsigned int) verif_dcb.BaudRate);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -284,6 +286,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 		escapefunc=SETDTR;
 	else
 		escapefunc=CLRDTR;
+
 	if (! EscapeCommFunction(dl0d->fd,escapefunc)) {
 		fprintf(stderr, FLFMT "Could not change DTR !\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);

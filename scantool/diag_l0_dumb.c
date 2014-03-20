@@ -58,7 +58,7 @@ static unsigned int dumb_flags=0;
 #define SET_RTS 0x04			//have RTS set constantly (also unusual, disabled by default).
 #define MAN_BREAK 0x08		//force bitbanged breaks for inits
 
-extern const struct diag_l0 diag_l0_dumb;
+static const struct diag_l0 diag_l0_dumb;
 
 /*
  * Init must be callable even if no physical interface is
@@ -625,7 +625,7 @@ diag_l0_dumb_getflags(UNUSED(struct diag_l0_device *dl0d))
 			DIAG_L1_HALFDUPLEX;
 }
 
-const struct diag_l0 diag_l0_dumb = {
+static const struct diag_l0 diag_l0_dumb = {
  	"Generic dumb serial interface",
 	"DUMB",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,

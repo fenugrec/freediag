@@ -1,0 +1,19 @@
+physical interfaces (i.e. ELM323, dumb adaptor, etc) are connected to a serial port; usually called
+"subinterface" in the code. Only one L0 driver can use a given "subinterface"; i.e. /dev/ttyUSB0
+owned by diag_l0_elm. This association is a "struct diag_l0_device", often "dl0d" in the code.
+
+struct diag_l0_device : as of 1.01, this contains general and OS-specific fields, and is defined
+in the relevant diag_tty_???.h header. The members ".name" and ".ttystate" are alloc'ed
+and free'd in diag_tty;
+
+struct diag_l0 : every diag_l0_???.c driver fills in one of these to describe itself. It includes
+its name; supported L1 protos, and pointers to "exposed" functions (diag_l0_initbus, _setspeed, etc)
+
+
+
+
+l0 devices are closed by diag_l1_close;
+diag_l1_close is only called in diag_l2_closelink;
+diag_l2_closelink is called by diag_l2_open only ? so nothing ever closes the l0 devices !
+
+diag_l2_open calls diag_l1_open

@@ -69,7 +69,7 @@ const char * elm327_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR
 /* Global init flag */
 static int diag_l0_elm_initdone=0;		//1=init done
 
-extern const struct diag_l0 diag_l0_elm;
+static const struct diag_l0 diag_l0_elm;
 
 static int diag_l0_elm_send(struct diag_l0_device *dl0d,
 	UNUSED(const char *subinterface), const void *data, size_t len);
@@ -171,7 +171,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const char *data, size_t len, i
 		 * Successfully wrote xferd bytes (or 0 && EINTR),
 		 * so inc pointers and continue
 		 */
-		len -= (size_t) xferd;
+		len -= xferd;
 		//data = (const void *)((const char *)data + xferd);
 		data += xferd;
 	}
@@ -546,8 +546,8 @@ const void *data, size_t len)
 		 * Successfully wrote xferd bytes (or 0 && EINTR),
 		 * so inc pointers and continue
 		 */
-		len -= (size_t) xferd;
-		data = (const void *)((const uint8_t *)buf + xferd);
+		len -= xferd;
+		data = (const void *)((const char *)buf + xferd);
 	}
 
 	return 0;
@@ -669,7 +669,7 @@ void elm_parse_cr(char *data, int len) {
 	return;
 }
 
-const struct diag_l0 diag_l0_elm = {
+static const struct diag_l0 diag_l0_elm = {
 	"Scantool.net ELM32x Chipset Device",
 	"ELM",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,

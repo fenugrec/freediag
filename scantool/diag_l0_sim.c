@@ -57,7 +57,7 @@
 /**************************************************/
 
 
-extern const struct diag_l0 diag_l0_sim;
+static const struct diag_l0 diag_l0_sim;
 const char *simfile=NULL;	//pointer to remote filename.
 //this must be set externally either through "set simfile" from the scantool cli, or
 //by calling _set_simfile thru libdiag.
@@ -758,7 +758,7 @@ diag_l0_sim_setfile(char * fname)
 // and pointers to functions.
 // Like any simulator, it "implements" all protocols
 // (it only depends on the content of the DB file).
-const struct diag_l0 diag_l0_sim =
+static const struct diag_l0 diag_l0_sim =
 {
 	"Car Simulator interface",
 	"CARSIM",

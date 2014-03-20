@@ -43,7 +43,7 @@
 
 CVSID("$Id$");
 
-extern const struct diag_l0 diag_l0_br;
+static const struct diag_l0 diag_l0_br;
 
 /*
  * States
@@ -898,7 +898,7 @@ diag_l0_br_getflags(struct diag_l0_device *dl0d)
 	return flags;
 }
 
-const struct diag_l0 diag_l0_br = {
+static const struct diag_l0 diag_l0_br = {
 	"B. Roadman BR-1 interface",
 	"BR1",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |

@@ -45,7 +45,7 @@ CVSID("$Id$");
 #define INTERFACE_ADDRESS 0x38
 
 
-extern const struct diag_l0 diag_l0_muleng;
+static const struct diag_l0 diag_l0_muleng;
 
 /*
  * Baud rate table for converting single byte value from interface to
@@ -815,7 +815,7 @@ diag_l0_muleng_getflags(struct diag_l0_device *dl0d)
 	return flags ;
 }
 
-const struct diag_l0 diag_l0_muleng = {
+static const struct diag_l0 diag_l0_muleng = {
 	"Multiplex Engineering T16 interface",
 	"MET16",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |

@@ -25,8 +25,8 @@ typedef HANDLE dl0d_handletype;	//just used for casts
 
 //diag_l0_device : some parts of this are the same for every OS.
 // the platform-specific stuff should only be used in the associated diag_ttyXXX.c file !
-// diag_l0_sim.c is an offender of this : it uses "fd" for some nefarious purpose
-// a "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
+// diag_l0_sim.c is an offender of this : it uses "fd" for some nefarious purpose.
+// A "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
 // and a given serial port.
 struct diag_l0_device
 {
