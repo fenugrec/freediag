@@ -26,9 +26,11 @@
  * This is an attempt at merging diag_l0_se and diag_l0_vw .
  * WIN32 will not work for a while, if ever.
  *
-* The dumb_flags variable is set according to particular type (VAGtool, SE)
+ * The dumb_flags variable is set according to particular type (VAGtool, SE)
  * to enable certain features (L line on RTS, etc)
- * Work in progress !
+ * Work in progress ! And, at the moment, there is only one global dumb_flags
+ * so attempting to use simultaneously two different DUMB devices with
+ * different flags will not work.
  */
 
 
@@ -46,17 +48,15 @@ struct diag_l0_dumb_device
 	struct diag_serial_settings serial;
 };
 
-/* Global init flag */
-static int diag_l0_dumb_initdone;
 
 #define BPS_PERIOD 200		//length of 5bps bits. The idea is to make this configurable eventually by adding a user-settable offset
 
-// flags set according to particular interface type (VAGtool vs SE etc.)
+// global flags set according to particular interface type (VAGtool vs SE etc.)
 static unsigned int dumb_flags=0;
 #define USE_LLINE	0x01		//interface maps L line to RTS : setting RTS pulls L down to 0 .
 #define CLEAR_DTR 0x02		//have DTR cleared constantly (unusual, disabled by default)
 #define SET_RTS 0x04			//have RTS set constantly (also unusual, disabled by default).
-#define MAN_BREAK 0x08		//force bitbanged breaks for inits
+#define MAN_BREAK 0x08		//force bitbanged breaks for inits; enabled by default
 
 static const struct diag_l0 diag_l0_dumb;
 
@@ -68,12 +68,17 @@ static const struct diag_l0 diag_l0_dumb;
 static int
 diag_l0_dumb_init(void)
 {
+	/* Global init flag */
+	static int diag_l0_dumb_initdone=0;
+
 	if (diag_l0_dumb_initdone)
 		return 0;
-	diag_l0_dumb_initdone = 1;
+
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
+	dumb_flags=MAN_BREAK;
+	diag_l0_dumb_initdone = 1;
 
 	return 0;
 }
@@ -286,7 +291,7 @@ static int
 diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 	struct diag_l0_dumb_device *dev)
 {
-	char cbuf;
+	uint8_t cbuf;
 	int xferd, rv;
 	int tout;
 	struct diag_serial_settings set;

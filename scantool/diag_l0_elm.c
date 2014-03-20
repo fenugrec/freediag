@@ -60,14 +60,12 @@ struct diag_l0_elm_device {
 
 
 // possible error messages returned by ELM323. ELM327 messages are defined but not used yet
-const char * elm323_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?", NULL};
+static const char * elm323_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?", NULL};
 
-const char * elm327_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?",
+static const char * elm327_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?",
 						"ACT ALERT", "BUFFER FULL", "BUS ERROR", "CAN ERROR", "LP ALERT",
 						"LV RESET", "<RX ERROR", "STOPPED", "UNABLE TO CONNECT", "ERR", NULL};
 
-/* Global init flag */
-static int diag_l0_elm_initdone=0;		//1=init done
 
 static const struct diag_l0 diag_l0_elm;
 
@@ -84,15 +82,16 @@ void elm_parse_cr(uint8_t *data, int len);	//change 0x0A to 0x0D
 static int
 diag_l0_elm_init(void)
 {
+	static int diag_l0_elm_initdone=0;
+
 	if (diag_l0_elm_initdone)
 		return 0;
-	diag_l0_elm_initdone = 1;
+
 
 	/* Do required scheduling tweaks */
 	diag_os_sched();
-	if (diag_l0_debug & DIAG_DEBUG_INIT) {
-		fprintf(stderr, FLFMT "entered diag_l0_elm_init\n", FL);
-	}
+
+	diag_l0_elm_initdone = 1;
 	return 0;
 }
 

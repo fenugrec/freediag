@@ -71,9 +71,6 @@ struct diag_l0_sim_device
 	FILE* fp; // DB file pointer.
 };
 
-// Global init flag.
-static int diag_l0_sim_initdone;
-
 // ECU responses linked list:
 struct sim_ecu_response
 {
@@ -460,15 +457,18 @@ void sim_read_cfg(FILE *fp)
 static int
 diag_l0_sim_init(void)
 {
+	// Global init flag.
+	static int diag_l0_sim_initdone;
 	sim_free_ecu_responses(&sim_last_ecu_responses);
 
 	if (diag_l0_sim_initdone)
 	return 0;
 
-	diag_l0_sim_initdone = 1;
 	if (!simfile)
 		//not filled in yet : use default DB_FILE.
 		simfile=simfile_default;
+
+	diag_l0_sim_initdone = 1;
 
 	return 0;
 }

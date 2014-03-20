@@ -76,8 +76,8 @@
 
 CVSID("$Id$");
 
+static int diag_os_init_done=0;
 
-int diag_os_init_done;
 #ifdef WIN32
 	LARGE_INTEGER perfo_freq;	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
 	float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds
@@ -114,7 +114,7 @@ VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
 	}
 	return;
 }
-#else
+#else	//not WIN32
 void
 diag_os_sigalrm(UNUSED(int unused))
 {
@@ -123,6 +123,10 @@ diag_os_sigalrm(UNUSED(int unused))
 }
 #endif //WIN32
 
+//diag_os_init : a bit of a misnomer. This sets up a periodic callback
+//to call diag_l3_timer and diag_l2_timer; that would sound like a job
+//for "diag_os_sched". The WIN32 version of diag_os_init also
+//calls diag_os_sched to increase thread priority.
 //return 0 if ok
 int
 diag_os_init(void)
@@ -138,31 +142,22 @@ diag_os_init(void)
 
 	if (diag_os_init_done)
 		return(0);
-	diag_os_init_done = 1;
+
 
 #ifdef WIN32
 	//probably the nearest equivalent to a unix interval timer + associated alarm handler
 	//is the timer queue... so that's what we do.
 	//we create the timer in the default timerqueue
-	HANDLE curprocess, curthread;
+	diag_os_init();	//call os_init to increase thread priority.
+	//we do this in the hope that the OS increases the performance counter frequency
+	//to its maximum, in case it was previously in a low-power, low-freqency state.
+	//I have no evidence of that ever happening, however.
 
 	if (! CreateTimerQueueTimer(&hDiagTimer, NULL,
 			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo,
 			WT_EXECUTEDEFAULT)) {
 		fprintf(stderr, FLFMT "CTQT error.\n", FL);
 		return -1;
-	}
-
-	//set the current process to high priority.
-	//the resultant "base priority" is a combination of process priority and thread priority.
-	curprocess=GetCurrentProcess();
-	curthread=GetCurrentThread();
-	if (! SetPriorityClass(curprocess, HIGH_PRIORITY_CLASS)) {
-		fprintf(stderr, FLFMT "Warning: could not increase process priority. Timing may be impaired.\n", FL);
-	}
-
-	if (! SetThreadPriority(curthread, THREAD_PRIORITY_HIGHEST)) {
-		fprintf(stderr, FLFMT "Warning : could not increase thread priority. Timing may be impaired.\n", FL);
 	}
 
 	//and get the current performance counter frequency.
@@ -176,6 +171,7 @@ diag_os_init(void)
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "Performance counter frequency : %9"PRIu64"Hz\n", FL, perfo_freq.QuadPart);
 	}
+	diag_os_init_done = 1;
 	return 0;
 #else // not WIN32
 	/*
@@ -203,17 +199,18 @@ diag_os_init(void)
 	tv.it_value = tv.it_interval;
 
 	setitimer(ITIMER_REAL, &tv, 0); /* Set timer : it will SIGALRM upon expiration */
-
-	return(0);
+	diag_os_init_done = 1;
+	return 0;
 #endif	//WIN32
 }	//diag_os_init
 
+//diag_os_close: delete alarm handlers / periodic timers
 //return 0 if ok
 int diag_os_close() {
-	//delete alarm handlers / period timers
 #ifdef WIN32
 	DWORD err;
 
+	diag_os_init_done=0;	//diag_os_init will have to be done again past this point.
 	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
 		//succes
 		return 0;
@@ -247,18 +244,16 @@ int diag_os_close() {
 	return 0;
 
 #endif //WIN32
-}
+} 	//diag_os_close
 
 
 //different os_millisleep implementations
 //TODO : add debugging info of timing for *unix
 //TODO : add timer verification to all of them ?
-
-#if defined(__linux__) && (TRY_POSIX == 0)
-
 int
 diag_os_millisleep(unsigned int ms)
 {
+#if defined(__linux__) && (TRY_POSIX == 0)
 
 	int fd, retval;
 	unsigned int i;
@@ -326,7 +321,6 @@ diag_os_millisleep(unsigned int ms)
 	close(fd);
 
 	return (0);
-}
 
 //old millisleep
 #if 0
@@ -353,9 +347,6 @@ diag_os_millisleep(unsigned int ms)
 +* I think is the correct implementation below.  This one is much more overhead
 +* than it needs to be.
  */
-int
-diag_os_millisleep(unsigned int ms)
-{
 	struct timespec rqst, resp;
 
 	if (ms > 1)
@@ -390,8 +381,6 @@ diag_os_millisleep(unsigned int ms)
 	}
 
 	return(0);
-}
-
 #endif //of #if 0 (old millisleep)
 
 #else	// from initial "if linux && !posix" :
@@ -399,8 +388,6 @@ diag_os_millisleep(unsigned int ms)
 /*
  * I think this implementation works in all cases, with less overhead.
  */
-int
-diag_os_millisleep(unsigned int ms) {
 #ifndef WIN32
 	struct timespec rqst, resp;
 
@@ -436,8 +423,8 @@ diag_os_millisleep(unsigned int ms) {
 
 #endif	//ifndef win32
 	return 0;
-}
 #endif	//initial "if linux && !posix"
+}	//diag_os_millisleep
 
 /*
  * diag_os_ipending: Is input available on stdin. ret 1 if yes.
@@ -451,7 +438,7 @@ int
 diag_os_ipending(void) {
 #if WIN32
 	SHORT rv=GetAsyncKeyState(0x0D);	//sketchy !
-	//LSB of rv ==1 :  key was pressed since the last call to GAKS.
+	//if LSB of rv ==1 :  key was pressed since the last call to GAKS.
 	return rv & 1;
 #else //so not WIN32
 	fd_set set;
@@ -477,17 +464,26 @@ diag_os_ipending(void) {
 #endif	//WIN32
 }
 
-/* POSIX fixed priority scheduling. */
-
-#ifdef _POSIX_PRIORITY_SCHEDULING
-#include <sched.h>
+//diag_os_sched : set high priority for this thread/process.
+//this is called from most diag_l0_* devices; calling more than once
+//will harm nothing. There is no "opposite" function of this, to
+//reset normal priority.
+//we ifdef the body of the function according to the OS capabilities
 int
 diag_os_sched(void)
 {
+	static int os_sched_done=0;
+	int rv=0;
+
+	if (os_sched_done)
+		return 0;	//don't do it more than once
+
+#ifdef _POSIX_PRIORITY_SCHEDULING
+#include <sched.h>
 	int r = 0;
 	struct sched_param p;
 
-#ifndef __linux__
+#ifndef __linux__		//&& _POSIX_PRIO SCHED
 	/*
 	+* If we're not running on Linux, we're not sure if what is
 	+* being done is remotely applicable for our flavor of POSIX
@@ -506,7 +502,7 @@ diag_os_sched(void)
 				FLFMT "Scheduling setup should be examined.\n", FL);
 		}
 	}
-#else
+#else		//so it's __linux__
 	/*
 	 * Check privileges
 	 */
@@ -522,7 +518,7 @@ diag_os_sched(void)
 				"Things will not work correctly\n", FL);
 		}
 	}
-#endif
+#endif	//ndef linux (inside _POSIX_PRIO_SCHED)
 
 	/* Set real time UNIX scheduling */
 	p.sched_priority = 1;
@@ -532,29 +528,35 @@ diag_os_sched(void)
 			FL, strerror(errno));
 		r = -1;
 	}
-	return r;
-}
-#else		//(POSIX_PRIO_SCHED)
-/*
-+* This OS doesn't seem to have POSIX real time scheduling.
- */
-int
-diag_os_sched(void)
-{
+	rv=r;
+#elif defined WIN32		//not POSIX_PRIO_SCHED, but win32
+	HANDLE curprocess, curthread;
 
-	//
-	// Must start a callback timer. Not sure about the frequency yet.
-	// XXX and to do what ?
-	//
+	//set the current process to high priority.
+	//the resultant "base priority" is a combination of process priority and thread priority.
+	curprocess=GetCurrentProcess();
+	curthread=GetCurrentThread();
+	if (! SetPriorityClass(curprocess, HIGH_PRIORITY_CLASS)) {
+		fprintf(stderr, FLFMT "Warning: could not increase process priority. Timing may be impaired.\n", FL);
+	}
 
-#warning No special scheduling support in diag_os.c !
+	if (! SetThreadPriority(curthread, THREAD_PRIORITY_HIGHEST)) {
+		fprintf(stderr, FLFMT "Warning : could not increase thread priority. Timing may be impaired.\n", FL);
+	}
+	rv=0;
+
+#else	//not POSIX_PRIO_SCHED and not WIN32
+#warning No special scheduling support in diag_os.c for your OS!
+#warning Please report this !
 
 	fprintf(stderr,
 		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
-	return -1;
+	rv=-1;
+#endif
+	os_sched_done=1;
+	return rv;
+}	//of diag_os_sched
 
-}
-#endif	//(POSIX_PRIO_SCHED)
 
 #ifndef HAVE_GETTIMEOFDAY	//like on win32
 #ifdef WIN32

@@ -56,6 +56,11 @@ AC_ARG_ENABLE(inifile,
 	AC_DEFINE(USE_INIFILE,,[Enable loading of .ini file]),
 	)
 	
+AC_ARG_ENABLE(tryposix,
+	[AS_HELP_STRING([--enable-posix],[Use POSIX code (default=no)])],
+	AC_DEFINE(TRY_POSIX,,[Use POSIX implementations]),
+	)
+	
 AS_IF([test "x$buildgui" = xyes],
 		[
 #		AC_PROG_CXX		#invoking this conditionally will not work (...)

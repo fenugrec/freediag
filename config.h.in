@@ -112,6 +112,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* Use POSIX implementations */
+#undef TRY_POSIX
+
 /* Enable loading of .ini file */
 #undef USE_INIFILE
 

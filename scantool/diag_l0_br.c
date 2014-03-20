@@ -26,8 +26,7 @@
  *	support ISO14230 (KWP2000). In ISO9141-2 mode, only supports the
  *	ISO9141-2 address (0x33h)
  *
- *   http://www.abcwc.net/accounts/quanta/index.html
- *
+  *
  * Thank you to B. Roadman for donation of an interface to the prject
  *
  */
@@ -79,9 +78,6 @@ struct diag_l0_br_device
 #define BR_FEATURE_FASTINIT	0x04	/* ISO14230 fast init supported */
 
 
-/* Global init flag */
-static int diag_l0_br_initdone;
-
 static int diag_l0_br_getmsg(struct diag_l0_device *dl0d,
 	uint8_t *dp, int timeout);
 
@@ -103,12 +99,15 @@ static int diag_l0_br_writemsg(struct diag_l0_device *dl0d,
 static int
 diag_l0_br_init(void)
 {
+	/* Global init flag */
+	static int diag_l0_br_initdone=0;
+
 	if (diag_l0_br_initdone)
 		return 0;
-	diag_l0_br_initdone = 1;
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
+	diag_l0_br_initdone = 1;
 
 	return 0;
 }

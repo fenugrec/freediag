@@ -287,7 +287,7 @@ static int cmd_set_interface(int argc, char **argv)
 			if (l0_names[set_interface_idx].code==DUMB) {
 				printf("Note concerning generic (dumb) interfaces : there are additional\n"
 					"options which can be set with \"set dumbopts\". By default\n"
-					"\"K-line only\" is set. \n");
+					"\"K-line only\" and \"MAN_BREAK\" are set. \n");
 			}
 
 		}
@@ -373,7 +373,7 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 				"\tThis is unusual. By default RTS will always be CLEAR (neg. voltage)\n"
 				"\tThis option should not be used with USE_LLINE.\n"
 				" 8 : MAN_BREAK : essential for USB-serial converters that don't support 5bps\n"
-				"\tsuch as FTDI232*, P230* and other ICs.\n"
+				"\tsuch as FTDI232*, P230* and other ICs (enabled by default).\n"
 				"ex.: \"dumbopts 6\" for CLEAR_DTR and SET_RTS\n"
 				"Note : these options are ignored on any non-DUMB interfaces.\n");
 			return CMD_OK;

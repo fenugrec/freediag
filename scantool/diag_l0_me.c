@@ -108,9 +108,6 @@ struct diag_l0_muleng_device
 #define MULENG_STATE_OPEN		0x20	/* Open and working */
 
 
-/* Global init flag */
-static int diag_l0_muleng_initdone;
-
 static int diag_l0_muleng_getmsg(struct diag_l0_device *dl0d, uint8_t *dp);
 
 /*
@@ -121,12 +118,15 @@ static int diag_l0_muleng_getmsg(struct diag_l0_device *dl0d, uint8_t *dp);
 static int
 diag_l0_muleng_init(void)
 {
+/* Global init flag */
+	static int diag_l0_muleng_initdone=0;
+
 	if (diag_l0_muleng_initdone)
 		return 0;
-	diag_l0_muleng_initdone = 1;
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
+	diag_l0_muleng_initdone = 1;
 
 	return 0;
 }

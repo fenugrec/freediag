@@ -52,10 +52,16 @@ endif (CMAKE_COMPILER_IS_GNUCC)
 message(STATUS "Generating make/project files for: ${CMAKE_GENERATOR}")
 
 ###### Type checks
+check_type_size (char CHARSIZE)
 check_type_size (uint8_t UINT8SIZE)
 check_type_size (uint16_t UINT16SIZE)
 check_type_size (uint32_t UINT32SIZE)
-# these should check in stdint.h (C99) so we wont verify UINT8SIZE==8 etc.
+# these should look in stdint.h (C99) so we wont verify UINT8SIZE==8 etc.
+# but char should be the same as uint8; the codebase isn't quite
+# ready to deal with chars != 8bits.
+if (NOT(CHARSIZE EQUAL UINT8SIZE))
+	message (SEND_ERROR "Warning : your platform has  CHARSIZE=${CHARSIZE}, UINT8SIZE=${UINT8SIZE} !")
+endif ()
 
 ###### Global function & library checks
 find_library (HAVE_LIBREADLINE libreadline)
@@ -92,6 +98,7 @@ option(BUILDGUI "Enable scangui (default=no)" OFF)
 option(OLDEV "Enable deprecated dev id (default=no)" OFF)
 option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
 option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
+option(TRY_POSIX "Try POSIX implementations. (default=disabled)" OFF)
 
 ###### Includes
 #proj_bin_dir = needed to find cconf.h (not in src_dir)
