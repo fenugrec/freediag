@@ -148,7 +148,7 @@ diag_os_init(void)
 	//probably the nearest equivalent to a unix interval timer + associated alarm handler
 	//is the timer queue... so that's what we do.
 	//we create the timer in the default timerqueue
-	diag_os_init();	//call os_init to increase thread priority.
+	diag_os_sched();	//call os_sched to increase thread priority.
 	//we do this in the hope that the OS increases the performance counter frequency
 	//to its maximum, in case it was previously in a low-power, low-freqency state.
 	//I have no evidence of that ever happening, however.

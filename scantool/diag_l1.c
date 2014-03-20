@@ -99,16 +99,17 @@ diag_l1_add_l0dev(const struct diag_l0 *l0dev) {
 }
 
 /* Global init flag */
-static int diag_l1_initdone;
+static int diag_l1_initdone=0;
 
 int
 diag_l1_init(void)
 {
 	struct diag_l0_node *node;
+	if (diag_l1_debug & DIAG_DEBUG_INIT)
+		fprintf(stderr,FLFMT "entered diag_l1_init\n", FL);
 
 	if (diag_l1_initdone)
 		return 0;
-	diag_l1_initdone = 1;
 
 	/* Now call the init routines for the L0 devices */
 	//NOTE : the diag_l0_init functions should NOT play any mem tricks (*alloc etc) or open handles.
@@ -119,6 +120,7 @@ diag_l1_init(void)
 			(node->l0dev->diag_l0_init)();
 	}
 
+	diag_l1_initdone = 1;
 	return 0;
 }
 

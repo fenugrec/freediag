@@ -173,8 +173,8 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 	{
-		fprintf(stderr, FLFMT "device handle=%p; &ttystate=%p ",
-			FL, (void *)devhandle, (void *)dl0d->ttystate);
+		fprintf(stderr, FLFMT "device handle=%p; ",
+			FL, (void *)devhandle);
 		fprintf(stderr, "speed=%d databits=%d stopbits=%d parity=%d\n",
 			pset->speed, pset->databits, pset->stopbits, pset->parflag);
 	}

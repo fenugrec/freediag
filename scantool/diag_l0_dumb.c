@@ -57,6 +57,7 @@ static unsigned int dumb_flags=0;
 #define CLEAR_DTR 0x02		//have DTR cleared constantly (unusual, disabled by default)
 #define SET_RTS 0x04			//have RTS set constantly (also unusual, disabled by default).
 #define MAN_BREAK 0x08		//force bitbanged breaks for inits; enabled by default
+//warning : MAN_BREAK is also hardcoded in scantool_set. Sorry.
 
 static const struct diag_l0 diag_l0_dumb;
 
@@ -77,7 +78,6 @@ diag_l0_dumb_init(void)
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
-	dumb_flags=MAN_BREAK;
 	diag_l0_dumb_initdone = 1;
 
 	return 0;

@@ -111,7 +111,7 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
 static struct diag_l2_conn	*diag_l2_connections;
 static struct diag_l2_conn	*diag_l2_conbyid[CONBYIDSIZE];	/* Look up by ECU address */
 
-static int diag_l2_init_done;	/* Init done */
+static int diag_l2_init_done=0;	/* Init done */
 
 /*
  * The list of L1 devices we have open, not used often so no need to hash
@@ -272,13 +272,15 @@ diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 int diag_l2_init()
 {
 	if (diag_l2_debug & DIAG_DEBUG_INIT)
-		fprintf(stderr,FLFMT "diag_l2_init called\n", FL);
+		fprintf(stderr,FLFMT "entered diag_l2_init\n", FL);
 
 	if ( diag_l2_init_done )
 		return 0;
-	diag_l2_init_done = 1;
+
 
 	memset(diag_l2_conbyid, 0, CONBYIDSIZE);
+
+	diag_l2_init_done = 1;
 
 	/*
 	 * And go do the layer 1 init

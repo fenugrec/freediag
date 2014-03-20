@@ -288,6 +288,7 @@ static int cmd_set_interface(int argc, char **argv)
 				printf("Note concerning generic (dumb) interfaces : there are additional\n"
 					"options which can be set with \"set dumbopts\". By default\n"
 					"\"K-line only\" and \"MAN_BREAK\" are set. \n");
+					diag_l0_dumb_setopts(8);	//MAN_BREAK hardcoded ! yuck.
 			}
 
 		}
