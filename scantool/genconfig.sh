@@ -32,21 +32,33 @@ echo "}"
 echo "#endif"
 
 echo "int diag_l0_config(void) {"
+echo "	static int l0_config_done=0;"
 echo "	int rv = 0;"
+echo "	if (l0_config_done)"
+echo "		return 0;"
 
 for i in $l0; do
 	echo "	rv |= diag_l0_${i}_add();"
 done
 
+echo "	if (rv==0)"
+echo "		l0_config_done=1;"
+
 echo "	return rv;"
 echo "}"
 
 echo "int diag_l2_config(void) {"
+echo "	static int l2_config_done=0;"
 echo "	int rv = 0;"
+echo "	if (l2_config_done)"
+echo "		return 0;"
 
 for i in $l2; do
 	echo "	rv |= diag_l2_${i}_add();"
 done
+
+echo "	if (rv==0)"
+echo "		l2_config_done=1;"
 
 echo "	return rv;"
 echo "}"

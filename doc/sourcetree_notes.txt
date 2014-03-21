@@ -8,8 +8,7 @@ and free'd in diag_tty;
 
 struct diag_l0 : every diag_l0_???.c driver fills in one of these to describe itself. It includes
 its name; supported L1 protos, and pointers to "exposed" functions (diag_l0_initbus, _setspeed, etc)
-
-
+Those diag_l0 structs are added to the linked list l0dev_list by diag_l0_config.
 
 
 l0 devices are closed by diag_l1_close;

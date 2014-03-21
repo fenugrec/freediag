@@ -14,14 +14,32 @@ extern "C" {
 }
 #endif
 
+//diag_l0_config fills in the l0dev_list linked list.
+//It shouldn't be called more than once per session !
 int diag_l0_config(void) {
+	static int l0_config_done=0;
 	int rv = 0;
+	
+	if (l0_config_done)
+		return 0;
+		
 @DIAG_CONFIG_ZONE3@
+
+	if (rv==0)
+		l0_config_done=1;
 	return rv;
 }
 
 int diag_l2_config(void) {
+	static int l2_config_done=0;
 	int rv = 0;
+	
+	if (l2_config_done)
+		return 0;
+		
 @DIAG_CONFIG_ZONE4@
+
+	if (rv==0)
+		l2_config_done=1;
 	return rv;
 }

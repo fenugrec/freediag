@@ -65,6 +65,9 @@ struct diag_l0_node {
 	struct diag_l0_node *next;
 } *l0dev_list;
 
+
+//diag_l1_add_l0dev : this is called by each diag_l0_??_add function.
+//It fills the l0dev_list linked list.
 int
 diag_l1_add_l0dev(const struct diag_l0 *l0dev) {
 	int rv;
@@ -76,19 +79,21 @@ diag_l1_add_l0dev(const struct diag_l0 *l0dev) {
 		 * No devices yet, create the root.
 		 */
 		if ( (rv = diag_calloc(&l0dev_list, 1)) )
-			return rv;
+			return diag_iseterr(DIAG_ERR_NOMEM);
 
 		l0dev_list->l0dev = l0dev;
 		return 0;
 	}
 
+	//set last_node to the last element of l0dev_list
 	for (last_node = l0dev_list; last_node != NULL; last_node = last_node->next)
 		if (last_node->l0dev == l0dev)
-			return diag_iseterr(DIAG_ERR_GENERAL);	/* Already there. */
+			return diag_iseterr(DIAG_ERR_GENERAL);	/* Already in the list! */
 
 	if ( (rv = diag_calloc(&new_node, 1)) )
-		return rv;
+		return diag_iseterr(DIAG_ERR_NOMEM);
 
+	/* Find the last non-NULL node...*/
 	for (last_node = l0dev_list; last_node->next != NULL; last_node = last_node->next)
 		/* Search for the next-to-last node */;
 

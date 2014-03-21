@@ -56,6 +56,7 @@ struct diag_l2_node {
 	struct diag_l2_node *next;
 } *l2proto_list;
 
+//diag_l2_add_protocol : fill in the l2proto_list linked list
 int
 diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
 	int rv;
@@ -63,19 +64,23 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
 	struct diag_l2_node *last_node, *new_node;
 
 	if (l2proto_list == NULL) {
+		/*
+		 * No devices yet, create the root.
+		 */
 		if ( (rv = diag_calloc(&l2proto_list, 1)) )
-			return rv;
+			return diag_iseterr(DIAG_ERR_NOMEM);
 
 		l2proto_list->l2proto = l2proto;
 		return 0;
 	}
 
+	//set last_node to the last element of l2proto_list
 	for (last_node = l2proto_list; last_node != NULL ; last_node = last_node->next)
 		if (last_node->l2proto == l2proto)
 			return diag_iseterr(DIAG_ERR_GENERAL);	/* Already there. */
 
 	if ( (rv = diag_calloc(&new_node, 1)) )
-		return rv;
+		return diag_iseterr(DIAG_ERR_NOMEM);
 
 	/* Find the last non-NULL node...*/
 
