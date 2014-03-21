@@ -327,9 +327,8 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	 */
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 	{
-		fprintf(stderr, FLFMT "calling rcv msg=%p callback %d handle %p\n",
-			FL, (void *)d_l2_conn->diag_msg,
-			(int)callback, (void *)handle);
+		fprintf(stderr, FLFMT "calling rcv msg=%p callback, handle=%p\n",
+			FL, (void *)d_l2_conn->diag_msg, (void *)handle);	//%pcallback! we won't try to printf the callback pointer.
 	}
 
 	tmsg = d_l2_conn->diag_msg;

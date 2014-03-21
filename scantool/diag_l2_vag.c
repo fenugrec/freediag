@@ -575,8 +575,8 @@ diag_l2_proto_vag_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 	{
-		fprintf(stderr, FLFMT "calling rcv callback %d handle %p\n", FL,
-			(int)callback, (void *)handle);
+		fprintf(stderr, FLFMT "calling rcv callback, handle=%p\n", FL,
+			(void *)handle);	//%pcallback! we won't try to printf the callback pointer.
 	}
 
 	/*

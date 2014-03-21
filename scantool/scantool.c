@@ -523,7 +523,8 @@ l2_check_pid_bits(uint8_t *data, int pid)
 
 /*
  * Send a SAE J1979 request, and get a response, and part process it
- * XXX why is there "mode" + 7 bytes ? J1979 messages are 7 data bytes long (includes any mode / SID byte)
+ * J1979 messages are 7 data bytes long: mode(SID) byte + max 6 extra bytes
+ * (J1979 5.3.2; table 8)
   */
 int
 l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t p2,
@@ -540,6 +541,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	struct diag_msg *rxmsg;
 
 	/* Lengths of msg for each mode, 0 = this routine doesn't support */
+	// excludes headers and checksum.
 	uint8_t mode_lengths[] = { 0, 2, 3, 1, 1, 3, 2, 1, 7, 2 };
 #define J1979_MODE_MAX 9
 
@@ -556,9 +558,11 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	/* XXX add funcmode flags */
 
 	if (mode > J1979_MODE_MAX)
-		return -1;
-	else
-		msg.len = mode_lengths[mode];
+		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
+
+	msg.len = mode_lengths[mode];
+	if (msg.len == 0)
+		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 
 	msg.data = data;
 	data[0] = mode;
@@ -568,7 +572,6 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	data[4] = p4;
 	data[5] = p5;
 	data[6] = p6;
-//	data[7] = p7;
 	diag_l3_send(d_conn, &msg);
 
 	/* And get response(s) within a short while */

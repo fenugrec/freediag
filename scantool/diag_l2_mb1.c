@@ -269,7 +269,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
 			FLFMT "recv conn %p got %d byte message\n",
-				FL, (void *)d_l2_conn, rv);
+				FL, (void *)d_l2_conn, rv);	//%pcallback! we won't try to printf the callback pointer.
 	if (rv < 5)
 	{
 		/* Bad, minimum message is 5 bytes */

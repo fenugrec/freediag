@@ -849,8 +849,8 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		return rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "calling rcv callback %d handle %p\n", FL,
-			(int)callback, (void *)handle);
+		fprintf(stderr, FLFMT "l2_protO_14230_int_recv : handle=%p\n", FL,
+			(void *)handle);	//%pcallback! we won't try to printf the callback pointer.
 
 	/*
 	 * Call user callback routine
