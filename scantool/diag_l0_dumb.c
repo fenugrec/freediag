@@ -212,7 +212,7 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 	// short time to flush RX buffers. (L2 needs to send a StartComm
 	// request very soon.)
 
-	diag_tty_read(dl0d, &cbuf, sizeof(cbuf), WUPFLUSH);
+	diag_tty_read(dl0d, cbuf, sizeof(cbuf), WUPFLUSH);
 
 
 	//there may have been a problem in diag_tty_break, if so :
@@ -281,7 +281,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	}
 
 	/* And clear out the break XXX no, _slowinit will do this for us after calling dumb_Lline*/
-//	diag_tty_read(dl0d, &cbuf, sizeof(cbuf), 20);
+//	diag_tty_read(dl0d, cbuf, sizeof(cbuf), 20);
 
 	return;
 }
@@ -328,8 +328,18 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & LLINE_INV));	//release L
 					diag_os_millisleep(BPS_PERIOD);
 				} else {
+					unsigned int lowtime=BPS_PERIOD;
+					//to prevent spurious breaks if we have a sequence of 0's :
+					//this is an RLE of sorts...
+					for (; bitcounter <=6; bitcounter++) {
+						if (tempbyte & 2) //test bit 1; we just tested bit 0 before getting here.
+							break;
+						lowtime += BPS_PERIOD;
+						tempbyte = tempbyte >>1;
+					}
+					//this way, we know for sure the next bit is 1 (either bit 7==1 or stopbit==1 !)
 					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));	//pull L down
-					diag_tty_break(dl0d, BPS_PERIOD);
+					diag_tty_break(dl0d, lowtime);
 				}
 				tempbyte = tempbyte >>1;
 			}
@@ -346,7 +356,16 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 				if (tempbyte & 1) {
 					diag_os_millisleep(BPS_PERIOD);
 				} else {
-					diag_tty_break(dl0d, BPS_PERIOD);
+					unsigned int lowtime=BPS_PERIOD;
+					//to prevent spurious breaks if we have a sequence of 0's :
+					for (; bitcounter <=6; bitcounter++) {
+						if (tempbyte & 2)
+							break;	//test bit 1; we just tested bit 0 before getting here.
+						lowtime += BPS_PERIOD;
+						tempbyte = tempbyte >>1;
+					}
+
+					diag_tty_break(dl0d, lowtime);
 				}
 				tempbyte = tempbyte >>1;
 			}	//for
@@ -392,7 +411,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		 * echo
 		 */
 
-		while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, tout)) <= 0) {
+		while ( (xferd = diag_tty_read(dl0d, cbuf, 1, tout)) <= 0) {
 			if (xferd == DIAG_ERR_TIMEOUT) {
 				if (diag_l0_debug & DIAG_DEBUG_PROTO)
 					fprintf(stderr, FLFMT "slowinit link %p echo read timeout\n",
@@ -413,7 +432,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		}
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit 5bps address echo 0x%x\n",
-					FL, cbuf);
+					FL, cbuf[0]);
 		if (diag_tty_setup(dl0d, &dev->serial)) {
 			//reset original settings
 			fprintf(stderr, FLFMT "slowinit: could not reset serial settings !\n", FL);
@@ -440,7 +459,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		tout=300;   //but try anyway
 	}
 
-	rv = diag_tty_read(dl0d, &cbuf, 1, tout);
+	rv = diag_tty_read(dl0d, cbuf, 1, tout);
 	if (rv < 0) {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit link %p read timeout, did not get Sync byte !\n",
@@ -449,7 +468,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	} else {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit link %p, got sync byte 0x%x\n",
-				FL, (void *)dl0d, cbuf);
+				FL, (void *)dl0d, cbuf[0]);
 	}
 	//If all's well at this point, we just read the sync pattern byte. L2 will take care
 	//of reading + echoing the keybytes
@@ -531,6 +550,7 @@ const void *data, size_t len)
 			FL, (void *)dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 			diag_data_dump(stderr, data, len);
+		fprintf(stderr, "\n");
 	}
 
 	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {

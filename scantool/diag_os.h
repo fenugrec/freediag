@@ -32,6 +32,11 @@ extern "C" {
 /* CVSID macro that will avoid warnings. */
 #define CVSID(ID) UNUSED(static const char* const cvsid) = (ID)
 
+#ifdef WIN32
+	typedef DWORD OS_ERRTYPE;
+#else
+	typedef int OS_ERRTYPE;
+#endif
 
 /* Common prototypes but note that the source
 // is different and defined in OS specific
@@ -42,6 +47,9 @@ int diag_os_init(void);
 int diag_os_close(void);
 int diag_os_millisleep(unsigned int ms);
 int diag_os_ipending(void);
+
+//returns OS-specific error message or empty string if not found.
+const char * diag_os_geterr(OS_ERRTYPE os_errno);
 
 /* Scheduler */
 int diag_os_sched(void);

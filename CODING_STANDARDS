@@ -52,20 +52,23 @@ use the diag_*alloc wrappers defined in diag.h and diag_general.c
  and diag_tty*. Work in progress.
  
 9- I think aiming for a silent ouptut when compiling with 
- "-Wall -Wextra -pedantic" flags will help find many potential bugs.
+ "-Wall -Wextra -pedantic -gnu99" flags will help find many potential bugs.
   The code should be as C99-compliant as possible, as a guideline.
  
 10- regarding casts : many parts of the code casted function
  pointers to object pointers implicitly such as 
   printf("callback %p", diag_callback) which is not strictly correct.
-  I know of no easy, portable method of printfing a function pointer.
-  http://stackoverflow.com/questions/2741683/how-to-format-a-function-pointer
-  has excellent information on the subject.
-  In freediag this happened with debug message printfs, so in
-  the meantime I am casting function pointers to (int) just to display
-  a (possibly incorrect) value.
+ I know of no easy, portable method of printfing a function pointer.
+ http://stackoverflow.com/questions/2741683/how-to-format-a-function-pointer
+ has excellent information on the subject.
+ In freediag this happened with debug message fprintfs. In
+ the meantime I removed the offending casts and added a //%pcallback!
+ comment in every place.
   
 11- any function that can fail, should free() everything it successfully
  alloc'ed so far, *before* returning an error. Similarly, it should "undo"
  all previous succesful operations : if it open()ed something, it should
  close() before returning; etc.
+ 
+12- A return statement is not a function call : "return 0;" , not
+ "return(0);" 

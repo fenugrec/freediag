@@ -27,3 +27,16 @@ diag_l0_initbus is assumed to return at exactly :
 
 diag_tty_write : diag_l0_dumb, in certain cases, would need this to be non-blocking... I'm unsure of how
 the different implementations handle this.
+
+
+**** "async signal safe"ness, re-entrant functions, callbacks etc.
+This is currently (2014) a bit of a mess. The previous devs knew this was the
+next big problem to tackle, so they flagged many parts of the code as non-async signal
+safe AKA "not re-entrant". These functions (and others) should be made re-entrant, i.e.
+take the necessary precautions so that, if a thread is currently executing
+the function, another thread can safely call the same function.
+Luckily we don't create many threads in freediag. I think the only case where
+this can happen is with the periodic timer functions (diag_l2_timer and diag_l3_timer)
+which theoretically get called by the OS automatically at a preset interval, presumably
+to transmit keep-alive messages.
+All of this is very much a work in progress.

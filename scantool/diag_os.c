@@ -216,7 +216,7 @@ int diag_os_close() {
 		return 0;
 	}
 	err=GetLastError();
-	fprintf(stderr, FLFMT "Could not DTQT err=%d!\n", FL, (int) err);
+	fprintf(stderr, FLFMT "Could not DTQT: %s\n", FL, diag_os_geterr(err));
 	if (err==ERROR_IO_PENDING) {
 		fprintf(stderr, FLFMT "But that's an ERROR_IO_PENDING so no worries.\n", FL);
 		return 0;
@@ -403,6 +403,7 @@ diag_os_millisleep(unsigned int ms)
 		else
 			return -1;
 	}
+	return 0;
 #else		//so it's WIN32
 	LARGE_INTEGER qpc1, qpc2;
 	long real_t;
@@ -410,19 +411,16 @@ diag_os_millisleep(unsigned int ms)
 	Sleep(ms);
 	QueryPerformanceCounter(&qpc2);
 	real_t=(long) (pf_conv * (qpc2.QuadPart-qpc1.QuadPart));
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "diag_os_millisleep slept for %ldus\n", FL,
-			real_t);
-	}
+
 	//verify if within 1ms of requested.
 	real_t = real_t - (ms*1000);
 	if ((real_t < -1000) || (real_t > 1000)) {
 		fprintf(stderr, FLFMT "Warning : diag_os_millisleep out of spec by %ldus !.\n",
 			FL, real_t);
 	}
+	return 0;
 
 #endif	//ifndef win32
-	return 0;
 #endif	//initial "if linux && !posix"
 }	//diag_os_millisleep
 
@@ -603,3 +601,36 @@ void timersub(struct timeval *a, struct timeval *b, struct timeval *res) {
 	#error No implementation of timersub() for your system !
 #endif	//WIN32
 #endif //HAVE_TIMERSUB
+
+
+//diag_os_geterr : get OS-specific error string.
+//Either gets the last error if os_errno==0, or print the
+//message associated with the specified os_errno
+// XXX this is not async-safe / re-entrant !
+//
+const char * diag_os_geterr(OS_ERRTYPE os_errno) {
+#ifdef WIN32
+	//to make this re-entrant, we would need CreateMutex OpenMutex etc.
+	static char errbuf[100]="";	//this has to be big enough, or else FormatMessage chokes!
+
+	if (os_errno == 0)
+		os_errno=GetLastError();
+
+	if (os_errno !=0 ) {
+		if (! FormatMessage(0, NULL, os_errno, 0, errbuf, sizeof(errbuf), NULL)) {
+			snprintf(errbuf, sizeof(errbuf), "UNK:%u", (unsigned int) os_errno);
+		}
+	} else {
+		strcpy(errbuf, "NIL");
+	}
+	return (const char *) errbuf;
+#else 	//not WIN32 :
+	//we'll suppose strerr is satisfactory.
+	return (const char *) strerror(os_errno? os_errno : errno);
+//	static char errbuf[30];
+
+//	snprintf(errbuf, sizeof(errbuf), "OS Error %d", os_errno);
+//	return (const char *) errbuf;
+#endif // WIN32
+
+}
