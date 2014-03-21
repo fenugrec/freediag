@@ -133,8 +133,9 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	if (diag_l3_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,FLFMT "send %d bytes, l2 flags 0x%x\n",
 			FL, msg->len,  d_l3_conn->d_l3l2_flags);
-/*{int cnt; printf("[CJH] %s %d: ",__FILE__,__LINE__);
-for(cnt=0;cnt<msg->len;cnt++) printf("0x%02x ",msg->data[cnt]);printf("\n");}*/
+
+	if ((diag_l3_debug & DIAG_DEBUG_DATA) && (diag_l3_debug & DIAG_DEBUG_WRITE))
+		diag_data_dump(stderr, (void *) msg->data, (size_t)msg->len);
 
 	/* Note source address on 1st send */
 	if (d_l3_conn->src == 0)
@@ -258,15 +259,13 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
 		/* And send data upward if needed */
 		if (d_l3_conn->callback)
 			d_l3_conn->callback(d_l3_conn->handle, msg);
-	}
-	else
-	{
-	printf("[CJH] WARNING!! Should we be here? %s %d\n",__FUNCTION__,__LINE__);
+	} else {
+		fprintf(stderr, FLFMT "[CJH] diag_l3_rcv_callback: problem !\n", FL);
 			/* Add data to the receive buffer on the L3 connection */
 			memcpy(&d_l3_conn->rxbuf[d_l3_conn->rxoffset],
 				msg->data, msg->len);
 			d_l3_conn->rxoffset += msg->len;
-		}
+	}
 }
 
 
@@ -365,7 +364,7 @@ diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 		if (state != ST_STATE4)
 		{
 			/* Process the data into messages */
-printf("[CJH] %s %d: No process_data function!\n",__FUNCTION__,__LINE__);
+			fprintf(stderr, FLFMT "[CJH] No process_data function in %s!\n",FL, __FUNCTION__);
 			//diag_l3_j1979_process_data(d_l3_conn);
 
 			if (diag_l3_debug & DIAG_DEBUG_PROTO)

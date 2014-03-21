@@ -630,6 +630,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			break;
 
 		/* Mode bytes are in 7-Odd-1, read as 8N1 and ignore parity */
+		//XXX why don't we call _recv with 2 bytes (we want 2 keybytes...) ?
 		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 			cbuf, 1, 100);
 		if (rv < 0)

@@ -17,3 +17,14 @@ diag_l1_close is only called in diag_l2_closelink;
 diag_l2_closelink is called by diag_l2_open only ? so nothing ever closes the l0 devices !
 
 diag_l2_open calls diag_l1_open
+
+
+diag_l0_initbus : these are called by diag_l1_initibus; diag_l1_initbus is called by
+diag_l2_ioctl with the right IOCTL.
+diag_l0_initbus is assumed to return at exactly :
+- the end of tWUP, if iso14230 fastinit (just in time to send the startcomm request)
+- right after receiving the 0x55 sync byte, if iso9141 or iso14230 slowinit (just in time to get the 2x keybytes)
+
+
+diag_tty_write : diag_l0_dumb, in certain cases, would need this to be non-blocking... I'm unsure of how
+the different implementations handle this.

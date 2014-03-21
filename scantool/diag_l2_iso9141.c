@@ -106,18 +106,20 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	if (rv < 0)
 		return rv;
 
-	// The L1 device has read the 0x55, and may have changed the
-	// speed that we are talking to the ECU at (NOT!!!).
+	// The L1 device has read the 0x55, and reset the previous speed.
 
 	// Receive the first KeyByte:
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0, &kb1, 1, W2max);
 	if (rv < 0)
-		return rv;
+		return diag_iseterr(DIAG_ERR_WRONGKB);
 
 	// Receive the second KeyByte:
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0, &kb2, 1, W3max);
 	if (rv < 0)
-		return rv;
+		return diag_iseterr(DIAG_ERR_WRONGKB);
+
+	if (diag_l2_debug && DIAG_DEBUG_PROTO)
+		fprintf(stderr, FLFMT "Got keybytes %x %x\n", FL, kb1, kb2);
 
 	// Check keybytes, these can be 0x08 0x08 or 0x94 0x94:
 	if ( (kb1 != kb2) || ( (kb1 != 0x08) && (kb1 != 0x94) ) )

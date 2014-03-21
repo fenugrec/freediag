@@ -10,6 +10,8 @@
 
 #include "diag_l1.h"
 
+#define IFLUSH_TIMEOUT 30	//timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX buffer.
+
 /*
  * Parity settings
  */
@@ -68,16 +70,17 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 void diag_tty_close(struct diag_l0_device **ppdl0d);
 
-/* Set speed/parity etc */
+/* Set speed/parity etc, return 0 if ok. */
 int diag_tty_setup(struct diag_l0_device *dl0d,
 	const struct diag_serial_settings *pss);
 
 //set DTR and RTS lines :
- //~  terminology : rts=1 or dtr=1  ==> set DTR/RTS ==> set pin at positive voltage ?
+ //~  terminology : rts=1 or dtr=1  ==> set DTR/RTS ==> set pin at positive voltage !
  //~  (opposite polarity of the TX/RX pins!!)
 int diag_tty_control(struct diag_l0_device *dl0d, unsigned int dtr, unsigned int rts);
 
 /* Flush pending input */
+// This probably always takes IFLUSH_TIMEOUT to complete since it calls diag_tty_read.
 // ret 0 if ok
 int diag_tty_iflush(struct diag_l0_device *dl0d);
 
@@ -87,8 +90,17 @@ ssize_t diag_tty_read(struct diag_l0_device *dl0d,
 ssize_t diag_tty_write(struct diag_l0_device *dl0d,
 	const void *buf, const size_t count);
 
-// send break on TX during [ms], return after clearing break
+// diag_tty_break: send a [ms] break on TX, return after clearing break
+// ret 0 if ok
 int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms);
+
+/*
+ * diag_tty_fastbreak: fixed 25ms break; return [ms] after starting the break.
+ * This is for ISO14230 fast init : typically diag_tty_fastbreak(dl0d, 50)
+ * ret 0 if ok
+ */
+int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms);
+
 
 
 #endif /* _DIAG_TTY_H_ */

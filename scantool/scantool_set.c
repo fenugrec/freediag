@@ -375,7 +375,10 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 				"\tThis option should not be used with USE_LLINE.\n"
 				" 8 : MAN_BREAK : essential for USB-serial converters that don't support 5bps\n"
 				"\tsuch as FTDI232*, P230* and other ICs (enabled by default).\n"
-				"ex.: \"dumbopts 6\" for CLEAR_DTR and SET_RTS\n"
+				" 16: LLINE_INV : Invert polarity of the L line. see\n"
+				"\tdoc/dumb_interfaces.txt !!\n"
+				" 32: FAST_BREAK : use alternate iso14230 fastinit code.\n\n"
+				"ex.: \"dumbopts 9\" for MAN_BREAK and USE_LLINE.\n"
 				"Note : these options are ignored on any non-DUMB interfaces.\n");
 			return CMD_OK;
 		}

@@ -1,8 +1,16 @@
+"dumb" interfaces means any cable with very simple circuitry limited to level-shifting.
+A USB -> FT232 -> optocoupler -> OBD cable is a dumb interface.
+A RS232 -> ELM327 -> OBD cable is NOT a dumb interface.
+A Bluetooth -> CP2103 / FT232 -> OBD cable is a dumb interface.
+
+(Remember : logic 1, on RXD and TXD, is negative voltage.)
+(However, signals like RTS are the opposite : "set RTS" means positive voltage!)
+
 DUMB interface with optocouplers :
-a) typical device supporting K + L lines :
+a) typical interface supporting K + L lines :
 	L is pulled down (=0) when RTS is set (>5V).
-	K is driven by TXD with the correct polarity ( TX="1" = negative voltage => K=V+="1")
-	K also drives RXD (half-duplex ! So any data sent on TXD will be seen on RXD !) similarly;
+	K is driven by TXD with the correct polarity ( TXD="1" = negative voltage => K=Vbat="1")
+	K also drives RXD (half-duplex,so any data sent on TXD will be seen on RXD !) similarly;
 	In order to receive data on RXD, RTS must be CLEARED (neg. voltage)
 	DTR is a "pull-up" on RXD and needs to be SET permanently (pos. voltage)
 	
@@ -15,9 +23,9 @@ b) typical simplified interface, K-line only :
 	DTR is a "pull-up" on RXD so it needs to be always SET (pos. voltage)
 
 c) other simple interfaces with a different pattern :
-	A word of caution, the polarity of the L-Line init is currently hardcoded, so
-	make sure you do not set USE_LLINE ! Eventually I might change the configuration
-	to a more general "LLINE_POLARITY" flag but I know of no interface that would need that.
+	"set dumbopts" offers some options to cover non-standard configurations.
+	It may be required to also invert the polarity of the L-line.
+	I know of no interface that would need this, but the option is there.
 	
 
 Configurable options : (try "set dumbopts ?" for most recent list)
@@ -31,5 +39,8 @@ use "set dumbopts [opts]" where [opts] is the addition of the desired flags:
 	This is unusual. By default RTS will always be CLEAR (neg. voltage)
 	This option should not be used with USE_LLINE.
  8 : MAN_BREAK : use to force manual 5bps transmission. Essential for most USB-serial bridges
- ex. : "dumbopts 12" will set MAN_BREAK and SET_RTS.
-Note : these options are ignored on any non-DUMB interfaces.\n");
+ 16: LLINE_INV : Invert polarity of the L line. Use only if you set USE_LLINE, CLEAR_DTR and SET_RTS;
+ 32: FAST_BREAK : use alternate iso14230 fastinit code. Instead of setting diag_tty_break for
+	25ms then waiting 25ms, this will send 0x00 at 360bps (==25ms) and wait a total of 50ms.
+ ex. : "dumbopts 9" will set MAN_BREAK and USE_LLINE.
+Note : these options are ignored on any non-DUMB interfaces.

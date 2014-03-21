@@ -260,7 +260,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
  * This takes around ~15-20us to do; probably with ~10 us skew between setting RTS and DTR.
  * If it proves to be a problem, it's possible to change both RTS and DTR at once by updating
  * the DCB and calling SetCommState. That call would take around 30-40us.
-  *
+ * Note : passing 1 in dtr or rts means "set DTR/RTS", i.e. positive voltage.
  * ret 0 if ok
  */
 int
@@ -393,11 +393,11 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
  */
 int diag_tty_iflush(struct diag_l0_device *dl0d)
 {
-	uint8_t buf[10];
+	uint8_t buf[MAXRBUF];
 	int rv;
 
 	/* Read any old data hanging about on the port */
-	rv = diag_tty_read(dl0d, buf, sizeof(buf), 30);
+	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_OPEN))
 	{
 		fprintf(stderr, FLFMT "at least %d junk bytes discarded: ", FL, rv);
@@ -416,7 +416,6 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 
 // diag_tty_break #1 : use Set / ClearCommBreak
 // and return as soon as break is cleared.
-#if 1
 int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 	LARGE_INTEGER qpc1, qpc2, perftest;	//for timing verification
 	long real_t;	//"real" duration measured in us
@@ -462,19 +461,15 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 	return 0;
 }
 
-#else //alternate diag_tty_break
 
 /*
- * diag_tty_break #2 : send 0x00 at 360bps => fixed 25ms break; return [ms] after starting break.
- * This is neat for ISO14230 fast init, but useless for bit-banging the 5bps address in a slow init.
+ * diag_tty_fastbreak: send 0x00 at 360bps => fixed 25ms break; return [ms] after starting break.
+ * This is for ISO14230 fast init : typically diag_tty_fastbreak(dl0d, 50)
  */
-
-#warning Compiling fixed 25ms diag_tty_break ! DUMB interfaces might not work !
-
-int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
+int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms)
 {
-	if (ms==0)		//very funny
-		return diag_iseterr(DIAG_ERR_GENERAL);
+	if (ms<25)		//very funny
+		return diag_iseterr(DIAG_ERR_TIMEOUT);
 
 	DCB tempDCB; 	//for sabotaging the settings just to do the break
 	DCB origDCB;
@@ -510,7 +505,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 
 	/*
 	 * And read back the single byte echo, which shows TX completes
-	 * (this is because of the half-duplex nature of the K line ?)
+	 * (this is because of the half-duplex nature of the K line)
  	 */
 	while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, ms<<2)) <= 0)
 	{
@@ -523,32 +518,32 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
-	QueryPerformanceCounter(&qpc2);		//and current time. The break probably just ended now
-	timediff=qpc2.QuadPart-qpc1.QuadPart;	//elapsed counts since diag_tty_write
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "tty_break: approx duration=%ldus\n", FL, (long)(pf_conv*timediff));
+	//we'll usually have a few ms left to wait; we'll use this
+	//to restore the port settings.
+
+	if (! SetCommState(dl0d->fd, &origDCB)) {
+		fprintf(stderr, FLFMT "tty_break: could not restore settings!\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+
+	QueryPerformanceCounter(&qpc2);		//get current time,
+	timediff=qpc2.QuadPart-qpc1.QuadPart;	//elapsed counts since diag_tty_write
 	counts=(2*ms*perfo_freq.QuadPart)/1000;		//total # of counts for requested ( setbreak + clearbreak ) cycle time
 	tremain=counts-timediff;	//counts remaining
 	if (tremain<=0)
 		return 0;
+
 	tremain = ((LONGLONG) tremain*1000)/perfo_freq.QuadPart;	//convert to ms; imprecise but that should be OK.
 	diag_os_millisleep((unsigned int) tremain);
 	QueryPerformanceCounter(&qpc3);
 
 	timediff=qpc3.QuadPart-qpc1.QuadPart;	//total cycle time.
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "tty_break: tWUP=%ldus\n", FL, (long)(pf_conv*timediff));
+		fprintf(stderr, FLFMT "tty_fastbreak: tWUP=%ldus\n", FL, (long)(pf_conv*timediff));
 	}
 
-
-	//and now reset original settings !
-	if (! SetCommState(dl0d->fd, &origDCB)) {
-		fprintf(stderr, FLFMT "tty_break: could not restore settings!\n", FL);
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
 
 	return 0;
-}
+}	//diag_tty_fastbreak
 
-#endif //alternate diag_tty_break
+

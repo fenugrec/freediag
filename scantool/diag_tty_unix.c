@@ -23,7 +23,7 @@
 #include "diag_err.h"
 #include "diag_tty.h"
 
-int diag_tty_open(struct diag_l0_device **ppdl0d, 
+int diag_tty_open(struct diag_l0_device **ppdl0d,
 	const char *subinterface,
 	const struct diag_l0 *dl0,
 	void *dl0_handle)
@@ -54,7 +54,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	/*
 	 * XXX this should probably be removed... "historical compatibility" with what ?? Who ?
-	
+
 	 * For historical compatibility, if the subinterface decodes cleanly
 	 * as an integer we will write it into a string to get the name.
 	 * You can create a symlink to "/dev/obdII<NUMBER>" if you want to,
@@ -125,11 +125,11 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	if (dl0d->fd >= 0) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr, FLFMT "Device %s opened, fd %d\n", 
+			fprintf(stderr, FLFMT "Device %s opened, fd %d\n",
 				FL, dl0d->name, dl0d->fd);
 	} else {
 		fprintf(stderr,
-			FLFMT "Open of device interface \"%s\" failed: %s\n", 
+			FLFMT "Open of device interface \"%s\" failed: %s\n",
 			FL, dl0d->name, strerror(errno));
 		fprintf(stderr, FLFMT
 			"(Make sure the device specified corresponds to the\n", FL );
@@ -233,7 +233,7 @@ diag_l0_set_dl2_link(struct diag_l0_device *dl0d,
 
 
 /*
- * Set speed/parity etc
+ * Set speed/parity etc, return 0 if ok
  */
 int
 diag_tty_setup(struct diag_l0_device *dl0d,
@@ -271,12 +271,12 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	 * As it happens, all speeds on a Linux tty are calculated as a divisor
 	 * of the base speed - for instance, base speed is normally 115200
 	 * on a 16550 standard serial port
-	 * this allows us to get 
+	 * this allows us to get
 	 *	10472 baud  (115200 / 11)
 	 *	       - NB, this is not +/- 0.5% as defined in ISO 14230 for
 	 *		a tester, but it is if it was an ECU ... but that's a
 	 *		limitation of the PC serial port ...
-	 *	9600 baud  (115200 / 12) 
+	 *	9600 baud  (115200 / 12)
 	 *	5 baud	    (115200 / 23040 )
 	 */
 	/* Copy original settings to "current" settings */
@@ -355,7 +355,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 		if (result < 0)
 		{
 			// It just isn't working; give it up
-			fprintf(stderr, 
+			fprintf(stderr,
 				FLFMT "Can't set baud rate to %d.\n"
 				"tcsetattr returned \"%s\".\n", FL, pset->speed, strerror(errno));
 			return diag_iseterr(DIAG_ERR_GENERAL);
@@ -444,7 +444,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 
 	errno = 0;
 	if (tcsetattr(fd, TCSAFLUSH, &dt->dt_tinfo) < 0) {
-		fprintf(stderr, 
+		fprintf(stderr,
 			FLFMT
 			"Can't set input flags (databits %d, stop bits %d, parity %d).\n"
 			"tcsetattr returned \"%s\".\n",
@@ -452,7 +452,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 			strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	return 0;
 }
 
@@ -470,7 +470,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 		setflags = TIOCM_DTR;
 	else
 		clearflags = TIOCM_DTR;
-	
+
 	if (rts)
 		setflags = TIOCM_RTS;
 	else
@@ -478,7 +478,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 
 	errno = 0;
 	if (ioctl(dl0d->fd, TIOCMGET, &flags) < 0) {
-		fprintf(stderr, 
+		fprintf(stderr,
 			FLFMT "open: Ioctl TIOCMGET failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -486,7 +486,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 	flags &= ~clearflags;
 
 	if (ioctl(dl0d->fd, TIOCMSET, &flags) < 0) {
-		fprintf(stderr, 
+		fprintf(stderr,
 			FLFMT "open: Ioctl TIOCMSET failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -510,6 +510,7 @@ const void *buf, const size_t count)
 {
 	return write(dl0d->fd, buf, count);
 }
+
 
 #if 0
 //old tty_read
@@ -586,14 +587,12 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 }
-#else
-// goes with previous #if 0 (replacing old tty_read)
+#else	// previous #if 0 (replacing old tty_read)
 
 /*
  * We have to be read to loop in write since we've cleared SA_RESTART.
  */
 
-//#if 1
 
 ssize_t
 diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
@@ -685,14 +684,12 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		/* Unspecific Error */
 		return (diag_iseterr(DIAG_ERR_GENERAL));
 	}
-}
+}	//diag_tty_read
 
-//#else
-#endif
+#endif	//if 0
 
 
-#else
-//# goes with previous #if linux && posix==0
+#else	// # if linux && posix==0
 ssize_t
 diag_tty_write(struct diag_l0_device *dl0d,
 const void *buf, const size_t count)
@@ -779,7 +776,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		then.tv_sec, then.tv_usec);
 #endif
 #endif
-	
+
 	errno = 0;
 	p = (char *)buf;	/* For easy pointer I/O */
 	n = 0;
@@ -801,9 +798,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 #if !defined(_POSIX_TIMERS)
 		(void)gettimeofday(&now, NULL);
 		dl0d->expired = timercmp(&now, &then, >);
-#if 0
 		fprintf(stderr, "now %d:%d\n", now.tv_sec, now.tv_usec);
-#endif
 #endif
 	}
 
@@ -830,39 +825,36 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 //different _iflush implementations (POSIX or not)
 // ret 0 if ok
+int diag_tty_iflush(struct diag_l0_device *dl0d) {
 #if defined(__linux__) && (TRY_POSIX == 0)
 /*
  * Original Linux input-flush implementation that uses the select timeout:
  * I shortened the timeout from 150ms in case the caller needs to receive a byte soon
  * (ex.: after an iso9141 slow init)
  */
-int diag_tty_iflush(struct diag_l0_device *dl0d)
-{
 	char buf[MAXRBUF];
 	int i, rv;
 
 	/* Read any old data hanging about on the port */
-	rv = diag_tty_read(dl0d, buf, sizeof(buf), 30);
+	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_OPEN))
 	{
 		fprintf(stderr, FLFMT "%d junk bytes discarded: ", FL,
 			rv);
 		for (i=0; i<rv; i++)
-			fprintf(stderr, "0x%x ", buf[i] & 0xff); 
+			fprintf(stderr, "0x%x ", buf[i] & 0xff);
 		fprintf(stderr,"\n");
 	}
 
 	return 0;
-}
-
-//#endif
-
 #else
 /*
  * POSIX serial I/O input flush:
- * this one has no timeout...
+ * it also calls diag_tty_read with IFLUSH_TIMEOUT.
  */
-int diag_tty_iflush(struct diag_l0_device *dl0d) {
+ 	char buf[MAXRBUF];
+	int rv;
+
 	errno = 0;
 	if (tcflush(dl0d->fd, TCIFLUSH) < 0) {
 		fprintf(stderr, FLFMT "TCIFLUSH on fd %d returned %s.\n",
@@ -870,35 +862,125 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+
+	/* Read any old data hanging about on the port */
+	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
+	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA))
+	{
+		fprintf(stderr, FLFMT "at least %d junk bytes discarded: ", FL, rv);
+		diag_data_dump(stderr, (void *) buf, (size_t) rv);
+		fprintf(stderr,"\n");
+	}
 	return 0;
-}
+
 #endif
+} //diag_tty_iflush
 
 
 
 //different tty_break implementations depending on __linux__ ; TRY_POSIX; TIOCSBRK; __CYGWIN__
+int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
+{
+#ifdef TIOCSBRK
+// TIOCSBRK sounds like the ideal way to send a break. TIOCSBRK is not POSIX.
+/*
+ * This one returns right after clearing the break. This is more generic and
+ * can be used to bit-bang a 5bps byte.
+ */
+	if (tcdrain(dl0d->fd)) {
+			fprintf(stderr, FLFMT "tcdrain returned %s.\n",
+				FL, strerror(errno));
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
 
-#if defined(__linux__) && (TRY_POSIX == 0)
+	if (ioctl(dl0d->fd, TIOCSBRK, 0) < 0) {
+		fprintf(stderr,
+			FLFMT "open: Ioctl TIOCSBRK failed %s\n", FL, strerror(errno));
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	diag_os_millisleep(ms);
+
+	if (ioctl(dl0d->fd, TIOCCBRK, 0) < 0) {
+		fprintf(stderr,
+			FLFMT "open: Ioctl TIOCCBRK failed %s\n", FL, strerror(errno));
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	return 0;
+
+#elif defined(__linux__) && (TRY_POSIX == 0)
 
 #warning ******* Compiling diag_tty_break with a fixed 25ms setbreak !
 #warning ******* DUMB interfaces may not work properly !!
-/*
- * diag_tty_break
- * fixed 25ms (1 byte @ 360bps) break and returns after [ms] !!
- * this makes it unusable for the manual 5bps init.
- * However, it possibly makes tWUP more precise; in ISO 14230, tWUP
- * should be 50ms +/- 1ms !
- */
-int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
-{
-	char cbuf;
-	struct timeval tv;
-	int xferd;
-	struct diag_serial_settings set;
+	if (ms<25)
+		return 0;
+
+	return diag_tty_fastbreak(dl0d, ms);
+
+#elif defined(__CYGWIN__)
+//This was needed before ~2004, but cygwin apparently supports TIOC*BRK now.
+// XXX:This implementation can probably be deleted if the native win32 port
+// proves to work reliably; would there be any other reason to use cygwin ?
+//This one also returns right after clearing the break, which is better.
+
+#include <io.h>
+#include <w32api/windows.h>
+
+#warning diag_tty_break on CYGWIN is untested but might work.
+#warning Please note freediag can be compiled as a native win32
+#warning application, cygwin is not required !
+	HANDLE hd;
+	long h;
 
 	/*
-	 *	We need to send an 25ms (+/- 1ms) break
-	 *	and then wait 25ms. We must have waited Tidle (300ms) first
+	 * I'm going through this convoluted two-step conversion
+	 * to avoid compiler warnings:
+	 */
+
+	h = get_osfhandle(dl0d->fd);
+	hd = (HANDLE)h;
+
+	if (tcdrain(dl0d->fd)) {
+			fprintf(stderr, FLFMT "tcdrain returned %s.\n",
+				FL, strerror(errno));
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
+
+	SetCommBreak(hd);
+	diag_os_millisleep(ms);
+	ClearCommBreak(hd);
+
+	return 0;
+#else
+/* On some systems, at least on AIX, you can use "tcsendbreak" because the
+ * duration flag just happens to be the count in ms.  There is no good
+ * POSIX way to get the short breaks, unfortunately.
+ */
+#error No known way to send short breaks on your system !
+#endif	//if .. for diag_tty_break
+}	//diag_tty_break
+
+
+
+/*
+ * diag_tty_fastbreak
+ * fixed 25ms (1 byte @ 360bps) break and returns [ms] after starting the break.
+ * it also sets 10.4kbps 8N1, hardcoded. XXX find a way to make this neater..
+ * we'll probably have to add a ->pset member to diag_l0_device to store the
+ * "desired" setting. And use that to call diag_tty_setup to restore settings...
+ */
+int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
+	uint8_t cbuf;
+	struct timeval tv1,tv2,tvdiff;
+	int xferd;
+	struct diag_serial_settings set;
+	unsigned int msremain;
+
+	if (ms<25)
+		return diag_iseterr(DIAG_ERR_TIMEOUT);
+
+	/*
 	 *
 	 *	The trouble here is Linux doesn't let us be that accurate sending
 	 *	a break - so we do it by sending a '0x00' at a baud rate that means
@@ -914,14 +996,17 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
 
-	diag_tty_setup(dl0d, &set);
+	if (diag_tty_setup(dl0d, &set)) {
+		fprintf(stderr, FLFMT "Could not set 360bps for fastbreak !\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
-	gettimeofday(&tv,NULL);
+	gettimeofday(&tv1,NULL);
 	/* Send a 0x00 byte message */
 	diag_tty_write(dl0d, "", 1);
-	
+
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "%04ld.%03ld : break start\n", FL, tv.tv_sec, tv.tv_usec);
+		fprintf(stderr, FLFMT "%04ld.%03ld : break start\n", FL, tv1.tv_sec, tv1.tv_usec);
 	}
 
 	/*
@@ -945,87 +1030,31 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
+	//we probably have a few ms left;
+	//restore 10400bps:
+	set.speed = 10400;
+	if (diag_tty_setup(dl0d, &set)) {
+		fprintf(stderr, FLFMT "Could not restore settings after fastbreak!\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	/* Now wait the requested number of ms */
-	gettimeofday(&tv,NULL);
-	diag_os_millisleep(ms);
+	gettimeofday(&tv2,NULL);
+
+	timersub(&tv2, &tv1, &tvdiff);	//tvdiff=elapsed time since start of break
+	if (tvdiff.tv_usec > (int)(ms*1000))
+		return 0;	//already finished
+
+	msremain = ms - (tvdiff.tv_usec / 1000);
+
+	diag_os_millisleep(msremain);
+
+	gettimeofday(&tv2, NULL);
+	timersub(&tv2, &tv1, &tvdiff);
+
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "%04ld.%03ld : end of WUP\n", FL, tv.tv_sec, tv.tv_usec);
+		fprintf(stderr, FLFMT "Fast break finished : tWUP=%ld\n", FL, tvdiff.tv_usec);
 	}
 
 	return 0;
 }
-#elif defined(TIOCSBRK)
-/*
- * This one returns right after clearing the break. This is more generic and
- * can be used to bit-bang a 5bps byte.
- */
-int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
-{
-	if (tcdrain(dl0d->fd)) {
-			fprintf(stderr, FLFMT "tcdrain returned %s.\n",
-				FL, strerror(errno));
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
-
-	if (ioctl(dl0d->fd, TIOCSBRK, 0) < 0) {
-		fprintf(stderr, 
-			FLFMT "open: Ioctl TIOCSBRK failed %s\n", FL, strerror(errno));
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-
-	diag_os_millisleep(ms);
-
-	if (ioctl(dl0d->fd, TIOCCBRK, 0) < 0) {
-		fprintf(stderr, 
-			FLFMT "open: Ioctl TIOCCBRK failed %s\n", FL, strerror(errno));
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-
-	return 0;
-}
-#elif defined(__CYGWIN__)
-//This was needed before ~2004, but cygwin apparently supports TIOC*BRK now.
-// XXX:This implementation can probably be deleted if the native win32 port
-// proves to work reliably; would there be any other reason to use cygwin ?
-// 
-
-#include <io.h>
-#include <w32api/windows.h>
-
-#warning diag_tty_break on CYGWIN is untested but might work.
-#warning Please note freediag can be compiled as a native win32
-#warning application, cygwin is not required !
-//This one also returns right after clearing the break, which is the correct method.
-int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
-{
-	HANDLE hd;
-	long h;
-
-	/*
-	 * I'm going through this convoluted two-step conversion
-	 * to avoid compiler warnings:
-	 */
-
-	h = get_osfhandle(dl0d->fd);
-	hd = (HANDLE)h;
-
-	if (tcdrain(dl0d->fd)) {
-			fprintf(stderr, FLFMT "tcdrain returned %s.\n",
-				FL, strerror(errno));
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
-
-	SetCommBreak(hd);
-	diag_os_millisleep(ms);
-	ClearCommBreak(hd);
-
-	return 0;
-}
-#else
-/* On some systems, at least on AIX, you can use "tcsendbreak" because the
- * duration flag just happens to be the count in ms.  There is no good
- * POSIX way to get the short breaks, unfortunately.
- */
-#error No known way to send short breaks on your system.
-#endif

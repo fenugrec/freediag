@@ -187,6 +187,8 @@ struct diag_l0
 
 int diag_l1_init(void);
 int diag_l1_end(void);
+//diag_l1_initbus : calls directly ->diag_l0_initbus. Must return as soon as possible,
+//and restore original port settings (speed, etc)
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 //diag_l1_open : calls diag_l0_open with the specified L1 protocol
 struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, int L1protocol);

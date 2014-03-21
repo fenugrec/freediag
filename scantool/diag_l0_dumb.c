@@ -50,13 +50,24 @@ struct diag_l0_dumb_device
 
 
 #define BPS_PERIOD 200		//length of 5bps bits. The idea is to make this configurable eventually by adding a user-settable offset
+#define WUPFLUSH 10		//should be between 5 and ~15 ms; this is the time we allow diag_tty_read to purge the break after a fast init
+	/*
+	 * NB, most OS delay implementations, other than for highest priority
+	 * tasks on a real-time system, only promise to sleep "at least" what
+	 * is requested, and only resume at a scheduling quantum, etc.
+	 * Since baudrate must be 5baud +/ 5%, we use the -5% value
+	 * and let the system extend as needed
+	 */
+	 // The logical solution is to add a user-configurable (or auto-detected) offset. Not implemented yet.
 
 // global flags set according to particular interface type (VAGtool vs SE etc.)
 static unsigned int dumb_flags=0;
-#define USE_LLINE	0x01		//interface maps L line to RTS : setting RTS pulls L down to 0 .
+#define USE_LLINE	0x01		//interface maps L line to RTS : setting RTS normally pulls L down to 0 .
 #define CLEAR_DTR 0x02		//have DTR cleared constantly (unusual, disabled by default)
 #define SET_RTS 0x04			//have RTS set constantly (also unusual, disabled by default).
 #define MAN_BREAK 0x08		//force bitbanged breaks for inits; enabled by default
+#define LLINE_INV 0x10		//invert polarity of the L line if set. see doc/dumb_interfaces.txt
+#define FAST_BREAK 0x20		//do we use diag_tty_fastbreak for iso14230-style fast init.
 //warning : MAN_BREAK is also hardcoded in scantool_set. Sorry.
 
 static const struct diag_l0 diag_l0_dumb;
@@ -149,15 +160,15 @@ diag_l0_dumb_close(struct diag_l0_device **pdl0d)
 /*
  * Fastinit: ISO14230-2 sec 5.2.4.2.3
  * Caller should have waited W5 (>300ms) before calling this (from _initbus only!)
- * NOTE : this "ignores" some dumb_flags, i.e. the L-Line polarity is hardcoded.
- * TODO : check the actual polarity of the L line, it may be backwards...
- * we suppose the L line was at the correct state (1) before starting.
+ * we assume the L line was at the correct state (1) during that time.
  * returns 0 (success), 50ms after starting the wake-up pattern.
  */
 static int
 diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 {
 	int rv=0;
+	uint8_t cbuf[MAXRBUF];
+
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p fastinit\n",
 			FL, (void *)dl0d);
@@ -168,41 +179,55 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 	// we do it almost perfectly; the L \_/ pulse starts before and ends after the K \_/ pulse.
 
 	if (dumb_flags & USE_LLINE) {
-		// do K+L only if the user wants to do both (and the interface supports it)
-		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & SET_RTS)) < 0) {
+		// do K+L only if the user wants to do both
+		if (dumb_flags & FAST_BREAK) {
+			//but we can't use diag_tty_fastbreak while doing the L-line.
+			fprintf(stderr, FLFMT "Warning : not using L line for FAST_BREAK.\n", FL);
+			rv=diag_tty_fastbreak(dl0d, 50-WUPFLUSH);
+		} else {
+			//normal fast break on K and L.
+			//note : if LLINE_INV is 1, then we need to clear RTS to pull L down !
+			if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
+				fprintf(stderr, FLFMT "open: Failed to set L\\_\n", FL);
+				return diag_iseterr(DIAG_ERR_GENERAL);
+				}
+			rv=diag_tty_break(dl0d, 25);   //K line low for 25ms
+				/* Now restore DTR/RTS */
+			if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 				fprintf(stderr, FLFMT "open: Failed to set modem control lines\n",
 					FL);
-				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
-		rv=diag_tty_break(dl0d, 25);   //K line low for 25ms
-			/* Now put DTR/RTS back correctly so RX side is enabled */
-		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
-			fprintf(stderr, FLFMT "open: Failed to set modem control lines\n",
-				FL);
-		}
+			diag_os_millisleep(25-WUPFLUSH);	//complete tWUP=50ms
+		}	//if FAST_BREAK or not
 	} else {
 		// do K line only
-		rv=diag_tty_break(dl0d, 25);   //K line low for 25ms
+		if (dumb_flags & FAST_BREAK) {
+			rv=diag_tty_fastbreak(dl0d, 50-WUPFLUSH);
+		} else {
+			rv=diag_tty_break(dl0d, 25);   //K line low for 25ms
+			diag_os_millisleep(25-WUPFLUSH);
+		}
 	}
-	// here we should have just cleared the break, so we need to wait another 25ms.
-	diag_os_millisleep(25);
+	// here we have WUPFLUSH ms before tWUP is done; we use this
+	// short time to flush RX buffers. (L2 needs to send a StartComm
+	// request very soon.)
+
+	diag_tty_read(dl0d, &cbuf, sizeof(cbuf), WUPFLUSH);
+
 
 	//there may have been a problem in diag_tty_break, if so :
 	if (rv) {
 		fprintf(stderr, FLFMT " L0 fastinit : problem !\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	/* Now let the caller send a startCommunications message */
 	return 0;
 }
 
 
 /* Do the 5 BAUD L line stuff while the K line is twiddling */
-// Only called for slow init if USE_LLINE is set in dumb_flags (VAGTOOL, Jeff Noxon, other K+L interfaces)
-// setting RTS will pull L down. Caller has waited before calling
-// Exits after stop bit is finished + time for diag_tty_read to get 1 echo byte (max 20ms) (NOT the sync byte!)
-// note : this isn't called if we're doing the K line manually ! (see MAN_BREAK)
-// TODO : check the actual polarity...
+// Only called from slowinit if USE_LLINE is set in dumb_flags *and* MAN_BREAK is not set.
+// Caller must have waited before calling; DTR and RTS should be set correctly beforehand.
+// Returns after stop bit is finished + time for diag_tty_read to flush echo. (max 20ms) (NOT the sync byte!)
 
 static void
 diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
@@ -211,32 +236,16 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	 * The bus has been high for w0 ms already, now send the
 	 * 8 bit ecuaddr at 5 baud LSB first
 	 *
-	 * NB, most OS delay implementations, other than for highest priority
-	 * tasks on a real-time system, only promise to sleep "at least" what
-	 * is requested, and only resume at a scheduling quantum, etc.
-	 * Since baudrate must be 5baud +/ 5%, we use the -5% value
-	 * and let the system extend as needed
 	 */
 	int i, rv;
-	uint8_t cbuf;
+//	uint8_t cbuf[10];
 
-	/* Initial state, DTR High, RTS low */
-
-	/*
-	 * Set DTR low during this, receive circuitry
-	 * will see a break for that time, that we'll clear out later
-	 * XXX Why would we see a break ? On most interfaces, setting DTR low will only prevent the RXD pin from
-	 * being pulled up; the RXD pin therefore is always negative (logical 1) ?
-	 */
-	if (diag_tty_control(dl0d, 0, 1) < 0) {
-		fprintf(stderr, FLFMT "open: Failed to set modem control lines\n",
-			FL);
-	}
-
+	// We also toggle DTR to disable RXD (blocking it at logical 1).
+	// However, at least one system I tested doesn't react well to
+	// DTR-toggling.
 	/* Set RTS low, for 200ms (Start bit) */
-	if (diag_tty_control(dl0d, 0, 0) < 0) {
-		fprintf(stderr, FLFMT "open: Failed to set modem control lines\n",
-			FL);
+	if (diag_tty_control(dl0d, (dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
+		fprintf(stderr, FLFMT "open: Failed to set modem control lines\n", FL);
 		return;
 	}
 	diag_os_millisleep(BPS_PERIOD);		/* 200ms -5% */
@@ -244,10 +253,10 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	for (i=0; i<8; i++) {
 		if (ecuaddr & (1<<i)) {
 			/* High */
-			rv = diag_tty_control(dl0d, 0, 1);
+			rv = diag_tty_control(dl0d, (dumb_flags & CLEAR_DTR), (dumb_flags & LLINE_INV));
 		} else {
 			/* Low */
-			rv = diag_tty_control(dl0d, 0, 0);
+			rv = diag_tty_control(dl0d, (dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));
 		}
 
 		if (rv < 0) {
@@ -258,7 +267,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 		diag_os_millisleep(BPS_PERIOD);		/* 200ms -5% */
 	}
 	/* And set high for the stop bit */
-	if (diag_tty_control(dl0d, 0, 1) < 0) {
+	if (diag_tty_control(dl0d, (dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
 		fprintf(stderr, FLFMT "open: Failed to set modem control lines\n",
 			FL);
 		return;
@@ -271,8 +280,8 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 			FL);
 	}
 
-	/* And clear out the break */
-	diag_tty_read(dl0d, &cbuf, 1, 20);
+	/* And clear out the break XXX no, _slowinit will do this for us after calling dumb_Lline*/
+//	diag_tty_read(dl0d, &cbuf, sizeof(cbuf), 20);
 
 	return;
 }
@@ -282,9 +291,9 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
  *	We need to send a byte (the address) at 5 baud, then
  *	switch back to 10400 baud
  *	and then wait W1 (60-300ms) until we get Sync byte 0x55.
- * Caller must have waited with bus=idle ! Tidle>300ms for 9141& 14230
+ * Caller must have waited with bus=idle,  Tidle>300ms for 9141& 14230
  * this optionally does the L_line stuff according to the flags in dumb_flags.
- * Ideally returns 0 (success) immediately after recieving Sync byte.
+ * Ideally returns 0 (success) immediately after receiving Sync byte.
  *
  */
 static int
@@ -303,7 +312,6 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 
 
 	//two methods of sending at 5bps. Most USB-serial converts don't support such a slow bitrate !
-	//It might be possible to auto-detect this capability ?
 	if (dumb_flags & MAN_BREAK) {
 		//MAN_BREAK means we bitbang K and optionally L as well.
 		if (dumb_flags & USE_LLINE) {
@@ -312,21 +320,21 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 
 			int bitcounter;
 			uint8_t tempbyte=in->addr;
-			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1);	//L is the logical opposite of RTS...
+			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));	//L is the logical opposite of RTS...
 			diag_tty_break(dl0d, BPS_PERIOD);	//start startbit
 			for (bitcounter=0; bitcounter<=7; bitcounter++) {
 				//LSB first.
 				if (tempbyte & 1) {
-					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0);	//release L
+					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & LLINE_INV));	//release L
 					diag_os_millisleep(BPS_PERIOD);
 				} else {
-					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1);	//pull L down
+					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));	//pull L down
 					diag_tty_break(dl0d, BPS_PERIOD);
 				}
 				tempbyte = tempbyte >>1;
 			}
 			//at this point we just finished the last bit, we'll wait the duration of the stop bit.
-			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0);	//release L
+			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));	//release L
 			diag_os_millisleep(BPS_PERIOD);	//stop bit
 		} else {
 			//do manual break on K only.
@@ -348,8 +356,8 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		//Usually the next thing to happen is the ECU will send the sync byte (0x55) within W1
 		// (60 to 300ms)
 		// so we have 60ms to diag_tty_iflush, the risk is if it takes too long
+		// the "sync pattern byte" may be lost !
 		// TODO : add before+after timing check to see if diag_tty_iflush takes too long
-		// the "sync pattern byte" may be lost ?
 		diag_tty_iflush(dl0d);  //try it anyway
 	} else {	//so it's not a man_break
 		/* Set to 5 baud, 8 N 1 */
@@ -374,8 +382,8 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 			// If there's no manual L line to do, timeout needs to be longer to receive echo
 			tout=2400;
 		}
-		//TODO : actually test this. It isn't consistent with USE_LLINE
-		// and without : diag_l0_dum_Lline() already tried to read 1 byte ?
+		//TODO : try with diag_tty_iflush instead of trying to read a single echo byte?
+		//I expect the RX buffer might have more than 1 spurious byte in it at this point...
 		/*
 		 * And read back the single byte echo, which shows TX completes
 		 * - At 5 baud, it takes 2 seconds to send a byte ..
@@ -405,7 +413,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		}
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit 5bps address echo 0x%x\n",
-					FL, xferd);
+					FL, cbuf);
 		if (diag_tty_setup(dl0d, &dev->serial)) {
 			//reset original settings
 			fprintf(stderr, FLFMT "slowinit: could not reset serial settings !\n", FL);
@@ -413,7 +421,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		}
 	}	//if  !man_break
 	//Here, we sent 0x33 @ 5bps and read back the echo or purged it.
-	diag_os_millisleep(60);		//W1 minimum
+	diag_os_millisleep(60-IFLUSH_TIMEOUT);		//W1 minimum, less the time we spend in diag_tty_iflush
 	//And the ECU is about to, or already, sending the sync byte 0x55.
 	/*
 	 * Ideally we would now measure the length of the received
@@ -443,6 +451,8 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 			fprintf(stderr, FLFMT "slowinit link %p, got sync byte 0x%x\n",
 				FL, (void *)dl0d, cbuf);
 	}
+	//If all's well at this point, we just read the sync pattern byte. L2 will take care
+	//of reading + echoing the keybytes
 	return 0;
 }
 
