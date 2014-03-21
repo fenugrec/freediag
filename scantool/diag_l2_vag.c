@@ -102,7 +102,7 @@ diag_l2_proto_vag_decode(char *data, int len,
 			{
 				if (diag_l2_debug & DIAG_DEBUG_PROTO)
 					fprintf(stderr, FLFMT "decode len short \n", FL);
-				return(diag_iseterr(DIAG_ERR_INCDATA));
+				return diag_iseterr(DIAG_ERR_INCDATA);
 			}
 			*hdrlen = 4;
 			*datalen = data[3];
@@ -114,9 +114,9 @@ diag_l2_proto_vag_decode(char *data, int len,
 		case 0x00:
 			/* Addresses not supplied, additional len byte */
 			if (first_frame)
-				return(diag_iseterr(DIAG_ERR_BADDATA));
+				return diag_iseterr(DIAG_ERR_BADDATA);
 			if (len < 2)
-				return(diag_iseterr(DIAG_ERR_INCDATA));
+				return diag_iseterr(DIAG_ERR_INCDATA);
 			*hdrlen = 2;
 			*datalen = data[1];
 			if (dest)
@@ -126,7 +126,7 @@ diag_l2_proto_vag_decode(char *data, int len,
 			break;
 		case 0X40:
 			/* CARB MODE */
-			return(diag_iseterr(DIAG_ERR_BADDATA));
+			return diag_iseterr(DIAG_ERR_BADDATA);
 		}
 	}
 	else
@@ -138,7 +138,7 @@ diag_l2_proto_vag_decode(char *data, int len,
 		case 0xC0:
 			/* Addresses supplied, NO additional len byte */
 			if (len < 3)
-				return(diag_iseterr(DIAG_ERR_INCDATA));
+				return diag_iseterr(DIAG_ERR_INCDATA);
 			*hdrlen = 3;
 			*datalen = dl;
 			if (dest)
@@ -149,7 +149,7 @@ diag_l2_proto_vag_decode(char *data, int len,
 		case 0x00:
 			/* Addresses not supplied, No additional len byte */
 			if (first_frame)
-				return(diag_iseterr(DIAG_ERR_BADDATA));
+				return diag_iseterr(DIAG_ERR_BADDATA);
 			*hdrlen = 1;
 			*datalen = dl;
 			if (dest)
@@ -159,14 +159,14 @@ diag_l2_proto_vag_decode(char *data, int len,
 			break;
 		case 0X40:
 			/* CARB MODE */
-			return(diag_iseterr(DIAG_ERR_BADDATA));
+			return diag_iseterr(DIAG_ERR_BADDATA);
 		}
 	}
 	/*
 	 * If len is silly [i.e 0] we've got this mid stream
 	 */
 	if (*datalen == 0)
-		return(diag_iseterr(DIAG_ERR_BADDATA));
+		return diag_iseterr(DIAG_ERR_BADDATA);
 
 	/*
 	 * And confirm data is long enough, incl cksum
@@ -174,9 +174,9 @@ diag_l2_proto_vag_decode(char *data, int len,
 	 */
 
 	if (len < (*hdrlen + *datalen + 1))
-		return(diag_iseterr(DIAG_ERR_INCDATA));
+		return diag_iseterr(DIAG_ERR_INCDATA);
 
-	return(0);
+	return 0;
 }
 #endif
 
@@ -247,7 +247,7 @@ UNUSED(int *datalen))
 
 			if (rv < 0)		/* decode failure */
 			{
-				return(rv);
+				return rv;
 			}
 
 			if (diag_l2_debug & DIAG_DEBUG_PROTO)
@@ -275,7 +275,7 @@ UNUSED(int *datalen))
 		}
 	}
 #endif
-	return(rv);
+	return rv;
 }
 
 
@@ -294,16 +294,16 @@ diag_l2_proto_vag_send_byte(struct diag_l2_conn *d_l2_conn, databyte_type databy
 	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		&db, 1, d_l2_conn->diag_l2_p4min);
 	if (rv < 0)
-		return(rv);
+		return rv;
 
 	diag_l2_sendstamp(d_l2_conn); /* update the last sent timer */
 
 	/* Receive the ack */
 
 	if (rx_data != ((~databyte) & 0xFF) )
-		return(0);		/* Wrong data */
+		return 0;		/* Wrong data */
 
-	return(0);
+	return 0;
 }
 #endif
 
@@ -340,23 +340,23 @@ struct diag_l2_conn *d_l2_conn,
 	databyte = blocklen;
 
 	if ( (rv = diag_l2_proto_vag_send_byte(d_l2_conn, databyte)) < 0)
-		return(rv);
+		return rv;
 
 
 	/* Now send the sequence nr */
 	if ( (rv = diag_l2_proto_vag_send_byte(d_l2_conn, dp->seq_nr)) < 0)
-		return(rv);
+		return rv;
 
 	/* Now send the command */
 	if ( (rv = diag_l2_proto_vag_send_byte(d_l2_conn, cmd)) < 0)
-		return(rv);
+		return rv;
 
 	/* Now send the data */
 
 	for (i=0; i < len; i++)
 	{
 		if ( (rv = diag_l2_proto_vag_send_byte(d_l2_conn, data[i])) < 0)
-			return(rv);
+			return rv;
 	}
 
 	/* And send 0x03 as end of frame */
@@ -366,7 +366,7 @@ struct diag_l2_conn *d_l2_conn,
 	/* And switch to show ECU is master */
 	dp->master = 0;
 
-	return(0);
+	return 0;
 }
 #endif
 
@@ -400,7 +400,7 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 	struct diag_l1_initbus_args in;
 
 	if (diag_calloc(&dp, 1))
-		return(DIAG_ERR_NOMEM);
+		return diag_iseterr(DIAG_ERR_NOMEM);
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
 
@@ -425,7 +425,7 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 	{
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
-		return (rv);
+		return diag_iseterr(rv);
 	}
 
 	/* Flush unread input, then wait for idle bus. */
@@ -464,7 +464,7 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 	if ((cbuf[0] != 0x01) || (cbuf[1] != 0x8a)) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
-		return(diag_iseterr(DIAG_ERR_WRONGKB));
+		return diag_iseterr(DIAG_ERR_WRONGKB);
 	}
 
 	/* Note down the mode bytes */
@@ -491,7 +491,7 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 	 */
 
 
-	return(0);
+	return 0;
 }
 
 //free what _startcomms alloc'ed
@@ -542,7 +542,7 @@ diag_l2_proto_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		fprintf(stderr, FLFMT "send about to return %d\n",
 				FL, rv);
 
-	return(rv);
+	return rv;
 }
 
 /*
@@ -571,7 +571,7 @@ diag_l2_proto_vag_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	rv = diag_l2_proto_vag_int_recv(d_l2_conn, timeout, data, &datalen);
 
 	if (rv < 0)	/* Failure */
-		return(rv);
+		return rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 	{
@@ -594,7 +594,7 @@ diag_l2_proto_vag_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		fprintf(stderr, FLFMT "rcv callback completed\n", FL);
 	}
 
-	return(0);
+	return 0;
 }
 
 static struct diag_msg *
@@ -608,7 +608,7 @@ diag_l2_proto_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	if (rv < 0)
 	{
 		*errval = rv;
-		return(NULL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* And wait for response */
@@ -626,7 +626,7 @@ diag_l2_proto_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		*errval = DIAG_ERR_TIMEOUT;
 		rmsg = NULL;
 	}
-	return(rmsg);
+	return rmsg;
 }
 
 

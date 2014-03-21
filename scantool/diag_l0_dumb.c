@@ -300,7 +300,7 @@ static int
 diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 	struct diag_l0_dumb_device *dev)
 {
-	uint8_t cbuf;
+	uint8_t cbuf[10];
 	int xferd, rv;
 	int tout;
 	struct diag_serial_settings set;

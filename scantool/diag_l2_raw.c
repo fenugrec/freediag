@@ -90,7 +90,7 @@ diag_l2_proto_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		fprintf(stderr, FLFMT "about to return %d\n",
 				FL, rv);
 
-	return(rv);
+	return rv;
 }
 
 /*
@@ -110,7 +110,7 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		rxbuf, sizeof(rxbuf), timeout);
 
 	if (rv <= 0 || rv > 255)		/* Failure, or 0 bytes (which cant happen) */
-		return(rv);
+		return rv;
 
 
 	msg.len = (uint8_t) rv;
@@ -133,7 +133,7 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		callback(handle, &msg);
 
 
-	return(0);
+	return 0;
 }
 
 /*
@@ -150,7 +150,7 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	if (rv < 0)
 	{
 		*errval = rv;
-		return(NULL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* And wait for response */
@@ -172,7 +172,7 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		rmsg->fmt = 0;
 		(void)gettimeofday(&rmsg->rxtime, NULL);
 	}
-	return(rmsg);
+	return rmsg;
 }
 
 const struct diag_l2_proto diag_l2_proto_raw = {

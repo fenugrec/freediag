@@ -65,15 +65,15 @@ diag_l3_vag_start(struct diag_l3_conn *d_l3_conn)
 			FL, l2data.kb1, l2data.kb2);
 
 	if (l2data.kb1 != 0x01)
-		return(diag_iseterr(DIAG_ERR_WRONGKB));
+		return diag_iseterr(DIAG_ERR_WRONGKB);
 	if (l2data.kb2 != 0x8A)
-		return(diag_iseterr(DIAG_ERR_WRONGKB));
+		return diag_iseterr(DIAG_ERR_WRONGKB);
 
 	/* OK, ISO 9141 keybytes are correct ! */
 
 	/* Get the initial stuff the ECU tells us */
 
-	return(0);
+	return 0;
 }
 
 
@@ -140,7 +140,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 	}
 	smartcat(buf, bufsize, "\n");
 
-	return(buf);
+	return buf;
 }
 
 const diag_l3_proto_t diag_l3_vag = {

@@ -100,7 +100,7 @@ static int cmd_dyno_mass(int argc, char **argv)
 	else
 		printf("mass: %d kg\n", dyno_get_mass());
 
-	return (0);
+	return 0;
 }
 
 /******************************************************************************
@@ -208,7 +208,7 @@ int fake_loss_measure_data()
 
   counter++;
 
-  return (speed);
+  return speed;
 }
 
 int counter2;
@@ -271,7 +271,7 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
   if (dyno_get_mass() <= 0)
   {
 		printf("The mass of the vehicle has not been set, please set the mass first\n");
-		return(CMD_OK);
+		return CMD_OK;
   }
 
   /* Show instructions */
@@ -344,7 +344,7 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
   /* now dyno loss has been done */
   dyno_loss_done = 1;
 
-  return(CMD_OK);
+  return CMD_OK;
 }
 
 /*
@@ -383,7 +383,7 @@ static int cmd_dyno_setloss(int argc, char **argv)
     dyno_loss_done = 1;
   }
 
-  return(CMD_OK);
+  return CMD_OK;
 }
 
 /*****************************************************************************
@@ -413,14 +413,14 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
   if (dyno_get_mass() <= 0)
   {
 		printf("The mass of the vehicle has not been set, please set the mass first\n");
-		return(CMD_OK);
+		return CMD_OK;
   }
 
   /* Check mass */
   if (dyno_loss_done <= 0)
   {
 		printf("The loss determination has not been done, please use command loss or setloss first\n");
-		return(CMD_OK);
+		return CMD_OK;
   }
 
   /* Show instructions */
@@ -487,7 +487,7 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
 
   printf("\n");
 
-  return(CMD_OK);
+  return CMD_OK;
 }
 
 
@@ -542,7 +542,7 @@ static int cmd_dyno_measures(UNUSED(int argc), UNUSED(char **argv))
   printf("%d measures.\n", nb_measures);
   printf("\n");
 
-  return(CMD_OK);
+  return CMD_OK;
 }
 
 
@@ -691,7 +691,7 @@ static int cmd_dyno_result(UNUSED(int argc), UNUSED(char **argv))
   if (dyno_nb_results <= 0)
   {
 		printf("Dyno run has not been done, please do a run first\n");
-		return(CMD_OK);
+		return CMD_OK;
   }
 
   display_results(dyno_results, dyno_nb_results);
@@ -710,11 +710,11 @@ static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv))
   if (dyno_nb_results <= 0)
   {
 		printf("Dyno run has not been done, please do a run first\n");
-		return(CMD_OK);
+		return CMD_OK;
   }
 
   display_graphs(dyno_results, dyno_nb_results);
-  return(CMD_OK);
+  return CMD_OK;
 }
 
 
@@ -735,7 +735,7 @@ static int cmd_dyno_save(int argc, char **argv)
   if (dyno_nb_results <= 0)
   {
 		printf("Dyno run has not been done, please do a run first\n");
-		return(CMD_OK);
+		return CMD_OK;
   }
 
 
@@ -756,7 +756,7 @@ static int cmd_dyno_save(int argc, char **argv)
 
     printf("Enter filename: ");
     if (fgets(filename, (int)nbytes, stdin) == 0)
-      return(CMD_OK);
+      return CMD_OK;
 
     /* Remove pending "\n" and "\r", if any */
     while ((filename[strlen(filename)-1] == '\n') ||

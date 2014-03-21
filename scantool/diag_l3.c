@@ -96,7 +96,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		 * Malloc us a L3
 		 */
 		if (diag_calloc(&d_l3_conn, 1))
-			return(0);
+			return 0;
 
 		d_l3_conn->d_l3l2_conn = d_l2_conn;
 		d_l3_conn->d_l3_proto = dp;
@@ -136,7 +136,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		fprintf(stderr,FLFMT "start returns %p\n",
 			FL, (void *)d_l3_conn);
 
-	return(d_l3_conn);
+	return d_l3_conn;
 }
 
 /*
@@ -172,7 +172,7 @@ int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 
 	free(d_l3_conn);
 
-	return(rv);
+	return rv;
 }
 
 int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
@@ -183,7 +183,7 @@ int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	(void)gettimeofday(&d_l3_conn->timer, NULL);
 	rv = dp->diag_l3_proto_send(d_l3_conn, msg);
 
-	return(rv);
+	return rv;
 }
 
 int diag_l3_recv(struct diag_l3_conn *d_l3_conn, int timeout,
@@ -191,8 +191,8 @@ int diag_l3_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 {
 	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
 
-	return(dp->diag_l3_proto_recv(d_l3_conn, timeout,
-		rcv_call_back, handle));
+	return dp->diag_l3_proto_recv(d_l3_conn, timeout,
+		rcv_call_back, handle);
 }
 
 //TODO : check if *buf should be uint8_t instead ?
@@ -201,7 +201,7 @@ char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 {
 	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
 
-	return(dp->diag_l3_proto_decode(d_l3_conn, msg, buf, bufsize));
+	return dp->diag_l3_proto_decode(d_l3_conn, msg, buf, bufsize);
 }
 
 
@@ -217,12 +217,12 @@ int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, int cmd, void *data)
 		rv = dp->diag_l3_proto_ioctl(d_l3_conn, cmd, data);
 
 	if (rv < 0)
-		return(rv);
+		return rv;
 
 	/* And now the L2 ioctl routine, which will call the L1 one etc */
 	rv = diag_l2_ioctl(d_l3_conn->d_l3l2_conn, cmd, data);
 
-	return(rv);
+	return rv;
 }
 
 
@@ -263,13 +263,13 @@ void diag_l3_timer(void)
 
 int diag_l3_base_start(UNUSED(struct diag_l3_conn *d_l3_conn))
 {
-	return(0);
+	return 0;
 }
 
 
 int diag_l3_base_stop(UNUSED(struct diag_l3_conn *d_l3_conn))
 {
-	return(0);
+	return 0;
 }
 
 /*
@@ -279,7 +279,7 @@ int diag_l3_base_stop(UNUSED(struct diag_l3_conn *d_l3_conn))
 int diag_l3_base_send(UNUSED(struct diag_l3_conn *d_l3_conn),
 	UNUSED(struct diag_msg *msg))
 {
-	return (0);
+	return 0;
 }
 
 /*
@@ -296,5 +296,5 @@ diag_l3_base_recv(UNUSED(struct diag_l3_conn *d_l3_conn),
 	UNUSED(void (* rcv_call_back)(void *handle ,struct diag_msg *)),
 	UNUSED(void *handle))
 {
-	return (0);
+	return 0;
 }

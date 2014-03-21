@@ -276,11 +276,11 @@ diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  */
 int diag_l2_init()
 {
-	if (diag_l2_debug & DIAG_DEBUG_INIT)
-		fprintf(stderr,FLFMT "entered diag_l2_init\n", FL);
-
 	if ( diag_l2_init_done )
 		return 0;
+
+	if (diag_l2_debug & DIAG_DEBUG_INIT)
+		fprintf(stderr,FLFMT "entered diag_l2_init\n", FL);
 
 
 	memset(diag_l2_conbyid, 0, CONBYIDSIZE);

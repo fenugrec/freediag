@@ -125,7 +125,7 @@ cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
 	if (global_state < STATE_SCANDONE)
 	{
 		printf("SCAN has not been done, please do a scan\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	d_conn = global_l3_conn;
@@ -135,7 +135,7 @@ cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
 	if (rv < 0)
 	{
 		printf("rvi: supported types request failed\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	memset(vit_bits, 0, sizeof(vit_bits));
@@ -144,7 +144,7 @@ cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
 	if (msg == NULL)
 	{
 		printf("rvi: no valid information\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 	data = msg->data;
 
@@ -165,7 +165,7 @@ cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
 	else
 		printf("ECU doesn't support CVN request\n");
 
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -177,10 +177,10 @@ cmd_test_cms(UNUSED(int argc), UNUSED(char **argv))
 	if (global_state < STATE_SCANDONE)
 	{
 		printf("SCAN has not been done, please do a scan\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 	do_j1979_cms();
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -190,10 +190,10 @@ cmd_test_ncms(UNUSED(int argc), UNUSED(char **argv))
 	if (global_state < STATE_SCANDONE)
 	{
 		printf("SCAN has not been done, please do a scan\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 	do_j1979_ncms(1);
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -226,7 +226,7 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 	if (global_state < STATE_CONNECTED)
 	{
 		printf("Not connected to ECU\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	/* Do Mode 1 Pid 1 request */
@@ -237,7 +237,7 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 	if ((rv < 0) || (find_ecu_msg(0, 0x41) == NULL))
 	{
 		printf("Mode 1 PID 1 request failed\n");
-		return(CMD_OK);
+		return CMD_OK;
 	}
 
 	/* And process results */
@@ -273,5 +273,5 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 			}
 		}
 	}
-	return(CMD_OK);
+	return CMD_OK;
 }

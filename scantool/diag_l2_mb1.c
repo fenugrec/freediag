@@ -85,7 +85,7 @@ UNUSED(source_type source))
 	/* Set the speed as shown */
 	rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set);
 	if (rv < 0)
-		return (rv);
+		return diag_iseterr(rv);
 
 	/* Flush unread input, then wait for idle bus. */
 	(void)diag_tty_iflush(d_l2_conn->diag_link->diag_l2_dl0d);
@@ -98,7 +98,7 @@ UNUSED(source_type source))
 	in.addr = target;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 	if (rv < 0)
-		return(rv);
+		return diag_iseterr(rv);
 
 	/*
 	 * L0 code should have set correct baud rate now etc
@@ -107,12 +107,12 @@ UNUSED(source_type source))
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		cbuf, 1, 100);
 	if (rv < 0)
-		return(rv);
+		return diag_iseterr(rv);
 	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		&cbuf[1], 1, 100);
 	if (rv < 0)
 	{
-		return(rv);
+		return diag_iseterr(rv);
 	}
 
 	if (diag_l2_debug & DIAG_DEBUG_INIT)
@@ -126,9 +126,9 @@ UNUSED(source_type source))
 	d_l2_conn->diag_l2_kb2 = cbuf[1];
 
 	if (cbuf[0] != 0xC2)
-		return(diag_iseterr(DIAG_ERR_WRONGKB));
+		return diag_iseterr(DIAG_ERR_WRONGKB);
 	if (cbuf[1] != 0xCD)
-		return(diag_iseterr(DIAG_ERR_WRONGKB));
+		return diag_iseterr(DIAG_ERR_WRONGKB);
 
 	/*
 	 * Set the P3max (idle timer) to 1 second
@@ -141,7 +141,7 @@ UNUSED(source_type source))
 	 */
 	(void) diag_l2_proto_mb1_int_recv(d_l2_conn, 1000, rxbuf, sizeof(rxbuf));
 
-	return(rv);
+	return diag_iseterr(rv);
 }
 
 /*
@@ -168,10 +168,10 @@ diag_l2_proto_mb1_decode(uint8_t *data, int len, int *msglen)
 	*msglen = 0;
 
 	if (len < 3)
-		return(diag_iseterr(DIAG_ERR_INCDATA));
+		return diag_iseterr(DIAG_ERR_INCDATA);
 
 	if (data[2] > len)
-		return(diag_iseterr(DIAG_ERR_INCDATA));
+		return diag_iseterr(DIAG_ERR_INCDATA);
 
 	*msglen = data[3];
 
@@ -183,7 +183,7 @@ diag_l2_proto_mb1_decode(uint8_t *data, int len, int *msglen)
 			fprintf(stderr, FLFMT "recv cksum 0x02%x 0x%02x, wanted 0x%x\n",
 				FL, data[len-1] & 0xff,
 				data[len-2] &0xff, cksum & 0xffff);
-		return(diag_iseterr(DIAG_ERR_BADCSUM));
+		return diag_iseterr(DIAG_ERR_BADCSUM);
 	}
 	if (data[len-1] != ((cksum>>8) & 0xff))
 	{
@@ -191,9 +191,9 @@ diag_l2_proto_mb1_decode(uint8_t *data, int len, int *msglen)
 			fprintf(stderr, FLFMT "recv cksum 0x02%x 0x%02x, wanted 0x%x\n",
 				FL, data[len-1] & 0xff,
 				data[len-2] &0xff, cksum & 0xffff);
-		return(diag_iseterr(DIAG_ERR_BADCSUM));
+		return diag_iseterr(DIAG_ERR_BADCSUM);
 	}
-	return(0);
+	return 0;
 }
 
 /*
@@ -244,7 +244,7 @@ diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		else
 			readlen = len - rxoffset;
 	}
-	return(rxoffset);
+	return rxoffset;
 }
 
 
@@ -264,7 +264,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		sizeof(rxbuf));
 
 	if (rv < 0 || rv>(255+4))
-		return(rv);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
@@ -273,7 +273,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if (rv < 5)
 	{
 		/* Bad, minimum message is 5 bytes */
-		return(diag_iseterr(DIAG_ERR_BADDATA));
+		return diag_iseterr(DIAG_ERR_BADDATA);
 	}
 
 	/*
@@ -298,7 +298,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "recv() callback completed\n", FL);
 
-	return(0);
+	return 0;
 }
 
 /*
@@ -356,7 +356,7 @@ diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		fprintf(stderr, FLFMT "send() about to return %d\n",
 				FL, rv);
 
-	return(rv);
+	return rv;
 }
 
 static struct diag_msg *
@@ -371,7 +371,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	if (rv < 0)
 	{
 		*errval = rv;
-		return(NULL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 	/* And wait for response for 1 second */
 
@@ -402,7 +402,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		rmsg->len = (uint8_t) rv - 4;
 		rmsg->fmt = DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY;
 	}
-	return(rmsg);
+	return rmsg;
 }
 
 

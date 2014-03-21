@@ -86,7 +86,7 @@ target_type target, source_type source)
 				FL, (void *)d_l2_conn);
 
 	if (diag_calloc(&dp, 1))
-		return(DIAG_ERR_NOMEM);
+		return diag_iseterr(DIAG_ERR_NOMEM);
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
 
@@ -105,7 +105,7 @@ target_type target, source_type source)
 	diag_os_millisleep(50);
 
 	/* Always OK */
-	return(0);
+	return 0;
 }
 
 /*
@@ -122,7 +122,7 @@ diag_l2_proto_j1850_stopcomms(struct diag_l2_conn* d_l2_conn)
 	d_l2_conn->diag_l2_proto_data=NULL;
 
 	/* Always OK for now */
-	return (0);
+	return 0;
 }
 
 
@@ -214,7 +214,7 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 				buf, (size_t)offset, 0);
 
-	return(rv);
+	return rv;
 }
 
 /*
@@ -252,14 +252,14 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		if (rv < 0)
 		{
 			// Error
-			return(rv);
+			return rv;
 		}
 		dp->rxoffset += rv;
 	}
 	else
 	{
 		// No support for non framing L2 interfaces yet ...
-		return(diag_iseterr(DIAG_ERR_PROTO_NOTSUPP));
+		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 	}
 
 	// Ok, got a complete frame to send upward
@@ -293,7 +293,7 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		else
 		{
 			diag_freemsg(tmsg);
-			return(diag_iseterr(DIAG_ERR_BADDATA));
+			return diag_iseterr(DIAG_ERR_BADDATA);
 		}
 
 		(void)gettimeofday(&tmsg->rxtime, NULL);
@@ -306,7 +306,7 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	}
 
 	dp->state = STATE_ESTABLISHED;
-	return(0);
+	return 0;
 }
 
 
@@ -320,7 +320,7 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 	rv = diag_l2_proto_j1850_int_recv(d_l2_conn, timeout);
 	if (rv < 0)	/* Failed */
-		return(rv);
+		return rv;
 
 	/*
 	 * We now have data stored on the L2 descriptor
@@ -349,7 +349,7 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "rcv callback completed\n", FL);
 
-	return(0);
+	return 0;
 }
 
 /*
@@ -367,7 +367,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	if (rv < 0)
 	{
 		*errval = rv;
-		return(NULL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* And now wait for a response */
@@ -376,13 +376,13 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	if (rv < 0)
 	{
 		*errval = rv;
-		return(NULL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* Return the message to user, who is responsible for freeing it */
 	rmsg = d_l2_conn->diag_msg;
 	d_l2_conn->diag_msg = NULL;
-	return(rmsg);
+	return rmsg;
 }
 
 static const struct diag_l2_proto diag_l2_proto_j1850 = {

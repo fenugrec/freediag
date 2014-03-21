@@ -110,11 +110,13 @@ int
 diag_l1_init(void)
 {
 	struct diag_l0_node *node;
-	if (diag_l1_debug & DIAG_DEBUG_INIT)
-		fprintf(stderr,FLFMT "entered diag_l1_init\n", FL);
 
 	if (diag_l1_initdone)
 		return 0;
+
+	if (diag_l1_debug & DIAG_DEBUG_INIT)
+		fprintf(stderr,FLFMT "entered diag_l1_init\n", FL);
+
 
 	/* Now call the init routines for the L0 devices */
 	//NOTE : the diag_l0_init functions should NOT play any mem tricks (*alloc etc) or open handles.

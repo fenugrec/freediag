@@ -113,7 +113,7 @@ char *buf, const size_t bufsize)
 		break;
 	}
 
-	return(buf);
+	return buf;
 }
 
 
@@ -194,7 +194,7 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 		/* And send message */
 		rv = diag_l2_send(d_conn, &newmsg);
 	}
-	return(rv);
+	return rv;
 }
 
 
@@ -414,7 +414,7 @@ diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 		}
 	}
 
-	return(rv);
+	return rv;
 }
 
 
@@ -428,7 +428,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 	else
 		snprintf(buf, bufsize, "ISO14230 request ");
 
-	return(buf);
+	return buf;
 }
 
 

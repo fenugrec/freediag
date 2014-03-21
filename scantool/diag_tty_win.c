@@ -398,8 +398,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
-	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_OPEN))
-	{
+	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_OPEN)) {
 		fprintf(stderr, FLFMT "at least %d junk bytes discarded: ", FL, rv);
 		diag_data_dump(stderr, (void *) buf, (size_t) rv);
 		fprintf(stderr,"\n");

@@ -141,7 +141,7 @@ diag_os_init(void)
 #endif
 
 	if (diag_os_init_done)
-		return(0);
+		return 0;
 
 
 #ifdef WIN32
@@ -320,7 +320,7 @@ diag_os_millisleep(unsigned int ms)
 
 	close(fd);
 
-	return (0);
+	return 0;
 
 //old millisleep
 #if 0
@@ -375,12 +375,12 @@ diag_os_millisleep(unsigned int ms)
 				memcpy(&rqst, &resp, sizeof(resp));
 			}
 			else
-				return(-1);	/* Some other failure */
+				return -1;	/* Some other failure */
 
 		}
 	}
 
-	return(0);
+	return 0;
 #endif //of #if 0 (old millisleep)
 
 #else	// from initial "if linux && !posix" :

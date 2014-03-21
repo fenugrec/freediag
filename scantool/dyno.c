@@ -253,7 +253,7 @@ static double dyno_loss_a(int i)
 /* get y(i) */
 static double dyno_loss_y(int i)
 {
-  return(0 - dyno_mass * dyno_loss_a(i));
+  return (0 - dyno_mass * dyno_loss_a(i));
 }
 
 /* Calculate d and f factors */

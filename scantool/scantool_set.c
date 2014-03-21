@@ -242,7 +242,7 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 	printf("initmode: Initmode to use with above L2 protocol is %s\n",
 		l2_initmodes[set_initmode]);
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -296,7 +296,7 @@ static int cmd_set_interface(int argc, char **argv)
 		printf("interface: using %s on %s\n",
 			l0_names[set_interface_idx].longname, set_subinterface);
 	}
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -340,12 +340,12 @@ cmd_set_display(int argc, char **argv)
 		else if (strcasecmp(argv[1], "metric") == 0)
 			set_display = 0;
 		else
-			return (CMD_USAGE);
+			return CMD_USAGE;
 	}
 	else
 		printf("display: %s units\n", set_display?"english":"metric");
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int
@@ -358,7 +358,7 @@ cmd_set_speed(int argc, char **argv)
 	else
 		printf("speed: Connect speed: %d\n", set_speed);
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int cmd_set_dumbopts(int argc, char **argv) {
@@ -392,7 +392,7 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 		printf("Current dumbopts=%u\n", diag_l0_dumb_getopts());
 	}
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 
@@ -411,7 +411,7 @@ cmd_set_testerid(int argc, char **argv)
 	else
 		printf("testerid: Source ID to use: 0x%x\n", set_testerid);
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int
@@ -432,7 +432,7 @@ cmd_set_destaddr(int argc, char **argv)
 			set_destaddr);
 	}
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 static int
 cmd_set_addrtype(int argc, char **argv)
@@ -444,7 +444,7 @@ cmd_set_addrtype(int argc, char **argv)
 		else if (strncmp(argv[1], "phys", 4) == 0)
 			set_addrtype = 0;
 		else
-			return(CMD_USAGE);
+			return CMD_USAGE;
 	}
 	else
 	{
@@ -452,7 +452,7 @@ cmd_set_addrtype(int argc, char **argv)
 			set_addrtype ? "functional" : "physical");
 	}
 
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int cmd_set_l2protocol(int argc, char **argv)
@@ -494,7 +494,7 @@ static int cmd_set_l2protocol(int argc, char **argv)
 		printf("l2protocol: Layer 2 protocol to use %s\n",
 			l2_names[set_L2protocol]);
 	}
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int cmd_set_l1protocol(int argc, char **argv)
@@ -539,7 +539,7 @@ static int cmd_set_l1protocol(int argc, char **argv)
 			l1_names[offset]);
 
 	}
-	return (CMD_OK);
+	return CMD_OK;
 }
 
 static int cmd_set_initmode(int argc, char **argv)
@@ -575,7 +575,7 @@ static int cmd_set_initmode(int argc, char **argv)
 		printf("initmode: Initmode to use with above protocol is %s\n",
 			l2_initmodes[set_initmode]);
 	}
-	return(CMD_OK);
+	return CMD_OK;
 }
 
 static int
