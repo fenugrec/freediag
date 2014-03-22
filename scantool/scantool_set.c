@@ -116,14 +116,6 @@ void set_close(void)
 }
 
 
-/* Return values from the commands */
-#define CMD_OK		0	/* OK */
-#define CMD_USAGE	1	/* Bad usage, print usage info */
-#define CMD_FAILED	2	/* Cmd failed */
-#define CMD_EXIT	3	/* Exit called */
-#define CMD_UP		4	/* Go up one level in command tree */
-
-//#define FLAG_HIDDEN	1	/* Hidden command */ : already defined in scantool_cli.h
 
 /* SET sub menu */
 static int cmd_set_help(int argc, char **argv);

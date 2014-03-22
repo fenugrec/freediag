@@ -232,8 +232,8 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 	uint8_t new_resp_count = 0;
 	uint8_t synth_req[11]; // 11 request bytes.
 	char line_buf[1280+1]; // 255 response bytes * 5 ("0xYY ") + tolerance for a token ("abc1 ") = 1280.
-	char end_responses = 0;
-	char request_found = 0;
+	int end_responses = 0;
+	int request_found = 0;
 
 
 	// walk to the end of the list (last valid item).
@@ -466,6 +466,7 @@ diag_l0_sim_init(void)
 
 	if (!simfile)
 		//not filled in yet : use default DB_FILE.
+		//TODO : use subinterface to fill in simfile ?
 		simfile=simfile_default;
 
 	diag_l0_sim_initdone = 1;

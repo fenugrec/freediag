@@ -87,11 +87,10 @@ typedef struct diag_l3_proto
 	int (*diag_l3_proto_ioctl)(struct diag_l3_conn *, int cmd, void *data);
 
 /* Pretty text decode routine */
-// XXX why does it not match the declaration  ?
 	char *(*diag_l3_proto_decode)(struct diag_l3_conn *,
-		struct diag_msg *,
+		struct diag_msg *msg,
 		char * buf,
-		const size_t);
+		const size_t bufsize);
 
 	/* Timer */
 	void (*diag_l3_proto_timer)(struct diag_l3_conn *, int ms);

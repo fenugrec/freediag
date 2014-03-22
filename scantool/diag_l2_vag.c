@@ -420,7 +420,7 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 	set.parflag = diag_par_n;
 
 	/* Set the speed as shown */
-	rv = diag_l1_setspeed( d_l2_conn->diag_link->diag_l2_dl0d, &set);
+	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set);
 	if (rv < 0)
 	{
 		free(dp);

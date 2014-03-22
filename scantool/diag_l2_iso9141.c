@@ -226,7 +226,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
 
-	if ((rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set))) {
+	if ((rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set))) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
 		return diag_iseterr(rv);

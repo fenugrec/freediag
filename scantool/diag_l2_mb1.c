@@ -24,7 +24,7 @@
  * EGS (auto gearbox controller) on 1999/2000/2001 cars
  * I have called this Mercedes Benz protocol 1, since all other control
  * units I have played with use ISO14230
- *
+ * TODO :
  */
 
 #ifdef WIN32
@@ -83,7 +83,7 @@ UNUSED(source_type source))
 	set.parflag = diag_par_n;
 
 	/* Set the speed as shown */
-	rv = diag_l1_setspeed(d_l2_conn->diag_link->diag_l2_dl0d, &set);
+	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, (void *) &set);
 	if (rv < 0)
 		return diag_iseterr(rv);
 

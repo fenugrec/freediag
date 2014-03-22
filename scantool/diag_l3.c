@@ -60,8 +60,9 @@ static struct diag_l3_conn	*diag_l3_list;
 
 
 /*
- * Protocol start (connect a protocol on top of a L2 connection
+ * Protocol start (connect a protocol on top of a L2 connection)
  * make sure to diag_l3_stop afterwards to free() the diag_l3_conn !
+ * This adds the new l3 connection to the diag_l3_list linked-list
  */
 struct diag_l3_conn *
 diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
@@ -96,7 +97,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		 * Malloc us a L3
 		 */
 		if (diag_calloc(&d_l3_conn, 1))
-			return 0;
+			return diag_pseterr(DIAG_ERR_NOMEM);
 
 		d_l3_conn->d_l3l2_conn = d_l2_conn;
 		d_l3_conn->d_l3_proto = dp;
@@ -117,6 +118,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		{
 			free(d_l3_conn);
 			d_l3_conn = NULL;
+			return diag_pseterr(rv);
 		}
 		else
 		{
@@ -140,8 +142,8 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 }
 
 /*
- * Just call the appropriate protocol routine
- * and free() d_l3_conn
+ * Calls the appropriate protocol stop routine,
+ * free() d_l3_conn, and remove from diag_l3_list
  */
 int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 {
@@ -171,8 +173,10 @@ int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 	rv = dp->diag_l3_proto_stop(d_l3_conn);
 
 	free(d_l3_conn);
+	if (rv)
+		return diag_iseterr(rv);
 
-	return rv;
+	return 0;
 }
 
 int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)

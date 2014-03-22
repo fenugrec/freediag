@@ -41,15 +41,18 @@
 extern "C" {
 #endif
 
+//diag_l2_link : elements of the diag_l2_links linked-list.
+//An l2 link associates an existing diag_l0_device with
+//one L1 proto and L1 flags.
 struct diag_l2_link
 {
 	struct diag_l0_device * 	diag_l2_dl0d;	/* Link we're using to talk to lower layer */
-	int	diag_l2_l1protocol;		/* L1 protocol */
+	int	diag_l2_l1protocol;		/* L1 protocol used*/
 
-	char	diag_l2_name[DIAG_NAMELEN];	/* Short, unique text name for user interface */
+	char	diag_l2_name[DIAG_NAMELEN];	/* XXX this is set the l0 driver shortname !? */
 
-	int	diag_l2_l1flags;		/* L1 flags, see L1 info */
-	int	diag_l2_l1type;			/* L1 type (see diag_l1.h) */
+	int	diag_l2_l1flags;		/* L1 flags, filled with diag_l1_getflags */
+	int	diag_l2_l1type;			/* L1 type (see diag_l1.h): filled with diag_l1_gettype*/
 
 	struct diag_l2_link *next;		/* linked list of all connections */
 	struct diag_l2_link *l1_next;		/* linked list of all ECUs with same ID on different interfaces */

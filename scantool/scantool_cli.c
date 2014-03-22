@@ -426,12 +426,15 @@ cmd_play(int argc, char **argv)
 	return CMD_OK;
 }
 
+
+//cmd_watch : this creates a diag_l3_conn
+//TODO: clean up or l2_stopcomm after we're done?
 static int
 cmd_watch(int argc, char **argv)
 {
 	int rv;
 	struct diag_l2_conn *d_l2_conn;
-	struct diag_l3_conn *d_l3_conn;
+	struct diag_l3_conn *d_l3_conn=NULL;
 	struct diag_l0_device *dl0d;
 	int rawmode = 0;
 	int nodecode = 0;
@@ -454,18 +457,18 @@ cmd_watch(int argc, char **argv)
 	if (rv != 0) {
 		fprintf(stderr, "diag_init failed\n");
 		diag_end();
-		return -1;
+		return CMD_FAILED;
 	}
 	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);
 	if (dl0d == 0) {
 		rv = diag_geterr();
-		printf("Failed to open hardware interface ");
+		printf("Failed to open hardware interface, ");
 		if (rv == DIAG_ERR_PROTO_NOTSUPP)
-			printf(", does not support requested L1 protocol\n");
+			printf("does not support requested L1 protocol\n");
 		else if (rv == DIAG_ERR_BADIFADAPTER)
-			printf(", adapter probably not connected\n");
+			printf("adapter probably not connected\n");
 		else
-			printf("\n");
+			printf("%s\n",diag_errlookup(rv));
 		return CMD_FAILED;
 	}
 	if (rawmode)
@@ -510,6 +513,7 @@ cmd_watch(int argc, char **argv)
 				continue;
 		}
 	} else {
+		//rawmode !=0 here
 		/*
 		 * And just read stuff, callback routine will print out the data
 		 */
@@ -525,6 +529,7 @@ cmd_watch(int argc, char **argv)
 			break;
 		}
 	}
+	diag_l3_stop(d_l3_conn);
 
 	return CMD_OK;
 }
@@ -623,10 +628,8 @@ static int
 cmd_monitor(int argc, char **argv)
 {
 	int rv;
-	//struct diag_l3_conn *d_conn;
 	int english = 0;
 
-	//d_conn = global_l3_conn;	//not used ?
 
 	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
@@ -654,11 +657,9 @@ cmd_monitor(int argc, char **argv)
 	while (1) {
 		rv = do_j1979_getdata(1);
 		/* Key pressed */
-		if (rv == 1) {
-			/*
-			 * XX, if ' ' then this is a mark,
-			 * if return, then quit
-			 */
+		if (rv == 1 || rv<0) {
+			//enter was pressed to interrupt,
+			//or there was an error.
 			break;
 		}
 		/* print the data */

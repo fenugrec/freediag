@@ -42,7 +42,8 @@
 
 CVSID("$Id$");
 
-#define ELM_BUFSIZE 32	//longest data to be received during init is the version string, ~ 15 bytes, plus possible command echo. OBD data is 7 bytes, received as a 23-char string. 32 should be enough...
+#define ELM_BUFSIZE 32	//longest data to be received during init is the version string, ~ 15 bytes,
+		// plus possible command echo. OBD data is 7 bytes, received as a 23-char string. 32 should be enough...
 
 struct diag_l0_elm_device {
 	int protocol;		//current L1 protocol
@@ -634,18 +635,17 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 
 	//XXX will have to add specific 323 vs 327 handling. For now, only 323 features are included.
 	switch (dev->protocol) {
-	case DIAG_L1_J1850_VPW:
-	case DIAG_L1_J1850_PWM:
-			break;
 	case DIAG_L1_ISO9141:
-			flags = DIAG_L1_SLOW | DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM;
-			flags |= DIAG_L1_DOESP4WAIT | DIAG_L1_STRIPSL2CKSUM;
-			break;
+		flags = DIAG_L1_SLOW | DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM;
+		flags |= DIAG_L1_DOESP4WAIT | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_AUTOSPEED;
+		break;
 	case DIAG_L1_ISO14230:
-			flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
-			flags |= DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM;
-			flags |= DIAG_L1_DOESP4WAIT | DIAG_L1_STRIPSL2CKSUM;
-			break;
+		flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
+		flags |= DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM;
+		flags |= DIAG_L1_DOESP4WAIT | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_AUTOSPEED;
+		break;
+	default:
+		break;
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
@@ -671,7 +671,7 @@ void elm_parse_cr(uint8_t *data, int len) {
 static const struct diag_l0 diag_l0_elm = {
 	"Scantool.net ELM32x Chipset Device",
 	"ELM",
-	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
+	DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
 	diag_l0_elm_init,
 	diag_l0_elm_open,
 	diag_l0_elm_close,

@@ -122,6 +122,8 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 	return;
 } //diag_tty_close
 
+
+//XXX why do we need a function for these?
 void *
 diag_l0_dl0_handle(struct diag_l0_device *dl0d) {
 	return dl0d->dl0_handle;

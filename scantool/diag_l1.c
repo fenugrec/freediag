@@ -45,18 +45,18 @@
 
 CVSID("$Id$");
 
-int diag_l0_debug;
-int diag_l1_debug;
+int diag_l0_debug;	//debug flags for l0
+int diag_l1_debug;	//debug flags for l1
 
 const struct diag_l0 *diag_l0_device_dl0(struct diag_l0_device *dl0d) {
 	return dl0d->dl0;
-} //XXX this used to be in diag_tty.c ... why ??
+}
 
 static int diag_l1_saferead(struct diag_l0_device *dl0d,
-char *buf, size_t bufsiz, int timeout);
+uint8_t *buf, size_t bufsiz, int timeout);
 
 /*
- * Linked list of supported L0 devices.
+ * l0dev_list : Linked list of supported L0 devices.
  * The devices should be added with "diag_l1_add_l0dev".
  */
 
@@ -106,6 +106,8 @@ diag_l1_add_l0dev(const struct diag_l0 *l0dev) {
 /* Global init flag */
 static int diag_l1_initdone=0;
 
+//diag_l1_init : parse through the l0dev_list linked list
+//and call diag_l0_init for each of them
 int
 diag_l1_init(void)
 {
@@ -138,10 +140,10 @@ int diag_l1_end(void) {
 }
 
 /*
- * Open the diagnostic device, return a dl0 device.
+ * Open the diagnostic device, return a new diag_l0_device .
  *
- * Finds the unique name in the l0 device table,
- * calls the init routine, with the device parameter from the table
+ * Finds the unique name in the l0 device linked-list (l0dev_list),
+ * calls its diag_l0_open function.
  *
  * This is passed a L1 subinterface (ie, what type of physical interface
  * to run on)
@@ -172,6 +174,8 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 	return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 }
 
+//diag_l1_close : call the ->diag_l0_close member of the
+//specified diag_l0_device.
 int
 diag_l1_close(struct diag_l0_device **pdl0d)
 {
@@ -210,8 +214,8 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 
 	/*
 	 * If p4 is zero and not in half duplex mode, or if
-	 * L1 is a "DOESL2" interface send the whole message to L0
-	 * as one write
+	 * L1 is a "DOESL2" interface, or if L0 takes care of P4 waits:
+	 * send the whole message to L0 as one write
 	 */
 	l0flags = diag_l1_getflags(dl0d);
 
@@ -241,7 +245,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 				uint8_t c;
 
 				c = *dp - 1; /* set it with wrong val */
-				if (diag_l1_saferead(dl0d, (char *)(&c), 1, 1000) < 0)
+				if (diag_l1_saferead(dl0d, &c, 1, 1000) < 0)
 					rv=DIAG_ERR_GENERAL;
 					break;
 
@@ -276,7 +280,7 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 }
 
 /*
- * Set speed/parity etc
+ * Set speed/parity etc; this should only be called through diag_l2_ioctl
  */
 int
 diag_l1_setspeed(struct diag_l0_device *dl0d,
@@ -285,12 +289,14 @@ const struct diag_serial_settings *pset)
 	return (diag_l0_device_dl0(dl0d)->diag_l0_setspeed)(dl0d, pset);
 }
 
-
+//diag_l1_getflags: returns l0 flags
 int diag_l1_getflags(struct diag_l0_device *dl0d)
 {
 	return (diag_l0_device_dl0(dl0d)->diag_l0_getflags)(dl0d);
 }
 
+//diag_l1_gettype: returns diag_l0_type :supported L1 protos
+//of the l0 driver
 int diag_l1_gettype(struct diag_l0_device *dl0d)
 {
 	return diag_l0_device_dl0(dl0d)->diag_l0_type;
@@ -299,7 +305,7 @@ int diag_l1_gettype(struct diag_l0_device *dl0d)
 
 //return <0 on error, number of bytes on success
 static int
-diag_l1_saferead(struct diag_l0_device *dl0d, char *buf, size_t bufsiz, int timeout)
+diag_l1_saferead(struct diag_l0_device *dl0d, uint8_t *buf, size_t bufsiz, int timeout)
 {
 	int xferd;
 

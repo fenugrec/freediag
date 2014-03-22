@@ -113,18 +113,21 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
  */
 #define CONBYIDSIZE 256
 
-static struct diag_l2_conn	*diag_l2_connections;
+static struct diag_l2_conn	*diag_l2_connections;	//linked-list of current diag_l2_conn's
 static struct diag_l2_conn	*diag_l2_conbyid[CONBYIDSIZE];	/* Look up by ECU address */
 
 static int diag_l2_init_done=0;	/* Init done */
 
 /*
  * The list of L1 devices we have open, not used often so no need to hash
+ * (diag_l2_links is a linked list)
  */
 static struct diag_l2_link *diag_l2_links;
 
 /*
  * Find our link to the L1 device, by name
+ * (try to match dev_name with  ->diag_l2_name of one of the diag_l2_link
+ * elements of the diag_l2_links linked-list.
  */
 static struct diag_l2_link *
 diag_l2_findlink(const char *dev_name)
@@ -133,7 +136,7 @@ diag_l2_findlink(const char *dev_name)
 
 	while (dl2l)
 	{
-		if ( strcmp(dl2l -> diag_l2_name , dev_name) == 0)
+		if ( strcmp(dl2l->diag_l2_name , dev_name) == 0)
 			return dl2l;
 		dl2l = dl2l -> next;
 	}
@@ -300,7 +303,7 @@ int diag_l2_end() {
 }
 
 /*
- * Close/kill a L1link
+ * diag_l2_closelink : Close/kill a diag_l2_link
  */
 static int
 diag_l2_closelink(struct diag_l2_link **pdl2l)
@@ -318,10 +321,9 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
 			diag_l2_rmlink(dl2l);	/* Take off list */
 			diag_l1_close(&dl2l->diag_l2_dl0d);
 			free(dl2l);
-			//XXX should we set *pdl2l to NULL ?
 		}
 
-		*pdl2l = 0;
+		*pdl2l = NULL;
 	}
 
 
@@ -329,9 +331,9 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
 }
 
 /*
- * Open a link to a Layer 1 device, returns dl0d, if device is already
- * open, close and then re-open it (as we need to pass it a new "protocol"
- * field if the l1 protocol is different)
+ * Open a link to a Layer 1 device, returns dl0d. If device is already
+ * open but its l1 protocol is different, close and then re-open it;
+ * if it matches L1proto return the existing dl0d.
  *
  * The subinterface indicates the device to use
  *
@@ -403,18 +405,18 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 
 /*
  * Close a L2 interface, the caller
- * must have closed all the connections relating to this or they will
- * just get left hanging using resources. We dont kill the L1, it may
- * be useful later
+ * must have closed all the L3 connections relating to this or they will
+ * just get left hanging using resources.
+ * XXX what do we want to accomplish here ?
+ * We can't have multiple L2 links with the same diag_l0_device, because
+ * of how diag_l2_open and diag_l2_findlink work.
  *
- * XXX, this needs some consideration, one dl0d can be used for more than
- * one L2, so closing by dl0d isnt appropriate, and so this routine does
+ * But closing by dl0d isnt very appropriate: this i, and so this routine does
  * nothing. However, all we have is the link unless a StartCommunications()
  * has been done
  */
 int
-diag_l2_close(struct diag_l0_device *dl0d)
-{
+diag_l2_close(struct diag_l0_device *dl0d) {
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr,FLFMT "Entering diag_l2_close for dl0d=%p\n",
@@ -741,6 +743,8 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, int cmd, void *data)
 		d->kb2 = d_l2_conn->diag_l2_kb2;
 		break;
 	case DIAG_IOCTL_SETSPEED:
+		if (dl0d->dl2_link->diag_l2_l1flags & DIAG_L1_AUTOSPEED)
+			break;
 		ic = (struct diag_serial_settings *)data;
 		rv = diag_l1_setspeed(dl0d, ic);
 		break;

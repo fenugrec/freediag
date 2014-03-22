@@ -677,7 +677,7 @@ const void *data, size_t len)
 	 * as part of a special initialisation type
 	 */
 	if (dev->dev_state == BR_STATE_KWP_FASTINIT) {
-		char outbuf[6];
+		uint8_t outbuf[6];
 		if (dev->dev_txlen < 5) {
 			memcpy(&dev->dev_txbuf[dev->dev_txlen], data, len);
 			dev->dev_txlen += len;

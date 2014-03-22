@@ -725,7 +725,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 	}
 
 	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, L1protocol);
-	if (dl0d == 0) {
+	if (dl0d == NULL) {
 		rv = diag_geterr();
 		if ((rv != DIAG_ERR_BADIFADAPTER) &&
 			(rv != DIAG_ERR_PROTO_NOTSUPP))
@@ -888,8 +888,8 @@ do_l2_j1850_start(int l1_type)
 }
 
 /*
- * Generic init, using parameters set by user
- * called by cmd_diag_connect;
+ * Generic init, using parameters set by user.
+ * Currently only called from cmd_diag_connect;
  */
 int
 do_l2_generic_start(void)
@@ -944,7 +944,7 @@ do_l2_generic_start(void)
 }
 
 /*
- * Gets the data for every supported test
+ * Gets the data for every supported test using global L3 connection
  *
  * Returns <0 on failure, 0 on good and 1 on interrupted
  *
@@ -998,12 +998,12 @@ do_j1979_getdata(int interruptible)
 
 	if (rv < 0) {
 		fprintf(stderr, "Mode 0x02 Pid 0x02 request failed (%d)\n", rv);
-		return 0;
+		return -1;
 	}
 	msg = find_ecu_msg(0, 0x42);
 	if (msg == NULL) {
 		fprintf(stderr, "Mode 0x02 Pid 0x02 request no-data (%d)\n", rv);
-		return 0;
+		return -1;
 	}
 	diag_os_ipending();	//again, required for WIN32 to "purge" last keypress
 	/* Now go thru the ECUs that have responded with mode2 info */
@@ -1022,7 +1022,7 @@ do_j1979_getdata(int interruptible)
 					msg = find_ecu_msg(0, 0x42);
 					if (msg == NULL) {
 						fprintf(stderr, "Mode 0x02 Pid 0x%02x request no-data (%d)\n", i, rv);
-						return 0;
+						return -1;
 					}
 
 				}
@@ -1851,7 +1851,7 @@ const struct pid *get_pid ( unsigned int i )
  */
 
 int
-main(UNUSED(int argc), UNUSED(char **argv))
+main(int argc, char **argv)
 {
 	int user_interface = 1 ;
 	int i ;

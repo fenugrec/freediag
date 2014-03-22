@@ -92,6 +92,13 @@ extern "C" {
  */
 #define DIAG_L1_DOESP4WAIT		0x200
 
+//AUTOSPEED
+//interface takes care of setting the baudrate; we check this before
+//calling diag_l1_setspeed
+#define DIAG_L1_AUTOSPEED	0x400
+
+
+
 /*
  * Layer 0 device types
  *
@@ -118,11 +125,12 @@ extern "C" {
  *
  * For interfaces with muxes (such as to talk to a MB 33 way diagnostic port)
  * the subinterface flag is used for read and write purposes
+ * XXX what's an MB 33 way diagnostic port ?!
  *
  * This makes "un-duplexing" a half duplex interface hard work...
  *  and not yet supported in this code
  */
-#define DIAG_L1_MAXINTF		16
+//#define DIAG_L1_MAXINTF		16
 
 
 /*
@@ -137,7 +145,7 @@ struct diag_l1_initbus_args
 	uint8_t	type;	/* Init type */
 	uint8_t	addr;	/* Address, if 5 baud init */
 };
-
+//initbus types:
 #define DIAG_L1_INITBUS_NONE	0	/* Not needed */
 #define DIAG_L1_INITBUS_FAST	1	/* Fast init (25ms low, 25ms high) */
 #define DIAG_L1_INITBUS_5BAUD	2	/* 5 baud init */

@@ -106,7 +106,7 @@ cmd_diag_addl3(int argc, char **argv)
 		printf("Not connected to ECU\n");
 		return CMD_OK;
 	}
-	if (global_state > STATE_CONNECTED)
+	if (global_state >= STATE_L3ADDED)
 	{
 		printf("L3 protocol already connected\n");
 		return CMD_OK;
@@ -125,6 +125,7 @@ cmd_diag_addl3(int argc, char **argv)
 		printf("\n");
 		return CMD_OK;
 	}
+	//match specified L3proto with available protos
 	for (i=0, proto = NULL; l3_protos[i] != NULL; i++)
 	{
 		if (strcasecmp(l3_protos[i], argv[1]) == 0)
@@ -139,24 +140,25 @@ cmd_diag_addl3(int argc, char **argv)
 			argv[0]);
 		return CMD_OK;
 	}
+
+	//use the global L2 connection to start an L3 connection.
+	global_l3_conn = diag_l3_start(proto, global_l2_conn);
+
+	if (global_l3_conn) {
+		global_state = STATE_L3ADDED ;
+		printf("Done\n");
+	}
 	else
 	{
-		global_l3_conn = diag_l3_start(proto, global_l2_conn);
-
-		if (global_l3_conn) {
-			global_state = STATE_L3ADDED ;
-			printf("Done\n");
-		}
-		else
-		{
-			printf("Failed to add L3 protocol\n");
-		}
+		printf("Failed to add L3 protocol\n");
 	}
+
 
 	return CMD_OK;
 }
 
 
+//cmd_diag_prob_common [startaddr] [stopaddr]
 static int
 cmd_diag_probe_common(int argc, char **argv, int fastflag)
 {
@@ -180,7 +182,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	}
 
 
-	if (fastflag)
+	if (fastflag && argc>=4)
 	{
 		if (strcasecmp(argv[3], "func") == 0)
 			funcmode = DIAG_L2_TYPE_FUNCADDR;
@@ -207,7 +209,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	/* Open interface using hardware type ISO9141 */
 	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface,
 		DIAG_L1_ISO9141);
-	if (dl0d == 0)
+	if (dl0d == NULL)
 	{
 		rv = diag_geterr();
 		printf("Failed to open hardware interface, error 0x%X",rv);
@@ -217,7 +219,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			printf(", adapter probably not connected\n");
 		else
 			printf("\n");
-		return CMD_OK;
+		return CMD_FAILED;
 	}
 
 	printf("Scanning address : ");
@@ -274,8 +276,6 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			return CMD_OK;
 		} // d_con !=null
 	}	//for addresses
-	diag_l2_close(dl0d);
-	diag_end();	//opposite of diag_init()
 	printf("\n");
 	return CMD_OK;
 }
@@ -293,6 +293,8 @@ cmd_diag_fastprobe(int argc, char **argv)
 }
 
 
+//cmd_diag_connect : attempt to connect to ECU
+//using the current global l2proto, l1proto, etc.
 static int
 cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 {
@@ -301,7 +303,7 @@ cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 	rv = do_l2_generic_start();
 	if (rv==0)
 	{
-		printf("Connection to ECU established\n");
+		printf("Connection to ECU established!\n");
 		global_state = STATE_CONNECTED;
 	}
 	else
