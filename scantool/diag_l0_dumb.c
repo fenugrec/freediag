@@ -24,8 +24,7 @@
  * and other compatible "dumb" interfaces, such as Jeff Noxon's opendiag interface.
  * Any RS232 interface with no microcontroller onboard should fall in this category.
  * This is an attempt at merging diag_l0_se and diag_l0_vw .
- * WIN32 will not work for a while, if ever.
- *
+  *
  * The dumb_flags variable is set according to particular type (VAGtool, SE)
  * to enable certain features (L line on RTS, etc)
  * Work in progress ! And, at the moment, there is only one global dumb_flags
@@ -460,11 +459,11 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	}
 
 	rv = diag_tty_read(dl0d, cbuf, 1, tout);
-	if (rv < 0) {
+	if (rv <= 0) {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit link %p read timeout, did not get Sync byte !\n",
 				FL, (void *)dl0d);
-		return diag_iseterr(rv);
+		return diag_iseterr(DIAG_ERR_TIMEOUT);
 	} else {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "slowinit link %p, got sync byte 0x%x\n",

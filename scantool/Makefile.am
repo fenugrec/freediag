@@ -23,6 +23,7 @@ noinst_LIBRARIES=libdiag.a libdyno.a
 #libdiag.a.: diag_config.c
 libdiag_a_SOURCES=diag_config.c \
 	diag_l0_me.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c diag_l0_dumb.c\
+	diag_l0_dumbtest.c \
 	diag_tty_unix.c \
 	diag_l1.c \
 	diag_l2.c diag_l2_can.c diag_l2_raw.c \

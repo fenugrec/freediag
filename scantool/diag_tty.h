@@ -68,6 +68,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	const struct diag_l0 *,
 	void *handle);
 
+//diag_tty_close : free & close everything in ppdl0d (including dl0d itself)
 void diag_tty_close(struct diag_l0_device **ppdl0d);
 
 /* Set speed/parity etc, return 0 if ok. */

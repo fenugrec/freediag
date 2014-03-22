@@ -50,6 +50,7 @@ static int cmd_debug_l1(int argc, char **argv);
 static int cmd_debug_l2(int argc, char **argv);
 static int cmd_debug_l3(int argc, char **argv);
 static int cmd_debug_all(int argc, char **argv);
+static int cmd_debug_l0test(int argc, char **argv);
 
 const struct cmd_tbl_entry debug_cmd_table[] =
 {
@@ -77,6 +78,8 @@ const struct cmd_tbl_entry debug_cmd_table[] =
 		cmd_debug_cli, 0, NULL},
 	{ "all", "all [val]", "Show/set All layer debug level",
 		cmd_debug_all, 0, NULL},
+	{ "l0test", "l0test [testnum]", "Dumb interface tests. Disconnect from vehicle first !",
+		cmd_debug_l0test, FLAG_HIDDEN, NULL},
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
 	{ "quit","quit", "Return to previous menu level",
@@ -280,3 +283,36 @@ static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 
 	return CMD_OK;
 }
+
+//cmd_debug_l0test : run a variety of low-level
+//tests, for dumb interfaces. Do not use while connected
+//to a vehicle: this sends garbage data on the K-line which
+//could interfere with ECUs, although very unlikely.
+//XXX unfinished; I'm implementing this as another L0 driver
+//(diag_l0_dumbtest.c).
+static int cmd_debug_l0test(int argc, char **argv) {
+#define MAX_L0TEST 2
+	unsigned int testnum=0;
+	if ((argc <= 1) || (strcmp(argv[1], "?") == 0) || (sscanf(argv[1],"%u", &testnum) != 1)) {
+		printf("usage: %s [testnum], where testnum is a number between 1 and %d.\n", argv[0], MAX_L0TEST);
+		printf("you must have done \"set interface dumbt [port]\" and \"set dumbopts\" before proceding.\n");
+
+		printf("Available tests:\n\t1 : slow pulse TXD (K) with diag_tty_break; 1 for 400ms, 0 for 200ms.\n"
+				"\t2: fast pulse TXD (K) : send 0x55 @ 10400bps\n"
+				"\t3: slow pulse RTS : set for 400ms, clear for 200ms\n"
+				"\t4: slow pulse DTR : set for 400ms, clear for 200ms\n");
+		return CMD_OK;
+	}
+	if ((testnum < 1) || (testnum > MAX_L0TEST)) {
+		printf("Invalid test.\n");
+		return CMD_FAILED;
+	}
+	printf("Not finished yet !!!\n");
+	// I think the easiest way to pass on "testnum" on to diag_l0_dumbtest.c would be
+	// to pretend testnum is an L1protocol. Then we can use diag_l1_open to start the
+	// test (and diag_l0_dt_open would return when finished or interrupted).
+	return CMD_OK;
+
+	//printf("Press <enter> to stop the test.\n");
+}
+

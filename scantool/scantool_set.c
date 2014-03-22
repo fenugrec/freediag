@@ -62,7 +62,7 @@ const char *	set_ecu;	/* ECU name */
 
 #define DEFAULT_INTERFACE CARSIM	//index into l0_names below
 const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM},
-			{"CARSIM", CARSIM}, {"DUMB", DUMB}, {NULL,LAST}};
+			{"CARSIM", CARSIM}, {"DUMB", DUMB}, {"DUMBT", DUMBT}, {NULL,LAST}};
 
 enum l0_nameindex set_interface;	//hw interface to use
 

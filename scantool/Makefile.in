@@ -57,11 +57,12 @@ libdiag_a_LIBADD =
 am_libdiag_a_OBJECTS = diag_config.$(OBJEXT) diag_l0_me.$(OBJEXT) \
 	diag_l0_br.$(OBJEXT) diag_l0_elm.$(OBJEXT) \
 	diag_l0_sim.$(OBJEXT) diag_l0_dumb.$(OBJEXT) \
-	diag_tty_unix.$(OBJEXT) diag_l1.$(OBJEXT) diag_l2.$(OBJEXT) \
-	diag_l2_can.$(OBJEXT) diag_l2_raw.$(OBJEXT) \
-	diag_l2_iso9141.$(OBJEXT) diag_l2_iso9141.$(OBJEXT) \
-	diag_l2_iso14230.$(OBJEXT) diag_l2_saej1850.$(OBJEXT) \
-	diag_l2_vag.$(OBJEXT) diag_l2_mb1.$(OBJEXT) diag_l3.$(OBJEXT) \
+	diag_l0_dumbtest.$(OBJEXT) diag_tty_unix.$(OBJEXT) \
+	diag_l1.$(OBJEXT) diag_l2.$(OBJEXT) diag_l2_can.$(OBJEXT) \
+	diag_l2_raw.$(OBJEXT) diag_l2_iso9141.$(OBJEXT) \
+	diag_l2_iso9141.$(OBJEXT) diag_l2_iso14230.$(OBJEXT) \
+	diag_l2_saej1850.$(OBJEXT) diag_l2_vag.$(OBJEXT) \
+	diag_l2_mb1.$(OBJEXT) diag_l3.$(OBJEXT) \
 	diag_l3_saej1979.$(OBJEXT) diag_l3_iso14230.$(OBJEXT) \
 	diag_l3_vag.$(OBJEXT) diag_os.$(OBJEXT) diag_general.$(OBJEXT) \
 	diag_dtc.$(OBJEXT)
@@ -212,6 +213,7 @@ noinst_LIBRARIES = libdiag.a libdyno.a
 #libdiag.a.: diag_config.c
 libdiag_a_SOURCES = diag_config.c \
 	diag_l0_me.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c diag_l0_dumb.c\
+	diag_l0_dumbtest.c \
 	diag_tty_unix.c \
 	diag_l1.c \
 	diag_l2.c diag_l2_can.c diag_l2_raw.c \
@@ -330,6 +332,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag_general.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag_l0_br.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag_l0_dumb.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag_l0_dumbtest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag_l0_elm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag_l0_me.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag_l0_sim.Po@am__quote@
