@@ -697,10 +697,10 @@ const void *buf, const size_t count)
 	ssize_t rv;
 	ssize_t n;
 	size_t c = count;
-	const char *p;
+	const uint8_t *p;
 
 	errno = 0;
-	p = (const char *)buf;	/* For easy pointer I/O */
+	p = (const uint8_t *)buf;	/* For easy pointer I/O */
 	n = 0;
 	rv = 0;
 
@@ -737,7 +737,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 {
 	ssize_t rv;
 	ssize_t n;
-	char *p;
+	uint8_t *p;
 
 
 #if defined(_POSIX_TIMERS)
@@ -778,7 +778,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 #endif
 
 	errno = 0;
-	p = (char *)buf;	/* For easy pointer I/O */
+	p = (uint8_t *)buf;	/* For easy pointer I/O */
 	n = 0;
 	rv = 0;
 
@@ -832,7 +832,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
  * I shortened the timeout from 150ms in case the caller needs to receive a byte soon
  * (ex.: after an iso9141 slow init)
  */
-	char buf[MAXRBUF];
+	uint8_t buf[MAXRBUF];
 	int i, rv;
 
 	/* Read any old data hanging about on the port */
@@ -852,7 +852,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
  * POSIX serial I/O input flush:
  * it also calls diag_tty_read with IFLUSH_TIMEOUT.
  */
- 	char buf[MAXRBUF];
+ 	uint8_t buf[MAXRBUF];
 	int rv;
 
 	errno = 0;

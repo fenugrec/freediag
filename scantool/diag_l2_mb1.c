@@ -61,7 +61,7 @@ UNUSED(source_type source))
 	uint8_t cbuf[2];
 	int rv;
 	unsigned int baud;
-	unsigned char rxbuf[MAXRBUF];
+	uint8_t rxbuf[MAXRBUF];
 	struct diag_serial_settings set;
 
 	if (diag_l2_debug & DIAG_DEBUG_INIT)

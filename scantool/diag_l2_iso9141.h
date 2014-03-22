@@ -88,34 +88,11 @@ struct diag_l2_iso9141
 
 int diag_l2_iso9141_add(void);
 
-// The following three static int's don't need to be declared here ?
-// Since they're static, they're for "private" use in diag_l2_iso9141.c ?
-//~ static int diag_l2_proto_iso9141_send (
-		//~ struct diag_l2_conn *d_l2_conn,
-		//~ struct diag_msg *msg ) ;
 
-//~ static int diag_l2_proto_iso9141_recv (
-		//~ struct diag_l2_conn *d_l2_conn,
-		//~ int timeout,
-		//~ void (*callback)(void *handle, struct diag_msg *msg),
-		//~ void *handle ) ;
 
-//~ static struct diag_msg *diag_l2_proto_iso9141_request (
-		//~ struct diag_l2_conn *d_l2_conn,
-		//~ struct diag_msg *msg,
-		//~ int *errval ) ;
-
-// why does diag_l2_vag.c call this...
+// TODO: why does diag_l2_vag.c call this...
 int diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout);
-#warning diag_l2_iso9141.h is exposing a function so diag_l2_vag.c can use it ! FIX ME !
 
-
-int diag_l2_proto_9141_sc_common (
-		struct diag_l2_conn *d_l2_conn,
-		unsigned int bitrate,
-		target_type target,
-		UNUSED(source_type source),
-		int kb1, int kb2 ) ;
 
 #if defined(__cplusplus)
 }

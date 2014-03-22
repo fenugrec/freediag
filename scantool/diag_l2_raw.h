@@ -65,7 +65,6 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 struct diag_msg *
 diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval);
 
-extern const struct diag_l2_proto diag_l2_proto_raw;
 
 #if defined(__cplusplus)
 }

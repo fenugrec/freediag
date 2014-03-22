@@ -303,6 +303,7 @@ int diag_l1_gettype(struct diag_l0_device *dl0d)
 }
 
 
+//diag_l1_saferead : only used to remove half-duplex echos...
 //return <0 on error, number of bytes on success
 static int
 diag_l1_saferead(struct diag_l0_device *dl0d, uint8_t *buf, size_t bufsiz, int timeout)

@@ -199,7 +199,7 @@ int diag_l3_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 		rcv_call_back, handle);
 }
 
-//TODO : check if *buf should be uint8_t instead ?
+//diag_l3_decode:
 char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 	struct diag_msg *msg, char *buf, const size_t bufsize)
 {

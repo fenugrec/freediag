@@ -103,7 +103,7 @@ extern "C" {
  * Layer 0 device types
  *
  * Types of L1 Interface (L1protocol) supported
- * Each "device" has up to 16 interfaces, and many sub-interfaces
+ * Each "device" has up to 16 interfaces, and many sub-interfaces XXX what ?
  *
  * This is a bitmask of what is supported;
  * used for struct diag_l0 (diag_l0_type)

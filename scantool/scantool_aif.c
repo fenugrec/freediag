@@ -24,6 +24,7 @@
  * Mostly ODBII Compliant Scan Tool (as defined in SAE J1978)
  *
  * Application Interface (AIF) routines
+ * TODO : there's waaaay too much whitespace in here...
  *
  */
 

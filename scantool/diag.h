@@ -112,7 +112,9 @@ extern "C" {
 #define MAXRBUF 1024
 
 typedef uint8_t target_type, source_type, databyte_type, command_type;
-typedef uint16_t flag_type;
+typedef uint16_t flag_type;	//this is used for L2 type flags (diag_l2.h)
+			//only used for diag_l2_proto_startcomms() parameter
+			//XXX diag_l2_proto_startcomms specifies "uint32_t type"...
 
 /*
  * IOCTLs

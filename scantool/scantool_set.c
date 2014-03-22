@@ -60,7 +60,6 @@ int set_display;		/* English (1), or Metric (0) */
 const char *	set_vehicle;	/* Vehicle */
 const char *	set_ecu;	/* ECU name */
 
-//const char  *	set_interface;	/* H/w interface to use */
 #define DEFAULT_INTERFACE CARSIM	//index into l0_names below
 const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM},
 			{"CARSIM", CARSIM}, {"DUMB", DUMB}, {NULL,LAST}};

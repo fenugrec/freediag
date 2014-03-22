@@ -28,17 +28,19 @@ struct diag_l0 : every diag_l0_???.c driver fills in one of these to describe it
 its name; supported L1 protos, and pointers to "exposed" functions (diag_l0_initbus, _setspeed, etc)
 Those diag_l0 structs are added to the linked list l0dev_list by diag_l0_config.
 
+struct diag_l2_proto : every diag_l2_???.c handler fills in one of these to describe itself. 
+
 struct diag_l2_link : these are alloc'ed + filled by diag_l2_open; diag_l2_links is a linked-list
  of all the active l2 links. An l2 link associates a diag_l0_device with one L1 protocol. This
- struct also holds flags (inits supported, etc.). The member char diag_l2_name[] is
+ struct also holds flags (inits supported, etc.). The member "char diag_l2_name[]" is
  currently filled with the name of the l0 driver ("DUMB", "ELM", etc.)! This means
  we can't use two separate physical l0 devices of the same type (ex.: two ELM323 cables) !
  This is not a problem for now since many l0 drivers wouldn't support it (some have global
  flags not part of their diag_l0_device struct)
- Note : despite the name, diag_l2_link says nothing of the L2 protocol used.
- See struct diag_l2_conn
+ Note : despite the name, diag_l2_link says nothing about the L2 protocol used.
+ See struct diag_l2_conn/
 
-diag_l2_close : this is called from cmd_diag_disconnect to close the global_l2_dl0d
+diag_l2_close : this is called from cmd_diag_disconnect to close the global_l2_dl0d XXX
 
 diag_l1_close calls the ->diag_l0_close func of the specified diag_l0_device; this terminates
  an existing link between an l0 driver and its serial port. Only called in diag_l2_closelink;
@@ -75,20 +77,20 @@ As of 1.01, here's roughly how the layers can be interconnected :
  I think it was an abstraction for something that is now absent in the code...
 
 L0 :
-any "subinterface" (== serial port) can be associated with only one l0 driver. This link is defined in
-a struct diag_l0_device;
-Most L0 drivers don't support multiple "instances" of themselves (i.e. trying to use an ELM323 on ttyS0
-and another ELM327 on ttyS1 at the same time); this is partly due to global variables in each l0 driver.
+any "subinterface" can be associated with only one l0 driver. This link is defined in
+a struct diag_l0_device described earlier;
+Most L0 drivers don't support multiple "instances" of themselves (i.e. trying to use an ELM on ttyS0
+and another ELM on ttyS1 at the same time); this is partly due to global variables in each l0 driver.
 Also, no precautions have been taken to make the l0 drivers re-entrant (see async-safeness note
-later in this doc), so attempting this could be dangerous.
+later in this doc), so attempting this could be dangerous !
 
-L1 : this is mostly a "glue" layer: the different L1 protocols (DIAG_L1_* in diag_l1.h) are
-implemented in the l0 drivers. The code in diag_l1.c interprets the L1flags and acts accordingly; this
-makes it mostly pass-through except for diag_l1_send which takes care of P4 timing, half-duplex
-removal, 
+L1 : this is mostly a "glue" layer: the differences bewteen L1 protocols (DIAG_L1_* in diag_l1.h) are
+handled in the l0 drivers. The code in diag_l1.c interprets the L1flags and acts accordingly; this
+makes it mostly pass-through except for diag_l1_send which takes care of P4 timing and half-duplex
+removal.
+There are no specific data structures linking the L1 and L0 levels.
 
-
-L2 : 
+L2 : As I understand, this layer tries to abstract much of the differences between standards.
 
 L3 : there's also a linked-list for l3 connections : diag_l3_list; 
 

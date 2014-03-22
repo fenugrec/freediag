@@ -52,15 +52,11 @@ char *
 diag_l3_iso14230_decode_response(struct diag_msg *msg,
 char *buf, const size_t bufsize)
 {
-	//TODO : change the chars for uint8_t, probably safer:
-	// we do a few >< comparisons on chars... which are signed
 	char buf2[80];
 
 	switch (*msg->data)
 	{
 	default:
-		// XXX aren't we comparing *signed* chars here ??
-		// (the responses to StartComm, StopComm and AccessTimingP are >0x80 )
 		if ((msg->data[0] >= 0x50) && (msg->data[0] <= 0x7e))
 		{
 			snprintf(buf, bufsize, "Positive response, %s ",

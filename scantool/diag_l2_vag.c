@@ -40,6 +40,7 @@
 #include "diag_l2.h"
 #include "diag_l2_raw.h"
 #include "diag_l2_iso9141.h"
+#warning diag_l2_iso9141.h is exposing a function so diag_l2_vag.c can use it ! FIX ME !
 #include "diag_vag.h"
 
 #include "diag_l2_vag.h" /* prototypes for this file */
@@ -73,8 +74,8 @@ struct diag_l2_vag
  * Decode the message header
  */
 static int
-diag_l2_proto_vag_decode(char *data, int len,
-		 int *hdrlen, int *datalen, int *source, int *dest,
+diag_l2_proto_vag_decode(uint8_t *data, int len,
+		 uint8_t *hdrlen, int *datalen, uint8_t *source, uint8_t *dest,
 		int first_frame)
 {
 	int dl;
@@ -233,7 +234,8 @@ UNUSED(int *datalen))
 		while (tmsg)
 		{
 			struct diag_l2_vag *dp;
-			int hdrlen, datalen, source, dest;
+			int datalen;
+			uint8_t hdrlen, source, dest;
 
 			/*
 			 * We have the message with the header etc, we

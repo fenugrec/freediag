@@ -161,7 +161,7 @@ struct diag_l2_conn
  */
 
 /*
- * Operational L2 protocols
+ * Operational L2 protocols; for struct diag_l2_proto->diag_l2_protocol
  *
  * NOTE, many of these protocols run on each others physical layer,
  * for instance J1850 runs on J1850/ISO9141/ISO14230 interfaces
@@ -169,8 +169,7 @@ struct diag_l2_conn
 #define DIAG_L2_PROT_RAW	0	/* Raw send/receive, ie. L2 pass thru */
 #define DIAG_L2_PROT_ISO9141	1	/* Iso 9141, keywords 08 08 */
 #define DIAG_L2_PROT_NOTUSED	2	/* NOT USED */
-#define DIAG_L2_PROT_ISO14230	3	/* Iso 14230 using appropriate message
-						format */
+#define DIAG_L2_PROT_ISO14230	3	/* Iso 14230 using appropriate message format */
 #define DIAG_L2_PROT_SAEJ1850	4	/* SAEJ1850 */
 #define DIAG_L2_PROT_CAN	5	/* CAN L2 (is this defined ??) */
 #define DIAG_L2_PROT_VAG	6	/* VAG ISO9141 based protocol */
@@ -180,12 +179,12 @@ struct diag_l2_conn
 
 
 /*
- * Flags
- */
-/*
+ * Flags for diag_l2_proto_startcomms; this is not the same
+ * as the L2 handler flags (diag_l2_proto->diag_l2_flags)
+
  * Bits 0/1/2 used to tell what kind of initialisation to be done on the
  * diagnostic bus.
- * TODO: tidy up #defines for binary flags vs int values ...
+ * TODO: tidy up #defines for binary flags vs int values?
  */
 #define DIAG_L2_TYPE_SLOWINIT	0x00		/* Do 5 Baud init */
 #define DIAG_L2_TYPE_FASTINIT	0x01		/* Do fast init */
@@ -234,6 +233,7 @@ struct	diag_l2_data
 
 /*
  * L2 flags returned from GET_L2_FLAGS
+ * ( for struct diag_l2_proto->diag_l2_flags )
  */
 
 /*
@@ -262,6 +262,7 @@ struct	diag_l2_data
  * networks as oppose to normal diagnostic type interface such as ISO9141
  */
 #define DIAG_L2_FLAG_CONNECTS_ALWAYS 0x10
+
 
 
 /*
@@ -376,10 +377,11 @@ extern struct diag_l2_conn  *global_l2_conn;
 
 /*
  * Interface to individual protocols
+ * each diag_l2_???.c handler fills in one of these.
  */
 struct diag_l2_proto {
 	int diag_l2_protocol;
-	int	diag_l2_flags;
+	int diag_l2_flags;		//see #defines above
 
 	/* Individual L2 routines, see description of interface in diag_l2.h */
 	int (*diag_l2_proto_startcomms)(struct diag_l2_conn*,

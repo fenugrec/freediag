@@ -483,7 +483,7 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms)
 	LONGLONG timediff;		//64bit delta
 	long int tremain,counts;
 
-	char cbuf;
+	uint8_t cbuf;
 	int xferd;
 
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
