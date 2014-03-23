@@ -27,7 +27,7 @@ c) other simple interfaces with a different pattern :
 	It may be required to also invert the polarity of the L-line.
 	I know of no interface that would need this, but the option is there.
 	
-
+************
 Configurable options : (try "set dumbopts ?" for most recent list)
 
 use "set dumbopts [opts]" where [opts] is the addition of the desired flags:
@@ -44,3 +44,12 @@ use "set dumbopts [opts]" where [opts] is the addition of the desired flags:
 	25ms then waiting 25ms, this will send 0x00 at 360bps (==25ms) and wait a total of 50ms.
  ex. : "dumbopts 9" will set MAN_BREAK and USE_LLINE.
 Note : these options are ignored on any non-DUMB interfaces.
+
+************
+Troubleshooting dumb interfaces
+To aid with troubleshooting dumb interfaces, there is a special-purpose L0 driver
+called "DUMBT" (diag_l0_dumbtest.c). This implements a few low-level tests such as
+ - sending fast or slow pulses on TXD (useful to check K-line polarity, levels and timing)
+ - sending slow pulses on RTS and DTR (useful to check L-line polarity and/or correct
+   level-shifting if the interface is powered by RTS + DTR)
+To access these tests there is an "l0test" command in the "debug" sub-menu.
