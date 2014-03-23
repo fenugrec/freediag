@@ -7,6 +7,33 @@ He also took the liberty of modifying the version number format to MAJOR.MINOR, 
 written with 2 digits ( %02d if you will), and occasionally suffixed by a lower-case letter indicating
 a snapshot of the CVS source tree.
 
+*** Release 1.02 2014-03-23
+From the release notes:
+Many fixes to win32 code.
+New in 1.02:
+Windows version has a lot of self-verification for timing, and a small amount of self-adjustment as well.
+All platforms: there is now a special debugging mode for troubleshooting dumb interfaces.
+
+Fixes: (summary of CVS commits)
+
+diag_l0_dumb : fixed spurious detection of sync byte
+diag_l0_elm : doesn't support raw L1 proto (only iso 9141 & 14230)
+new L1 flag (DIAG_L1_AUTOSPEED) for smart interfaces
+diag_l1_setspeed is only called from diag_l2_ioctl now
+bug #16: removed function pointers in debugging messages
+diag_tty_break win32 : added auto-adjustment of timeout (running average)
+added L line polarity option for L0_dumb devices.
+added optional diag_tty_fastbreak (specifically for iso14230 fast init)
+diag_l0_dumb : added optional fastbreak & unified initbus functions
+added TRY_POSIX build option in CMake and Autotools
+bug #13: diag_l0_dumb uses manual 5bps init by default (MAN_BREAK) now.
+cleaned some redundant delays (i.e. more than one level waiting W5 before initbus, etc.)
+Sanitized alloc/free management in L2 startcomms & stopcomms functions
+sanitized USE_RCFILE defines
+A *lot* of code cleanup and commenting. freediag almost compiles without any warnings on at least a few platforms.
+Misc improvements to the CMake build system.
+
+
 *** Release 1.01 2014-03-04
 Codename "phoenix zombie".
 From the release notes :
