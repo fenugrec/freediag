@@ -19,7 +19,7 @@ if ( NOT(${CMAKE_INSTALL_PREFIX} STREQUAL ${TEMP_INSTPREFIX}))
 	# set(installprefix .etc... FORCE)
 	#endif()
 	#placed after project().
-endif ( NOT(${CMAKE_INSTALL_PREFIX} STREQUAL ${TEMP_INSTPREFIX}))
+endif ()
 
 #include (CheckLibraryExists) #maybe not needed just yet ,we can use "find_library" ?
 include (CheckFunctionExists)
@@ -32,9 +32,10 @@ set (SCANTOOL_PROGNAME "scantool")
 #that sets the command-line tool prompt.
 
 # define CMAKE_ENABLED to toggle between autotools' config.h(.in) and our cconf.h(.in)
+# This can be removed if autotools is ever phased out
 add_definitions (-DCMAKE_ENABLED)
-###### Compiler flags & build types
 
+###### Compiler flags & build types
 if (NOT CMAKE_BUILD_TYPE)
 	message(STATUS "No build type selected, defaulting to Debug")
 	set(CMAKE_BUILD_TYPE "DEBUG")
@@ -45,9 +46,10 @@ if (CMAKE_COMPILER_IS_GNUCC)
 	set (CMAKE_C_FLAGS_DEBUG "-pedantic -std=gnu99 -Wstrict-prototypes -Wsign-compare -Wredundant-decls")
 	set (CMAKE_C_FLAGS_RELEASE "-DNDEBUG")
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra" )
-#else (CMAKE_COMPILER_IS_GNUCC)
+#else ()
+	#not sure what we should use on other compilers.
 	#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
-endif (CMAKE_COMPILER_IS_GNUCC)
+endif ()
 
 message(STATUS "Generating make/project files for: ${CMAKE_GENERATOR}")
 
@@ -84,12 +86,12 @@ if(WIN32)
 		#require at least winXP
 		message(WARNING "At least Win XP is required ! Proceed at your risk !")
 	endif (${CMAKE_SYSTEM_VERSION} VERSION_LESS 5.1)
-else(WIN32)
+else()
 	#no need to check for these on WIN32 as the offending code (diag_os and diag_tty) was re-written
 	check_function_exists (alarm HAVE_ALARM)
 	check_function_exists (select HAVE_SELECT)
 	set (OS_DIAGTTY "diag_tty_unix.c")
-endif(WIN32)
+endif()
 
 
 ###### Build Options
@@ -119,12 +121,24 @@ add_subdirectory(scantool)
 if (BUILDGUI)
 	#add_subdirectory(scangui)
 	message(FATAL_ERROR "scangui can't be built through cmake yet")
-endif (BUILDGUI)
+endif ()
 
+###### misc files to include in bin packages
+install (DIRECTORY doc/ DESTINATION doc
+	PATTERN "CVS" EXCLUDE
+	PATTERN "*xcf" EXCLUDE)
+install (FILES "README_v${PKGVERSIONMAJOR}_${PKGVERSIONMINOR}.txt"
+		"CHANGES" "AUTHORS" "COPYING"
+	DESTINATION . OPTIONAL)
 
 ###### package generation
 #this adds "package" and "package_source" targets, i.e. we can "make package_source"
-set (CPACK_GENERATOR "TGZ;ZIP")
+if (WIN32)
+	set (CPACK_GENERATOR "ZIP")
+else ()
+	set (CPACK_GENERATOR "TGZ;ZIP")
+endif ()
+
 set (CPACK_SOURCE_GENERATOR "TGZ")
 set (CPACK_PACKAGE_VERSION_MAJOR ${PKGVERSIONMAJOR})
 set (CPACK_PACKAGE_VERSION_MINOR ${PKGVERSIONMINOR})

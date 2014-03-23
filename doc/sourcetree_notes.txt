@@ -51,12 +51,15 @@ diag_l2_open: calls diag_l1_open with specified l0name, subinterface, l1proto;
  this returns struct diag_l0_device .
 
 diag_l1_open: finds l0name in the linked list l0dev_list; calls the l0 driver's diag_l0_open
- function.
-->diag_l0_open(...) : this function, defined in l0 driver, alloc's + fills a new diag_l0_device struct.
+ function with the specified subinterface and L1 proto.  Returns the struct diag_l0_device *
+ it got from ->diag_l0_open.
+diag_l1_open is currently only called from diag_l2_open.
+
+->diag_l0_open(...) : this function, defined by each l0 driver, alloc's + fills a new diag_l0_device struct.
  
 
 
-diag_l0_initbus : these are called by diag_l1_initibus; diag_l1_initbus is called by
+diag_l0_initbus : these are called by diag_l1_initibus; diag_l1_initbus is only called by
  diag_l2_ioctl.
 diag_l0_initbus is assumed to return at exactly :
 - the end of tWUP, if iso14230 fastinit (just in time to send the startcomm request)

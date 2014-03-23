@@ -24,7 +24,7 @@ configure_file ( diag_config.c.in diag_config.c)
 
 
 
-### make source file lists (useful later)
+### build source file lists (useful later)
 set (LIBDIAG_SRCS diag_l0_me.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c
 	diag_l0_dumb.c  diag_l0_dumbtest.c ${CMAKE_CURRENT_BINARY_DIR}/diag_config.c
 	${OS_DIAGTTY} diag_l1.c diag_l2.c diag_l2_can.c diag_l2_raw.c
@@ -52,7 +52,7 @@ file (GLOB SCANTOOL_HEADERS *.h)
 # -source-codes-filename-at-compile-time/22161316
 
 foreach (F IN LISTS LIBDIAG_SRCS;LIBDYNO_SRCS;
-	LIBDYNO_SRCS;SCANTOOL_SRCS)
+	DIAGTEST_SRCS;SCANTOOL_SRCS)
 	get_filename_component (BNAME ${F} NAME)
 	set_source_files_properties (${F} PROPERTIES
 		COMPILE_DEFINITIONS "CURFILE=\"${BNAME}\"")
@@ -85,5 +85,15 @@ add_executable(scantool  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
 target_link_libraries(scantool libdiag libdyno)
 install(TARGETS scantool DESTINATION bin)
 
-### install targets
+### install & copy targets
 # defined mainly to simplify packaging
+
+file (GLOB CARSIM_EXAMPLES *.db)
+#copy carsim db files and ini file to build dir, add install target as required
+file (COPY ${CARSIM_EXAMPLES} DESTINATION .)
+install (FILES ${CARSIM_EXAMPLES} DESTINATION bin)
+
+if (USE_INIFILE)
+	file (COPY scantool.ini DESTINATION .)
+	install (FILES scantool.ini DESTINATION bin)
+endif ()
