@@ -707,7 +707,7 @@ void *data, size_t len, int timeout)
 		fprintf(stderr,
 			FLFMT "link %p received from ME: ", FL, (void *)dl0d);
 		for (i=0; i < dev->dev_rxlen; i++)
-				fprintf(stderr, "0x%x ",
+				fprintf(stderr, "0x%X ",
 					dev->dev_rxbuf[i] & 0xff);
 		fprintf(stderr, "\n");
 	}
@@ -719,12 +719,12 @@ void *data, size_t len, int timeout)
 	if ((xferd & 0xff) != dev->dev_rxbuf[13])
 	{
 /* XXX, we should deal with this properly rather than just printing a message */
-		fprintf(stderr,"Got bad checksum from ME device 0x%x != 0x%x\n",
+		fprintf(stderr,"Got bad checksum from ME device 0x%X != 0x%X\n",
 			(int) xferd & 0xff, dev->dev_rxbuf[13]);
 		fprintf(stderr,"PC Serial port probably out of spec.\n");
 		fprintf(stderr,"RX Data: ");
 		for (i=0; i < dev->dev_rxlen; i++)
-				fprintf(stderr, "0x%x ",
+				fprintf(stderr, "0x%X ",
 					dev->dev_rxbuf[i] & 0xff);
 		fprintf(stderr, "\n");
 	}
@@ -740,7 +740,7 @@ void *data, size_t len, int timeout)
 
 		if (diag_l0_debug & DIAG_DEBUG_READ)
 			fprintf(stderr,
-				FLFMT "link %p ME returns err 0x%x : s/w v 0x%x i/f cap. 0x%x\n",
+				FLFMT "link %p ME returns err 0x%X : s/w v 0x%X i/f cap. 0x%X\n",
 				FL, (void *)dl0d, dev->dev_rxbuf[3],
 				dev->dev_rxbuf[2], dev->dev_rxbuf[4]);
 
@@ -809,7 +809,7 @@ diag_l0_muleng_getflags(struct diag_l0_device *dl0d)
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr,
-			FLFMT "getflags link %p proto %d flags 0x%x\n",
+			FLFMT "getflags link %p proto %d flags 0x%X\n",
 			FL, (void *)dl0d, dev->protocol, flags);
 
 	return flags ;

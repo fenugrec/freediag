@@ -1,5 +1,5 @@
 ###################################################################
-# Freediag Simulator Database File - ISO-9141 version.
+# Freediag Simulator Database File - ISO14230 version.
 # Here you hold the message bytes exchanged between the Tester and
 # a simulated car ECU (Electronic Controller Unit).
 # This file, together with the "CARSIM" type of interface, makes
@@ -32,6 +32,10 @@ CFG SIM_NOL2CKSUM 0
 RQ 0x00
 RQ 0xC1 0x33 0xF1 0x81 0x66
 RP 0xC0 0xF1 0x01 0x03 0xC1 0xEA 0x8F cks1
+
+# Keepalive messages :
+RQ 0xC1 0x33 0xF1 0x3E 0x23
+RP 0xC1 0xF1 0x01 0x7E cks1
 
 # What SID-1 PIDs are supported?
 RQ 0xC2 0x33 0xF1 0x01 0x00 0xE7

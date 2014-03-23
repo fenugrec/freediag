@@ -221,10 +221,10 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 		printf("dumbopts: %u\n", diag_l0_dumb_getopts());
 	printf("speed:    Connect speed: %d\n", set_speed);
 	printf("display:  %s units\n", set_display?"english":"metric");
-	printf("testerid: Source ID to use: 0x%x\n", set_testerid);
+	printf("testerid: Source ID to use: 0x%X\n", set_testerid);
 	printf("addrtype: %s addressing\n",
 		set_addrtype ? "functional" : "physical");
-	printf("destaddr: Destination address to connect to: 0x%x\n",
+	printf("destaddr: Destination address to connect to: 0x%X\n",
 		set_destaddr);
 	printf("l1protocol: Layer 1 (H/W) protocol to use %s\n",
 		l1_names[offset]);
@@ -281,6 +281,10 @@ static int cmd_set_interface(int argc, char **argv)
 					"\"K-line only\" and \"MAN_BREAK\" are set. \n");
 					diag_l0_dumb_setopts(8);	//MAN_BREAK hardcoded ! yuck.
 			}
+			if (l0_names[set_interface_idx].code==DUMBT)
+				printf("*** Warning ! The DUMBT driver is only for electrical ***\n"
+						"*** testing ! Do NOT use while connected to a vehicle! ***\n"
+						"*** refer to doc/scantool-manual.html ***\n");
 
 		}
 	} else {
@@ -373,7 +377,7 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 				"Note : these options are ignored on any non-DUMB interfaces.\n");
 			return CMD_OK;
 		}
-		if ( ! sscanf(argv[1], "%u", &tmp)) {	//interpret the options as decimal. I might change this to %x if I add a lot more flags
+		if ( ! sscanf(argv[1], "%u", &tmp)) {	//interpret the options as decimal. I might change this to %X if I add a lot more flags
 			printf("could not parse \"%s\" ! verify input.\n\n", argv[1]);
 			return CMD_USAGE;
 		}
@@ -400,7 +404,7 @@ cmd_set_testerid(int argc, char **argv)
 			set_testerid = (uint8_t) tmp;
 	}
 	else
-		printf("testerid: Source ID to use: 0x%x\n", set_testerid);
+		printf("testerid: Source ID to use: 0x%X\n", set_testerid);
 
 	return CMD_OK;
 }
@@ -419,7 +423,7 @@ cmd_set_destaddr(int argc, char **argv)
 	}
 	else
 	{
-		printf("destaddr: Destination address to connect to: 0x%x\n",
+		printf("destaddr: Destination address to connect to: 0x%X\n",
 			set_destaddr);
 	}
 

@@ -166,7 +166,7 @@ print_msg(FILE *fp, struct diag_msg *msg, int timestamp)
 	for (tmsg = msg, i = 0; tmsg; tmsg = tmsg->next, i++) {
 			print_msg_header(fp, tmsg, timestamp, i);
 		for (j = 0; j < tmsg->len; j++) {
-				fprintf(fp, "0x%02x ", tmsg->data[j]);
+				fprintf(fp, "0x%02X ", tmsg->data[j]);
 		}
 		fprintf(fp, "\n");
 	}
@@ -214,7 +214,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		};
 
 	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
-		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src %x, dest %x; msgcnt %d\n",
+		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src %X, dest %X; msgcnt %d\n",
 			(void *)handle, len, msg->src, msg->dest, msg->mcnt);
 	}
 
@@ -272,7 +272,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		}
 		if (found == 0) {
 			fprintf(stderr, "ERROR: Too many ECUs responded\n");
-			fprintf(stderr, "ERROR: Info from ECU addr 0x%x ignored\n", src);
+			fprintf(stderr, "ERROR: Info from ECU addr 0x%X ignored\n", src);
 			return;
 		}
 
@@ -312,7 +312,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 				 * tests
 				 */
 				if (data[0] != 0x46) {
-					fprintf(stderr, "Test 0x%02x failed %d\n",
+					fprintf(stderr, "Test 0x%02X failed %d\n",
 						data[1], data[2]);
 					return;
 				}
@@ -332,7 +332,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 						if (*ihandle == RQST_HANDLE_NCMS2) {
 							/* Only print fails */
 							if (val > lim) {
-								fprintf(stderr, "Test 0x%x Component 0x%x FAILED ",
+								fprintf(stderr, "Test 0x%X Component 0x%X FAILED ",
 								data[1], data[2] & 0x7f);
 								fprintf(stderr, "Max val %d Current Val %d\n",
 									lim, val);
@@ -340,7 +340,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 							}
 						} else {
 							/* Max value test */
-							fprintf(stderr, "Test 0x%x Component 0x%x ",
+							fprintf(stderr, "Test 0x%X Component 0x%X ",
 								data[1], data[2] & 0x7f);
 
 							if (val > lim)
@@ -354,14 +354,14 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 					} else {
 						if (*ihandle == RQST_HANDLE_NCMS2) {
 							if (val < lim) {
-								fprintf(stderr, "Test 0x%x Component 0x%x FAILED ",
+								fprintf(stderr, "Test 0x%X Component 0x%X FAILED ",
 									data[1], data[2] & 0x7f);
 								fprintf(stderr, "Min val %d Current Val %d\n",
 									lim, val);
 							}
 						} else {
 							/* Min value test */
-							fprintf(stderr, "Test 0x%x Component 0x%x ",
+							fprintf(stderr, "Test 0x%X Component 0x%X ",
 								data[1], data[2] & 0x7f);
 							if (val < lim)
 								fprintf(stderr, "FAILED ");
@@ -380,7 +380,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 
 				/* O2 Sensor test results */
 				if (msg->data[0] != 0x45) {
-					fprintf(stderr, "Test 0x%02x failed %d\n",
+					fprintf(stderr, "Test 0x%02X failed %d\n",
 						msg->data[1], msg->data[2]);
 					return;
 				}
@@ -422,7 +422,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 								failed?"FAILED":"Passed" );
 							break;
 						default:
-							fprintf(stderr, "Test %d: actual 0x%x min 0x%x max 0x%x %s\n",
+							fprintf(stderr, "Test %d: actual 0x%X min 0x%X max 0x%X %s\n",
 								data[1], data[4],
 								data[5], data[6],
 								failed?"FAILED":"Passed" );
@@ -449,7 +449,7 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 
 	for ( tmsg = msg , i = 0; tmsg; tmsg=tmsg->next, i++ ) {
 		fprintf(stderr, "%ld.%04ld: ", (long)tmsg->rxtime.tv_sec, (long)tmsg->rxtime.tv_usec/100);
-		fprintf(stderr, "msg %02d src 0x%x dest 0x%x ", i, msg->src, msg->dest);
+		fprintf(stderr, "msg %02d src 0x%X dest 0x%X ", i, msg->src, msg->dest);
 		fprintf(stderr, "msg %02d: ", i);
 
 		if (handle != NULL) {
@@ -459,7 +459,7 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 				buf, sizeof(buf)));
 		} else {
 			for (j=0; j<tmsg->len; j++) {
-				fprintf(stderr, "0x%02x ", tmsg->data[j]);
+				fprintf(stderr, "0x%02X ", tmsg->data[j]);
 			}
 			fprintf(stderr, "\n");
 		}
@@ -481,12 +481,12 @@ struct diag_msg *msg)
 	uint8_t *data;
 
 	for ( tmsg = msg , i = 0; tmsg; tmsg=tmsg->next, i++ ) {
-		fprintf(stderr, "msg %02d src 0x%x dest 0x%x ", i, tmsg->src, tmsg->dest);
+		fprintf(stderr, "msg %02d src 0x%X dest 0x%X ", i, tmsg->src, tmsg->dest);
 		fprintf(stderr, "msg %02d: ", i);
 		len = tmsg->len;
 		data = tmsg->data;
 		while (len) {
-			fprintf(stderr, "0x%02x ", *data);
+			fprintf(stderr, "0x%02X ", *data);
 			len--; data++;
 		}
 		fprintf(stderr, "\n");
@@ -546,7 +546,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 #define J1979_MODE_MAX 9
 
 	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
-		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %x\n",
+		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %X\n",
 			(void *)handle, (void *)d_conn, mode);
 
 	}
@@ -971,16 +971,16 @@ do_j1979_getdata(int interruptible)
 	 */
 	for (i=3; i<0x100; i++) {
 		if (merged_mode1_info[i]) {
-			fprintf(stderr, "Requesting Mode 1 Pid 0x%02x...\n", i);
+			fprintf(stderr, "Requesting Mode 1 Pid 0x%02X...\n", i);
 			rv = l3_do_j1979_rqst(d_conn, 0x1, (uint8_t) i, 0x00,
 				0x00, 0x00, 0x00, 0x00, (void *)0);
 			if (rv < 0) {
-				fprintf(stderr, "Mode 1 Pid 0x%02x request failed (%d)\n",
+				fprintf(stderr, "Mode 1 Pid 0x%02X request failed (%d)\n",
 					i, rv);
 			} else {
 				msg = find_ecu_msg(0, 0x41);
 				if (msg == NULL)
-					fprintf(stderr, "Mode 1 Pid 0x%02x request no-data (%d)\n",
+					fprintf(stderr, "Mode 1 Pid 0x%02X request no-data (%d)\n",
 					i, rv);
 			}
 
@@ -1013,15 +1013,15 @@ do_j1979_getdata(int interruptible)
 				ep->mode1_data[2].data[3]) ) {
 			for (i=3; i<=0x100; i++) {
 				if (ep->mode2_info[i]) {
-					fprintf(stderr, "Requesting Mode 0x02 Pid 0x%02x...\n", i);
+					fprintf(stderr, "Requesting Mode 0x02 Pid 0x%02X...\n", i);
 					rv = l3_do_j1979_rqst(d_conn, 0x2, (uint8_t)i, 0x00,
 						0x00, 0x00, 0x00, 0x00, (void *)0);
 					if (rv < 0) {
-						fprintf(stderr, "Mode 0x02 Pid 0x%02x request failed (%d)\n", i, rv);
+						fprintf(stderr, "Mode 0x02 Pid 0x%02X request failed (%d)\n", i, rv);
 					}
 					msg = find_ecu_msg(0, 0x42);
 					if (msg == NULL) {
-						fprintf(stderr, "Mode 0x02 Pid 0x%02x request no-data (%d)\n", i, rv);
+						fprintf(stderr, "Mode 0x02 Pid 0x%02X request no-data (%d)\n", i, rv);
 						return -1;
 					}
 
@@ -1237,7 +1237,7 @@ do_j1979_ncms(int printall)
 	for (i=0 ; i < 60; i++) {
 		if ((merged_mode6_info[i]) && ((i & 0x1f) != 0)) {
 			/* Do test */
-			fprintf(stderr, "Requesting Mode 6 TestID 0x%02x...\n", i);
+			fprintf(stderr, "Requesting Mode 6 TestID 0x%02X...\n", i);
 			rv = l3_do_j1979_rqst(d_conn, 6, (uint8_t)i, 0x00,
 				0x00, 0x00, 0x00, 0x00,
 				(void *)(printall?RQST_HANDLE_NCMS:RQST_HANDLE_NCMS2));
@@ -1277,7 +1277,7 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset)
 		 * Do Mode 'mode' Pid 'pid' request to find out
 		 * what is supported
 		 */
-		fprintf(stderr, "Exploring Mode 0x%02x supported PIDs (block 0x%02x)...\n", mode, pid);
+		fprintf(stderr, "Exploring Mode 0x%02X supported PIDs (block 0x%02X)...\n", mode, pid);
 		rv = l3_do_j1979_rqst(d_conn, mode, (uint8_t) pid, 0x00,
 			0x00, 0x00, 0x00, 0x00, (void *)0);
 		if (rv != 0) {
@@ -1424,7 +1424,7 @@ do_j1979_getO2tests(int O2sensor)
 		fprintf(stderr, "O2 Sensor %d Tests: -\n", O2sensor);
 		if ((merged_mode5_info[i]) && ((i & 0x1f) != 0)) {
 			/* Do test for of i + testID */
-			fprintf(stderr, "Requesting Mode 0x05 TestID 0x%02x...\n", i);
+			fprintf(stderr, "Requesting Mode 0x05 TestID 0x%02X...\n", i);
 			rv = l3_do_j1979_rqst(d_conn, 5, (uint8_t) i, o2s,
 				0x00, 0x00, 0x00, 0x00,
 				(void *)RQST_HANDLE_O2S);

@@ -79,7 +79,7 @@ const struct cmd_tbl_entry debug_cmd_table[] =
 	{ "all", "all [val]", "Show/set All layer debug level",
 		cmd_debug_all, 0, NULL},
 	{ "l0test", "l0test [testnum]", "Dumb interface tests. Disconnect from vehicle first !",
-		cmd_debug_l0test, FLAG_HIDDEN, NULL},
+		cmd_debug_l0test, 0, NULL},
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
 	{ "quit","quit", "Return to previous menu level",
@@ -113,13 +113,13 @@ print_resp_info(UNUSED(int mode), response_t *data)
 			if (data->type == TYPE_GOOD)
 			{
 				int j;
-				printf("0x%02x: ", i );
+				printf("0x%02X: ", i );
 				for (j=0; j<data->len; j++)
-					printf("%02x ", data->data[j]);
+					printf("%02X ", data->data[j]);
 				printf("\n");
 			}
 			else
-				printf("0x%02x: Failed 0x%x\n",
+				printf("0x%02X: Failed 0x%X\n",
 					i, data->data[1]);
 		}
 		data++;
@@ -163,7 +163,7 @@ cmd_debug_common( const char *txt, int *val, int argc, char **argv)
 
 	if (argc == 1)
 	{
-		printf("%s debug is 0x%x\n", txt, *val);
+		printf("%s debug is 0x%X\n", txt, *val);
 	}
 	else
 	{
@@ -224,7 +224,7 @@ cmd_debug_show(UNUSED(int argc), UNUSED(char **argv))
 {
 /*	int layer, val; */
 
-	printf("Debug values: L0 0x%x, L1 0x%x, L2 0x%x L3 0x%x CLI 0x%x\n",
+	printf("Debug values: L0 0x%X, L1 0x%X, L2 0x%X L3 0x%X CLI 0x%X\n",
 		diag_l0_debug, diag_l1_debug, diag_l2_debug, diag_l3_debug,
 		diag_cmd_debug);
 	return CMD_OK;
@@ -240,7 +240,7 @@ print_pidinfo(int mode, uint8_t *pid_data)
 	for (i=0; i<=0x60; i++)
 	{
 		if (pid_data[i]) {
-			printf("0x%x ", i);
+			printf("0x%X ", i);
 			j++; p++;
 		}
 		if (j == 10)
@@ -269,7 +269,7 @@ static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 	{
 		if (ep->valid)
 		{
-			printf("ECU %d address 0x%x: Supported PIDs:\n",
+			printf("ECU %d address 0x%X: Supported PIDs:\n",
 				i, ep->ecu_addr & 0xff);
 			print_pidinfo(1, ep->pids);
 			print_pidinfo(2, ep->mode2_info);
@@ -291,28 +291,36 @@ static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 //XXX unfinished; I'm implementing this as another L0 driver
 //(diag_l0_dumbtest.c).
 static int cmd_debug_l0test(int argc, char **argv) {
-#define MAX_L0TEST 4
+#define MAX_L0TEST 5
 	unsigned int testnum=0;
 	if ((argc <= 1) || (strcmp(argv[1], "?") == 0) || (sscanf(argv[1],"%u", &testnum) != 1)) {
 		printf("usage: %s [testnum], where testnum is a number between 1 and %d.\n", argv[0], MAX_L0TEST);
 		printf("you must have done \"set interface dumbt [port]\" and \"set dumbopts\" before proceding.\n");
 
-		printf("Available tests:\n\t1 : slow pulse TXD (K) with diag_tty_break; 1 for 400ms, 0 for 200ms.\n"
-				"\t2: fast pulse TXD (K) : send 0x55 @ 10400bps\n"
-				"\t3: slow pulse RTS : set for 400ms, clear for 200ms\n"
-				"\t4: slow pulse DTR : set for 400ms, clear for 200ms\n");
+		printf("Available tests:\n"
+				"\t1 : slow pulse TXD (K) with diag_tty_break; 1 for 400ms, 0 for 200ms.\n"
+				"\t2 : fast pulse TXD (K) : send 0x55 @ 10400bps\n"
+				"\t3 : slow pulse RTS : set for 400ms, clear for 200ms\n"
+				"\t4 : slow pulse DTR : set for 400ms, clear for 200ms\n"
+				"\t5 : fast pulse TXD (K) with diag_tty_break; 1 for 100ms, 0 for 25ms.\n");
 		return CMD_OK;
 	}
 	if ((testnum < 1) || (testnum > MAX_L0TEST)) {
 		printf("Invalid test.\n");
 		return CMD_FAILED;
 	}
-	printf("Not finished yet !!!\n");
-	// I think the easiest way to pass on "testnum" on to diag_l0_dumbtest.c would be
-	// to pretend testnum is an L1protocol. Then we can use diag_l1_open to start the
-	// test (and diag_l0_dt_open would return when finished or interrupted).
+
+	if (diag_init())
+		return CMD_FAILED;
+
+	printf("Trying test %u on %s...\n", testnum, set_subinterface);
+
+	// I think the easiest way to pass on "testnum" on to diag_l0_dumbtest.c is
+	// to pretend testnum is an L1protocol. Then we can use diag_l2_open to start the
+	// test.
+	diag_l2_open("DUMBT", set_subinterface, (int) testnum);
 	return CMD_OK;
 
-	//printf("Press <enter> to stop the test.\n");
+
 }
 

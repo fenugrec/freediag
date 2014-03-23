@@ -116,7 +116,7 @@ UNUSED(source_type source))
 	}
 
 	if (diag_l2_debug & DIAG_DEBUG_INIT)
-		fprintf(stderr, FLFMT "startcomms conn %p got kb 0x%x 0x%x\n",
+		fprintf(stderr, FLFMT "startcomms conn %p got kb 0x%X 0x%X\n",
 				FL, (void *)d_l2_conn, cbuf[0], cbuf[1]);
 
 	/*
@@ -162,7 +162,7 @@ diag_l2_proto_mb1_decode(uint8_t *data, int len, int *msglen)
 	{
 		fprintf(stderr, FLFMT "decode len %d", FL, len);
 		for (i = 0; i < len ; i++)
-			fprintf(stderr, " 0x%x", data[i]&0xff);
+			fprintf(stderr, " 0x%X", data[i]&0xff);
 		fprintf(stderr, "\n");
 	}
 	*msglen = 0;
@@ -180,7 +180,7 @@ diag_l2_proto_mb1_decode(uint8_t *data, int len, int *msglen)
 	if (data[len-2] != (cksum &0xff))
 	{
 		if (diag_l2_debug & DIAG_DEBUG_READ)
-			fprintf(stderr, FLFMT "recv cksum 0x02%x 0x%02x, wanted 0x%x\n",
+			fprintf(stderr, FLFMT "recv cksum 0x%02X 0x%02X, wanted 0x%X\n",
 				FL, data[len-1] & 0xff,
 				data[len-2] &0xff, cksum & 0xffff);
 		return diag_iseterr(DIAG_ERR_BADCSUM);
@@ -188,7 +188,7 @@ diag_l2_proto_mb1_decode(uint8_t *data, int len, int *msglen)
 	if (data[len-1] != ((cksum>>8) & 0xff))
 	{
 		if (diag_l2_debug & DIAG_DEBUG_READ)
-			fprintf(stderr, FLFMT "recv cksum 0x02%x 0x%02x, wanted 0x%x\n",
+			fprintf(stderr, FLFMT "recv cksum 0x%02X 0x%02X, wanted 0x%X\n",
 				FL, data[len-1] & 0xff,
 				data[len-2] &0xff, cksum & 0xffff);
 		return diag_iseterr(DIAG_ERR_BADCSUM);
@@ -345,7 +345,7 @@ diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	{
 		fprintf(stderr, FLFMT "About to send %d bytes: ", FL, txbuf[2]);
 		for (i=0; i<txbuf[2]; i++)
-			fprintf(stderr, "0x%02x ", txbuf[i]);
+			fprintf(stderr, "0x%02X ", txbuf[i]);
 		fprintf(stderr, "\n");
 	}
 

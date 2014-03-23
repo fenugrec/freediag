@@ -119,7 +119,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 		return diag_iseterr(DIAG_ERR_WRONGKB);
 
 	if (diag_l2_debug && DIAG_DEBUG_PROTO)
-		fprintf(stderr, FLFMT "Got keybytes %x %x\n", FL, kb1, kb2);
+		fprintf(stderr, FLFMT "Got keybytes %X %X\n", FL, kb1, kb2);
 
 	// Check keybytes, these can be 0x08 0x08 or 0x94 0x94:
 	if ( (kb1 != kb2) || ( (kb1 != 0x08) && (kb1 != 0x94) ) )
@@ -168,7 +168,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 		{
 			if (diag_l2_debug & DIAG_DEBUG_OPEN)
 				fprintf(stderr,
-					FLFMT "startcomms 0x%02x != 0x%02x\n",
+					FLFMT "startcomms 0x%02X != 0x%02X\n",
 					FL, inv_address, ~address);
 			return diag_iseterr(DIAG_ERR_WRONGKB);
 		}
@@ -178,7 +178,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_iso9141_wakeupECU con %p kb1 0x%x kb2 0x%x\n",
+			FLFMT "diag_l2_iso9141_wakeupECU con %p kb1 0x%X kb2 0x%X\n",
 			FL, (void *)d_l2_conn,
 			kb1, kb2);
 
@@ -291,7 +291,7 @@ diag_l2_proto_iso9141_decode(uint8_t *data, int len,
 		fprintf(stderr, FLFMT "decode len %d", FL, len);
 		for (i = 0; i < len ; i++)
 		{
-			fprintf(stderr, " 0x%x", data[i]&0xff);
+			fprintf(stderr, " 0x%X", data[i]&0xff);
 		}
 		fprintf(stderr, "\n");
 	}
@@ -350,7 +350,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "diag_l2_iso9141_int_recv offset %x\n",
+			FLFMT "diag_l2_iso9141_int_recv offset %X\n",
 			FL, d_l2_conn->rxoffset);
 
 	state = ST_STATE1;

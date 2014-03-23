@@ -85,7 +85,7 @@ diag_l2_proto_vag_decode(uint8_t *data, int len,
 		int i;
 		fprintf(stderr, FLFMT "decode len %d", FL, len);
 		for (i = 0; i < len ; i++)
-			fprintf(stderr, " 0x%x", data[i]&0xff);
+			fprintf(stderr, " 0x%X", data[i]&0xff);
 
 		fprintf(stderr, "\n");
 	}
@@ -207,7 +207,7 @@ UNUSED(int *datalen))
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "diag_l2_vag_intrecv offset %x\n",
+			FLFMT "diag_l2_vag_intrecv offset %X\n",
 				FL, dp->rxoffset);
 
 	/* Clear out last received message if not done already */
@@ -253,7 +253,7 @@ UNUSED(int *datalen))
 			}
 
 			if (diag_l2_debug & DIAG_DEBUG_PROTO)
-				fprintf(stderr, "msg %x decode done rv %d hdrlen %d datalen %d source %02x dest %02x\n",
+				fprintf(stderr, "msg %X decode done rv %d hdrlen %d datalen %d source %02X dest %02X\n",
 					tmsg, rv, hdrlen, datalen, source, dest);
 
 			if (tmsg->data[0] & 0xC0 == 0xC0)

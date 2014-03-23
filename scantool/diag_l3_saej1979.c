@@ -221,7 +221,7 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	d_conn = d_l3_conn->d_l3l2_conn;
 
 	if (diag_l3_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr,FLFMT "send %d bytes, l2 flags 0x%x\n",
+		fprintf(stderr,FLFMT "send %d bytes, l2 flags 0x%X\n",
 			FL, msg->len, d_l3_conn->d_l3l2_flags);
 
 	/* Note source address on 1st send */
@@ -291,7 +291,7 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
 	struct diag_l3_conn *d_l3_conn = (struct diag_l3_conn *)handle;
 
 	if (diag_l3_debug & DIAG_DEBUG_READ)
-		fprintf(stderr,FLFMT "rcv_callback for %d bytes fmt 0x%x conn rxoffset %d\n",
+		fprintf(stderr,FLFMT "rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n",
 			FL, msg->len, msg->fmt, d_l3_conn->rxoffset);
 
 	if (msg->fmt & DIAG_FMT_FRAMED) {
@@ -373,7 +373,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			fprintf(stderr,FLFMT "process_data hex data is ",
 				FL);
 			for (i=0; i < d_l3_conn->rxoffset; i++)
-				fprintf(stderr,"%02x ", d_l3_conn->rxbuf[i]);
+				fprintf(stderr,"%02X ", d_l3_conn->rxbuf[i]);
 			fprintf(stderr,"\n");
 		}
 
@@ -620,28 +620,28 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 
 	switch (msg->data[0]) {
 		case 0x01:
-			snprintf(buf2, sizeof(buf2), "Mode 1 PID 0x%x", msg->data[1]);
+			snprintf(buf2, sizeof(buf2), "Mode 1 PID 0x%X", msg->data[1]);
 			smartcat(buf, bufsize, buf2);
 			break;
 		case 0x41:
-			snprintf(buf2, sizeof(buf2),"Mode 1 Data: PID 0x%x ", msg->data[1]);
+			snprintf(buf2, sizeof(buf2),"Mode 1 Data: PID 0x%X ", msg->data[1]);
 			smartcat(buf, bufsize, buf2);
 			for (i=2; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%x ", msg->data[i]);
+				snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
 			break;
 		case 0x02:
-			snprintf(buf2, sizeof(buf2), "Mode 2 PID 0x%x Frame 0x%x", msg->data[1],
+			snprintf(buf2, sizeof(buf2), "Mode 2 PID 0x%X Frame 0x%X", msg->data[1],
 				msg->data[2]);
 			smartcat(buf, bufsize, buf2);
 			break;
 		case 0x42:
-			snprintf(buf2, sizeof(buf2),"Mode 2 FreezeFrame Data: PID 0x%x Frame 0x%x ",
+			snprintf(buf2, sizeof(buf2),"Mode 2 FreezeFrame Data: PID 0x%X Frame 0x%X ",
 				msg->data[1], msg->data[2]);
 			smartcat(buf, bufsize, buf2);
 			for (i=3; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%x ", msg->data[i]);
+				snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
 			break;
@@ -683,7 +683,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 						area = 'X';
 						break;
 				}
-				snprintf(buf2, sizeof(buf2), "%c%02x%02x  ", area, msg->data[j] & 0x3f,
+				snprintf(buf2, sizeof(buf2), "%c%02X%02X  ", area, msg->data[j] & 0x3f,
 					msg->data[j+1]&0xff);
 				smartcat(buf, bufsize, buf2);
 			}
@@ -697,59 +697,59 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 			smartcat(buf, bufsize, buf2);
 			break;
 		case 0x05:
-			snprintf(buf2, sizeof(buf2), "Oxygen Sensor Test ID 0x%x Sensor 0x%x",
+			snprintf(buf2, sizeof(buf2), "Oxygen Sensor Test ID 0x%X Sensor 0x%X",
 					msg->data[1], msg->data[2]);
 			smartcat(buf, bufsize, buf2);
 			break;
 		case 0x45:
-			snprintf(buf2, sizeof(buf2), "Oxygen Sensor TID 0x%x Sensor 0x%x ",
+			snprintf(buf2, sizeof(buf2), "Oxygen Sensor TID 0x%X Sensor 0x%X ",
 				msg->data[1], msg->data[2]);
 			smartcat(buf, bufsize, buf);
 			for (i=3; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%x ", msg->data[i]);
+				snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
 			break;
 		case 0x06:
-			snprintf(buf2, sizeof(buf2), "Onboard monitoring test request TID 0x%x", msg->data[1]);
+			snprintf(buf2, sizeof(buf2), "Onboard monitoring test request TID 0x%X", msg->data[1]);
 			smartcat(buf, bufsize, buf2);
 			break;
 		case 0x46:
-			snprintf(buf2, sizeof(buf2),"Onboard monitoring test result TID 0x%x ", msg->data[1]);
+			snprintf(buf2, sizeof(buf2),"Onboard monitoring test result TID 0x%X ", msg->data[1]);
 			smartcat(buf, bufsize, buf2);
 			for (i=2; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%x ", msg->data[i]);
+				snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
 			break;
 		case 0x08:
-			snprintf(buf2, sizeof(buf2), "Request control of onboard system TID 0x%x", msg->data[1]);
+			snprintf(buf2, sizeof(buf2), "Request control of onboard system TID 0x%X", msg->data[1]);
 			smartcat(buf, bufsize, buf2);
 			break;
 		case 0x48:
-			snprintf(buf2, sizeof(buf2), "Control of onboard system response TID 0x%x ", msg->data[1]);
+			snprintf(buf2, sizeof(buf2), "Control of onboard system response TID 0x%X ", msg->data[1]);
 			smartcat(buf, bufsize, buf2);
 			for (i=2; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%x ", msg->data[i]);
+				snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
 		case 0x09:
-			snprintf(buf2, sizeof(buf2), "Request vehicle information infotype 0x%x", msg->data[1]);
+			snprintf(buf2, sizeof(buf2), "Request vehicle information infotype 0x%X", msg->data[1]);
 			smartcat(buf, bufsize, buf2);
 			break;
 		case 0x49:
-			snprintf(buf2, sizeof(buf2), "Vehicle information infotype 0x%x ", msg->data[1]);
+			snprintf(buf2, sizeof(buf2), "Vehicle information infotype 0x%X ", msg->data[1]);
 			smartcat(buf, bufsize, buf2);
 			for (i=2; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%x ", msg->data[i]);
+				snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
 		default:
-			snprintf(buf2, sizeof(buf2),"UnknownType 0x%x: Data Dump: ", msg->data[0]);
+			snprintf(buf2, sizeof(buf2),"UnknownType 0x%X: Data Dump: ", msg->data[0]);
 			smartcat(buf, bufsize, buf2);
 			for (i=0; i < msg->len; i++)
 			{
-				snprintf(buf2, sizeof(buf2), "0x%x ", msg->data[i]);
+				snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
 	}

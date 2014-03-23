@@ -92,7 +92,7 @@ char * diag_dtc_decode(uint8_t *data, int len,
 			area = 'X';
 			break;
 		}
-		snprintf(buf, bufsize, "%c%02x%02x ", area, data[0] & 0x3f, data[1]&0xff);
+		snprintf(buf, bufsize, "%c%02X%02X ", area, data[0] & 0x3f, data[1]&0xff);
 		break;
 
 	case dtc_proto_int8:

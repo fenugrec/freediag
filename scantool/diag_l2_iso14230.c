@@ -94,7 +94,7 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 		int i;
 		fprintf(stderr, FLFMT "decode len %d", FL, len);
 		for (i = 0; i < len ; i++) {
-			fprintf(stderr, " 0x%x", data[i]&0xff);
+			fprintf(stderr, " 0x%X", data[i]&0xff);
 		}
 		fprintf(stderr, "\n");
 	}
@@ -217,7 +217,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "diag_l2_14230_intrecv offset %x\n",
+			FLFMT "diag_l2_14230_intrecv offset %X\n",
 				FL, dp->rxoffset);
 
 	state = ST_STATE1;
@@ -421,7 +421,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 			if (diag_l2_debug & DIAG_DEBUG_PROTO)
 				fprintf(stderr,
-				FLFMT "msg %p decode/rejig done rv %d hdrlen %u datalen %d source %02x dest %02x\n",
+				FLFMT "msg %p decode/rejig done rv %d hdrlen %u datalen %d source %02X dest %02X\n",
 					FL, (void *)tmsg, rv, hdrlen, datalen, source, dest);
 
 
@@ -588,9 +588,9 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 				fprintf(stderr,
 					FLFMT "diag_l2_14230_StartComms",
 					FL);
-				fprintf(stderr," Physaddr 0x%x",
+				fprintf(stderr," Physaddr 0x%X",
 					datasrc);
-				fprintf(stderr," KB1 = %x, KB2 = %x\n",
+				fprintf(stderr," KB1 = %X, KB2 = %X\n",
 					d_l2_conn->diag_l2_kb1,
 					d_l2_conn->diag_l2_kb2);
 			}
@@ -611,7 +611,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 				fprintf(stderr,
 					FLFMT "diag_l2_14230_StartComms",
 					FL);
-				fprintf(stderr, " got unexpected response 0x%x\n",
+				fprintf(stderr, " got unexpected response 0x%X\n",
 					data[hdrlen]);
 			}
 			free(dp);

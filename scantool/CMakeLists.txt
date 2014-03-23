@@ -1,5 +1,7 @@
 ### step 0.5 : parse l0config and l2config to determine which to build
 #I would prefer using option() in the top-level CMakeLists.txt eventually
+#also : if l0config changes, cmake needs to be run again (i.e. the makefile
+#will not track l0config and l2config and re-build if those changed)
 file (STRINGS l0config L0LIST REGEX "^[^#].*")
 file (STRINGS l2config L2LIST REGEX "^[^#].*")
 

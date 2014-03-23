@@ -190,7 +190,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "features 0x%x\n", FL, dev->dev_features);
+		fprintf(stderr, FLFMT "features 0x%X\n", FL, dev->dev_features);
 	}
 
 	/* Set serial line to 19200 baud , 8N1 */
@@ -235,7 +235,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	}
 	if (buf[0] != 0xff) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "CHIP CONNECT rcvd 0x%x != 0xff, link %p\n",
+			fprintf(stderr, FLFMT "CHIP CONNECT rcvd 0x%X != 0xff, link %p\n",
 				FL, buf[0], (void *)dl0d);
 		}
 
@@ -266,7 +266,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open succeeded link %p features 0x%x\n",
+		fprintf(stderr, FLFMT "open succeeded link %p features 0x%X\n",
 			FL, (void *)dl0d, dev->dev_features);
 	}
 	return dl0d;
@@ -538,7 +538,7 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, int timeout)
 
 	if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
 		(DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, FLFMT "link %p getmsg read ctl 0x%x data:",
+		fprintf(stderr, FLFMT "link %p getmsg read ctl 0x%X data:",
 			FL, (void *)dl0d, firstbyte & 0xff);
 		diag_data_dump(stderr, dp, readlen);
 		printf("\n");
@@ -610,7 +610,7 @@ diag_l0_br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
 		fprintf(stderr, FLFMT "device %p writing data: ",
 			FL, (void *)dev);
-		fprintf(stderr,"0x%x ", (int)outb);	/* Length byte */
+		fprintf(stderr,"0x%X ", (int)outb);	/* Length byte */
 		diag_data_dump(stderr, dp, txlen);
 		fprintf(stderr, "\n");
 	}
@@ -627,7 +627,7 @@ diag_l0_br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 		if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
 			fprintf(stderr,
-				FLFMT "device %p writing data: 0x%x\n",
+				FLFMT "device %p writing data: 0x%X\n",
 				FL, (void *)dev, dev->dev_framenr & 0xff);
 		}
 		rv = diag_l0_br_write(dl0d, &dev->dev_framenr, 1);
@@ -891,7 +891,7 @@ diag_l0_br_getflags(struct diag_l0_device *dl0d)
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr,
-			FLFMT "getflags link %p proto %d flags 0x%x\n",
+			FLFMT "getflags link %p proto %d flags 0x%X\n",
 			FL, (void *)dl0d, dev->protocol, flags);
 
 	return flags;

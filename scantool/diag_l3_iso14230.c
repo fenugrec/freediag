@@ -63,18 +63,18 @@ char *buf, const size_t bufsize)
 					l3_iso14230_sidlookup(msg->data[0] & ~0x40));
 			if ((msg->data[0] & ~0x40) == DIAG_KW2K_SI_REID)
 			{
-				snprintf(buf2, sizeof(buf2), "identOption 0x%02x", msg->data[1]);
+				snprintf(buf2, sizeof(buf2), "identOption 0x%02X", msg->data[1]);
 				smartcat(buf, bufsize, buf2);
 			}
 			else if ((msg->data[0] & ~0x40) == DIAG_KW2K_SI_RDDBLI)
 			{
-				snprintf(buf2, sizeof(buf2), "RLI 0x%02x", msg->data[1]);
+				snprintf(buf2, sizeof(buf2), "RLI 0x%02X", msg->data[1]);
 				smartcat(buf, bufsize, buf2);
 			}
 		}
 		else
 		{
-			snprintf(buf, bufsize, "Unknown_response_code 0x%x",
+			snprintf(buf, bufsize, "Unknown_response_code 0x%X",
 					msg->data[0]);
 		}
 		break;
@@ -127,7 +127,7 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	d_conn = d_l3_conn->d_l3l2_conn;
 
 	if (diag_l3_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr,FLFMT "send %d bytes, l2 flags 0x%x\n",
+		fprintf(stderr,FLFMT "send %d bytes, l2 flags 0x%X\n",
 			FL, msg->len,  d_l3_conn->d_l3l2_flags);
 
 	if ((diag_l3_debug & DIAG_DEBUG_DATA) && (diag_l3_debug & DIAG_DEBUG_WRITE))
@@ -212,7 +212,7 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
 
 	if (diag_l3_debug & DIAG_DEBUG_READ)
 	{
-		fprintf(stderr,FLFMT "rcv_callback for %d bytes fmt 0x%x conn rxoffset %d\n",
+		fprintf(stderr,FLFMT "rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n",
 			FL, msg->len, msg->fmt, d_l3_conn->rxoffset);
 	}
 	if (diag_l3_iso14230_decode_response(msg, buffer, sizeof(buffer)))

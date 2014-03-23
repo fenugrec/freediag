@@ -590,7 +590,7 @@ log_response(int ecu, response_t *r)
 
 	printf("%d: ", ecu);
 	for (i = 0; i < r->len; i++) {
-		fprintf(global_logfp, "%02x ", r->data[i]);
+		fprintf(global_logfp, "%02X ", r->data[i]);
 	}
 	fprintf(global_logfp, "\n");
 }
@@ -757,7 +757,7 @@ cmd_ecus(UNUSED(int argc), UNUSED(char **argv))
 	printf("%d ECUs found\n", ecu_count);
 
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
-		printf("ECU %d: Address 0x%02x ", i, ep->ecu_addr & 0xff);
+		printf("ECU %d: Address 0x%02X ", i, ep->ecu_addr & 0xff);
 		if (ep->supress)
 			printf("output supressed for monitor mode\n");
 		else

@@ -34,11 +34,12 @@ struct diag_l2_link : these are alloc'ed + filled by diag_l2_open; diag_l2_links
  of all the active l2 links. An l2 link associates a diag_l0_device with one L1 protocol. This
  struct also holds flags (inits supported, etc.). The member "char diag_l2_name[]" is
  currently filled with the name of the l0 driver ("DUMB", "ELM", etc.)! This means
- we can't use two separate physical l0 devices of the same type (ex.: two ELM323 cables) !
+ we can't use two separate physical l0 devices of the same type (ex.: two DUMB adaptors) !
  This is not a problem for now since many l0 drivers wouldn't support it (some have global
- flags not part of their diag_l0_device struct)
+ flags not part of their diag_l0_device struct). diag_l2_link structs are not used outside
+ diag_l2{.c, .h}.
  Note : despite the name, diag_l2_link says nothing about the L2 protocol used.
- See struct diag_l2_conn/
+ See struct diag_l2_conn
 
 diag_l2_close : this is called from cmd_diag_disconnect to close the global_l2_dl0d XXX
 

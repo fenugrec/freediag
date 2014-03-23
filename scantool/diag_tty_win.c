@@ -401,7 +401,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
-		fprintf(stderr, FLFMT "tty_iflush: at least %d junk bytes discarded: 0x%x ... ", FL, rv, buf[0]);
+		fprintf(stderr, FLFMT "tty_iflush: at least %d junk bytes discarded: 0x%X ... ", FL, rv, buf[0]);
 		// diag_data_dump(stderr, (void *) buf, (size_t) rv); //this could take a long time.
 		fprintf(stderr,"\n");
 	}

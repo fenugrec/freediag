@@ -242,7 +242,7 @@ diag_data_dump(FILE *out, const void *data, size_t len)
 	const uint8_t *p = (const uint8_t *)data;
 	size_t i;
 	for (i=0; i<len; i++)
-		fprintf(out, "0x%02x ", p[i]);
+		fprintf(out, "%#02X ", p[i]);
 }
 
 //smartcat() : make sure s1 is not too large, then strncat

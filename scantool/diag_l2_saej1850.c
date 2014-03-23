@@ -236,7 +236,7 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "diag_l2_j1850_int_recv offset %x\n",
+			FLFMT "diag_l2_j1850_int_recv offset %X\n",
 				FL, dp->rxoffset);
 
 	if (l1flags & DIAG_L1_DOESL2FRAME)

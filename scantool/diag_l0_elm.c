@@ -521,7 +521,7 @@ const void *data, size_t len)
 
 	for (i=0; i<len; i++) {
 		//fill buffer with ascii-fied hex data
-		snprintf((char *) &buf[2*i], 3, "%02x", (unsigned int)((uint8_t *)data)[i] );
+		snprintf((char *) &buf[2*i], 3, "%02X", (unsigned int)((uint8_t *)data)[i] );
 	}
 	i=2*len;
 	buf[i]=0x0D;
@@ -556,7 +556,7 @@ const void *data, size_t len)
 /*
  * Get data (blocking), returns number of chars read, between 1 and len
  * If timeout is set to 0, this becomes non-blocking
- * ELM returns a string with format "%02x %02x %02x[...]\n" .
+ * ELM returns a string with format "%02X %02X %02X[...]\n" .
  * We convert this received ascii string to hex before returning.
  */
 static int
@@ -600,12 +600,12 @@ void *data, size_t len, int timeout)
 	while ((bp=strtok(rptr, " >\n\r")) !=NULL) {
 		//process token delimited by spaces or prompt character
 		//this is very sketchy and deserves to be tested more...
-		sscanf(bp, "%02x", &rbyte);
+		sscanf(bp, "%02X", &rbyte);
 		((uint8_t *)data)[xferd]=(uint8_t) rbyte;
 		xferd++;
 		if ( (size_t)xferd==len)
 			break;
-		//printf("%s\t0x%02x\n", bp, i);
+		//printf("%s\t0x%02X\n", bp, i);
 		rptr=NULL;
 	}
 	return xferd;
@@ -650,7 +650,7 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr,
-			FLFMT "getflags link %p proto %d flags 0x%x\n",
+			FLFMT "getflags link %p proto %d flags 0x%X\n",
 			FL, (void *)dl0d, dev->protocol, flags);
 
 	return flags;

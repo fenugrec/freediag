@@ -305,7 +305,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	struct diag_serial_settings set;
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "slowinit link %p address 0x%x\n",
+		fprintf(stderr, FLFMT "slowinit link %p address 0x%X\n",
 			FL, (void *)dl0d, in->addr);
 	}
 
@@ -430,7 +430,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 			}
 		}
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "slowinit 5bps address echo 0x%x\n",
+			fprintf(stderr, FLFMT "slowinit 5bps address echo 0x%X\n",
 					FL, cbuf[0]);
 		if (diag_tty_setup(dl0d, &dev->serial)) {
 			//reset original settings
@@ -466,7 +466,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
 	} else {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "slowinit link %p, got sync byte 0x%x\n",
+			fprintf(stderr, FLFMT "slowinit link %p, got sync byte 0x%X\n",
 				FL, (void *)dl0d, cbuf[0]);
 	}
 	//If all's well at this point, we just read the sync pattern byte. L2 will take care

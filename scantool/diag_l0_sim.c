@@ -263,7 +263,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 		// synthesize up to 11 byte values from DB request line.
 		unsigned int reqvals[11];
 		memset(reqvals, 0, 11);
-		unsigned int num = (unsigned int) sscanf(line_buf+3, "%x %x %x %x %x %x %x %x %x %x %x",
+		unsigned int num = (unsigned int) sscanf(line_buf+3, "%X %X %X %X %X %X %X %X %X %X %X",
 			 &reqvals[0], &reqvals[1], &reqvals[2], &reqvals[3],
 			 &reqvals[4], &reqvals[5], &reqvals[6], &reqvals[7],
 			 &reqvals[8], &reqvals[9], &reqvals[10]);
@@ -386,7 +386,7 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 			synth_resp[pos] = cs1(synth_resp, pos);
 		else {
 			// failed. try scanning element as an Hex byte.
-			ret = sscanf(parse_offset, "%x", ((unsigned int *)(&synth_resp[pos])));
+			ret = sscanf(parse_offset, "%X", ((unsigned int *)(&synth_resp[pos])));
 			if (ret != 1) {
 				// failed. something's wrong.
 				fprintf(stderr, FLFMT "Error parsing line: %s at position %d.\n", FL, resp_p->text, pos*5);
@@ -696,7 +696,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		}
 	}
 
-	return (xferd == 0 ? DIAG_ERR_TIMEOUT : (int) xferd);
+	return (xferd == 0 ? diag_iseterr(DIAG_ERR_TIMEOUT) : (int) xferd);
 }
 
 
@@ -734,7 +734,7 @@ diag_l0_sim_getflags(UNUSED(struct diag_l0_device *dl0d))
 	DIAG_L1_FAST |
 	DIAG_L1_PREFFAST |
 	DIAG_L1_DOESP4WAIT |
-	DIAG_L1_HALFDUPLEX;
+	DIAG_L1_AUTOSPEED;
 
 	if (sim_skip_crc)
 		ret |= DIAG_L1_DOESL2CKSUM | DIAG_L1_STRIPSL2CKSUM;

@@ -2,15 +2,16 @@
  *	freediag - Vehicle Diagnostic Utility
 
  *************************************************************************
- *
+ * dumbtest
  * Diag, Layer 0, interface tester. This is *NOT* meant to be used while
  * a vehicle is connected; only for debugging the electrical interface itself.
 
 * The dumb_flags variable is set according to particular type (VAGtool, SE)
  * to enable certain features (L line on RTS, etc)
- * Work in progress ! And, at the moment, there is only one global dumb_flags
- * so attempting to use simultaneously two different DUMB devices with
- * different flags will not work.
+
+ * This is a non-standard l0 driver : most functions do nothing except
+ * _open which opens the subinterface, runs tests, and closes everything
+ * before returning.
  */
 
 
@@ -83,7 +84,7 @@ static void dtest_1(struct diag_l0_device *dl0d) {
 //dtest_2 : fast pulse TXD by sending 0x55 @ 10.4kps
 static void dtest_2(UNUSED(struct diag_l0_device *dl0d)) {
 	fprintf(stderr, FLFMT "Test 2 not implemented !\n", FL);
-	//TODO : write test #2
+	//TODO : write test #2. We'll need to call diag_tty_setup first
 	return;
 }
 
@@ -115,6 +116,20 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 		diag_os_millisleep(200);
 	}
 	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
+
+	return;
+}
+
+
+//dtest_5 : fast pulse TXD with diag_tty_break; 100ms / 25ms cycles.
+
+static void dtest_5(struct diag_l0_device *dl0d) {
+	int i;
+	fprintf(stderr, FLFMT "Starting test 5: pulsing TXD=1, 100ms, TXD=0, 25ms\n", FL);
+	for (i=0; i<=30; i++) {
+		diag_os_millisleep(100);
+		diag_tty_break(dl0d, 25);
+	}
 
 	return;
 }
@@ -154,6 +169,8 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 
 	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
 
+	//printf("Press <enter> to stop the test.\n");
+	//Currently these run for a fixed time...
 	switch (testnum) {
 	case 1:
 		dtest_1(dl0d);
@@ -167,16 +184,22 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	case 4:
 		dtest_4(dl0d);
 		break;
+	case 5:
+		dtest_5(dl0d);
+		break;
 	default:
 		break;
 	}
 
 	diag_tty_close(&dl0d);
+	free(dev);
 	fprintf(stderr, FLFMT "L0 test finished.\n", FL);
 	return NULL;
 }
 
 //diag_l0_dt_close : free the specified diag_l0_device and close TTY handle.
+//this shouldn't be needed : diag_l0_dt_open closes diag_l0_device before
+//returning !
 static int
 diag_l0_dt_close(struct diag_l0_device **pdl0d)
 {
@@ -325,7 +348,7 @@ diag_l0_dt_getflags(UNUSED(struct diag_l0_device *dl0d))
 static const struct diag_l0 diag_l0_dt = {
  	"Dumb interface test suite",
 	"DUMBT",
-	DIAG_L1_RAW,
+	-1,		//support "all" L1 protos...
 	diag_l0_dt_init,
 	diag_l0_dt_open,
 	diag_l0_dt_close,

@@ -225,7 +225,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	printf("Scanning address : ");
 	for (i=start; i<=end; i++)
 	{
-		printf("0x%x ", i);
+		printf("0x%X ", i);
 		fflush(stdout) ;
 
 
@@ -254,9 +254,9 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			/* Get the keybytes */
 			diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_DATA, &d);
 			if (fastflag)
-				printf("Keybytes: 0x%x 0x%x\n", d.kb1, d.kb2);
+				printf("Keybytes: 0x%X 0x%X\n", d.kb1, d.kb2);
 			else
-				printf("msg 00: 0x%x 0x%x\n", d.kb1, d.kb2);
+				printf("msg 00: 0x%X 0x%X\n", d.kb1, d.kb2);
 
 			/* Now read some data */
 

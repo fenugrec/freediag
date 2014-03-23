@@ -153,6 +153,9 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 {
 	struct diag_l0_node *node;
 	const struct diag_l0 *l0dev;
+	if (diag_l1_debug & DIAG_DEBUG_OPEN)
+		fprintf(stderr, FLFMT "diag_l1_open %s on %s with l1 proto %d\n", FL,
+				name, subinterface, l1protocol);
 
 	for (node = l0dev_list; node; node = node->next) {
 		l0dev = node->l0dev;
@@ -169,7 +172,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 			return (l0dev->diag_l0_open)(subinterface, l1protocol);
 		}
 	}
-
+	fprintf(stderr, FLFMT "diag_l1_open: did not recognize %s\n", FL, name);
 	/* Not found */
 	return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 }
@@ -253,7 +256,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 					if (c == *dp - 1)
 						fprintf(stderr,"Half duplex interface not echoing!\n");
 					else
-						fprintf(stderr,"Bus Error: got 0x%x expected 0x%x\n",
+						fprintf(stderr,"Bus Error: got 0x%X expected 0x%X\n",
 							c&0xff, *dp & 0xff);
 					rv = DIAG_ERR_BUSERROR;
 					break;

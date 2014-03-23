@@ -211,7 +211,7 @@ char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 
 // diag_l3_ioctl : call the diag_l3_proto_ioctl AND diag_l2_ioctl !?
 // But why L2 ?
-int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, int cmd, void *data)
+int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, unsigned int cmd, void *data)
 {
 	int rv = 0;
 	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;

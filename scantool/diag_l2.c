@@ -357,6 +357,8 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 
 	if (dl2l)
 	{
+		if (diag_l2_debug & DIAG_DEBUG_OPEN)
+			fprintf(stderr, FLFMT "existing L2 link \"%s\" found\n", FL, dl2l->diag_l2_name);
 		/* device open */
 		if (dl2l->diag_l2_l1protocol != L1protocol)
 		{
@@ -447,7 +449,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_startCommunications dl0d %p L2proto %d type %x baud %u target 0x%x src 0x%x called\n",
+			FLFMT "diag_l2_startCommunications dl0d %p L2proto %d type %X baud %u target 0x%X src 0x%X called\n",
 			FL, (void *)dl0d, L2protocol, type ,
 			bitrate, target&0xff, source&0xff);
 
@@ -710,7 +712,7 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, int timeout,
  * IOCTL, for setting/asking how various layers are working - similar to
  * Unix ioctl()
  */
-int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, int cmd, void *data)
+int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 {
 	struct diag_l0_device *dl0d;
 	struct diag_serial_settings *ic;
@@ -719,7 +721,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, int cmd, void *data)
 
 	if (diag_l2_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr,
-			FLFMT "diag_l2_ioctl %p cmd %d\n",
+			FLFMT "diag_l2_ioctl %p cmd %X\n",
 				FL, (void *)d_l2_conn, cmd);
 
 

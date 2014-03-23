@@ -130,7 +130,7 @@ void diag_l3_timer(void);
 
 // diag_l3_ioctl() : calls the diag_l3_proto_ioctl of the specified
 // diag_l3_conn , AND its diag_l2_ioctl !? XXX why both ?
-int diag_l3_ioctl(struct diag_l3_conn *connection, int cmd, void *data);
+int diag_l3_ioctl(struct diag_l3_conn *connection, unsigned int cmd, void *data);
 
 // diag_l3_debug : contains debugging message flags (see diag.h)
 extern int diag_l3_debug;

@@ -61,7 +61,7 @@ diag_l3_vag_start(struct diag_l3_conn *d_l3_conn)
 	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_GET_L2_DATA, (void *)&l2data);
 
 	if (diag_l2_debug & DIAG_DEBUG_INIT)
-		fprintf(stderr, FLFMT "start L2 KB 0x%x 0x%x need 0x01 0x8A\n",
+		fprintf(stderr, FLFMT "start L2 KB 0x%X 0x%X need 0x01 0x8A\n",
 			FL, l2data.kb1, l2data.kb2);
 
 	if (l2data.kb1 != 0x01)
@@ -96,7 +96,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 
 	fprintf(stderr, FLFMT "Obviously broken code !\n", FL);
 
-	snprintf(buf, bufsize, "Block Len 0x%x, Counter 0x%x ", 0, 0);
+	snprintf(buf, bufsize, "Block Len 0x%X, Counter 0x%X ", 0, 0);
 
 	switch (msg->data[2])
 	{
@@ -123,7 +123,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 		break;
 	default:
 		/* XXX The argument Was "buf[2]" and not msg->data[2], which must be wrong. */
-		snprintf(buf3, sizeof(buf3), "0x%x", msg->data[2]);
+		snprintf(buf3, sizeof(buf3), "0x%X", msg->data[2]);
 		s = buf3;
 		break;
 	}
@@ -135,7 +135,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 
 	for (i=3; i < msg->data[0]; i++)
 	{
-		snprintf(buf2, sizeof(buf2), "0x%x ", msg->data[i]);
+		snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 		smartcat(buf, bufsize, buf2);
 	}
 	smartcat(buf, bufsize, "\n");
