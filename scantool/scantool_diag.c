@@ -56,6 +56,8 @@ const struct cmd_tbl_entry diag_cmd_table[] =
 {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_diag_help, 0, NULL},
+	{ "?", "? [command]", "Gives help for a command",
+		cmd_diag_help, FLAG_HIDDEN, NULL},
 
 	{ "connect", "connect", "Connect to ECU", cmd_diag_connect, 0, NULL},
 

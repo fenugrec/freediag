@@ -162,6 +162,7 @@ diag_l2_proto_j1850_crc(uint8_t *msg_buf, int nbytes)
  * Just send the data
  *
  * We add the header and checksums here as appropriate
+ * ret 0 if ok
  */
 static int
 diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
@@ -214,7 +215,7 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 				buf, (size_t)offset, 0);
 
-	return rv;
+	return rv? diag_iseterr(rv):0 ;
 }
 
 /*

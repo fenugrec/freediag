@@ -41,6 +41,9 @@ const struct cmd_tbl_entry vag_cmd_table[] =
 {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_vag_help, 0, NULL},
+	{ "?", "? [command]", "Gives help for a command",
+		cmd_vag_help, 0, NULL},
+
 
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},

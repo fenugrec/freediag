@@ -113,6 +113,8 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 			if (dl0d->fd != INVALID_HANDLE_VALUE) {
 				PurgeComm(dl0d->fd,PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
 				CloseHandle(dl0d->fd);
+				if (diag_l0_debug & DIAG_DEBUG_CLOSE)
+					fprintf(stderr, FLFMT "diag_tty_close : closing fd %p\n", FL, dl0d->fd);
 				dl0d->fd = INVALID_HANDLE_VALUE;
 			}
 			free(dl0d);
@@ -337,9 +339,6 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 		fprintf(stderr, FLFMT "WriteFile error:%s. %u bytes written, %u requested\n", FL, diag_os_geterr(0), (unsigned int) byteswritten, count);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "wrote %u bytes out of %d\n", FL, (unsigned int) byteswritten, count );
-	}
 
 	return byteswritten;
 } //diag_tty_write
@@ -451,7 +450,8 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	real_t=(long) (pf_conv * (qpc2.QuadPart-qpc1.QuadPart));
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+	//this debugging message could throw timing off by a few ms so it's now deactivated.
+	if (0 && (diag_l0_debug & DIAG_DEBUG_TIMER)) {
 		fprintf(stderr, FLFMT "diag_tty_break: duration = %ldus.\n",
 			FL, real_t);
 	}
@@ -471,9 +471,9 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 /*
  * diag_tty_fastbreak: send 0x00 at 360bps => fixed 25ms break; return [ms] after starting break.
  * This is for ISO14230 fast init : typically diag_tty_fastbreak(dl0d, 50)
+ * It assumes the interface is half-duplex.
  */
-int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms)
-{
+int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	if (ms<25)		//very funny
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
 
@@ -481,7 +481,7 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms)
 	DCB origDCB;
 	LARGE_INTEGER qpc1, qpc2, qpc3;	//to time the break period
 	LONGLONG timediff;		//64bit delta
-	long int tremain,counts;
+	long int tremain,counts, break_error;
 
 	uint8_t cbuf;
 	int xferd;
@@ -512,15 +512,16 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms)
 	/*
 	 * And read back the single byte echo, which shows TX completes
 	 * (this is because of the half-duplex nature of the K line)
+	 * we set a fairly short timeout
  	 */
-	while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, ms<<2)) <= 0)
+	while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, ms + 10)) <= 0)
 	{
-		if (xferd == DIAG_ERR_TIMEOUT)
-			return diag_iseterr(DIAG_ERR_TIMEOUT);
+		if (xferd < 0)
+			return diag_iseterr(xferd);
 		if (xferd == 0)
 		{
 			/* Error, EOF */
-			fprintf(stderr, FLFMT "read returned EOF.\n", FL);
+			fprintf(stderr, FLFMT "diag_tty_break: did not get fastbreak echo!\n", FL);
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
@@ -544,7 +545,12 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms)
 	QueryPerformanceCounter(&qpc3);
 
 	timediff=qpc3.QuadPart-qpc1.QuadPart;	//total cycle time.
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+	break_error= (long) timediff - counts;	//real - requested
+	if (break_error > 1000 || break_error < -1000)
+		fprintf(stderr, FLFMT "tty_fastbreak: tWUP out of spec by %ld!\n", FL, break_error);
+
+
+	if (0 && (diag_l0_debug && DIAG_DEBUG_TIMER)) {
 		fprintf(stderr, FLFMT "tty_fastbreak: tWUP=%ldus (requested=%u)\n", FL, (long)(pf_conv*timediff),ms);
 	}
 

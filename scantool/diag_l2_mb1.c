@@ -303,6 +303,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 /*
  * Send the data, using MB1 protocol
+ * ret 0 if ok
  */
 static int
 diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
@@ -352,11 +353,8 @@ diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		txbuf, txbuf[2], d_l2_conn->diag_l2_p4min);
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr, FLFMT "send() about to return %d\n",
-				FL, rv);
 
-	return rv;
+	return rv? diag_iseterr(rv):0 ;
 }
 
 static struct diag_msg *

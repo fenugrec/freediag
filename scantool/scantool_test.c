@@ -44,7 +44,8 @@ const struct cmd_tbl_entry test_cmd_table[] =
 {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_test_help, 0, NULL},
-
+	{ "?", "? [command]", "Gives help for a command",
+		cmd_test_help, FLAG_HIDDEN, NULL},
 	{ "rvi", "rvi", "Send request vehicle info commands to the ECU",
 		cmd_test_rvi, 0, NULL},
 	{ "cms", "cms",

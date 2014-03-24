@@ -540,11 +540,7 @@ diag_l2_proto_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		buf, len, d_l2_conn->diag_l2_p4min);
 #endif
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr, FLFMT "send about to return %d\n",
-				FL, rv);
-
-	return rv;
+	return rv? diag_iseterr(rv):0 ;
 }
 
 /*

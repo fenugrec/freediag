@@ -56,6 +56,8 @@ const struct cmd_tbl_entry debug_cmd_table[] =
 {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_debug_help, 0, NULL},
+	{ "?", "? [command]", "Gives help for a command",
+		cmd_debug_help, FLAG_HIDDEN, NULL},
 
 	{ "dumpdata", "dumpdata", "Show Mode1 Pid1/2 responses",
 		cmd_debug_dumpdata, 0, NULL},

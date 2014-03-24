@@ -104,7 +104,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	in.addr = address;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 	if (rv < 0)
-		return rv;
+		return diag_iseterr(rv);
 
 	// The L1 device has read the 0x55, and reset the previous speed.
 
@@ -149,7 +149,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 		rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 					&inv_kb2, 1, 0);
 		if (rv < 0)
-			return rv;
+			return diag_iseterr(rv);
 
 		// Wait for the address byte inverted:
 		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
@@ -160,7 +160,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 				fprintf(stderr,
 					FLFMT "startcomms con %p rx error %d\n",
 					FL, (void *)d_l2_conn, rv);
-			return rv;
+			return diag_iseterr(rv);
 		}
 
 		// Check the received inverted address:
@@ -201,8 +201,8 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_iso9141_startcomms conn %p\n",
-			FL, (void *)d_l2_conn);
+			FLFMT "diag_l2_iso9141_startcomms conn %p bitrate=%u tgt=%x src=%x\n",
+			FL, (void *)d_l2_conn, bitrate, target, source);
 
 	if (diag_calloc(&dp, 1))
 		return diag_iseterr(DIAG_ERR_NOMEM);
@@ -238,9 +238,6 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	else
 		rv = diag_l2_proto_iso9141_wakeupECU(d_l2_conn);
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr, FLFMT "diag_l2_iso9141_startcomms returns %d\n",
-					FL, rv);
 
 	if (rv) {
 		free(dp);
@@ -250,7 +247,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 
 	dp->state = STATE_ESTABLISHED;
 
-	return rv;
+	return 0;
 }
 
 
@@ -530,7 +527,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 								&hdrlen, &datalen, &source, &dest);
 
 				if (rv < 0 || rv > 255) // decode failure!
-					return rv;
+					return diag_iseterr(DIAG_ERR_BADDATA);
 
 				//It is possible we have misframed this message and it is infact
 				//more than one message, so see if we can decode it.
@@ -578,7 +575,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		}
 	}
 
-	return rv;
+	return diag_iseterr(rv);
 }
 
 
@@ -606,7 +603,7 @@ diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		d_l2_conn->diag_msg = NULL;
 	}
 
-	return rv;
+	return diag_iseterr(rv);
 }
 
 /*
@@ -614,6 +611,7 @@ diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
  * Addresses were supplied by the protocol session initialization.
  * Checksum is calculated on-the-fly.
  * Apply inter-frame delay (p2).
+ * ret 0 if ok
  */
 static int
 diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
@@ -635,7 +633,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if(msg->len + OHLEN_ISO9141 > MAXLEN_ISO9141)
 	{
 		fprintf(stderr, FLFMT "send: Message payload exceeds maximum allowed by protocol!\n", FL);
-		return -1;
+		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
 	/*
@@ -685,10 +683,9 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		fprintf(stderr, "l2_iso9141_send: ");
 		diag_data_dump(stderr, buf, (size_t)offset);
 		fprintf(stderr, "\n");
-		fprintf(stderr, FLFMT "about to return %d\n", FL, rv);
 	}
 
-	return rv;
+	return rv? diag_iseterr(rv):0;
 }
 
 

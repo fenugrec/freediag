@@ -679,6 +679,8 @@ static int
 cmd_scan(UNUSED(int argc), UNUSED(char **argv))
 {
 	int rv;
+	if (argc > 1)
+		return CMD_USAGE;
 
 	if (global_state >= STATE_CONNECTED) {
 		printf("Already connected, please disconnect first\n");

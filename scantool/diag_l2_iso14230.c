@@ -217,8 +217,8 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "diag_l2_14230_intrecv offset %X\n",
-				FL, dp->rxoffset);
+			FLFMT "diag_l2_14230_intrecv dl2conn=%p offset %X\n",
+				FL, (void *) d_l2_conn, dp->rxoffset);
 
 	state = ST_STATE1;
 	tout = timeout;
@@ -553,7 +553,11 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			break;
 
 		/* Send the prepared message */
-		diag_l2_proto_14230_send(d_l2_conn, &msg);
+		if (diag_l2_proto_14230_send(d_l2_conn, &msg)) {
+			free(dp);
+			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
 
 		if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2FRAME)
 			timeout = 200;
@@ -743,6 +747,7 @@ diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
  * We take the source and dest from the internal data NOT from the msg fields
  *
  * We also wait p3 ms
+ * return 0 if ok, <0 if err
  */
 static int
 diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
@@ -757,7 +762,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
-			FLFMT "diag_l2_14230_send %p msg %p len %d called\n",
+			FLFMT "diag_l2_14230_send: dl2conn=%p msg=%p len=%d\n",
 				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
@@ -808,14 +813,10 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if (dp->state == STATE_ESTABLISHED)
 		diag_os_millisleep(d_l2_conn->diag_l2_p3min);
 
-	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, NULL,
 		buf, len, d_l2_conn->diag_l2_p4min);
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr, FLFMT "send about to return %d\n",
-				FL, rv);
-
-	return rv;
+	return rv? diag_iseterr(rv):0;
 }
 
 /*
@@ -847,8 +848,8 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		return rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "l2_protO_14230_int_recv : handle=%p\n", FL,
-			(void *)handle);	//%pcallback! we won't try to printf the callback pointer.
+		fprintf(stderr, FLFMT "l2_protO_14230_int_recv : handle=%p timeout=%d\n", FL,
+			(void *)handle, timeout);	//%pcallback! we won't try to printf the callback pointer.
 
 	/*
 	 * Call user callback routine

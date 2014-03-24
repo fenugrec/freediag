@@ -61,6 +61,8 @@ const struct cmd_tbl_entry dyno_cmd_table[] =
 {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_dyno_help, 0, NULL},
+	{ "?", "? [command]", "Gives help for a command",
+		cmd_dyno_help, FLAG_HIDDEN, NULL},
 
 	{ "mass", "mass [mass]", "Step 1 : Shows/Sets the mass of the vehicle",
 		cmd_dyno_mass, 0, NULL},

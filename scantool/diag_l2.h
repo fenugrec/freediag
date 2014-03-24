@@ -383,10 +383,10 @@ struct diag_l2_proto {
 	int diag_l2_protocol;
 	int diag_l2_flags;		//see #defines above
 
-	/* Individual L2 routines, see description of interface in diag_l2.h */
 	int (*diag_l2_proto_startcomms)(struct diag_l2_conn*,
 		flag_type, unsigned int bitrate, target_type, source_type);
 	int (*diag_l2_proto_stopcomms)(struct diag_l2_conn*);
+	//diag_l2_proto_send : returns 0 if ok
 	int (*diag_l2_proto_send)(struct diag_l2_conn*, struct diag_msg*);
 	int (*diag_l2_proto_recv)(struct diag_l2_conn *d_l2_conn,
 		int timeout, void (*callback)(void *handle, struct diag_msg *msg),

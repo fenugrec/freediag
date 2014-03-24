@@ -72,6 +72,7 @@ diag_l2_proto_raw_stopcomms(UNUSED(struct diag_l2_conn* pX))
 
 /*
  * Just send the data, with no processing etc
+ * ret 0 if ok
  */
 int
 diag_l2_proto_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
@@ -86,11 +87,7 @@ diag_l2_proto_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 		msg->data, msg->len, d_l2_conn->diag_l2_p4min);
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr, FLFMT "about to return %d\n",
-				FL, rv);
-
-	return rv;
+	return rv? diag_iseterr(rv):0 ;
 }
 
 /*

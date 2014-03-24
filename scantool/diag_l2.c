@@ -647,11 +647,7 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	/* Call protocol specific send routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_send(d_l2_conn, msg);
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr, FLFMT "diag_l2_send returns %d\n",
-				FL, rv);
-
-	return rv;
+	return rv? diag_iseterr(rv):0 ;
 }
 
 /*
@@ -711,6 +707,7 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 /*
  * IOCTL, for setting/asking how various layers are working - similar to
  * Unix ioctl()
+ * ret 0 if ok
  */
 int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 {
@@ -758,5 +755,5 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		break;
 	}
 
-	return rv;
+	return rv? diag_iseterr(rv):0 ;
 }

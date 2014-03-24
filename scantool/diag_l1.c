@@ -206,12 +206,12 @@ diag_l1_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
  * any outstanding data on the bus (or in the l0 buffers) or this
  * will think it has a half-duplex failure, i.e a bus error
  *
- * Returns 0 on success -1 on failure
+ * Returns 0 on success
  */
 int
 diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *data, size_t len, unsigned int p4)
 {
-	int rv = -1;
+	int rv = DIAG_ERR_GENERAL;
 	int l0flags;
 	const struct diag_l0 *dl0 = diag_l0_device_dl0(dl0d);
 
@@ -221,6 +221,12 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 	 * send the whole message to L0 as one write
 	 */
 	l0flags = diag_l1_getflags(dl0d);
+
+	if (diag_l1_debug & DIAG_DEBUG_WRITE) {
+			fprintf(stderr, FLFMT "diag_l1_send: len=%d P4=%u l0flags=%X\n", FL,
+					(int) len, p4, l0flags);
+	}
+
 
 	if (   ((p4 == 0) && ((l0flags & DIAG_L1_HALFDUPLEX) == 0)) ||
 		(l0flags & DIAG_L1_DOESL2FRAME) || (l0flags & DIAG_L1_DOESP4WAIT) ) {
@@ -247,17 +253,18 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 			if (l0flags & DIAG_L1_HALFDUPLEX) {
 				uint8_t c;
 
-				c = *dp - 1; /* set it with wrong val */
-				if (diag_l1_saferead(dl0d, &c, 1, 1000) < 0)
+				c = *dp - 1; /* set it with wrong val. XXXX WHY 1000ms timeout !? */
+				if (diag_l1_saferead(dl0d, &c, 1, 1000) < 0) {
 					rv=DIAG_ERR_GENERAL;
 					break;
+				}
 
 				if (c != *dp) {
 					if (c == *dp - 1)
 						fprintf(stderr,"Half duplex interface not echoing!\n");
 					else
 						fprintf(stderr,"Bus Error: got 0x%X expected 0x%X\n",
-							c&0xff, *dp & 0xff);
+							c, *dp);
 					rv = DIAG_ERR_BUSERROR;
 					break;
 				}
@@ -269,7 +276,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 		}
 	}
 
-	return rv;
+	return rv? diag_iseterr(rv):0;
 }
 
 /*

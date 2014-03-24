@@ -529,7 +529,7 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
  * Send a load of data
  * this is "blocking", i.e. returns only when it's finished or it failed.
  *
- * Returns 0 on success, -1 on failure
+ * Returns 0 on success
  */
 
 static int
@@ -544,8 +544,11 @@ const void *data, size_t len)
 	 */
 	ssize_t xferd;
 
+	if (len <= 0)
+		return diag_iseterr(DIAG_ERR_BADLEN);
+
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %ld bytes ",
+		fprintf(stderr, FLFMT "l0_send dl0d=%p send %ld bytes ",
 			FL, (void *)dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 			diag_data_dump(stderr, data, len);
@@ -570,10 +573,6 @@ const void *data, size_t len)
 		len -= (size_t) xferd;
 		data = (const void *)((const uint8_t *)data + xferd);
 	}
-	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, "\n");
-	}
 
 	return 0;
 }
@@ -592,6 +591,9 @@ void *data, size_t len, int timeout)
 	int xferd;
 
 	errno = EINTR;
+
+	if (len <= 0)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	//struct diag_l0_dumb_device *dev;
 	//dev = (struct diag_l0_dumb_device *)diag_l0_dl0_handle(dl0d);

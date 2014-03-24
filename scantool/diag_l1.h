@@ -183,6 +183,7 @@ struct diag_l0
 	int	(*diag_l0_close)(struct diag_l0_device **);
 	int	(*diag_l0_initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);
+		//diag_l0_send : return 0 if ok
 	int	(*diag_l0_send)(struct diag_l0_device *,
 		const char *subinterface, const void *data, size_t len);
 	int	(*diag_l0_recv)(struct diag_l0_device *,
