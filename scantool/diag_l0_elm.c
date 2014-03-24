@@ -141,6 +141,9 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len
 	const char ** elm_errors;	//just used to select between the 2 error lists
 	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 	//we need access to diag_l0_elm_device to access .elmflags
+
+	if (!len)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 	if (!dev)
 		return diag_iseterr(DIAG_ERR_BADFD);
 
@@ -506,6 +509,9 @@ const void *data, size_t len)
 	ssize_t xferd;
 	unsigned int i;
 
+	if (len <= 0)
+		return diag_iseterr(DIAG_ERR_BADLEN);
+
 	if ((2*len)>(ELM_BUFSIZE-1)) {
 		//too much data for buffer size
 		fprintf(stderr, FLFMT "ELM: too much data for buffer (report this bug please!)\n", FL);
@@ -569,6 +575,8 @@ void *data, size_t len, int timeout)
 	char *rptr, *bp;
 	unsigned int rbyte;
 
+	if (!len)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 	//possibly not useful until ELM323 vs 327 distinction is made :
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)

@@ -595,12 +595,9 @@ void *data, size_t len, int timeout)
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
-	//struct diag_l0_dumb_device *dev;
-	//dev = (struct diag_l0_dumb_device *)diag_l0_dl0_handle(dl0d);
-
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "link %p recv upto %ld bytes timeout %d\n",
+			FLFMT "_recv dl0d=%p req=%ld bytes timeout %d\n",
 			FL, (void *)dl0d, (long)len, timeout);
 
 	while ( (xferd = diag_tty_read(dl0d, data, len, timeout)) <= 0) {
@@ -629,6 +626,7 @@ void *data, size_t len, int timeout)
 
 /*
  * Set speed/parity etc
+ * ret 0 if ok
  */
 static int
 diag_l0_dumb_setspeed(struct diag_l0_device *dl0d,

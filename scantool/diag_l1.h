@@ -177,26 +177,37 @@ struct diag_l0
 	int 	diag_l0_type;			/* supported L1protocols, defined above*/
 
 	/* function pointers to L0 code */
-	int	(*diag_l0_init)(void);	//should not be used to allocate memory or open handles !
+	//diag_l0_init : must not be used to allocate memory or open handles !
+	int	(*diag_l0_init)(void);
+	//diag_l0_open : often calls diag_tty_open; alloc + fill + return a diag_l0_device
+	//struct if succesful.
 	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
 		int iProtocol);
+	//diag_l0_close : opposite of diag_l0_open... close & free everything
 	int	(*diag_l0_close)(struct diag_l0_device **);
+	//diag_l0_initbus : ret 0 if ok; must reset port settings (speed etc)
 	int	(*diag_l0_initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);
-		//diag_l0_send : return 0 if ok
+	//diag_l0_send : return 0 if ok
 	int	(*diag_l0_send)(struct diag_l0_device *,
 		const char *subinterface, const void *data, size_t len);
+	//diag_l0_recv: ret # of bytes read if successful, <0 otherwise
 	int	(*diag_l0_recv)(struct diag_l0_device *,
 		const char *subinterface, void *data, size_t len, int timeout);
+	//diag_l0_setspeed : ret 0 if ok
 	int	(*diag_l0_setspeed)(struct diag_l0_device *,
 		const struct diag_serial_settings *pss);
+	//diag_l0_getflags: return L0+L1 flags
 	int	(*diag_l0_getflags)(struct diag_l0_device *);
 };
 
 
+//diag_l1_init : parse through the l0dev_list linked list
+//and call diag_l0_init for each of them
 int diag_l1_init(void);
+//diag_l1_end : opposite of diag_l1_init . does nothing for now
 int diag_l1_end(void);
-//diag_l1_initbus : calls directly ->diag_l0_initbus. Must return as soon as possible,
+//diag_l1_initbus : calls ->diag_l0_initbus. Must return as soon as possible,
 //and restore original port settings (speed, etc)
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 //diag_l1_open : calls diag_l0_open with the specified L1 protocol

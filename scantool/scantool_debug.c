@@ -293,7 +293,7 @@ static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 //XXX unfinished; I'm implementing this as another L0 driver
 //(diag_l0_dumbtest.c).
 static int cmd_debug_l0test(int argc, char **argv) {
-#define MAX_L0TEST 5
+#define MAX_L0TEST 6
 	unsigned int testnum=0;
 	if ((argc <= 1) || (strcmp(argv[1], "?") == 0) || (sscanf(argv[1],"%u", &testnum) != 1)) {
 		printf("usage: %s [testnum], where testnum is a number between 1 and %d.\n", argv[0], MAX_L0TEST);
@@ -304,7 +304,8 @@ static int cmd_debug_l0test(int argc, char **argv) {
 				"\t2 : fast pulse TXD (K) : send 0x55 @ 10400bps\n"
 				"\t3 : slow pulse RTS : set for 400ms, clear for 200ms\n"
 				"\t4 : slow pulse DTR : set for 400ms, clear for 200ms\n"
-				"\t5 : fast pulse TXD (K) with diag_tty_break; 1 for 100ms, 0 for 25ms.\n");
+				"\t5 : fast pulse TXD (K) with diag_tty_break; 1 for 100ms, 0 for 25ms.\n"
+				"\t6 : fast pulse TXD (K) with diag_tty_fastbreak; 75ms / 25ms\n");
 		return CMD_OK;
 	}
 	if ((testnum < 1) || (testnum > MAX_L0TEST)) {

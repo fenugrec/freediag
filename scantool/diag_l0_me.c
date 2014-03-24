@@ -223,6 +223,9 @@ diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 {
 	ssize_t xferd;
 
+	if (!txlen)
+		return diag_iseterr(DIAG_ERR_BADLEN);
+
 	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) )
 	{
@@ -493,9 +496,12 @@ const void *data, size_t len)
 
 	dev = (struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);
 
+	if (len <= 0)
+		return diag_iseterr(DIAG_ERR_BADLEN);
+
 	if (len > 255) {
 		fprintf(stderr, FLFMT "_send : requesting too many bytes !\n", FL);
-		return -1;
+		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE)
@@ -590,6 +596,9 @@ void *data, size_t len, int timeout)
 
 	struct diag_l0_muleng_device *dev;
 	dev = (struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);
+
+	if (!len)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,

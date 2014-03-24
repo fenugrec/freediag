@@ -126,7 +126,7 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 static void dtest_5(struct diag_l0_device *dl0d) {
 	int i;
 	fprintf(stderr, FLFMT "Starting test 5: pulsing TXD=1, 100ms, TXD=0, 25ms\n", FL);
-	for (i=0; i<=30; i++) {
+	for (i=0; i<=40; i++) {
 		diag_os_millisleep(100);
 		diag_tty_break(dl0d, 25);
 	}
@@ -134,6 +134,18 @@ static void dtest_5(struct diag_l0_device *dl0d) {
 	return;
 }
 
+//dtest_6 : fast pulse TXD with diag_tty_fastbreak; 75ms / 25ms cycles.
+
+static void dtest_6(struct diag_l0_device *dl0d) {
+	int i;
+	fprintf(stderr, FLFMT "Starting test 6: pulsing TXD=1, 75ms, TXD=0, 25ms\n", FL);
+	for (i=0; i<=50; i++) {
+		diag_os_millisleep(50);
+		diag_tty_fastbreak(dl0d, 50);
+	}
+
+	return;
+}
 
 /*
  * Open the diagnostic device, returns a file descriptor
@@ -187,13 +199,16 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	case 5:
 		dtest_5(dl0d);
 		break;
+	case 6:
+		dtest_6(dl0d);
+		break;
 	default:
 		break;
 	}
 
 	diag_tty_close(&dl0d);
 	free(dev);
-	fprintf(stderr, FLFMT "L0 test finished.\n", FL);
+	fprintf(stderr, FLFMT "L0 test finished. Ignore the following error.\n", FL);
 	return NULL;
 }
 
@@ -262,6 +277,8 @@ const void *data, size_t len)
 	 * bytes
 	 */
 	ssize_t xferd;
+	if (!len)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "device link %p send %ld bytes ",

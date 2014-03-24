@@ -99,6 +99,14 @@ L2 : As I understand, this layer tries to abstract much of the differences betwe
 L3 : there's also a linked-list for l3 connections : diag_l3_list; 
 
 
+**** diag_l2_timer() & diag_l3_timer(), callbacks
+To handle keepalive messages of the various protocols, freediag sets up an OS-specific
+periodic callback function (see diag_os.c). This calls diag_l2_timer() and diag_l3_timer();
+these functions parse through the active connections and call the _timeout() functions
+as required. The callback function is called at a much higher frequency than typical
+keep-alive message requirements (i.e. callback interval=50ms on win32, but iso14230
+needs a TesterPresent request every 5000ms).
+
 
 **** "async signal safe"ness, re-entrant functions, callbacks etc.
 This is currently (2014) a bit of a mess. The previous devs knew this was the
@@ -106,8 +114,14 @@ next big problem to tackle, so they flagged many parts of the code as non-async 
 safe AKA "not re-entrant". These functions (and others) should be made re-entrant, i.e.
 take the necessary precautions so that, if a thread is currently executing
 the function, another thread can safely call the same function.
-Luckily we don't create many threads in freediag. I think the only case where
+
+Luckily this shouldn't happen very often in freediag. I think the only case where
 this can happen is with the periodic timer functions (diag_l2_timer and diag_l3_timer)
-which theoretically get called by the OS automatically at a preset interval, presumably
-to transmit keep-alive messages.
-All of this is very much a work in progress.
+which theoretically get called by the OS automatically at a preset interval, typically
+to transmit keep-alive messages. So for example if a protocol handler calls _send
+functions for its keep-alive message, while the user was already transmitting a
+request (which requires the same low-level functions), mayhem could ensue.
+
+A possible solution would be to create a diag_os_lock() function that uses OS-specific
+locking mechanisms (mutex, etc), and can be used to make the low-level functions
+re-entrant. 

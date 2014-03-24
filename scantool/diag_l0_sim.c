@@ -38,7 +38,6 @@
  * rigid syntax (check the comments in the file).
  *
  */
-#include <unistd.h> // POSIX stuff, XXX do we need this in here?
 
 #include <errno.h>
 #include <stdlib.h>
@@ -526,7 +525,7 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
-	dl0d->fd = (dl0d_handletype) 1;
+	//dl0d->fd = (dl0d_handletype) 1; nobody checks for this
 	rewind(dev->fp);
 
 	// Read the configuration flags from the db file:
@@ -622,6 +621,9 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 {
 	struct diag_l0_sim_device * dev = dl0d->dl0_handle;
 
+	if (len <= 0)
+		return diag_iseterr(DIAG_ERR_BADLEN);
+
 	if (len > 255) {
 		fprintf(stderr, FLFMT "Error : calling diag_l0_sim_send with len >255 bytes! (%u)\n", FL, (unsigned int) len);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -661,11 +663,10 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		void *data, size_t len, int timeout)
 {
 	size_t xferd;
-	//struct diag_l0_sim_device *dev;
 	struct sim_ecu_response* resp_p = NULL;
 
-	//dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);	//we don't use this ?
-
+	if (!len)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
 			FLFMT "link %p recv upto %ld bytes timeout %d\n",

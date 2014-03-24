@@ -81,7 +81,7 @@ static int diag_os_init_done=0;
 #ifdef WIN32
 	LARGE_INTEGER perfo_freq;	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
 	float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds
-	#define ALARM_TIMEOUT 20	//20 ms interval timeout for diag_os_sigalrm callback
+	#define ALARM_TIMEOUT 50	// ms interval timeout for timercallback()
 #else
 	#define ALARM_TIMEOUT 1		//1ms ? why so short ?
 #endif
@@ -103,7 +103,7 @@ VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
 	if (!timedout) {
 		//this should not happen...
 		if (!timerproblem) {
-			fprintf(stderr, FLFMT "Problem with OS timer callback!\n", FL);
+			fprintf(stderr, FLFMT "Problem with OS timer callback! Report this !\n", FL);
 			timerproblem=1;	//so we dont flood the screen with errors
 		}
 		//SetEvent(timerproblem) // probably not needed ?
@@ -133,7 +133,7 @@ diag_os_init(void)
 {
 #ifdef WIN32
 //	struct sigaction_t stNew;
-	unsigned long tmo=ALARM_TIMEOUT;	//20ms seems reasonable on WIN32. XXX change this for a #define
+	unsigned long tmo=ALARM_TIMEOUT;	//20ms seems reasonable...
 #else
 	struct sigaction stNew;
 	struct itimerval tv;

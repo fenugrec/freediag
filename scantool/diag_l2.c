@@ -206,9 +206,9 @@ static int diag_l2_rmconn(UNUSED(struct diag_l2_conn *d))
  * Note: This is called from a signal handler.
  *
  * XXX Uses functions not async-signal-safe.
- * Note that this does nothing now except handle the timeouts.
- * Thus, it is now easy to eliminate "diag_l2_timer" and replace it
- * with posix timers.
+ * This parses through the diag_l2_connections linked-list and
+ * calls the  ->diag_l2_proto_timeout function for every dl2conn
+ * that has expired.
  */
 void
 diag_l2_timer(void)

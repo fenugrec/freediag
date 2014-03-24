@@ -657,6 +657,9 @@ const void *data, size_t len)
 
 	dev = (struct diag_l0_br_device *)diag_l0_dl0_handle(dl0d);
 
+	if (len <= 0)
+		return diag_iseterr(DIAG_ERR_BADLEN);
+
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr,
 			FLFMT "device link %p send %ld bytes protocol %d state %d: ",
@@ -733,6 +736,9 @@ void *data, size_t len, int timeout)
 
 	struct diag_l0_br_device *dev;
 	dev = (struct diag_l0_br_device *)diag_l0_dl0_handle(dl0d);
+
+	if (!len)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
