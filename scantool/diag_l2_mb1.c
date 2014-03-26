@@ -27,10 +27,6 @@
  * TODO :
  */
 
-#ifdef WIN32
-#else
-#include <unistd.h>
-#endif
 
 #include <string.h>
 

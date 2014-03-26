@@ -142,3 +142,24 @@ Vasco Nevoa
 -result: Timeout in all protocols.
 
 #############################
+
+Paul Kasper
+----------
+-interface: B.Roadman BR3
+       via FTDI 8U232AM USB-to-RS232 cable
+-car: 2004 Dodge Caravan - 2.4L engine
+-pins on OBD plug: 2,4,5,7,9,12,15 and 16
+       (but Chrysler uses pin 7 as "SCI Transmit PCM"
+        and pin 15 as "SCI Transmit TCM" -- non-OBDII)
+-protocol: J1850-VPW
+-freediag version: CVS 1.0.0 as of 19jul05
+-O/S: built and run under SuSE 9.2 linux 2.6.8 i686
+-result:
+      connects OK;
+      runs with apparently reasonable amount of timeout/retries;
+      monitor reports fewer data values than I expected;
+      still trying to figure out what parts of S/W are expected to work;
+      have not tried cleardtc yet.
+
+
+#############################

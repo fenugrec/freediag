@@ -26,11 +26,6 @@
  *
  */
 
-#ifdef WIN32
-#else
-#include <unistd.h>	//do we need this ?
-#endif
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -91,11 +86,8 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 	uint8_t dl;
 
 	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-		int i;
-		fprintf(stderr, FLFMT "decode len %d", FL, len);
-		for (i = 0; i < len ; i++) {
-			fprintf(stderr, " 0x%X", data[i]&0xff);
-		}
+		fprintf(stderr, FLFMT "decode len %d, ", FL, len);
+		diag_data_dump(stderr, data, (size_t) len);
 		fprintf(stderr, "\n");
 	}
 
@@ -182,7 +174,7 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
 	{
-		fprintf(stderr, FLFMT "decode hdrlen = %d, datalen = %d, cksum = 1\n",
+		fprintf(stderr, FLFMT "decode hdrlen=%d, datalen=%d, cksum=1\n",
 			FL, *hdrlen, *datalen);
 	}
 	return (*hdrlen + *datalen + 1);
@@ -198,6 +190,9 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
  * If the L1 interface is clever (DOESL2FRAME), then each read will give
  * us a complete message, and we will wait a little bit longer than the normal
  * timeout to detect "end of all responses"
+ *
+ *Similar to 9141_int_recv; timeout has to be long enough to catch at least
+ *1 byte.
  */
 static int
 diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
@@ -217,7 +212,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "diag_l2_14230_intrecv dl2conn=%p offset %X\n",
+			FLFMT "_int_recv dl2conn=%p offset %X\n",
 				FL, (void *) d_l2_conn, dp->rxoffset);
 
 	state = ST_STATE1;
@@ -259,7 +254,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		/* Receive data into the buffer */
 
 		if (diag_l2_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "before recv, state %d timeout %d, rxoffset %d\n",
+			fprintf(stderr, FLFMT "before recv, state=%d timeout=%d, rxoffset %d\n",
 				FL, state, tout, dp->rxoffset);
 
 
@@ -277,7 +272,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 		if (diag_l2_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr,
-				FLFMT "after recv, rv %d rxoffset %d\n", FL, rv, dp->rxoffset);
+				FLFMT "after recv, rv=%d rxoffset=%d\n", FL, rv, dp->rxoffset);
 
 
 		if (rv == DIAG_ERR_TIMEOUT) {
@@ -337,7 +332,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 			}
 			if (state == ST_STATE3)
 				break;
-		}
+		}	//if diag_err_timeout
 
 		if (rv<0)
 			break;
@@ -524,6 +519,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	(void)diag_tty_iflush(d_l2_conn->diag_link->diag_l2_dl0d);
 	diag_os_millisleep(300);
 
+	//inside this switch, we set rv=0 or rv=error before "break;"
 	switch (dp->type) {
 	/* Fast initialisation */
 	case DIAG_L2_TYPE_FASTINIT:
@@ -547,6 +543,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 		/* Do fast init stuff */
 		in.type = DIAG_L1_INITBUS_FAST;
+		//in.addr is ignored by fastinit
 		rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 
 		if (rv < 0)
@@ -554,32 +551,25 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 		/* Send the prepared message */
 		if (diag_l2_proto_14230_send(d_l2_conn, &msg)) {
-			free(dp);
-			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
-			return diag_iseterr(DIAG_ERR_GENERAL);
+			rv=DIAG_ERR_GENERAL;
+			break;
 		}
 
 		if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2FRAME)
 			timeout = 200;
 		else
-			timeout = d_l2_conn->diag_l2_p2max + 20;
+			timeout = d_l2_conn->diag_l2_p2max + RXTOFFSET;
 
 		/* And wait for a response, ISO14230 says will arrive in P2 */
 		rv = diag_l2_proto_14230_int_recv(d_l2_conn,
 				timeout, data, &len);
-		if (rv < 0) {
-			free(dp);
-			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
-			return diag_iseterr(rv);
-		}
+		if (rv < 0)
+			break;
 
 		rv = diag_l2_proto_14230_decode( data, len,
 			&hdrlen, &datalen, &datasrc, NULL, dp->first_frame);
-		if (rv < 0) {
-			free(dp);
-			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
-			return diag_iseterr(rv);
-		}
+		if (rv < 0)
+			break;
 
 		switch (data[hdrlen]) {
 		case DIAG_KW2K_RC_SCRPR:	/* StartComms +ve response */
@@ -590,38 +580,28 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
 				fprintf(stderr,
-					FLFMT "diag_l2_14230_StartComms",
-					FL);
-				fprintf(stderr," Physaddr 0x%X",
-					datasrc);
-				fprintf(stderr," KB1 = %X, KB2 = %X\n",
-					d_l2_conn->diag_l2_kb1,
-					d_l2_conn->diag_l2_kb2);
+					FLFMT "_StartComms Physaddr=0x%X KB1=%02X, KB2=%02X\n",
+					FL, datasrc, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
 			}
+			rv=0;
 			dp->state = STATE_ESTABLISHED ;
 			break;
 		case DIAG_KW2K_RC_NR:
 			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
 				fprintf(stderr,
-					FLFMT "diag_l2_14230_StartComms",
-					FL);
-				fprintf(stderr, " got -ve response\n");
+					FLFMT "_StartComms got neg response\n", FL);
 			}
-			free(dp);
-			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
-			return diag_iseterr(DIAG_ERR_ECUSAIDNO);
+			rv=DIAG_ERR_ECUSAIDNO;
+			break;
 		default:
 			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
 				fprintf(stderr,
-					FLFMT "diag_l2_14230_StartComms",
-					FL);
-				fprintf(stderr, " got unexpected response 0x%X\n",
-					data[hdrlen]);
+					FLFMT "_StartComms got unexpected response 0x%X\n",
+					FL, data[hdrlen]);
 			}
-			free(dp);
-			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
-			return diag_iseterr(DIAG_ERR_ECUSAIDNO);
-		}
+			rv=DIAG_ERR_ECUSAIDNO;
+			break;
+		}	//switch data[hdrlen]
 		break;
 	/* 5 Baud init */
 	case DIAG_L2_TYPE_SLOWINIT:
@@ -644,12 +624,12 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 		/* ISO14230 uses KB2 of 0x8F */
 		if (cbuf[1] != 0x8f) {
-			free(dp);
-			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
-			return diag_iseterr(DIAG_ERR_WRONGKB);
+			rv=DIAG_ERR_WRONGKB;
+			break;
 		}
 
 		/* Note down the mode bytes */
+		// why do we &0x7F KB2 ? it can only be ==0x8F...
 		d_l2_conn->diag_l2_kb1 = cbuf[0] & 0x7f;
 		d_l2_conn->diag_l2_kb2 = cbuf[1] & 0x7f;
 
@@ -666,16 +646,23 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			/*
 			 * And wait for the address byte inverted
 			 */
+			//first init cbuf[0] to the wrong value in case l1_recv gets nothing
+			cbuf[0]= (uint8_t) target;
 			rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 				cbuf, 1, 350);
 
 			if (cbuf[0] != ((~target) & 0xFF) ) {
-				free(dp);
-				d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
-				return diag_iseterr(DIAG_ERR_WRONGKB);
+				fprintf(stderr, FLFMT "_startcomms : addr mismatch %02X!=%02X\n",
+					FL, cbuf[0], (uint8_t) ~target);
+				rv=DIAG_ERR_WRONGKB;
+				break;
 			}
-		}
 
+			if (diag_l2_debug & DIAG_DEBUG_INIT)
+					fprintf(stderr, FLFMT "ISO14230 KB1=%02X KB2=%02X\n", FL,
+						d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
+		}
+		rv=0;
 		dp->state = STATE_ESTABLISHED ;
 		break;
 	case DIAG_L2_TYPE_MONINIT:
@@ -686,7 +673,8 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	default:
 		rv = DIAG_ERR_INIT_NOTSUPP;
 		break;
-	}
+	}	//end of switch dp->type
+	//At this point we just finished the handshake and got KB1 and KB2
 
 	if (rv < 0) {
 		free(dp);
@@ -762,7 +750,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
-			FLFMT "diag_l2_14230_send: dl2conn=%p msg=%p len=%d\n",
+			FLFMT "_send: dl2conn=%p msg=%p len=%d\n",
 				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
@@ -848,7 +836,7 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		return rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "l2_protO_14230_int_recv : handle=%p timeout=%d\n", FL,
+		fprintf(stderr, FLFMT "_int_recv : handle=%p timeout=%d\n", FL,
 			(void *)handle, timeout);	//%pcallback! we won't try to printf the callback pointer.
 
 	/*
@@ -862,7 +850,7 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	d_l2_conn->diag_msg = NULL;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "rcv callback completed\n", FL);
+		fprintf(stderr, FLFMT "_recv callback completed\n", FL);
 
 	return 0;
 }
@@ -946,7 +934,7 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 
 	/* XXX fprintf not async-signal-safe */
 	if (diag_l2_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "timeout impending for %p type %d\n",
+		fprintf(stderr, FLFMT "timeout impending for dl2c=%p type=%d\n",
 				FL, (void *)d_l2_conn, dp->type);
 	}
 

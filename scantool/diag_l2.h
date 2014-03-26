@@ -139,6 +139,13 @@ struct diag_l2_conn
 // Slower than any protocol, give them time to unframe
 // and checksum the data:
 #define SMART_TIMEOUT 150
+#define RXTOFFSET 20	//ms to add to some diag_l1_recv calls in L2 code
+				//In theory this should be 0... It's a band-aid
+				//hack to allow system to system variations but NEEDS
+				//to be replaced by something runtime-configurable either
+				//by the user or some auto-configured feature of the
+				//scantool (not implemented yet)
+
 
 /*
  * Default ISO 14230 timing values, ms, used as defaults for L2 timeouts
@@ -184,7 +191,6 @@ struct diag_l2_conn
 
  * Bits 0/1/2 used to tell what kind of initialisation to be done on the
  * diagnostic bus.
- * TODO: tidy up #defines for binary flags vs int values?
  */
 #define DIAG_L2_TYPE_SLOWINIT	0x00		/* Do 5 Baud init */
 #define DIAG_L2_TYPE_FASTINIT	0x01		/* Do fast init */
@@ -299,9 +305,10 @@ void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  * 	returns: struct diag_l2_conn for representing the connection
  *
  * l2_stopCommunications()
- *	use:	stop talking to an ECU
+ *	use:	stop talking to an ECU;
+ * 		undo anything done by l2_startcommunicatio()
  *
- * AccessTimingParameters()
+ * AccessTimingParameters()	//XXX This disappeared from 0.3 !?
  *	use:	change access timing parameter defaults
  *	params:	connection - the connection
  *

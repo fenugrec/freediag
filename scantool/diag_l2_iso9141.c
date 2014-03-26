@@ -45,6 +45,7 @@
 
 #include "diag_l2_iso9141.h" /* prototypes for this file */
 
+
 CVSID("$Id$");
 
 /*
@@ -118,9 +119,6 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	if (rv < 0)
 		return diag_iseterr(DIAG_ERR_WRONGKB);
 
-	if (diag_l2_debug && DIAG_DEBUG_PROTO)
-		fprintf(stderr, FLFMT "Got keybytes %X %X\n", FL, kb1, kb2);
-
 	// Check keybytes, these can be 0x08 0x08 or 0x94 0x94:
 	if ( (kb1 != kb2) || ( (kb1 != 0x08) && (kb1 != 0x94) ) )
 		return diag_iseterr(DIAG_ERR_WRONGKB);
@@ -152,13 +150,16 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 			return diag_iseterr(rv);
 
 		// Wait for the address byte inverted:
+		// XXX I added RXTOFFSET as a band-aid fix for systems, like
+		//mine, that don't receive ~addr with only W4max. See #define
+		//NOTE : l2_iso14230 uses a huge 350ms timeout for this!!
 		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
-					&inv_address, 1, W4max);
+					&inv_address, 1, W4max + RXTOFFSET);
 		if (rv < 0)
 		{
 			if (diag_l2_debug & DIAG_DEBUG_OPEN)
 				fprintf(stderr,
-					FLFMT "startcomms con %p rx error %d\n",
+					FLFMT "wakeupECU(dl2conn %p) did not get inv. address; rx error %d\n",
 					FL, (void *)d_l2_conn, rv);
 			return diag_iseterr(rv);
 		}
@@ -166,11 +167,10 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 		// Check the received inverted address:
 		if ( inv_address != (uint8_t) ~address )	//even though they're both uint8_t, gcc complains !
 		{
-			if (diag_l2_debug & DIAG_DEBUG_OPEN)
-				fprintf(stderr,
-					FLFMT "startcomms 0x%02X != 0x%02X\n",
-					FL, inv_address, ~address);
-			return diag_iseterr(DIAG_ERR_WRONGKB);
+			fprintf(stderr,
+					FLFMT "wakeupECU(dl2conn %p) addr mismatch: 0x%02X != 0x%02X\n",
+					FL, (void *)d_l2_conn, inv_address, ~address);
+			return diag_iseterr(DIAG_ERR_BADDATA);
 		}
 	}
 
@@ -178,9 +178,8 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_iso9141_wakeupECU con %p kb1 0x%X kb2 0x%X\n",
-			FL, (void *)d_l2_conn,
-			kb1, kb2);
+			FLFMT "_wakeupECU dl2con=%p kb1=0x%02X kb2=0x%02X\n",
+			FL, (void *)d_l2_conn, kb1, kb2);
 
 	return 0;
 }
@@ -201,7 +200,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_iso9141_startcomms conn %p bitrate=%u tgt=%x src=%x\n",
+			FLFMT "_startcomms conn %p %ubps tgt=%x src=%x\n",
 			FL, (void *)d_l2_conn, bitrate, target, source);
 
 	if (diag_calloc(&dp, 1))
@@ -253,6 +252,8 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 
 /*
  * Free session-specific allocated data.
+ * ISO9141 doesn't have a StopCommunication mechanism like iso14230,
+ * so we just "undo" what iso9141_startcomms did.
  */
 static int
 diag_l2_proto_iso9141_stopcomms(struct diag_l2_conn* d_l2_conn)
@@ -331,6 +332,9 @@ diag_l2_proto_iso9141_decode(uint8_t *data, int len,
  * Multiple ECUS may send responses to one request.
  * The end of all responses is marked by p3max timeout, but since that is very
  * long (5 seconds), we're using p3min (55ms).
+ * "timeout" has to be long enough to receive at least 1 byte;
+ *  in theory it could be P2min + (8 / baudrate) but there is no
+ * harm in using P2max.
  */
 int
 diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
@@ -347,7 +351,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "diag_l2_iso9141_int_recv offset %X\n",
+			FLFMT "_int_recv offset %X\n",
 			FL, d_l2_conn->rxoffset);
 
 	state = ST_STATE1;
@@ -402,6 +406,8 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 				// but we'll cut it short at p3min.
 				// Aditionaly, for "smart" interfaces, we expand
 				// the timeout to let them process the data.
+				//P3min is perhaps too short and could exclude some responses...
+				//TODO: maybe set tout=p3min + margin ?
 				tout = d_l2_conn->diag_l2_p3min;
 				if (l1_doesl2frame)
 				tout += SMART_TIMEOUT;
@@ -580,6 +586,8 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 
 
+//_recv : timeout is fed directly to _int_recv and should be long enough
+//to guarantee we receive at least one byte. (P2Max should do the trick)
 static int
 diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 			void (*callback)(void *handle, struct diag_msg *msg), void *handle)
@@ -590,7 +598,7 @@ diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if ((rv >= 0) && d_l2_conn->diag_msg)
 	{
 		if (diag_l2_debug & DIAG_DEBUG_READ)
-			fprintf(stderr, FLFMT "l2_proto_iso9141_recv : handle=%p\n", FL,
+			fprintf(stderr, FLFMT "_recv : handle=%p\n", FL,
 				(void *)handle);	//%pcallback! we won't try to printf the callback pointer.
 		/*
 		 * Call user callback routine
@@ -626,7 +634,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
-		FLFMT "diag_l2_send 0p%p 0p%p called\n",
+		FLFMT "_send dl2c=%p msg=%p\n",
 		FL, (void *)d_l2_conn, (void *)msg);
 
 	// Check if the payload plus the overhead (and checksum) exceed protocol packet size:
@@ -675,15 +683,9 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	}
 
 	// Send it over the L1 link:
-	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, NULL,
 			buf, (size_t)offset, d_l2_conn->diag_l2_p4min);
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
-	{
-		fprintf(stderr, "l2_iso9141_send: ");
-		diag_data_dump(stderr, buf, (size_t)offset);
-		fprintf(stderr, "\n");
-	}
 
 	return rv? diag_iseterr(rv):0;
 }
@@ -704,7 +706,7 @@ diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *m
 	}
 
 	/* And wait for response */
-
+	// instead of 1000 we could use P2Max; but 1000 is maybe safer...
 	rv = diag_l2_proto_iso9141_int_recv(d_l2_conn, 1000);
 	if ((rv >= 0) && d_l2_conn->diag_msg)
 	{

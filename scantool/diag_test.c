@@ -23,7 +23,7 @@
  * Diag library test harness
  * This is a stand-alone program !
  * Hard-coded to use a DUMB interface on the current device with "DIAG_L1_RAW" proto...
- * 
+ * TODO : make this more win32-friendly; maybe use some diag_os.c functions ?
  */
 
 #ifdef WIN32

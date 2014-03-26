@@ -110,7 +110,7 @@ extern "C" {
  */
 //#define	DIAG_L1_SPARE		0x00	/* Not used */
 #define	DIAG_L1_ISO9141		0x01	/* K line */
-#define	DIAG_L1_ISO14230	0x02	/* K line */
+#define	DIAG_L1_ISO14230	0x02	/* K line,XXX not sure of the difference with 9141 at this level */
 #define DIAG_L1_J1850_VPW	0x04	/* J1850 interface, 10400 baud, VPW */
 #define DIAG_L1_J1850_PWM	0x08	/* J1850 interface 41600 baud, PWM */
 #define	DIAG_L1_CAN		0x10	/* CAN bus */
@@ -152,16 +152,21 @@ struct diag_l1_initbus_args
 #define DIAG_L1_INITBUS_2SLOW	3	/* 2 second low on bus, ISO9141-1989 style ? */
 
 /*
- * init(), returns 0 on success (always succeeds)
- * open(), returns a *diag_l0_device on success, 0 on failure (pseterr)
- * close(), always succeeds and returns 0
- * send() Send data, same args as Unix write() + the sub interface,
+ * _init(), returns 0 on success (always succeeds)
+ * 	 must not be used to allocate memory or open handles !
+ * _open(), returns a *diag_l0_device on success, 0 on failure (pseterr).
+ * 	Often calls diag_tty_open; alloc + fill + return a diag_l0_device
+ *	struct if succesful.
+ * _close(), always succeeds and returns 0. Close & free everything
+ * _initbus : ret 0 if ok; must reset port settings (speed etc)
+ * _send() Send data, same args as Unix write() + the sub interface,
  * 	returns 0 on OK, -1 on success
- * recv() - get data, same args as Unix read() + the sub interface
- * setspeed(), returns 0 on success,  speed = speed, bits = data bits (5,6,7,8)
+ * _recv() - get data, same args as Unix read() + the sub interface
+ *	ret # of bytes read if successful, <0 otherwise
+ * _setspeed(), returns 0 on success,  speed = speed, bits = data bits (5,6,7,8)
  *	 stopbits (1, 2), parflag as above
- * getflags(), return the flags as above
- * gettype(), return the type as above
+ * _getflags(), return the flags as above
+ * _gettype(), return the type as above
  */
 
 struct diag_l0_device;  // this contains platform-specific members, so it's in diag_tty_???.h
@@ -177,27 +182,18 @@ struct diag_l0
 	int 	diag_l0_type;			/* supported L1protocols, defined above*/
 
 	/* function pointers to L0 code */
-	//diag_l0_init : must not be used to allocate memory or open handles !
 	int	(*diag_l0_init)(void);
-	//diag_l0_open : often calls diag_tty_open; alloc + fill + return a diag_l0_device
-	//struct if succesful.
 	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
 		int iProtocol);
-	//diag_l0_close : opposite of diag_l0_open... close & free everything
 	int	(*diag_l0_close)(struct diag_l0_device **);
-	//diag_l0_initbus : ret 0 if ok; must reset port settings (speed etc)
 	int	(*diag_l0_initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);
-	//diag_l0_send : return 0 if ok
 	int	(*diag_l0_send)(struct diag_l0_device *,
 		const char *subinterface, const void *data, size_t len);
-	//diag_l0_recv: ret # of bytes read if successful, <0 otherwise
 	int	(*diag_l0_recv)(struct diag_l0_device *,
 		const char *subinterface, void *data, size_t len, int timeout);
-	//diag_l0_setspeed : ret 0 if ok
 	int	(*diag_l0_setspeed)(struct diag_l0_device *,
 		const struct diag_serial_settings *pss);
-	//diag_l0_getflags: return L0+L1 flags
 	int	(*diag_l0_getflags)(struct diag_l0_device *);
 };
 
@@ -215,6 +211,7 @@ struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, 
 //diag_l1_close : calls diag_l0_close as required
 int diag_l1_close(struct diag_l0_device **);
 int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, unsigned int p4);
+//diag_l1_recv : can return DIAG_ERR_TIMEOUT ?
 int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, int timeout);
 int diag_l1_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset);

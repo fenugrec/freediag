@@ -79,9 +79,10 @@ CVSID("$Id$");
 static int diag_os_init_done=0;
 
 #ifdef WIN32
-	LARGE_INTEGER perfo_freq;	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
+	LARGE_INTEGER perfo_freq={{0,0}};	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
 	float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds
-	#define ALARM_TIMEOUT 50	// ms interval timeout for timercallback()
+	int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_millisleep
+	#define ALARM_TIMEOUT 300	// ms interval timeout for timercallback()
 #else
 	#define ALARM_TIMEOUT 1		//1ms ? why so short ?
 #endif
@@ -171,6 +172,7 @@ diag_os_init(void)
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "Performance counter frequency : %9"PRIu64"Hz\n", FL, perfo_freq.QuadPart);
 	}
+	diag_os_calibrate();
 	diag_os_init_done = 1;
 	return 0;
 #else // not WIN32
@@ -199,6 +201,7 @@ diag_os_init(void)
 	tv.it_value = tv.it_interval;
 
 	setitimer(ITIMER_REAL, &tv, 0); /* Set timer : it will SIGALRM upon expiration */
+	diag_os_calibrate();
 	diag_os_init_done = 1;
 	return 0;
 #endif	//WIN32
@@ -215,21 +218,22 @@ int diag_os_close() {
 		//succes
 		return 0;
 	}
+	//From MSDN : if error_io_pending, not necessary to call again.
 	err=GetLastError();
-	fprintf(stderr, FLFMT "Could not DTQT: %s\n", FL, diag_os_geterr(err));
 	if (err==ERROR_IO_PENDING) {
-		fprintf(stderr, FLFMT "But that's an ERROR_IO_PENDING so no worries.\n", FL);
+		//This is OK and the queue will be deleted automagically.
+		//No need to pester the user about this
 		return 0;
 	}
-	//sinon ici on est dans le troub;
-	fprintf(stderr, FLFMT "Could not DTQT. Retrying.\n", FL);
-	Sleep(500);	//should be more than enough for the short timer period we chose
+	//Otherwise, try again
+	fprintf(stderr, FLFMT "Could not DTQT. Retrying...", FL);
+	Sleep(500);	//should be more than enough for IO to complete...
 	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
-		fprintf(stderr, FLFMT "OK !\n", FL);		//succes
+		fprintf(stderr, "OK !\n");
 		return 0;
 	}
-	fprintf(stderr, FLFMT "Still could not DTQT. Please report this.\n", FL);
-	return -1;
+	fprintf(stderr, "Failed. Please report this.\n");
+	return DIAG_ERR_GENERAL;
 #else // not WIN32
 	//I know nothing about unix timers. Viewer discretion is advised.
 	//stop the interval timer:
@@ -248,8 +252,8 @@ int diag_os_close() {
 
 
 //different os_millisleep implementations
-//TODO : add debugging info of timing for *unix
-//TODO : add timer verification to all of them ?
+//TODO : add timing verification for *unix
+
 int
 diag_os_millisleep(unsigned int ms)
 {
@@ -405,22 +409,52 @@ diag_os_millisleep(unsigned int ms)
 	}
 	return 0;
 #else		//so it's WIN32
+	//This version self-corrects if Sleep() overshoots;
+	//if it undershoots then we run an empty loop for the remaining
+	//time. Eventually "correction" should contain the biggest
+	//overshoot so far; this means every subsequent calls
+	//will almost always run through the NOP loop.
 	LARGE_INTEGER qpc1, qpc2;
 	long real_t;
-	QueryPerformanceCounter(&qpc1);
-	Sleep(ms);
-	QueryPerformanceCounter(&qpc2);
-	real_t=(long) (pf_conv * (qpc2.QuadPart-qpc1.QuadPart));
+	static long correction;	//auto-adjusment (in us)
+	LONGLONG tdiff;	//measured (elapsed) time (in counts)
 
-	//verify if within 1ms of requested.
-	real_t = real_t - (ms*1000);
-	if ((real_t < -1000) || (real_t > 1000)) {
-		fprintf(stderr, FLFMT "Warning : diag_os_millisleep out of spec by %ldus !.\n",
-			FL, real_t);
+	QueryPerformanceCounter(&qpc1);
+	tdiff=0;
+	correction=0;
+	LONGLONG reqt= (ms * perfo_freq.QuadPart)/1000;	//required # of counts
+	if (perfo_freq.QuadPart ==0) {
+		Sleep(ms);
+		return 0;
+	}
+
+
+	if ( shortsleep_reliable || (((long) ms-(correction/1000)) > 5)) {
+		//if reliable, or long sleep : try
+		Sleep(ms - (correction/1000));
+		QueryPerformanceCounter(&qpc2);
+		tdiff= qpc2.QuadPart - qpc1.QuadPart;
+		if (tdiff > reqt) {
+			//we busted the required time by:
+			real_t = (long) (pf_conv * (tdiff-reqt));	//in us
+			if (real_t > 1000)
+				correction += real_t;
+			return 0;
+		}
+	}
+
+	//do NOP loop for short sleeps for the remainder. This is ugly
+	//but could help on some systems
+	//if Sleep(ms) was too short this will bring us near
+	//the requested value.
+	while (tdiff < reqt) {
+		QueryPerformanceCounter(&qpc2);
+		tdiff= qpc2.QuadPart - qpc1.QuadPart;
 	}
 	return 0;
 
 #endif	//ifndef win32
+
 #endif	//initial "if linux && !posix"
 }	//diag_os_millisleep
 
@@ -634,3 +668,68 @@ const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 #endif // WIN32
 
 }
+
+//diag_os_calibrate : run some timing tests to make sure we have
+//adequate performances.
+//On win32, running diag_os_millisleep repeatedly allows it to
+//auto-adjust to a certain degree.
+
+void diag_os_calibrate(void) {
+#ifdef WIN32
+	//TODO : adjust dynamic offsets as well, now we just evaluate the situation
+	static int calibrate_done=0;	//do it only once
+	const int iters=10;
+	int testval;	//timeout to test
+	LARGE_INTEGER qpc1, qpc2;
+	LONGLONG tsum;
+
+	if (perfo_freq.QuadPart == 0) {
+		fprintf(stderr, FLFMT "_calibrate will not work without a performance counter.\n", FL);
+		return;
+	}
+	if (calibrate_done)
+		return;
+
+	printf("Calibrating timing, this will take a few seconds...\n");
+
+	for (testval=50; testval > 0; testval -= 2) {
+		//Start with the highest timeout to force _millisleep to use Sleep()
+		//and therefore start auto-correcting right away.
+		int i;
+		LONGLONG counts, avgerr, max, min;
+
+		max=0;
+
+		tsum=0;
+		counts=(testval*perfo_freq.QuadPart)/1000;	//expected # of counts
+		min=counts;
+
+		for (i=0; i< iters; i++) {
+			LONGLONG timediff;
+			QueryPerformanceCounter(&qpc1);
+			diag_os_millisleep(testval);
+			QueryPerformanceCounter(&qpc2);
+			timediff=(qpc2.QuadPart-qpc1.QuadPart);
+			tsum += timediff;
+			//update extreme records if required:
+			if (timediff < min)
+				min = timediff;
+			if (timediff > max)
+				max = timediff;
+		}
+		avgerr= (LONGLONG) (((tsum/iters)-counts) * pf_conv);	//average error in us
+		if ((min < counts) || (avgerr > 900))
+			printf("diag_os_millisleep(%d) off by %+"PRId64"%% (%+"PRId64"us)"
+			"; spread=%"PRIu64"%%\n", testval, (avgerr*100/1000)/testval, avgerr, ((max-min)*100)/counts);
+
+
+		if (testval>=25)
+			testval -= 7;
+	}	//for testvals
+	printf("Calibration done.\n");
+	calibrate_done=1;
+	return;
+#else
+	return;
+#endif
+}	//diag_os_calibrate

@@ -107,6 +107,8 @@ as required. The callback function is called at a much higher frequency than typ
 keep-alive message requirements (i.e. callback interval=50ms on win32, but iso14230
 needs a TesterPresent request every 5000ms).
 
+**** diag_l2_recv callbacks
+
 
 **** "async signal safe"ness, re-entrant functions, callbacks etc.
 This is currently (2014) a bit of a mess. The previous devs knew this was the

@@ -113,7 +113,7 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
  */
 #define CONBYIDSIZE 256
 
-static struct diag_l2_conn	*diag_l2_connections;	//linked-list of current diag_l2_conn's
+static struct diag_l2_conn	*diag_l2_connections=NULL;	//linked-list of current diag_l2_conn's
 static struct diag_l2_conn	*diag_l2_conbyid[CONBYIDSIZE];	/* Look up by ECU address */
 
 static int diag_l2_init_done=0;	/* Init done */
@@ -174,10 +174,10 @@ diag_l2_rmlink(struct diag_l2_link *d)
  *
  * remove a L2 connection from our list
  * - up to the caller to have shut it down properly first
- * diag_l2_rmconn XXX Currently not used?
+ * Always returns 0
  */
 
-static int diag_l2_rmconn(UNUSED(struct diag_l2_conn *d))
+static int diag_l2_rmconn(struct diag_l2_conn *d)
 {
 	struct diag_l2_conn	*d_l2_conn = diag_l2_connections;
 	struct diag_l2_conn	*d_l2_last_conn = NULL;
@@ -581,10 +581,13 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
  * - some L2 protocols have an ordered mechanism to do this, others are
  * just timeout based (i.e don't send anything for 5 seconds)
  * this also free()s d_l2_conn (alloced in startcomm)
+ * and removes it from diag_l2_connections and diag_l2_conbyid[]
  */
 int
 diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 {
+	if (! d_l2_conn)
+		return 0;
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSING;
 
 	/*
@@ -593,9 +596,20 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 	if (d_l2_conn->l2proto->diag_l2_proto_stopcomms)
 		(void)d_l2_conn->l2proto->diag_l2_proto_stopcomms(d_l2_conn);
 
-	//d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSED;
-	if (d_l2_conn)
-		free(d_l2_conn);
+	//remove from the main linked list
+	diag_l2_rmconn(d_l2_conn);
+
+	//and remove from diag_l2_conbyid[]
+	int i;
+	for (i=0; i < CONBYIDSIZE; i++) {
+		if (diag_l2_conbyid[i] == d_l2_conn) {
+			diag_l2_conbyid[i]=NULL;
+			if (diag_l2_debug & DIAG_DEBUG_CLOSE)
+				fprintf(stderr, FLFMT "l2_stopcomm: removing dl2 for ID=%X\n", FL, i);
+		}
+	}
+	//and free() the connection.
+	free(d_l2_conn);
 
 	return 0;
 }

@@ -174,7 +174,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 	}
 	fprintf(stderr, FLFMT "diag_l1_open: did not recognize %s\n", FL, name);
 	/* Not found */
-	return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+	return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
 }
 
 //diag_l1_close : call the ->diag_l0_close member of the

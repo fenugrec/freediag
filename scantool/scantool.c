@@ -912,7 +912,7 @@ do_l2_generic_start(void)
 		//indicating an error
 		rv = diag_geterr();
 		//if ((rv != DIAG_ERR_BADIFADAPTER) && (rv != DIAG_ERR_PROTO_NOTSUPP))
-		fprintf(stderr, "Failed to open hardware interface protocol %d with %s on %s\n",
+		fprintf(stderr, "l2_generic_start: open failed for protocol %d with %s on %s\n",
 			set_L1protocol,l0_names[set_interface_idx].longname,set_subinterface);
 		diag_end();
 		return diag_iseterr(rv);

@@ -161,6 +161,8 @@ cmd_diag_addl3(int argc, char **argv)
 
 
 //cmd_diag_prob_common [startaddr] [stopaddr]
+//This should stop searching at the first succesful init
+//and update the global connection
 static int
 cmd_diag_probe_common(int argc, char **argv, int fastflag)
 {
@@ -274,7 +276,6 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			else if (rv != DIAG_ERR_TIMEOUT)
 				printf("- read failed %d\n", rv);
 
-			/* XXX until we can disconnect from an ECU */
 			return CMD_OK;
 		} // d_con !=null
 	}	//for addresses

@@ -46,7 +46,9 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	strncpy(dl0d->name, subinterface, n);
 
 	dl0d->fd=CreateFile(subinterface, GENERIC_READ | GENERIC_WRITE, 0, NULL,
-		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH,
+		NULL);
 	//File hande is created as non-overlapped. This may change eventually.
 
 	if (dl0d->fd != INVALID_HANDLE_VALUE) {
@@ -177,14 +179,13 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 	{
-		fprintf(stderr, FLFMT "device handle=%p; ",
-			FL, (void *)devhandle);
-		fprintf(stderr, "speed=%d databits=%d stopbits=%d parity=%d\n",
-			pset->speed, pset->databits, pset->stopbits, pset->parflag);
+		fprintf(stderr, FLFMT "dev %p; %dbps %d,%d,%d \n",
+			FL, (void *)devhandle, pset->speed,
+			pset->databits, pset->stopbits, pset->parflag);
 	}
 
 	/*
-	 * Now load the DCB with the paramaters requested.
+	 * Now load the DCB with the parameters requested.
 	 */
 	// the DCB (devstate) has been loaded with initial values in diag_tty_open so it should already coherent.
 	devstate->BaudRate = pset->speed;
@@ -306,7 +307,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & (DIAG_DEBUG_TIMER | DIAG_DEBUG_IOCTL)) {
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "~@%lums : DTR/RTS changed\n", FL, (unsigned long) GetTickCount());
 	}
 
@@ -316,14 +317,11 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 
 //diag_tty_write : return # of bytes or <0 if error?
 //this is an intimidating function to design.
-//test #1 :  non-overlapped write (i.e. blocking AKA synchronous), until I know what I'm doing.
-//It may be useful to make this overlapped instead : that way the caller regains control
-// at the approx moment the actual transmission would begin.  As it stands, there is no
-// correlation between the moment WriteFile returns and when transmission actually
-// takes place. I..e. WriteFile will probably return after dumping the bytes in the
-// UART's buffer (most likely) which doesn't mean they were sent yet.
-// *However*, changing this to an Overlapped operation has wide implications on the
-// rest of the code, and may require a lot of changes to the UNIX tty stuff too.
+//test #2 :  non-overlapped write (i.e. blocking AKA synchronous).
+//
+//flush buffers before returning; we could also SetCommMask
+//to wait for "EV_TXEMPTY" which would give a better idea
+//of when the data has been sent.
 
 ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count) {
 	DWORD byteswritten;
@@ -339,7 +337,10 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 		fprintf(stderr, FLFMT "WriteFile error:%s. %u bytes written, %u requested\n", FL, diag_os_geterr(0), (unsigned int) byteswritten, count);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-
+	if (!FlushFileBuffers(dl0d->fd)) {
+		fprintf(stderr, FLFMT "tty_write : could not flush buffers, %s\n", FL, diag_os_geterr(0));
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 	return byteswritten;
 } //diag_tty_write
 
@@ -349,8 +350,13 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 //attempt to read (count) bytes until (timeout) passes.
 //Note : setting timeout to 0 is like setting an infinite timeout on win32.
 //TODO : unify diag_tty_read timeouts between win32 and unix
-//This is non-overlapped for now; it's also probably broken;
-//timeouts and incomplete data are not handled properly. This is not even pre-alpha.
+//TODO : unify tty_read return values between win32 & others.
+//This one returns # of bytes read (if any)
+//This is non-overlapped for now i.e. blocking.
+//timeouts and incomplete data are not handled properly. This is pre-alpha...
+//From the API docs :
+// ReadFile returns when the number of bytes requested has been read, or an error occurs.
+
 
 ssize_t
 diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout) {
@@ -400,9 +406,9 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
-		fprintf(stderr, FLFMT "tty_iflush: at least %d junk bytes discarded: 0x%X ... ", FL, rv, buf[0]);
+		fprintf(stderr, FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n", FL, rv, buf[0]);
 		// diag_data_dump(stderr, (void *) buf, (size_t) rv); //this could take a long time.
-		fprintf(stderr,"\n");
+		// fprintf(stderr,"\n");
 	}
 	PurgeComm(dl0d->fd, PURGE_RXABORT | PURGE_RXCLEAR);
 
@@ -431,36 +437,33 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	QueryPerformanceFrequency(&perftest);
-	if (perfo_freq.QuadPart != perftest.QuadPart) {
 		//this sanity check takes ~ 4us on my system
+	if (perfo_freq.QuadPart != perftest.QuadPart) {
 		fprintf(stderr, FLFMT "Warning: your system changed its performance counter frequency !\n", FL);
 		perfo_freq.QuadPart = perftest.QuadPart;
 		pf_conv=1.0E6 / perftest.QuadPart;
-		//we update the global settings, since it's just use for validation at the moment (not control)
 	}
 
 	QueryPerformanceCounter(&qpc1);
 	errval=!SetCommBreak(dl0d->fd);
-	diag_os_millisleep(ms + correction/1000);	//probably the most inadequate way of doing this on win32 platforms, but it might work
+	diag_os_millisleep(ms + correction/1000);
 	QueryPerformanceCounter(&qpc2);
 	errval += !ClearCommBreak(dl0d->fd);
 
 	if (errval) {
 		//if either of the calls failed
+		fprintf(stderr, FLFMT "tty_break could not set/clear break!\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	real_t=(long) (pf_conv * (qpc2.QuadPart-qpc1.QuadPart));
-	//this debugging message could throw timing off by a few ms so it's now deactivated.
-	if (0 && (diag_l0_debug & DIAG_DEBUG_TIMER)) {
-		fprintf(stderr, FLFMT "diag_tty_break: duration = %ldus.\n",
-			FL, real_t);
-	}
+
 	//now verify if it's within 1ms of the requested delay.
 	real_t = real_t - (ms*1000);
 	if ((real_t < -1000) || (real_t > 1000)) {
-		//correct by half of the error.
-		correction = correction - (real_t / 2);
-		fprintf(stderr, FLFMT "Warning : break duration out of spec by %ldus ! New correction offset=%ldus.\n",
+		//correct by a fraction of the error.
+		//diag_os_millisleep also does some self-correcting; we don't want to overdo it.
+		correction = correction - (real_t / 3);
+		fprintf(stderr, FLFMT "tty_break off by %ldus, new correction=%ldus.\n",
 			FL, real_t, correction);
 	}
 
@@ -485,6 +488,7 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 	uint8_t cbuf;
 	int xferd;
+	DWORD byteswritten;
 
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
@@ -506,32 +510,48 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	}
 
 	/* Send a 0x00 byte message */
-	QueryPerformanceCounter(&qpc1);		//get starting time
-	diag_tty_write(dl0d, "\0", 1);
+
+	if (! WriteFile(dl0d->fd, "\0", 1, &byteswritten, NULL)) {
+		fprintf(stderr, FLFMT "WriteFile error:%s\n", FL, diag_os_geterr(0));
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	//get approx starting time. I think this is the closest we can
+	//get to the actual time the byte gets sent since we call FFB
+	//right after.
+	QueryPerformanceCounter(&qpc1);
+
+	if (!FlushFileBuffers(dl0d->fd)) {
+		fprintf(stderr, FLFMT "FFB error, %s\n", FL, diag_os_geterr(0));
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
 
 	/*
 	 * And read back the single byte echo, which shows TX completes
-	 * (this is because of the half-duplex nature of the K line)
-	 * we set a fairly short timeout
  	 */
-	while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, ms + 10)) <= 0)
-	{
-		if (xferd < 0)
-			return diag_iseterr(xferd);
-		if (xferd == 0)
-		{
-			/* Error, EOF */
-			fprintf(stderr, FLFMT "diag_tty_break: did not get fastbreak echo!\n", FL);
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
-	}
+	//This assumes the interface is half-duplex. It's probably
+	//a safe bet.
+	xferd = diag_tty_read(dl0d, &cbuf, 1, ms + 20);
+
 	//we'll usually have a few ms left to wait; we'll use this
-	//to restore the port settings.
+	//to restore the port settings
 
 	if (! SetCommState(dl0d->fd, &origDCB)) {
-		fprintf(stderr, FLFMT "tty_break: could not restore setting: %s\n", FL, diag_os_geterr(0));
+		fprintf(stderr, FLFMT "tty_fastbreak: could not restore setting: %s\n", FL, diag_os_geterr(0));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+
+	//Not getting the echo byte doesn't mean fastbreak has necessarily
+	// failed. But we really should be getting an echo back...
+	if (xferd < 0)
+		return diag_iseterr(xferd);
+	if ((xferd == 0) || (cbuf != 0)) {
+		/* Error, EOF or bad echo */
+		fprintf(stderr, FLFMT "Did not get fastbreak echo!\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+
 
 	QueryPerformanceCounter(&qpc2);		//get current time,
 	timediff=qpc2.QuadPart-qpc1.QuadPart;	//elapsed counts since diag_tty_write
@@ -546,13 +566,9 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 	timediff=qpc3.QuadPart-qpc1.QuadPart;	//total cycle time.
 	break_error= (long) timediff - counts;	//real - requested
+	break_error= (long) (break_error * pf_conv);	//convert to us !
 	if (break_error > 1000 || break_error < -1000)
-		fprintf(stderr, FLFMT "tty_fastbreak: tWUP out of spec by %ld!\n", FL, break_error);
-
-
-	if (0 && (diag_l0_debug && DIAG_DEBUG_TIMER)) {
-		fprintf(stderr, FLFMT "tty_fastbreak: tWUP=%ldus (requested=%u)\n", FL, (long)(pf_conv*timediff),ms);
-	}
+		fprintf(stderr, FLFMT "tty_fastbreak: tWUP out of spec by %ldus!\n", FL, break_error);
 
 
 	return 0;

@@ -1004,7 +1004,10 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	gettimeofday(&tv1,NULL);
 	/* Send a 0x00 byte message */
 	diag_tty_write(dl0d, "", 1);
+	//Alternate method ; we can write() ourselves and then tcdrain() to make
+	//sure data is sent ?
 
+	//XXX this message may need to be removed if timing is impaired
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "%04ld.%03ld : break start\n", FL, tv1.tv_sec, tv1.tv_usec);
 	}

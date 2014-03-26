@@ -47,6 +47,8 @@ int diag_os_init(void);
 int diag_os_close(void);
 int diag_os_millisleep(unsigned int ms);
 int diag_os_ipending(void);
+//diag_os_calibrate : measure & adjust OS timing performance.
+void diag_os_calibrate(void);
 
 //returns OS-specific error message or empty string if not found.
 const char * diag_os_geterr(OS_ERRTYPE os_errno);

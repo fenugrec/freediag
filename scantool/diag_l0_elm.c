@@ -1,6 +1,7 @@
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
+ * (c) fenugrec / CSB 2011-2014
  * Diag, Layer 0, interface for Scantool.net's ELM32x Interface
  * Work in progress, will not work yet.
  *

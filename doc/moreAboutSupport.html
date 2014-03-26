@@ -94,8 +94,15 @@ my opinion remarked with "vnevoa"):
 <ul>
    <li> the CARSIM interface allows testing of higher levels (L2, L3) without
    having an actual car connected. It reads requests and responses from a file.
-</ul>
+</ul><p>This was coded by vnevoa ~2004. From his presentation: <br>
+Basically, it is a file reader and parser that searches for the byte
+sequence that is being sent to the car, and if it finds any number of
+answers for it, it simulates the responses from the car. I included a
+simple parsing mechanism to simulate whatever test values we want by
+placing a few text tokens inside the response sequences, which get
+translated into byte values through specific functions.</br>
 <p>
+<h3>Summary</h3>
 So, when it comes to interfaces (IFCs), we can draw the following conclusions:
 <ol>
 
