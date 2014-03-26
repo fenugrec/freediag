@@ -293,6 +293,8 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
  * Caller (in L2 typically) must have waited with bus=idle beforehand.
  * This optionally does the L_line stuff according to the flags in dumb_flags.
  * Ideally returns 0 (success) immediately after receiving Sync byte.
+ * This one, like fastinit, doesnt diag_iseterr when returning errors
+ * since _initbus() takes care of that.
  *
  */
 static int
@@ -414,18 +416,18 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 			if (xferd == DIAG_ERR_TIMEOUT) {
 				if (diag_l0_debug & DIAG_DEBUG_PROTO)
 					fprintf(stderr, FLFMT "\taddress echo read timeout!\n", FL);
-				return diag_iseterr(DIAG_ERR_TIMEOUT);
+				return DIAG_ERR_TIMEOUT;
 			}
 			if (xferd == 0) {
 				/* Error, EOF */
 				fprintf(stderr, FLFMT "_slowinit: read returned EOF !!\n", FL);
-				return diag_iseterr(DIAG_ERR_GENERAL);
+				return DIAG_ERR_GENERAL;
 			}
 			if (errno != EINTR) {
 				/* Error, EOF */
 				perror("read");
 				fprintf(stderr, FLFMT "_slowinit: read returned error %d !!\n", FL, errno);
-				return diag_iseterr(DIAG_ERR_GENERAL);
+				return DIAG_ERR_GENERAL;
 			}
 		}
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
@@ -434,7 +436,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		if (diag_tty_setup(dl0d, &dev->serial)) {
 			//reset original settings
 			fprintf(stderr, FLFMT "_slowinit: could not reset serial settings !\n", FL);
-			return diag_iseterr(DIAG_ERR_GENERAL);
+			return DIAG_ERR_GENERAL;
 		}
 	}	//if  !man_break
 	//Here, we sent 0x33 @ 5bps and read back the echo or purged it.
@@ -470,13 +472,12 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	rv = diag_tty_read(dl0d, cbuf, 1, tout);
 	if (rv <= 0) {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "_slowinit link %p read timeout, did not get Sync byte !\n",
-				FL, (void *)dl0d);
-		return diag_iseterr(DIAG_ERR_TIMEOUT);
+			fprintf(stderr, FLFMT "\tdid not get Sync byte !\n", FL);
+		return DIAG_ERR_TIMEOUT;
 	} else {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "slowinit link %p, got sync byte 0x%X\n",
-				FL, (void *)dl0d, cbuf[0]);
+			fprintf(stderr, FLFMT "\tgot sync byte 0x%X!\n",
+				FL, cbuf[0]);
 	}
 	//If all's well at this point, we just read the sync pattern byte. L2 will take care
 	//of reading + echoing the keybytes

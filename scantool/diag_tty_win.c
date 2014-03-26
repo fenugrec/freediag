@@ -459,13 +459,18 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 	//now verify if it's within 1ms of the requested delay.
 	real_t = real_t - (ms*1000);
-	if ((real_t < -1000) || (real_t > 1000)) {
-		//correct by a fraction of the error.
-		//diag_os_millisleep also does some self-correcting; we don't want to overdo it.
-		correction = correction - (real_t / 3);
-		fprintf(stderr, FLFMT "tty_break off by %ldus, new correction=%ldus.\n",
-			FL, real_t, correction);
+	if (real_t < -3000) {
+		diag_os_millisleep((unsigned int)(real_t / -1000));
+	} else if ((real_t > -1000) && (real_t < 1000)) {
+		//good enough:
+		return 0;
 	}
+	//we're here if we were off by more than -3ms or +1ms.
+	//correct by a fraction of the error.
+	//diag_os_millisleep also does some self-correcting; we don't want to overdo it.
+	correction = correction - (real_t / 3);
+	//fprintf(stderr, FLFMT "tty_break off by %ldus, new correction=%ldus.\n",
+	//	FL, real_t, correction);
 
 	return 0;
 }

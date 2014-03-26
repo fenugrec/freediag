@@ -300,12 +300,12 @@ static int cmd_debug_l0test(int argc, char **argv) {
 		printf("you must have done \"set interface dumbt [port]\" and \"set dumbopts\" before proceding.\n");
 
 		printf("Available tests:\n"
-				"\t1 : slow pulse TXD (K) with diag_tty_break; 1 for 400ms, 0 for 200ms.\n"
-				"\t2 : fast pulse TXD (K) : send 0x55 @ 10400bps\n"
-				"\t3 : slow pulse RTS : set for 400ms, clear for 200ms\n"
-				"\t4 : slow pulse DTR : set for 400ms, clear for 200ms\n"
-				"\t5 : fast pulse TXD (K) with diag_tty_break; 1 for 100ms, 0 for 25ms.\n"
-				"\t6 : fast pulse TXD (K) with diag_tty_fastbreak; 75ms / 25ms\n");
+				"\t1 : slow pulse TXD (K) with diag_tty_break.\n"
+				"\t2 : fast pulse TXD (K) : send 0x55 @ 10400bps, 5ms interbyte (P4)\n"
+				"\t3 : slow pulse RTS.\n"
+				"\t4 : slow pulse DTR.\n"
+				"\t5 : fast pulse TXD (K) with diag_tty_break.\n"
+				"\t6 : fast pulse TXD (K) with diag_tty_fastbreak.\n");
 		return CMD_OK;
 	}
 	if ((testnum < 1) || (testnum > MAX_L0TEST)) {

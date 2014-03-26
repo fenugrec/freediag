@@ -71,49 +71,54 @@ diag_l0_dt_init(void)
 
 static void dtest_1(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 1: pulsing TXD=1, 400ms, TXD=0, 200ms\n", FL);
-	//this should run indefinitely until interrupted... not done yet.
+	fprintf(stderr, FLFMT "Starting test 1: pulsing TXD=1, 1s, TXD=0, 500ms\n", FL);
 	for (i=0; i<=4; i++) {
-		diag_os_millisleep(400);
-		diag_tty_break(dl0d, 200);
+		diag_os_millisleep(1000);
+		diag_tty_break(dl0d, 500);
 	}
 
 	return;
 }
 
-//dtest_2 : fast pulse TXD by sending 0x55 @ 10.4kps
-static void dtest_2(UNUSED(struct diag_l0_device *dl0d)) {
-	fprintf(stderr, FLFMT "Test 2 not implemented !\n", FL);
-	//TODO : write test #2. We'll need to call diag_tty_setup first
+//dtest_2 : fast pulse TXD by sending 0x55 @ 10.4kps with 5ms interbyte
+static void dtest_2(struct diag_l0_device *dl0d) {
+	int i;
+	uint8_t patternbyte=0x55;
+	fprintf(stderr, FLFMT "Starting test 2: sending 0x55 with P4=5ms\n", FL);
+	for (i=0; i<=300; i++) {
+		diag_tty_write(dl0d, &patternbyte, 1);
+		diag_os_millisleep(5);
+	}
+
 	return;
 }
 
-//dtest_3: slow pulse RTS : set for 400ms, clear for 200ms
+//dtest_3: slow pulse RTS
 static void dtest_3(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 3: pulsing RTS=1, 400ms, RTS=0, 200ms\n", FL);
+	fprintf(stderr, FLFMT "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms\n", FL);
 
 	for (i=0; i<=4; i++) {
 		diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1);
-		diag_os_millisleep(400);
+		diag_os_millisleep(1000);
 		diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0);
-		diag_os_millisleep(200);
+		diag_os_millisleep(500);
 	}
 	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
 
 	return;
 }
 
-//dtest_4: slow pulse DTR : set for 400ms, clear for 200ms
+//dtest_4: slow pulse DTR
 static void dtest_4(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 4: pulsing DTR=1, 400ms, DTR=0, 200ms\n", FL);
+	fprintf(stderr, FLFMT "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms\n", FL);
 
 	for (i=0; i<=4; i++) {
 		diag_tty_control(dl0d, 1, (dumb_flags & SET_RTS));
-		diag_os_millisleep(400);
+		diag_os_millisleep(1000);
 		diag_tty_control(dl0d, 0, (dumb_flags & SET_RTS));
-		diag_os_millisleep(200);
+		diag_os_millisleep(500);
 	}
 	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
 
@@ -121,26 +126,26 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 }
 
 
-//dtest_5 : fast pulse TXD with diag_tty_break; 100ms / 25ms cycles.
+//dtest_5 : fast pulse TXD with diag_tty_break;
 
 static void dtest_5(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 5: pulsing TXD=1, 100ms, TXD=0, 25ms\n", FL);
+	fprintf(stderr, FLFMT "Starting test 5: pulsing TXD=1, 50, TXD=0, 25ms\n", FL);
 	for (i=0; i<=40; i++) {
-		diag_os_millisleep(100);
+		diag_os_millisleep(50);
 		diag_tty_break(dl0d, 25);
 	}
 
 	return;
 }
 
-//dtest_6 : fast pulse TXD with diag_tty_fastbreak; 75ms / 25ms cycles.
+//dtest_6 : fast pulse TXD with diag_tty_fastbreak;
 
 static void dtest_6(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 6: pulsing TXD=1, 75ms, TXD=0, 25ms\n", FL);
+	fprintf(stderr, FLFMT "Starting test 6: pulsing TXD=1, 50ms, TXD=0, 25ms\n", FL);
 	for (i=0; i<=50; i++) {
-		diag_os_millisleep(50);
+		diag_os_millisleep(25);
 		diag_tty_fastbreak(dl0d, 50);
 	}
 
@@ -157,6 +162,7 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	int rv;
 	struct diag_l0_device *dl0d;
 	struct diag_l0_dt_device *dev;
+	struct diag_serial_settings pset;
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open subinterface %s test #%d\n",
@@ -171,6 +177,16 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	dev->protocol = DIAG_L1_RAW;	//cheat !
 	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dt, (void *)dev))) {
 		return (struct diag_l0_device *)diag_pseterr(rv);
+	}
+
+	pset.speed=10400;
+	pset.databits = diag_databits_8;
+	pset.stopbits = diag_stopbits_1;
+	pset.parflag = diag_par_n;
+
+	if (diag_tty_setup(dl0d, &pset)) {
+		diag_tty_close(&dl0d);
+		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	//set initial DTR and RTS lines before starting tests;

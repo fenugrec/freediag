@@ -303,7 +303,10 @@ int diag_l2_end() {
 }
 
 /*
- * diag_l2_closelink : Close/kill a diag_l2_link
+ * diag_l2_closelink : Close/kill a diag_l2_link,
+ * and close its dl0d link with diag_l1_close.
+ * This should only be called if we're sure pdl2l
+ * is not used anymore...
  */
 static int
 diag_l2_closelink(struct diag_l2_link **pdl2l)
@@ -350,7 +353,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_open %s subinterface %s L1proto %d called\n",
+			FLFMT "diag_l2_open %s on %s, L1proto=%d\n",
 			FL, dev_name, subinterface, L1protocol);
 
 	dl2l = diag_l2_findlink(dev_name);
@@ -412,19 +415,54 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
  * XXX what do we want to accomplish here ?
  * We can't have multiple L2 links with the same diag_l0_device, because
  * of how diag_l2_open and diag_l2_findlink work.
+ * This func will probably need to be modified if we want to do fancy
+ * multi-protocol / multi-L2 stuff...
  *
- * But closing by dl0d isnt very appropriate: this i, and so this routine does
- * nothing. However, all we have is the link unless a StartCommunications()
- * has been done
+ * Currently this checks if there's a dl2_link using that dl0d.
+ * If there isn't, we close it.
+ * If there's a dl2 link, we check if it's still used by parsing
+ * through all the diag_l2_conns.
  */
 int
 diag_l2_close(struct diag_l0_device *dl0d) {
+	struct diag_l2_conn *d_l2_conn;
+	struct diag_l2_link *dl2l;
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr,FLFMT "Entering diag_l2_close for dl0d=%p\n",
+		fprintf(stderr,FLFMT "Entered diag_l2_close for dl0d=%p; ",
 			FL, (void *)dl0d);
 
-	/* XXX */
+	if (dl0d->dl2_link != NULL) {
+		// Check if dl2_link is still referenced by someone in diag_l2_connections
+		for (d_l2_conn = diag_l2_connections;
+			d_l2_conn; d_l2_conn = d_l2_conn -> next) {
+			if (d_l2_conn->diag_link == dl0d->dl2_link) {
+				fprintf(stderr, FLFMT "Not closing dl0d: used by dl2conn %p!\n", FL,
+					(void *) d_l2_conn);
+				return 0;	//there's still a dl2conn using it !
+			}
+		}
+		//So we found nobody in diag_l2_connections that uses this dl0d + dl2link.
+		if (diag_l2_debug & DIAG_DEBUG_CLOSE)
+			fprintf(stderr, FLFMT "closing unused dl2link %p.\n", FL,
+				(void *)dl0d->dl2_link);
+		diag_l2_closelink(&dl0d->dl2_link);
+		return 0;
+	}
+	// this dl0d had no ->dl2_link; check in the linked-list anyway in case
+	// it was orphaned (i.e. dl0d->dl2_link was not set properly...)
+	for ( dl2l = diag_l2_links; dl2l; dl2l=dl2l->next) {
+			if (dl2l->diag_l2_dl0d == dl0d) {
+				fprintf(stderr, FLFMT "Not closing dl0d: used by dl2link %p!\n", FL,
+					(void *) dl2l);
+				return 0;	//there's still a dl2link using it !
+			}
+	}
+	//So we parsed all d2 links and found no parents; let's close dl0d.
+
+	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
+		fprintf(stderr, FLFMT "closing unused dl0d.\n", FL);
+	diag_l1_close(&dl0d);
 
 	return 0;
 }
@@ -449,7 +487,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_startCommunications dl0d %p L2proto %d type %X baud %u target 0x%X src 0x%X called\n",
+			FLFMT "_startCommunications dl0d=%p L2proto %d type %X %ubps target=0x%X src=0x%X\n",
 			FL, (void *)dl0d, L2protocol, type ,
 			bitrate, target&0xff, source&0xff);
 
@@ -676,7 +714,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
-			FLFMT "diag_l2_msg %p %p called\n",
+			FLFMT "diag_l2_msg dl2c=%p msg=%p called\n",
 				FL, (void *)d_l2_conn, (void *)msg);
 
 	/* Call protocol specific send routine */
