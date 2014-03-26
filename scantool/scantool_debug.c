@@ -290,8 +290,7 @@ static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 //tests, for dumb interfaces. Do not use while connected
 //to a vehicle: this sends garbage data on the K-line which
 //could interfere with ECUs, although very unlikely.
-//XXX unfinished; I'm implementing this as another L0 driver
-//(diag_l0_dumbtest.c).
+
 static int cmd_debug_l0test(int argc, char **argv) {
 #define MAX_L0TEST 6
 	unsigned int testnum=0;
@@ -321,7 +320,9 @@ static int cmd_debug_l0test(int argc, char **argv) {
 	// I think the easiest way to pass on "testnum" on to diag_l0_dumbtest.c is
 	// to pretend testnum is an L1protocol. Then we can use diag_l2_open to start the
 	// test.
-	diag_l2_open("DUMBT", set_subinterface, (int) testnum);
+	(void) diag_l2_open("DUMBT", set_subinterface, (int) testnum);
+	//We don't need to _close anything since DUMBT is designed to "fail", i.e.
+	//return no new dl0d, etc.
 	return CMD_OK;
 
 
