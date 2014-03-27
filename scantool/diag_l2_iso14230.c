@@ -703,7 +703,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			((d_l2_conn->diag_l2_kb1 & 4)? DIAG_L2_SHORTHDR:0) |
 			((d_l2_conn->diag_l2_kb1 & 8)? DIAG_L2_LONGHDR:0);
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
-		fprintf(stderr, FLFMT "new modeflags=%0X\n", FL, dp->modeflags);
+		fprintf(stderr, FLFMT "new modeflags=0x%04X\n", FL, dp->modeflags);
 	//For now, we won't bother with Normal / Extended timings. We don't
 	//need to unless we use the AccessTimingParameters service (scary)
 

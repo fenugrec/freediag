@@ -210,7 +210,7 @@ struct diag_l2_conn
  * addressing to switch to physical addressing after initial communications
  * are established (such as ISO14230)
  */
-#define DIAG_L2_TYPE_PHYSCONN	0x10
+#define DIAG_L2_TYPE_PHYSCONN	0x10	//XXX unused !!
 
 /*
  * DIAG_L2_IDLE_J1978: tell the ISO14230 code to use SAE J1978 idle

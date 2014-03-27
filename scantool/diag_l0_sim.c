@@ -471,7 +471,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 
 	// If we're doing debugging, print to stderr
 	if (diag_l0_debug & DIAG_DEBUG_OPEN)
-		fprintf(stderr, FLFMT "open simfile %s protocol %d\n", FL, simfile, iProtocol);
+		fprintf(stderr, FLFMT "open simfile %s proto=%d\n", FL, simfile, iProtocol);
 
 	diag_l0_sim_init();
 
@@ -490,12 +490,14 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 	dl0d->fd = DL0D_INVALIDHANDLE;
 	dl0d->dl0_handle = dev;
 	dl0d->dl0 = &diag_l0_sim;
+
 	if ((rv=diag_calloc(&dl0d->name, strlen(simfile)+1))) {
 		free(dev);
 		free(dl0d);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 	strcpy(dl0d->name, simfile);
+
 	if ((rv=diag_calloc(&dl0d->ttystate, 1))) {
 		free(dl0d->name);
 		free(dev);
@@ -535,7 +537,8 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 
 		// If debugging, print to strerr.
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "dl0d=%p closing\n", FL, (void *)dl0d);
+			fprintf(stderr, FLFMT "dl0d=%p closing simfile=%s\n", FL,
+				(void *)dl0d, dl0d->name);
 
 		if (dev) {
 			if (dev->fp != NULL)
@@ -547,9 +550,10 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 		if (dl0d->name)
 			free(dl0d->name);
 		if (dl0d->ttystate)
-			free(dl0d->name);
+			free(dl0d->ttystate);
 		dl0d->fd=DL0D_INVALIDHANDLE;
 		free(dl0d);
+		*pdl0d=NULL;
 	}
 
 	return 0;
@@ -676,7 +680,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		memset(data, 0, len);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "dl0d=%p recv %d byte;s\n", FL, (void *)dl0d, (int) len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "L0 sim receiving: ", FL);
