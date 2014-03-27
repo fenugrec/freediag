@@ -74,7 +74,7 @@ struct diag_l2_14230
 
 /*
  * Decode the message header, returning the length
- * of the message if a whole message has been received.
+ * of the message (hdr+data+checksum) if a whole message has been received.
  * Note that this may be called with more than one message
  * but it only worries about the first message
  */
@@ -308,7 +308,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				if (d_l2_conn->diag_msg == tmsg) {
 
 					if ((diag_l2_debug & DIAG_DEBUG_DATA) && (diag_l2_debug & DIAG_DEBUG_PROTO)) {
-						fprintf(stderr, FLFMT "Copying %u bytes to data\n",
+						fprintf(stderr, FLFMT "Copying %u bytes to data: ",
 							FL, tmsg->len);
 						diag_data_dump(stderr, tmsg->data, tmsg->len);
 						fprintf(stderr, "\n");
@@ -385,6 +385,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 			if (rv < 0 || rv>255)		/* decode failure */
 				return diag_iseterr(rv);
 
+			//here rv=message length including checksum
 			/*
 			 * If L1 isnt doing L2 framing then it is possible
 			 * we have misframed this message and it is infact
@@ -416,7 +417,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 			if (diag_l2_debug & DIAG_DEBUG_PROTO)
 				fprintf(stderr,
-				FLFMT "msg %p decode/rejig done rv %d hdrlen %u datalen %d source %02X dest %02X\n",
+				FLFMT "msg %p decode/rejig done rv=%d hdrlen=%u datalen=%d src=%02X dst=%02X\n",
 					FL, (void *)tmsg, rv, hdrlen, datalen, source, dest);
 
 
@@ -428,8 +429,19 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 			tmsg->fmt |= DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY ;
 			tmsg->fmt |= DIAG_FMT_CKSUMMED;
 
+			//if cs wasn't stripped, we check it:
 			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0) {
-				/* XXX check checksum */
+				uint8_t calc_sum=diag_cks1(tmsg->data, (tmsg->len)-1);
+				if (calc_sum != tmsg->data[tmsg->len -1]) {
+					fprintf(stderr, FLFMT "Bad checksum: needed %02X,got%02X. Data:",
+						FL, calc_sum, tmsg->data[tmsg->len -1]);
+					//TODO: when this proves to be reliable, generate an error
+					//find a way to signal the error to upper levels.
+					//We could discard the message, but that seems a bit drastic
+					diag_data_dump(stderr, tmsg->data, tmsg->len -1);
+					fprintf(stderr, "\n");
+				}
+
 			}
 
 			tmsg->src = source;
@@ -490,6 +502,9 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	dp->dstaddr = target;
 	dp->modeflags = flags;
 	dp->first_frame = 1;
+	if (diag_l2_debug & DIAG_DEBUG_PROTO)
+		fprintf(stderr, FLFMT "_startcomms flags=%u tgt=%u src=%u\n",
+			FL, flags, target, source);
 
 	memset(data, 0, sizeof(data));
 
@@ -516,7 +531,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	dp->state = STATE_CONNECTING ;
 
 	/* Flush unread input, then wait for idle bus. */
-	(void)diag_tty_iflush(d_l2_conn->diag_link->diag_l2_dl0d);
+	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 	diag_os_millisleep(300);
 
 	//inside this switch, we set rv=0 or rv=error before "break;"
@@ -629,9 +644,9 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		}
 
 		/* Note down the mode bytes */
-		// why do we &0x7F KB2 ? it can only be ==0x8F...
+		// KB1 : we eliminate the Parity bit (MSB !)
 		d_l2_conn->diag_l2_kb1 = cbuf[0] & 0x7f;
-		d_l2_conn->diag_l2_kb2 = cbuf[1] & 0x7f;
+		d_l2_conn->diag_l2_kb2 = cbuf[1];
 
 		if ( (d_l2_conn->diag_link->diag_l2_l1flags
 			& DIAG_L1_DOESSLOWINIT) == 0) {
@@ -681,6 +696,16 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
 		return diag_iseterr(rv);
 	}
+	// Analyze keybytes and set modeflags properly. See
+	// iso14230 5.2.4.1 & Table 8
+	dp->modeflags |= ((d_l2_conn->diag_l2_kb1 & 1)? DIAG_L2_FMTLEN:0) |
+			((d_l2_conn->diag_l2_kb1 & 2)? DIAG_L2_LENBYTE:0) |
+			((d_l2_conn->diag_l2_kb1 & 4)? DIAG_L2_SHORTHDR:0) |
+			((d_l2_conn->diag_l2_kb1 & 8)? DIAG_L2_LONGHDR:0);
+	if (diag_l2_debug & DIAG_DEBUG_PROTO)
+		fprintf(stderr, FLFMT "new modeflags=%0X\n", FL, dp->modeflags);
+	//For now, we won't bother with Normal / Extended timings. We don't
+	//need to unless we use the AccessTimingParameters service (scary)
 
 	/*
 	 * Now, we want to remove any rubbish left
@@ -745,8 +770,11 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	unsigned int i;
 	size_t len;
 	uint8_t buf[MAXRBUF];
-	int offset;
+	int offset=0;	//data payload starts at buf[offset}
 	struct diag_l2_14230 *dp;
+
+	if (msg->len < 1)
+			return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
@@ -757,34 +785,55 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	/* Build the new message */
 
-	if (dp->modeflags & DIAG_L2_TYPE_FUNCADDR)
-		buf[0] = 0xC0;
-	else
-		buf[0] = 0x80;
+	if ((dp->modeflags & DIAG_L2_LONGHDR) || !(dp->modeflags & DIAG_L2_SHORTHDR)) {
+		//we use full headers if they're supported or if we don't have a choice.
+		//set the "address present" bit
+		//and functional addressing if applicable
+		if (dp->modeflags & DIAG_L2_TYPE_FUNCADDR)
+			buf[0] = 0xC0;
+		else
+			buf[0] = 0x80;
 
-	/* If user supplied addresses, use them, else use the originals */
-	if (msg->dest)
-		buf[1] = msg->dest;
-	else
-		buf[1] = dp->dstaddr;
-	if (msg->src)
-		buf[2] = msg->src;
-	else
-		buf[2] = dp->srcaddr;
+		/* If user supplied addresses, use them, else use the originals */
+		if (msg->dest)
+			buf[1] = msg->dest;
+		else
+			buf[1] = dp->dstaddr;
 
-/* TODO:, check mode flag that specifies always use 4 byte hdr ,
-	or mode flag showing never use extended header, and
-		received keybytes */
-
-	if (msg->len < 64) {
-		if (msg->len < 1)
-			return diag_iseterr(DIAG_ERR_BADLEN);
-		buf[0] |= msg->len;
+		if (msg->src)
+			buf[2] = msg->src;
+		else
+			buf[2] = dp->srcaddr;
 		offset = 3;
-	} else {
-		buf[3] = msg->len;
-		offset = 4;
+	} else if (dp->modeflags & DIAG_L2_SHORTHDR) {
+		//here, short addressless headers are required.
+		//basic format byte : 0
+		buf[0]=0;
+		offset = 1 ;
 	}
+
+
+
+	if ((dp->modeflags & DIAG_L2_FMTLEN)|| !(dp->modeflags & DIAG_L2_LENBYTE))  {
+		//if ECU supports length in format byte, or doesn't support extra len byte
+		if (msg->len < 64) {
+			buf[0] |= msg->len;
+		} else {
+			//len >=64, can we use a length byte ?
+			if (dp->modeflags & DIAG_L2_LENBYTE) {
+				buf[offset] = msg->len;
+				offset += 1;
+			} else {
+				fprintf(stderr, FLFMT "can't send >64 byte msgs to this ECU !\n", FL);
+				return diag_iseterr(DIAG_ERR_BADLEN);
+			}
+		}
+	} else if (dp->modeflags & DIAG_L2_LENBYTE) {
+		// if the ecu needs a length byte
+		buf[offset] = msg->len;
+		offset += 1;
+	}
+
 	memcpy(&buf[offset], msg->data, msg->len);
 
 	len = msg->len + offset;	/* data + hdr */
@@ -795,6 +844,11 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 			csum += buf[i];
 		buf[len] = csum;
 		len++;				/* + checksum */
+	}
+
+	if ((diag_l2_debug & DIAG_DEBUG_WRITE) && (diag_l2_debug & DIAG_DEBUG_DATA)) {
+		fprintf(stderr, FLFMT "_send: ", FL);
+		diag_data_dump(stderr, buf, len);
 	}
 
 	/* Wait p3min milliseconds, but not if doing fast/slow init */
@@ -929,14 +983,21 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 	struct diag_msg	msg;
 	uint8_t data[256];
 	int timeout;
+	int debug_l2_orig=diag_l2_debug;	//save debug flags; disable them for this procedure
+	int debug_l1_orig=diag_l1_debug;
+	int debug_l0_orig=diag_l0_debug;
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 
 	/* XXX fprintf not async-signal-safe */
 	if (diag_l2_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "timeout impending for dl2c=%p type=%d\n",
+		fprintf(stderr, FLFMT "\ntimeout impending for dl2c=%p type=%d\n",
 				FL, (void *)d_l2_conn, dp->type);
 	}
+
+	diag_l2_debug=0;	//disable
+	diag_l1_debug=0;
+	diag_l0_debug=0;
 
 	msg.data = data;
 
@@ -958,6 +1019,7 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 	 * There is no point in checking for errors, or checking
 	 * the received response as we can't pass an error back
 	 * from here
+	 * TODO: we could at least if NEGRESP was received and warn the user...
 	 */
 
 	/* Send it, important to use l2_send as it updates the timers */
@@ -974,6 +1036,10 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 			timeout = 100;
 	}
 	(void)diag_l2_recv(d_l2_conn, timeout, NULL, NULL);
+	diag_l2_debug=debug_l2_orig;	//restore debug flags
+	diag_l1_debug=debug_l1_orig;
+	diag_l0_debug=debug_l0_orig;
+
 }
 static const struct diag_l2_proto diag_l2_proto_14230 = {
 	DIAG_L2_PROT_ISO14230,

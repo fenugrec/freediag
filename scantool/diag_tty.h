@@ -48,6 +48,7 @@ struct diag_serial_settings {
 	#include "diag_tty_unix.h"
 #endif //WIN32
 
+//TODO: move these 3 functions do diag_l2.c ? there is redundance in tty_win.c and tty_unix.c
 
 // this returns dl0d->dl0_handle; I'm not sure why we need a function to do that ?
 void *diag_l0_dl0_handle(struct diag_l0_device *dl0d);
@@ -86,8 +87,31 @@ int diag_tty_control(struct diag_l0_device *dl0d, unsigned int dtr, unsigned int
 int diag_tty_iflush(struct diag_l0_device *dl0d);
 
 /* read with timeout, write */
+//These deserve a better description. There are be discrepancies between
+// implementations because there is no guideline of how these
+// should behave.
+//TODO : unify diag_tty_read timeouts between win32 and unix
+//TODO : unify tty_read return values between win32 & others.
+// diag_tty_read : Currently most l0 drivers expect this: (I think)
+//	a) read up to (count) bytes until (timeout) expires; return the # of bytes read.
+//	b) if no bytes were read and timeout expired, return DIAG_ERR_TIMEOUT
+//		*without* diag_iseterr() : many levels call diag_tty_read in
+//		a loop until it returns DIAG_ERR_TIMEOUT. If find this a bit counterproductive
+//		but that's how it works now (2014/03)
+//	c) if there was a real error, return diag_iseterr(ERR)
+//	d) returning 0 is interpreted as "EOF"; I find this redundant with
+//		returning DIAG_ERR_TIMEOUT: What's the difference between reading EOF
+//		from a serial port and reading 0 bytes after having timed out ?
+//	e) diag_ttY_read should be blocking, i.e. return only when it "completes":
+//		either got [count] bytes or timed out. I see no reason to
+//		make this asynchronous (non-blocking).
+//	f) if (timeout) was 0, I'm not sure what should happen. I think
+//		it should attempt to read (count) bytes available but return
+//		immediately. To my knowledge nobody calls diag_ttY_read with timeout=0.
+//The windows implementation never returns 0: only DiAG_ERR_TIMEOUT or #bytesread.
 ssize_t diag_tty_read(struct diag_l0_device *dl0d,
 	void *buf, size_t count, int timeout);
+//diag_tty_write :
 ssize_t diag_tty_write(struct diag_l0_device *dl0d,
 	const void *buf, const size_t count);
 

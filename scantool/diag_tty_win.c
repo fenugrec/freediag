@@ -348,12 +348,10 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 // diag_tty_read
 //this is also scary.
 //attempt to read (count) bytes until (timeout) passes.
-//Note : setting timeout to 0 is like setting an infinite timeout on win32.
-//TODO : unify diag_tty_read timeouts between win32 and unix
-//TODO : unify tty_read return values between win32 & others.
+//calling with timeout==0 makes ReadFile return immediately with or without any data.
 //This one returns # of bytes read (if any)
 //This is non-overlapped for now i.e. blocking.
-//timeouts and incomplete data are not handled properly. This is pre-alpha...
+//timeouts and incomplete data are not handled properly. This is alpha...
 //From the API docs :
 // ReadFile returns when the number of bytes requested has been read, or an error occurs.
 
@@ -361,6 +359,7 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 ssize_t
 diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout) {
 	DWORD bytesread;
+	ssize_t rv=DIAG_ERR_TIMEOUT;
 	OVERLAPPED *pOverlap;
 	pOverlap=NULL;
 	COMMTIMEOUTS devtimeouts;
@@ -372,7 +371,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 //	GetCommTimeouts(dl0d->fd, &devtimeouts);	//get current timeouts
 	//and modify them
-	devtimeouts.ReadIntervalTimeout=0;	//disabled
+	devtimeouts.ReadIntervalTimeout= timeout ? 0:MAXDWORD;	//disabled unless timeout was 0.
 	devtimeouts.ReadTotalTimeoutMultiplier=0;	//timeout per requested byte
 	devtimeouts.ReadTotalTimeoutConstant=timeout;	// (tconst + mult*numbytes) = total timeout on read
 	devtimeouts.WriteTotalTimeoutMultiplier=0;	//probably useless as all flow control will be disabled ??
@@ -386,7 +385,9 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		fprintf(stderr, FLFMT "ReadFile error: %s\n",FL, diag_os_geterr(0));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	return bytesread;
+	if (bytesread > 0)
+		rv=bytesread;
+	return rv;
 
 }
 

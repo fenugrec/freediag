@@ -585,7 +585,7 @@ void *data, size_t len, int timeout)
 
 	while ( (xferd = diag_tty_read(dl0d, rxbuf, len, timeout)) <= 0) {
 		if (xferd == DIAG_ERR_TIMEOUT) {
-			return diag_iseterr(DIAG_ERR_TIMEOUT);
+			return DIAG_ERR_TIMEOUT;
 		}
 		if (xferd == 0) {
 			/* Error, EOF */

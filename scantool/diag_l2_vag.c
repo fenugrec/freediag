@@ -431,7 +431,7 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 	}
 
 	/* Flush unread input, then wait for idle bus. */
-	(void)diag_tty_iflush(d_l2_conn->diag_link->diag_l2_dl0d);
+	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 	diag_os_millisleep(300);
 
 

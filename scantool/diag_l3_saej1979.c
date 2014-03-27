@@ -766,6 +766,8 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
 {
 	struct diag_msg msg;
 	uint8_t data[6];
+	int debug_l2_orig=diag_l2_debug;	//save debug flags; disable them for this procedure
+	int debug_l1_orig=diag_l1_debug;
 
 	/* J1979 needs keepalive at least every 5 seconds (P3), we use 3.5s */
 
@@ -780,9 +782,11 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
 
 	if (diag_l3_debug & DIAG_DEBUG_TIMER) {
 		/* XXX Not async-signal-safe */
-		fprintf(stderr, FLFMT "P3 timeout impending for %p %d ms\n",
+		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %d ms\n",
 				FL, (void *)d_l3_conn, ms);
 	}
+	diag_l2_debug=0;	//disable
+	diag_l1_debug=0;
 
 	/*
 	 * Service 1 Pid 0 request is the SAEJ1979 idle message
@@ -806,7 +810,9 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
 	(void)diag_l3_send(d_l3_conn, &msg);
 
 	/* Get and ignore the response */
-	(void)diag_l3_recv(d_l3_conn, 50, NULL, NULL);
+	(void) diag_l3_recv(d_l3_conn, 50, NULL, NULL);
+	diag_l2_debug=debug_l2_orig;	//restore debug flags
+	diag_l1_debug=debug_l1_orig;
 
 	return;
 }

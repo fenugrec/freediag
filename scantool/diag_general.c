@@ -234,6 +234,19 @@ diag_freemsg(struct diag_msg *msg)
 	return;
 }
 
+
+// diag_cks1: return simple 8-bit checksum of
+// [len] bytes at *data. Everybody needs this !
+uint8_t diag_cks1(uint8_t * data, unsigned int len) {
+	uint8_t rv=0;
+
+	while (len > 0) {
+		len--;
+		rv += data[len];
+	}
+	return rv;
+}
+
 //diag_data_dump : print (len) bytes of uint8_t *data
 //to the specified FILE (stderr, etc.)
 void

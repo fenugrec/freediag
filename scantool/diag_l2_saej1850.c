@@ -101,7 +101,7 @@ target_type target, source_type source)
 
 	/* Flush unread input, then wait for idle bus. */
 	/* XXX is the timeout value right ? It is 300 in other places. */
-	(void)diag_tty_iflush(d_l2_conn->diag_link->diag_l2_dl0d);
+	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 	diag_os_millisleep(50);
 
 	/* Always OK */

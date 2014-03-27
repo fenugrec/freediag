@@ -94,7 +94,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	dp = d_l2_conn->diag_l2_proto_data;
 
 	// Flush unread input:
-	(void)diag_tty_iflush(d_l2_conn->diag_link->diag_l2_dl0d);
+	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 
 	// Wait for idle bus:
 	diag_os_millisleep(W5min);
@@ -515,7 +515,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0)
 			{
 				uint8_t rx_cs = tmsg->data[tmsg->len - 1];
-				if(rx_cs != diag_l2_proto_iso9141_cs(tmsg->data, tmsg->len - 1))
+				if(rx_cs != diag_cks1(tmsg->data, tmsg->len - 1))
 				{
 					fprintf(stderr, FLFMT "Checksum error in received message!\n", FL);
 					return -1;
@@ -672,7 +672,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if ((d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2CKSUM) == 0)
 	{
 		uint8_t curoff = (uint8_t) offset;
-		buf[offset++] = diag_l2_proto_iso9141_cs(buf, curoff);
+		buf[offset++] = diag_cks1(buf, curoff);
 	}
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)

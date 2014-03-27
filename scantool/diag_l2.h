@@ -187,7 +187,9 @@ struct diag_l2_conn
 
 /*
  * Flags for diag_l2_proto_startcomms; this is not the same
- * as the L2 handler flags (diag_l2_proto->diag_l2_flags)
+ * as the L2 handler flags (diag_l2_proto->diag_l2_flags) above.
+ * Some flags are also iso14230-specific and are meant to be used inside
+ * struct diag_l2_14230->modelfags.
 
  * Bits 0/1/2 used to tell what kind of initialisation to be done on the
  * diagnostic bus.
@@ -204,31 +206,45 @@ struct diag_l2_conn
 #define DIAG_L2_TYPE_FUNCADDR	0x08
 
 /*
- * Bit 4 is a flag to the ISO14230 code to tell it to always use messages
- * with a length byte, this is primarily for SSF14230 - the Swedish vehicle
- * implementation of ISO14230, if not set, the code will use appropriate
- * message types
- */
-#define DIAG_L2_TYPE_LONG	0x10
-
-/*
- * Bit 5 is a bit to tell protocols that support both functional and physical
+ * DIAG_L2_TYPE_PHYSCONN: tell protocols that support both functional and physical
  * addressing to switch to physical addressing after initial communications
  * are established (such as ISO14230)
  */
-#define DIAG_L2_TYPE_PHYSCONN	0x20
+#define DIAG_L2_TYPE_PHYSCONN	0x10
 
 /*
- * Bit 6 is used to tell the ISO14230 code to use SAE J1978 idle
+ * DIAG_L2_IDLE_J1978: tell the ISO14230 code to use SAE J1978 idle
  * messages (mode 1 PID 0) instead of the ISO "Tester Present"
  * messages for preventing link timeout
  *
  * SAE J1978 is the ODB II ScanTool specification document
  */
-#define DIAG_L2_IDLE_J1978	0x40
+#define DIAG_L2_IDLE_J1978	0x20
+
+// DIAG_L2_SHORTHDR (for iso14230) : if set, we support address-less
+// headers; this is set if the keybytes received from StartComms require it.
+// By default we send fully addressed headers (iso14230 5.2.4.1)
+#define DIAG_L2_SHORTHDR 0x80
+
+//DIAG_L2_LONGHDR : if set, we can send headers with the address bytes.
+// Set according to the keybytes. If this and SHORTHDR are set, we
+// send addressless headers by default.
+#define DIAG_L2_LONGHDR 0x100
+
+//DIAG_L2_LENBYTE: If set, tell the iso14230 code to always use messages
+// with a length byte. This is primarily for SSF14230 - the Swedish vehicle
+// implementation of ISO14230, but is set if required by the StartComms keybytes.
+//If FMTLEN and LENBYTE are set, then we choose the most adequate.
+#define DIAG_L2_LENBYTE 0x200
+
+//DIAG_L2_FMTLEN: if set, we can send headers with the length encoded in
+// the format byte. (iso14230)
+#define DIAG_L2_FMTLEN 0x400
 
 
-/* Used for L2_IOCTL_GETDATA */
+
+
+/* struct diag_l2_data: Used for DIAG_IOCTL_GET_L2_DATA */
 struct	diag_l2_data
 {
 	uint8_t physaddr;	/* Physical address of ECU */

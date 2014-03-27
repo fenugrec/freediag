@@ -693,7 +693,7 @@ void *data, size_t len, int timeout)
 			(size_t)(14 - dev->dev_rxlen), timeout)) <= 0)
 		{
 			if (xferd == DIAG_ERR_TIMEOUT)
-				return diag_iseterr(DIAG_ERR_TIMEOUT);
+				return DIAG_ERR_TIMEOUT;
 			if (xferd == 0)
 			{
 				/* Error, EOF */
@@ -758,7 +758,7 @@ void *data, size_t len, int timeout)
 		case 0x05:	/* No ISO response to request */
 		case 0x07:	/* No J1850 response to request */
 		case 0x0c:	/* No KWP response to request */
-			return diag_iseterr(DIAG_ERR_TIMEOUT);
+			return DIAG_ERR_TIMEOUT;
 
 		default:
 			return -1;

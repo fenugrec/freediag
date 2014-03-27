@@ -127,3 +127,7 @@ request (which requires the same low-level functions), mayhem could ensue.
 A possible solution would be to create a diag_os_lock() function that uses OS-specific
 locking mechanisms (mutex, etc), and can be used to make the low-level functions
 re-entrant. 
+
+**** global elements that should have async safeness :
+(incomplete list)
+debug flags; 

@@ -97,6 +97,10 @@ extern "C" {
 //calling diag_l1_setspeed
 #define DIAG_L1_AUTOSPEED	0x400
 
+//NOTTY : specifically for carsim interface. Prevents l2_ioctl
+//from calling diag_tty_*
+#define DIAG_L1_NOTTY	0x800
+
 
 
 /*
@@ -211,7 +215,7 @@ struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, 
 //diag_l1_close : calls diag_l0_close as required
 int diag_l1_close(struct diag_l0_device **);
 int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, unsigned int p4);
-//diag_l1_recv : can return DIAG_ERR_TIMEOUT ?
+//diag_l1_recv : return # of bytes read, DIAG_ERR_TIMEOUT or error ?
 int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, int timeout);
 int diag_l1_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset);

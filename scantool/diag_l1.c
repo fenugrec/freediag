@@ -320,7 +320,6 @@ diag_l1_saferead(struct diag_l0_device *dl0d, uint8_t *buf, size_t bufsiz, int t
 {
 	int xferd;
 
-	/* And read back the single byte echo, which shows TX completes */
 	while ( (xferd = diag_tty_read(dl0d, buf, bufsiz, timeout)) < 0) {
 		if (errno != EINTR)
 			return diag_iseterr(DIAG_ERR_BUSERROR);

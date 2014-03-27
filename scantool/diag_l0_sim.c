@@ -318,19 +318,6 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 		fprintf(stderr, FLFMT "%d responses queued for receive, %d new.\n", FL, resp_count+new_resp_count, new_resp_count);
 }
 
-// Returns the ISO9141 checksum of a byte sequence.
-uint8_t cs1(uint8_t *data, uint8_t pos)
-{
-	//return diag_l2_proto_iso9141_cs(data, pos-1);
-	//to avoid than cross-calling accross levels,  we'll just copy the checksum code right here.
-	//It's small enough; probably less than 10 opcodes ?
-	uint8_t cs = 0;
-	uint8_t i;
-
-	for (i=0; i<(pos-1); i++)
-		cs += data[i];
-	return cs;
-}
 
 // Returns a value between 0x00 and 0xFF calculated as the trigonometric
 // sine of the current system time (with a period of one second).
@@ -382,7 +369,7 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 		else if (strcmp(token, TOKEN_SAWTOOTH1) == 0)
 			synth_resp[pos] = sawtooth1(synth_resp, pos);
 		else if (strcmp(token, TOKEN_ISO9141CS) == 0)
-			synth_resp[pos] = cs1(synth_resp, pos);
+			synth_resp[pos] = diag_cks1(synth_resp, pos);
 		else {
 			// failed. try scanning element as an Hex byte.
 			ret = sscanf(parse_offset, "%X", ((unsigned int *)(&synth_resp[pos])));
@@ -457,13 +444,13 @@ static int
 diag_l0_sim_init(void)
 {
 	// Global init flag.
-	static int diag_l0_sim_initdone;
+	static int diag_l0_sim_initdone=0;
 	sim_free_ecu_responses(&sim_last_ecu_responses);
 
 	if (diag_l0_sim_initdone)
 	return 0;
 
-	if (!simfile)
+	if (simfile==NULL)
 		//not filled in yet : use default DB_FILE.
 		//TODO : use subinterface to fill in simfile ?
 		simfile=simfile_default;
@@ -476,7 +463,7 @@ diag_l0_sim_init(void)
 
 // Opens the simulator DB file.
 static struct diag_l0_device *
-diag_l0_sim_open(const char *subinterface, int iProtocol)
+diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 {
 	int rv;
 	struct diag_l0_device *dl0d;
@@ -484,7 +471,7 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
 
 	// If we're doing debugging, print to stderr
 	if (diag_l0_debug & DIAG_DEBUG_OPEN)
-		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n", FL, subinterface, iProtocol);
+		fprintf(stderr, FLFMT "open simfile %s protocol %d\n", FL, simfile, iProtocol);
 
 	diag_l0_sim_init();
 
@@ -517,7 +504,8 @@ diag_l0_sim_open(const char *subinterface, int iProtocol)
 	}
 	// Open the DB file:
 	if ((dev->fp = fopen(dl0d->name, "r")) == NULL) {
-		fprintf(stderr, FLFMT "Unable to open file \"%s\"\n", FL, dl0d->name);
+		fprintf(stderr, FLFMT "Unable to open file \"%s\": ", FL, dl0d->name);
+		perror(NULL);
 		free(dl0d->ttystate);
 		free(dl0d->name);
 		free(dev);
@@ -547,11 +535,11 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 
 		// If debugging, print to strerr.
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
+			fprintf(stderr, FLFMT "dl0d=%p closing\n", FL, (void *)dl0d);
 
 		if (dev) {
 			if (dev->fp != NULL)
-			fclose(dev->fp);
+				fclose(dev->fp);
 			free(dev);
 		}
 		// dl0d->name, ->ttystate and dl0d are usually free()d by diag_tty_close
@@ -635,7 +623,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %u bytes\n", FL, (void *)dl0d, (unsigned int)len);
+		fprintf(stderr, FLFMT "dl0d=%p sending %u bytes\n", FL, (void *)dl0d, (unsigned int)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "L0 sim sending: ", FL);
 			diag_data_dump(stderr, data, len);
@@ -689,7 +677,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %ld bytes\n", FL, (void *)dl0d, (long)len);
+		fprintf(stderr, FLFMT "dl0d=%p recv %d byte;s\n", FL, (void *)dl0d, (int) len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "L0 sim receiving: ", FL);
 			diag_data_dump(stderr, data, xferd);
@@ -697,7 +685,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		}
 	}
 
-	return (xferd == 0 ? diag_iseterr(DIAG_ERR_TIMEOUT) : (int) xferd);
+	return (xferd == 0 ? DIAG_ERR_TIMEOUT : (int) xferd);
 }
 
 
@@ -735,7 +723,8 @@ diag_l0_sim_getflags(UNUSED(struct diag_l0_device *dl0d))
 	DIAG_L1_FAST |
 	DIAG_L1_PREFFAST |
 	DIAG_L1_DOESP4WAIT |
-	DIAG_L1_AUTOSPEED;
+	DIAG_L1_AUTOSPEED |
+	DIAG_L1_NOTTY;
 
 	if (sim_skip_crc)
 		ret |= DIAG_L1_DOESL2CKSUM | DIAG_L1_STRIPSL2CKSUM;

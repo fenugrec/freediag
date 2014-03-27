@@ -461,7 +461,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 	//So we parsed all d2 links and found no parents; let's close dl0d.
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr, FLFMT "closing unused dl0d.\n", FL);
+		fprintf(stderr, "closing unused dl0d.\n");
 	diag_l1_close(&dl0d);
 
 	return 0;
@@ -801,6 +801,11 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		break;
 	case DIAG_IOCTL_INITBUS:
 		rv = diag_l1_initbus(dl0d, (struct diag_l1_initbus_args *)data);
+		break;
+	case DIAG_IOCTL_IFLUSH:
+		if (dl0d->dl2_link->diag_l2_l1flags & DIAG_L1_NOTTY)
+			break;
+		rv = diag_tty_iflush(dl0d);
 		break;
 	default:
 		rv = 0;	/* Do nothing, quietly */

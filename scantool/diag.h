@@ -123,6 +123,7 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (diag_l2.h)
  * each layer filling in info as needed (there are currently no clashes)
  *
  * Values for "cmd" parameter to diag_l[12]_ioctl()
+ * XXX Are their numeric values chosen on purpose ? i.e. why "2023" etc.
  */
 
 #define DIAG_IOCTL_GET_L1_TYPE	0x2010	/* Get L1 Type, data is ptr to int */
@@ -134,6 +135,7 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (diag_l2.h)
 #define DIAG_IOCTL_SETSPEED	0x2101	/* Set speed, bits etc */
 					/* Struct diag_serial_settings is passed */
 #define DIAG_IOCTL_INITBUS	0x2201	/* Initialise the ecu bus, data is diag_l1_init */
+#define DIAG_IOCTL_IFLUSH 0x2202	//flush input buffers
 
 /* debug control */
 // flag containers : diag_l0_debug, diag_l1_debug diag_l2_debug, diag_l3_debug, diag_cmd_debug
@@ -184,6 +186,7 @@ struct diag_msg	*diag_allocmsg(size_t datalen);	/* Alloc a new message */
 struct diag_msg	*diag_dupmsg(struct diag_msg *);	/* Duplicate a message */
 struct diag_msg	*diag_dupsinglemsg(struct diag_msg *); /* same, but just the 1st bit */
 void diag_freemsg(struct diag_msg *);	/* Free a msg that we dup'ed */
+uint8_t diag_cks1(uint8_t *data, unsigned int len);	//calculate 8bit checksum on [len] bytes
 
 /*
  * General functions
