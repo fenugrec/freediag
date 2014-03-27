@@ -21,8 +21,6 @@ rge </a> ]
     [ <a href="index.html"> Home </a> ]
     [ <a href="Scantool-Manual.html"> Documentation </a> ]
     <br>
-    [ <a href="http://sourceforge.net/forum/?group_id=34714"> Message Boards </a
-> ]
     [ <a href="http://sourceforge.net/mail/?group_id=34714"> Mailing Lists </a>
 ]
     [ <a href="http://sourceforge.net/cvs/?group_id=34714"> CVS Access </a> ]
@@ -30,7 +28,7 @@ rge </a> ]
 
 
 
-  <p>This manual applies to versions >1.00 of Freediag/Scantool.
+  <p>This manual applies to version 1.03 of freediag.
 
   <p>Table of contents:
   <ul>
@@ -89,24 +87,13 @@ rge </a> ]
   <br><br>
   <a name="build"></a>
   <div class="section">1) Building the scantool</div>
-  
-  <p>Note that win32 is not supported at the moment.
-  The scantool distribution is a source-code distribution, so you will have
-  to configure/compile it for your Linux system. To do this, unpack the archive
-  and in the <i>src</i> directory, type:
+  <p>Refer to most up-to-date instructions in <a href="build_system.txt">doc/build_system.txt</a>
 
-  <p><ul>
-    <code>./configure</code><br>
-    <br>
-    <code>make</code>
-  </ul>
-
-  <br>
-  <a name="running"></a>
+<a name="running"></a>
   <div class="section">2) Running Scantool</div>
 
-  <p>The Scantool should be run as SuperUser as the process has to set
-  real-time scheduling in order to get accurate timing control under Linux. If
+  <p>The Scantool should be run as SuperUser / administrator as the process has to set
+  real-time scheduling in order to get accurate timing control. If
   it is run by an un-privileged user than a warning will be printed and the
   scantool may not work. It is extremely unlikely to work on ISO9141/ISO14230
   interfaces, it may work with SAEJ1850 type interfaces where timing is not so
@@ -121,7 +108,7 @@ rge </a> ]
 
   <p>The scantool will read commands from a startup file called
   <i>.scantoolrc</i> in your home directory or scantool.ini in the program directory,
-  depending on options set at compile time (see ./configure --help).
+  depending on options set at compile time.
 
   <p>Many people will put the appropriate <code>set interface &lt;<i>type</i>&gt;</code>
   command (see section 4) in their .scantoolrc file and will just want to use
@@ -131,13 +118,16 @@ rge </a> ]
   <a name="cli"></a>
   <div class="section">3) Using the Command Line Interface (CLI)</div>
 
-  <p>The CLI is hierarchical, with normal commands at the top level. These
+  <p>The CLI is hierarchical, with normal commands at the top level. Some 
   commands include:
 
   <p><ul>
     <code>scan</code> : start a scan<br>
-    <code>monitor</code> : loop repeatedly checking/displaying ECU values
+    <code>monitor</code> : loop repeatedly checking/displaying ECU values<br>
+    <code>set</code> : access <i>set</i> submenu to modify settings<br>
+    <code>exit</code> : exit scantool<br>
   </ul>
+<p>Please refer to the complete list in the next section.
   
   <p>2nd level commands, such as commands to set the address used by the
   scantool, can be accessed as:
@@ -170,20 +160,11 @@ rge </a> ]
     <code>scantool/set&gt;</code>
   </ul>
   
-  <p>To leave that menu and return to the main menu, type either:
+  <p>To leave a submenu and return to the main menu, type:
   
   <p><ul>
-    <code>quit</code>
-  </ul>
-   
-   <p> or
-   
-   <p><ul>
     <code>up</code>
   </ul>
-  
-  <p>Using the <code>quit</code> command at the main menu will end the scantool
-  application.
   
   <p>All numeric values can be entered as:
 
@@ -206,13 +187,12 @@ rge </a> ]
     </tr>
   </table></ul>
   
-  <p>The <code>help </code>command is available at every menu and gives you
+  <p>The <code>help </code> (or simply <code>?</code>)command is available at every menu and gives you
   help for the commands available at that menu. Further information about a
   specific command can be obtained by typing
   <code>help &lt;<i>command</i>&gt;</code>.
   
-  <p>The CLI supports shell like command line editing if supported by your
-  Linux version.
+  <p>The CLI supports shell like command line editing if supported by your OS.
 
   <br><br>
   <a name="commands"></a>
@@ -266,7 +246,7 @@ rge </a> ]
     </tr>
     <tr>
       <td><code>debug</code></td>
-      <td>SUBMENU, see later</td>
+      <td>SUBMENU, see later, access some debugging facilities</td>
     </tr>
     <tr>
       <td><code>help [<i>command</i>]</code></td>
@@ -418,7 +398,7 @@ rge </a> ]
       <td><code>l0test [testnum]</code></td>
       <td>Run low-level L0 tests with DUMBT driver. This is exclusively for debugging 
       electrical interfaces ,by sending raw test signals on TXD, RTS and DTR.<br>
-	Use "l0test" to get a list of available tests. See also doc/dumb_interfaces.txt</td>
+	Use "l0test" without arguments to get a list of available tests. See also doc/dumb_interfaces.txt</td>
     </tr>
 
     <tr>
@@ -477,17 +457,19 @@ rge </a> ]
   <a name="hardware"></a>
   <div class="section">5) Hardware Interfaces</div>
   
-  <p>Please refer to the "supported" interface document to determine which
+  <p>Please refer to the <a href="Supported-Interfaces.html">Supported Interfaces</a> document to determine which
   hardware interface is appropriate for your usage and which version of the
   interface you should purchase.
   
   <p>In order to use the appropriate driver for your hardware interface, the
-  appropriate <code>set interface XXX</code> command needs to be run. The
+  appropriate <code>set interface [name]</code> command needs to be run. The
   default interface driver is the <i>dumb</i> driver which works with most
   generic serial to ISO9141 interfaces. It is recommended that you put this
   command in your <i>.scantoolrc</i> file.
   
   <ul>
+ <p>Generic serial adaptors (opto-isolated or not):<br>
+ <code>set interface dumb</code>
     <p>Andy Whittaker's OBD-II ISO9141 interface:<br>
     <a href="http://www.andywhittaker.com/ecu/obdii_hardware.htm">http://www.andywhittaker.com/ecu/obdii_hardware.htm</a><br>
     <code>set interface dumb</code>

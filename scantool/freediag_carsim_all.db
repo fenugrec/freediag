@@ -20,6 +20,7 @@
 # "sin1" = replaced by sin(t) signal, period = 1 second;
 # "cks1" = replaced by the ISO9141 checksum of all previous bytes.
 # If in doubt, see the CVS/sourceforge examples.
+# For the RQ lines, it's not necessary to put the checksum byte at the end.
 ###################################################################
 
 # L2 frame - set this to 1 and you won't need header bytes in this file:

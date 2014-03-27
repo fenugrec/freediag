@@ -307,10 +307,6 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "~@%lums : DTR/RTS changed\n", FL, (unsigned long) GetTickCount());
-	}
-
 	return 0;
 } //diag_tty_control
 

@@ -16,13 +16,11 @@
   <div align="center">
     <img src="title.png">
     <br>
-    [ <a href="http://www.sourceforge.net/projects/freediag/"> Freediag@Sourcefo
-rge </a> ]
+    [ <a href="http://www.sourceforge.net/projects/freediag/"> Freediag@Sourceforge </a> ]
     [ <a href="index.html"> Home </a> ]
     [ <a href="Scantool-Manual.html"> Documentation </a> ]
     <br>
-    [ <a href="http://sourceforge.net/forum/?group_id=34714"> Message Boards </a
-> ]
+  
     [ <a href="http://sourceforge.net/mail/?group_id=34714"> Mailing Lists </a>
 ]
     [ <a href="http://sourceforge.net/p/freediag/code/"> CVS Access </a> ]
@@ -30,7 +28,7 @@ rge </a> ]
 
 
   
-  <p>This manual applies to Version 1.01 of freediag
+  <p>This manual applies to Version 1.03 of freediag
 
   <p>Table of contents:
   <ul>
@@ -87,28 +85,24 @@ rge </a> ]
   recompiling the freediag software library.
 
   <p><ol>
-    <li>Andy Whittaker's OBD-II ISO9141 interface:<br>
-    <a href="http://www.andywhittaker.com/ecu/obdii_hardware.htm">http://www.andywhittaker.com/ecu/obdii_hardware.htm</a>
+    <li>Generic dumb serial adaptors<br><br>
     Freediag Driver: DUMB<br>
     <br>
-    This is a generic serial to ISO9141 interface available in small
-    quantities at a sensible price from Andy Whittaker in the UK.<br>
-    <br>
-    <li>Jeff's OBD-II ISO 9141 interface:<br>
-    <a href="http://www.planetfall.com/~jeff/obdii">http://www.planetfall.com/~jeff/obdii</a>
-    Freediag Driver: DUMB<br>
-    <br>
-    This site shows you how to build a generic serial to ISO9141 interface.<br>
-    <br>
-    <li>Silicon Engines ISO 9141 interface:<br>
+    These are generic serial to K-line interfaces, such as<br>
+    Andy Whittaker's OBD-II ISO9141 interface;<br>
+    <a href="http://www.andywhittaker.com/ecu/obdii_hardware.htm">http://www.andywhittaker.com/ecu/obdii_hardware.htm</a><br>
+    Silicon Engines ISO 9141 interface:<br>
     <a href="http://www.siliconengines-ltd.com/products/9141-232.html">http://www.siliconengines-ltd.com/products/9141-232.html</a><br>
-    Freediag Driver: DUMB<br>
-    <br>
-    This is a commercially available generic serial to ISO9141 interface. It is
+        This is a commercially available generic serial to ISO9141 interface. It is
     supplied in a robust box with lots of lights. This interface was used to
     develop the first bits of the freediag project. It is functionally the same
     as the above two interfaces (with the exception of all the lights and the
     box).<br>
+
+        Jeff's OBD-II ISO 9141 interface:<br>
+  <a href="http://jeff.noxon.cc/2013/05/18/opendiag-obd-ii-schematics-pcb-layout/">
+		http://jeff.noxon.cc/2013/05/18/opendiag-obd-ii-schematics-pcb-layout/</a><br>
+This site shows you how to build a generic serial to ISO9141 interface.<br>
     <br>
     <li>B.Roadman ISO9141/VPW/PWM interface:<br>
     <a href="http://obddiagnostics.com/">http://obddiagnostics.com/</a><br>
@@ -149,6 +143,15 @@ rge </a> ]
     The T16-002 interface was used to develop support for smart interfaces in
     freediag, it worked on a modern Sony Laptop but not on various branded PCs
     tested.
+    <br><br>
+     <li>ELM32* based interfaces:<br>
+    <a href="http://elmelectronics.com/obdic.html">http://elmelectronics.com/obdic.html</a><br>
+    Freediag Driver: ELM<br>
+    <br>
+    The ELM32x ICs are smart protocol translators that are frequently found in recent USB->OBD cables. Freediag partially
+    supports these devices. Be aware that many so-called ELM32x cables use a cloned but not completely compatible
+    IC. 
+    <br>
   </ol>
   
   <br><br>
@@ -166,51 +169,35 @@ rge </a> ]
         <th width="50">CAN</th>
       </tr>
       <tr>
-        <th>Andy</th>
+        <th>Dumb</th>
         <td><b>YES</b></td>
         <td><b>YES</b></td>
-        <td>No</td>
-        <td>No</td>
-        <td>No</td>
-      </tr>
-      <tr>
-        <th>Jeff</th>
-        <td><b>YES</b></td>
-        <td><b>YES</b></td>
-        <td>No</td>
-        <td>No</td>
-        <td>No</td>
-      </tr>
-      <tr>
-        <th>Silicon Engines</th>
-        <td><b>YES</b></td>
-        <td><b>YES</b></td>
-        <td>No</td>
-        <td>No</td>
-        <td>No</td>
+        <td>NO</td>
+        <td>NO</td>
+        <td>NO</td>
       </tr>
       <tr>
         <th>B Roadman</th>
-        <td><b>YES</b> (1)</td>
-        <td>No (3)</td>
-        <td><b>YES</b> (1)</td>
+        <td><b>YES (1)</b></td>
+        <td>NO (3)</td>
+        <td><b>YES (1)</b></td>
         <td><b>YES</b></td>
-        <td>No</td>
+        <td>NO</td>
       </tr>
       <tr>
         <th>Multiplex</th>
         <td><b>YES</b></td>
-        <td><b>YES</b> (2)</td>
-        <td><b>YES</b> (1)</td>
-        <td><b>YES</b> (1)</td>
-        <td>No</td>
+        <td><b>YES (2)</b></td>
+        <td><b>YES (1)</b></td>
+        <td><b>YES (1)</b></td>
+        <td>NO</td>
       </tr>
       <tr>
         <th>ELM (4)</th>
-        <td><b>NO</b></td>
-        <td><b>NO</b> (2)</td>
-        <td><b>NO</b> (1)</td>
-        <td><b>NO</b> (1)</td>
+        <td>NO (1)</td>
+        <td>NO (1)</td>
+        <td>NO (1)</td>
+        <td>NO (1)</td>
         <td>NO</td>
       </tr>
     </table>

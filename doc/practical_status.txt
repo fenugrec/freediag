@@ -1,4 +1,15 @@
 #############################
+fenugrec
+-interface: DUMB K-line only with optocouplers
+-serial port : FTDI USB->serial converter
+-system: WinXP 1.4GHz
+-freediag version: 1.03
+----------
+-car: 2004 Nissan Sentra Spec-V
+-protocol : L2 iso14230 fastinit, phys. destaddr=0x10, testerid=0xfc
+-result: success, tested SID 3E (testerpresent), 1A 81 (get ECUID)
+
+#############################
 
 Kevin Valentine
 -interface: Multiplex Engineering T16-002

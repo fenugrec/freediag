@@ -86,6 +86,7 @@ if(WIN32)
 		#require at least winXP
 		message(WARNING "At least Win XP is required ! Proceed at your risk !")
 	endif (${CMAKE_SYSTEM_VERSION} VERSION_LESS 5.1)
+	set (PLATF "-win32")
 else()
 	#no need to check for these on WIN32 as the offending code (diag_os and diag_tty) was re-written
 	check_function_exists (alarm HAVE_ALARM)
@@ -142,7 +143,7 @@ endif ()
 set (CPACK_SOURCE_GENERATOR "TGZ")
 set (CPACK_PACKAGE_VERSION_MAJOR ${PKGVERSIONMAJOR})
 set (CPACK_PACKAGE_VERSION_MINOR ${PKGVERSIONMINOR})
-set (CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PKGVERSION}-${CMAKE_SYSTEM_NAME}")
+set (CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PKGVERSION}${PLATF}")
 set (CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PKGVERSION}-src")
 set (CPACK_SOURCE_IGNORE_FILES "xcf"
 	"Makefile\\\\.in$"
