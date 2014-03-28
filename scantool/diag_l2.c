@@ -103,7 +103,8 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
 #define DIAG_L2_STATE_CLOSED		0	/* Not in use (but not free for anyones use !!) */
 #define DIAG_L2_STATE_SENTCONREQ	1	/* Sent connection request (waiting for response/reject) */
 #define DIAG_L2_STATE_OPEN		2	/* Up and running */
-#define DIAG_L2_STATE_CLOSING		3	/* Sent close request (possibly), waiting for response/timeout */
+#define DIAG_L2_STATE_CLOSING		3	/* sending close request (possibly), waiting for response/timeout */
+	//STATE_CLOSING will prevent L2 keepalive messages from being sent
 
 
 /*
@@ -224,11 +225,12 @@ diag_l2_timer(void)
 		int expired = 0;
 
 		/*
-		 * If in monitor mode, we don't do anything as we're
-		 * just listening
+		 * If in monitor mode or the connection is closing,
+		 * do nothing
 		 */
-		if ((d_l2_conn->diag_l2_type & DIAG_L2_TYPE_INITMASK)
-			== DIAG_L2_TYPE_MONINIT)
+		if (((d_l2_conn->diag_l2_type & DIAG_L2_TYPE_INITMASK)
+			== DIAG_L2_TYPE_MONINIT) ||
+				(d_l2_conn->diag_l2_state & DIAG_L2_STATE_CLOSING))
 		{
 			continue;
 		}
@@ -794,7 +796,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		d->kb2 = d_l2_conn->diag_l2_kb2;
 		break;
 	case DIAG_IOCTL_SETSPEED:
-		if (dl0d->dl2_link->diag_l2_l1flags & DIAG_L1_AUTOSPEED)
+		if (dl0d->dl2_link->diag_l2_l1flags & (DIAG_L1_AUTOSPEED | DIAG_L1_NOTTY))
 			break;
 		ic = (struct diag_serial_settings *)data;
 		rv = diag_l1_setspeed(dl0d, ic);

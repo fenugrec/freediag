@@ -39,6 +39,21 @@ CVSID("$Id$");
 
 int diag_cmd_debug;
 
+//declare an array of structs to associate debug flag masks with short description.
+//See diag.h
+const struct debugflags_descr debugflags[]={
+	{OPEN, "Open events","OPEN"},
+	{CLOSE, "Close events","CLOSE"},
+	{READ, "Read events","READ"},
+	{WRITE, "Write events","WRITE"},
+	{IOCTL, "Ioctl stuff (setspeed etc)","IOCTL"},
+	{PROTO, "Protocol stuff","PROTO"},
+	{INIT, "Init stuff","INIT"},
+	{DATA, "Dump data if READ or WRITE","DATA"},
+	{TIMER, "Timer stuff","TIMER"},
+	{NIL, NULL, NULL}
+};
+
 static int cmd_debug_dumpdata(int argc, char **argv);
 static int cmd_debug_pids(int argc, char **argv);
 static int cmd_debug_help(int argc, char **argv);
@@ -97,7 +112,12 @@ cmd_debug_help(int argc, char **argv)
 {
 	if (argc<2) {
 		printf("Debugging flags are set per level according to the values set in diag.h\n");
-		printf("Setting [val] to -1 will enable all debug messages for that level.\n");
+		printf("Setting [val] to -1 will enable all debug messages for that level.\n"
+				"Available flags:\n");
+		int i;
+		for (i=0; debugflags[i].mask != NIL; i++) {
+			printf("\t0x%4X: %s\n", debugflags[i].mask, debugflags[i].descr);
+		}
 	}
 	return help_common(argc, argv, debug_cmd_table);
 }
@@ -162,16 +182,22 @@ static int
 cmd_debug_common( const char *txt, int *val, int argc, char **argv)
 {
 	int r;
+	int i;
 
-	if (argc == 1)
-	{
-		printf("%s debug is 0x%X\n", txt, *val);
+	if (argc !=2)
+		return CMD_FAILED;
+
+	r = htoi(argv[1]);
+	*val = r;
+
+	printf("%s debug is 0x%X: ", txt, *val);
+	for (i=0; debugflags[i].mask != NIL; i++) {
+		//check each flag and show what was enabled.
+		if (*val & debugflags[i].mask)
+			printf("%s ", debugflags[i].shortdescr);
 	}
-	else
-	{
-		r = htoi(argv[1]);
-		*val = r;
-	}
+	printf("\n");
+
 	return CMD_OK;
 }
 
@@ -309,7 +335,7 @@ static int cmd_debug_l0test(int argc, char **argv) {
 	}
 	if ((testnum < 1) || (testnum > MAX_L0TEST)) {
 		printf("Invalid test.\n");
-		return CMD_FAILED;
+		return CMD_USAGE;
 	}
 
 	if (diag_init())

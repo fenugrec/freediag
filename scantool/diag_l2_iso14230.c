@@ -126,7 +126,10 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 			break;
 		case 0X40:
 			/* CARB MODE */
+			// not part of 14230 (4.2.1) so we flag this.
+		default:
 			return diag_iseterr(DIAG_ERR_BADDATA);
+			break;
 		}
 	} else {
 		/* Additional length field not present */
@@ -156,7 +159,9 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 			break;
 		case 0X40:
 			/* CARB MODE */
+		default:
 			return diag_iseterr(DIAG_ERR_BADDATA);
+			break;
 		}
 	}
 	/*
@@ -181,9 +186,9 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 }
 
 /*
- * Internal receive function (does all the message building, but doesn't
- * do call back, returns the complete message, hasn't removed checksum
- * and header info
+ * Internal receive function: does all the message building, but doesn't
+ * do call back. Strips header and checksum; if address info was present
+ * then msg->dest and msg->src are >0.
  *
  * Data from the first message is put into *data, and len into *datalen
  *
@@ -370,7 +375,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 		while (tmsg) {
 			int datalen;
-			uint8_t hdrlen, source, dest;
+			uint8_t hdrlen=0, source=0, dest=0;
 
 			/*
 			 * We have the message with the header etc, we
@@ -427,7 +432,6 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				tmsg->fmt = 0;
 			}
 			tmsg->fmt |= DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY ;
-			tmsg->fmt |= DIAG_FMT_CKSUMMED;
 
 			//if cs wasn't stripped, we check it:
 			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0) {
@@ -435,23 +439,26 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				if (calc_sum != tmsg->data[tmsg->len -1]) {
 					fprintf(stderr, FLFMT "Bad checksum: needed %02X,got%02X. Data:",
 						FL, calc_sum, tmsg->data[tmsg->len -1]);
-					//TODO: when this proves to be reliable, generate an error
+					//TODO: if we get failed checksum, generate an error or
 					//find a way to signal the error to upper levels.
 					//We could discard the message, but that seems a bit drastic
+					//perhaps the best would be to add a "data_integrity" flag
+					//do the diag_msg structs ?
 					diag_data_dump(stderr, tmsg->data, tmsg->len -1);
 					fprintf(stderr, "\n");
 				}
+				/* and remove checksum byte */
+				tmsg->len--;
 
 			}
+			tmsg->fmt |= DIAG_FMT_CKSUMMED;	//checksum was verified
 
 			tmsg->src = source;
 			tmsg->dest = dest;
 			tmsg->data += hdrlen;	/* Skip past header */
 			tmsg->len -= hdrlen; /* remove header */
 
-			/* remove checksum byte if needed */
-			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0)
-				tmsg->len--;
+
 
 			dp->first_frame = 0;
 
@@ -581,6 +588,8 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		if (rv < 0)
 			break;
 
+		//XXX _int_recv already calls _decode internally. Why do we
+		//need to do this ?
 		rv = diag_l2_proto_14230_decode( data, len,
 			&hdrlen, &datalen, &datasrc, NULL, dp->first_frame);
 		if (rv < 0)
@@ -617,7 +626,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			rv=DIAG_ERR_ECUSAIDNO;
 			break;
 		}	//switch data[hdrlen]
-		break;
+		break;	//case _FASTINIT
 	/* 5 Baud init */
 	case DIAG_L2_TYPE_SLOWINIT:
 		in.type = DIAG_L1_INITBUS_5BAUD;
@@ -679,7 +688,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		}
 		rv=0;
 		dp->state = STATE_ESTABLISHED ;
-		break;
+		break;	//case _SLOWINIT
 	case DIAG_L2_TYPE_MONINIT:
 		/* Monitor mode, don't send anything */
 		dp->state = STATE_ESTABLISHED ;
@@ -730,20 +739,60 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	return 0;
 }
 
+//We need this in _stopcomms
+static struct diag_msg *
+diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+		int *errval);
 
-//stopcomms : incomplete. For the moment it only undoes
-// what _startcomms did (alloc)
+/* _stopcomms:
+ * Send a stopcomms message, and wait for the +ve response, for upto
+ * p3max - the layer 2 code that called this marked the connection as
+ * STATE_CLOSING so the keepalive should be disabled
+ */
+// Regarding p3max : I disagree with the above comment.
+//We send a StopCommunication request; we are "entitled" to a response
+//within the same delays as any other type of request; we'll therefore
+// use diag_l2_proto_14230_request() as it was meant to be used.
+// However, if we get no response or an unidentified negative response,
+// we do warn the user that he should to wait P3max for the connection
+// to time out.
+
 static int
 diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
 {
-	/*
-	 * Send a stopcomms message, and wait for the +ve response, for upto
-	 * p3max - the layer 2 code that called this already turned off the
-	 * idle timer
-	 */
-/* TODO : implement StopComm request! */
-	fprintf(stderr, FLFMT "14230_stopcomms: warning, incomplete code !\n", FL);
-	//at least we'll free() what startcomms alloc'ed.
+	struct diag_msg stopmsg;
+	struct diag_msg *rxmsg;
+	uint8_t stopreq=DIAG_KW2K_SI_SPR;
+	int errval=0;
+	char * debugstr;
+
+	stopmsg.len=1;
+	stopmsg.data=&stopreq;
+	stopmsg.dest=0;
+	stopmsg.src=0;
+
+	rxmsg=diag_l2_proto_14230_request(pX, &stopmsg, &errval);
+
+	if (rxmsg != NULL) {
+		//we got a message;
+		if (!errval) {
+			//no error : positive response from ECU.
+			debugstr="ECU acknowledged request (RC=";
+		} else {
+			debugstr="ECU refused request; connection will time-out in 5s.(RC=";
+		}
+		errval=rxmsg->data[0];
+		free(rxmsg);
+	} else {
+		//no message received...
+		debugstr="ECU did not respond to request (err=";
+	}
+
+	if (diag_l2_debug & DIAG_DEBUG_CLOSE) {
+		fprintf(stderr, FLFMT "_stopcomms: %s%d).\n", FL, debugstr, errval);
+	}
+
+	//and free() what startcomms alloc'ed.
 	if (pX->diag_l2_proto_data) {
 		free(pX->diag_l2_proto_data);
 		pX->diag_l2_proto_data=NULL;
@@ -761,6 +810,7 @@ diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
  *
  * We also wait p3 ms
  * return 0 if ok, <0 if err
+ * argument msg must have .len, .data, .dest and .src assigned.
  */
 static int
 diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
@@ -849,6 +899,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if ((diag_l2_debug & DIAG_DEBUG_WRITE) && (diag_l2_debug & DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "_send: ", FL);
 		diag_data_dump(stderr, buf, len);
+		fprintf(stderr, "\n");
 	}
 
 	/* Wait p3min milliseconds, but not if doing fast/slow init */
@@ -909,12 +960,20 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	return 0;
 }
 
+//iso14230 diag_l2_proto_request. See diag_l2.h
+//This handles busyRepeatRequest and RspPending negative responses.
+//return NULL if failed, or a newly alloced diag_msg if succesful.
+//Caller must free that diag_msg
+//
 static struct diag_msg *
 diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		int *errval)
 {
 	int rv;
 	struct diag_msg *rmsg = NULL;
+	int retries=3;	//if we get a BusyRepeatRequest response.
+
+	*errval=0;
 
 	rv = diag_l2_send(d_l2_conn, msg);
 	if (rv < 0) {
@@ -943,13 +1002,23 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 			if (rmsg->data[2] == DIAG_KW2K_RC_B_RR) {
 				/*
 				 * Msg is busyRepeatRequest
-				 * So do a send again
+				 * So do a send again (if retries>0)
 				 */
-				rv = diag_l2_send(d_l2_conn, msg);
+
+				if (retries > 0)
+					rv = diag_l2_send(d_l2_conn, msg);
+				else
+					rv=DIAG_ERR_GENERAL;
+
+				retries--;
+
 				if (rv < 0) {
 					*errval = rv;
 					return (struct diag_msg *)diag_pseterr(rv);
 				}
+				if (diag_l2_debug & DIAG_DEBUG_PROTO)
+					fprintf(stderr, FLFMT "got BusyRepeatRequest: retrying...\n", FL);
+
 				diag_freemsg(rmsg);
 				continue;
 			}
@@ -959,10 +1028,15 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 				 * Msg is a requestCorrectlyRcvd-RspPending
 				 * so do read again
 				 */
+				if (diag_l2_debug & DIAG_DEBUG_PROTO)
+					fprintf(stderr, FLFMT "got RspPending: retrying...\n", FL);
+
 				diag_freemsg(rmsg);
 				continue;
 			}
 			/* Some other type of error */
+			*errval= DIAG_ERR_ECUSAIDNO;
+			break;
 		} else {
 			/* Success */
 			break;

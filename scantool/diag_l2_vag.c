@@ -181,7 +181,7 @@ diag_l2_proto_vag_decode(uint8_t *data, int len,
 }
 #endif
 
-/*
+/* XXX copied from diag_l2_iso14230
  * Internal receive function (does all the message building, but doesn't
  * do call back, returns the complete message, hasn't removed checksum
  * and header info

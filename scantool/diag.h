@@ -150,6 +150,24 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (diag_l2.h)
 #define DIAG_DEBUG_DATA		0x80	/* Dump data depending on other flags */
 #define DIAG_DEBUG_TIMER	0x100	/* Timer stuff */
 
+enum debugflag_enum {OPEN=DIAG_DEBUG_OPEN,
+	CLOSE=DIAG_DEBUG_CLOSE,
+	READ=DIAG_DEBUG_READ,
+	WRITE=DIAG_DEBUG_WRITE,
+	IOCTL=DIAG_DEBUG_IOCTL,
+	PROTO=DIAG_DEBUG_PROTO,
+	INIT=DIAG_DEBUG_INIT,
+	DATA=DIAG_DEBUG_DATA,
+	TIMER=DIAG_DEBUG_TIMER,
+	NIL=0
+};
+// struct  : used in scantool_debug.c
+struct debugflags_descr {
+	enum debugflag_enum mask;
+	const char * descr;		//associate short description for each flag.
+	const char * shortdescr;
+};
+
 /*
  * Message handling.
  *
@@ -160,7 +178,7 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (diag_l2.h)
  */
 struct diag_msg
 {
-	uint8_t	fmt;			/* Message format: */
+	uint8_t	fmt;			/* Message format: TODO: convert to enum ? */
 	#define DIAG_FMT_ISO_FUNCADDR	0x01	/* ISO Functional addressing */
 	#define DIAG_FMT_FRAMED		0x02	/* Rcvd data is framed, ie not raw */
 	#define	DIAG_FMT_DATAONLY	0x04	/* Rcvd data had L2/L3 headers removed */
@@ -170,14 +188,15 @@ struct diag_msg
 	uint8_t	dest;		/* Destination from received frame */
 	uint8_t	src;		/* Source from received frame */
 	uint8_t	len;		/* calculated data length */
-	uint8_t	*data;		/* The data */
+	uint8_t	*data;		/* The data; can be dynamically alloc'ed */
 
 	struct timeval	 rxtime;	/* Processed time */
 	struct diag_msg	*next;		/* For linked lists of messages */
 
 	uint8_t	mcnt;		/* Number of elements on this list */
 
-	uint8_t	*idata;		/* For free() of data later */
+	uint8_t	*idata;		/* For free() of data later: this is a "backup"
+							 * of the initial *data pointer.*/
 	uint8_t	iflags;		/* Internal flags */
 	#define	DIAG_MSG_IFLAG_MALLOC	1	/* We malloced; we Free */
 };

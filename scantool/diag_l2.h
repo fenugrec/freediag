@@ -348,14 +348,16 @@ void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  *		handle	Handle passed to callback routine
  *	returns: 0 always  or diag error on error
  *
- * msg()
- *	use:	send a message and wait for a response.
- *		this is important because some L2 protocols such as ISO
+ * request()
+ * use: Send a message, and wait the appropriate time for a response and return
+ *		that message or an error indicator. This calls the
+ *		diag_l2_proto_request() function.
+ *		This is important because some L2 protocols such as ISO
  *		will return a "request not yet complete", and this deals
  *		with that .. it also deals with getting the timeouts and
  *		everything else correct.
  *		It is also coded to return the received message, rather than
- *		use callbacks, so it's a different type of API to send/recv
+ *		use callbacks, so it's a different type of API to send/recv.
  *	params:	connection	- The L2 connection info
  *		msg		- The message to send
  *		*errval		- Place for error to be stored
@@ -414,6 +416,7 @@ struct diag_l2_proto {
 	int (*diag_l2_proto_recv)(struct diag_l2_conn *d_l2_conn,
 		int timeout, void (*callback)(void *handle, struct diag_msg *msg),
 		void *handle);
+	//diag_l2_proto_request :
 	struct diag_msg * (*diag_l2_proto_request)(struct diag_l2_conn*,
 		struct diag_msg*, int*);
 	void (*diag_l2_proto_timeout)(struct diag_l2_conn*);

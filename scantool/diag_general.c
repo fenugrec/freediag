@@ -100,6 +100,7 @@ int diag_end(void) {
 
 /*
  * Message handling
+ * diag_allocmsg : alloc a new diag_msg and its diag_msg->data if datalen>0.
  */
 struct diag_msg *
 diag_allocmsg(size_t datalen)
@@ -107,7 +108,7 @@ diag_allocmsg(size_t datalen)
 	struct diag_msg *newmsg;
 
 	if (diag_calloc(&newmsg, 1))
-		return 0;
+		return (struct diag_msg *)diag_pseterr(DIAG_ERR_NOMEM);
 
 	newmsg->iflags |= DIAG_MSG_IFLAG_MALLOC;
 
@@ -116,13 +117,15 @@ diag_allocmsg(size_t datalen)
 		if (diag_calloc(&newmsg->data, datalen))
 		{
 			free(newmsg);
-			return 0;
+			return (struct diag_msg *)diag_pseterr(DIAG_ERR_NOMEM);
 		}
 	}
 	else
 		newmsg->data = NULL;
 
 	newmsg->idata = newmsg->data;	/* Keep tab as users change newmsg->data */
+	// i.e. some functions do (diagmsg->data += skiplen) which would prevent us
+	// from doing free(diagmsg->data)  (the pointer was changed).
 
 	return newmsg;
 }

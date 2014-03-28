@@ -11,19 +11,34 @@ foreach (L0NAME IN LISTS L0LIST)
 	#empty lines are skipped. Lucky us.
 	set (DIAG_CONFIG_ZONE1 "${DIAG_CONFIG_ZONE1}extern int diag_l0_${L0NAME}_add(void);\n")
 	set (DIAG_CONFIG_ZONE3 "${DIAG_CONFIG_ZONE3}\trv |= diag_l0_${L0NAME}_add();\n")
-	message("Adding l0 driver ${L0NAME}")
+	message(STATUS "Adding l0 driver ${L0NAME}")
 endforeach()
 
 #generate zone 2 and 4 lines with L2 names
 foreach (L2NAME IN LISTS L2LIST)
 	set (DIAG_CONFIG_ZONE2 "${DIAG_CONFIG_ZONE2}extern int diag_l2_${L2NAME}_add(void);\n")
 	set (DIAG_CONFIG_ZONE4 "${DIAG_CONFIG_ZONE4}\trv |= diag_l2_${L2NAME}_add();\n")
-	message("adding l2 driver ${L2NAME}")
+	message(STATUS "Adding l2 driver ${L2NAME}")
 endforeach()
 
 #and now generate diag_config.c ! (output in the build directory)
 configure_file ( diag_config.c.in diag_config.c)
 
+
+### select conditional source files
+
+if(WIN32)
+	set (OS_DIAGTTY "diag_tty_win.c")
+else()
+	set (OS_DIAGTTY "diag_tty_unix.c")
+endif()
+
+if (NISPROG)
+	set (ST_DIAG "scantool_nisprog.c")
+	message (WARNING "*****Compiling with nisprog !!!!!!*****")
+else()
+	set (ST_DIAGG "scantool_debug.c")
+endif()
 
 
 ### build source file lists (useful later)
@@ -36,8 +51,8 @@ set (LIBDIAG_SRCS diag_l0_me.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c
 	diag_os.c diag_general.c diag_dtc.c )
 set (LIBDYNO_SRCS dyno.c)
 set (DIAGTEST_SRCS diag_test.c)
-set (SCANTOOL_SRCS scantool.c scantool_cli.c scantool_debug.c scantool_set.c
-	scantool_test.c scantool_diag.c scantool_vag.c scantool_dyno.c
+set (SCANTOOL_SRCS scantool.c scantool_cli.c ${ST_DIAG} scantool_set.c
+	scantool_test.c scantool_debug.c scantool_vag.c scantool_dyno.c
 	scantool_aif.c)
 #and GLOB all the headers. This is *only* so that the headers end up in
 #the file list of IDE projects (at least Code::blocks)

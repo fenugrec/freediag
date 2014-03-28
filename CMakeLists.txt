@@ -81,7 +81,6 @@ check_function_exists (timersub HAVE_TIMERSUB)
 ###### Platform-specific function checks
 
 if(WIN32)
-	set (OS_DIAGTTY "diag_tty_win.c")
 	if (${CMAKE_SYSTEM_VERSION} VERSION_LESS 5.1)
 		#require at least winXP
 		message(WARNING "At least Win XP is required ! Proceed at your risk !")
@@ -91,7 +90,6 @@ else()
 	#no need to check for these on WIN32 as the offending code (diag_os and diag_tty) was re-written
 	check_function_exists (alarm HAVE_ALARM)
 	check_function_exists (select HAVE_SELECT)
-	set (OS_DIAGTTY "diag_tty_unix.c")
 endif()
 
 
@@ -102,6 +100,7 @@ option(OLDEV "Enable deprecated dev id (default=no)" OFF)
 option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
 option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
 option(TRY_POSIX "Try POSIX implementations. (default=disabled)" OFF)
+option(NISPROG "Enable experimental Nissan Consult-II functions. (default=disabled)" OFF)
 
 ###### Includes
 #proj_bin_dir = needed to find cconf.h (not in src_dir)
