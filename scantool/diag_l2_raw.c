@@ -115,7 +115,7 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	/* This is raw, unframed data */
 	msg.fmt = 0;
 	msg.next = 0;
-	(void)gettimeofday(&msg.rxtime, NULL);
+	msg.rxtime = diag_os_chronoms(0);
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 	{
@@ -167,7 +167,7 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		memcpy(&rmsg->data, rxbuf, (size_t)rv);	/* Data */
 		rmsg->len = (uint8_t) rv;
 		rmsg->fmt = 0;
-		(void)gettimeofday(&rmsg->rxtime, NULL);
+		rmsg->rxtime = diag_os_chronoms(0);
 	}
 	return rmsg;
 }

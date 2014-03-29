@@ -190,7 +190,7 @@ struct diag_msg
 	uint8_t	len;		/* calculated data length */
 	uint8_t	*data;		/* The data; can be dynamically alloc'ed */
 
-	struct timeval	 rxtime;	/* Processed time */
+	unsigned long	 rxtime;	/* Processed time, in ms given by diag_os_chronoms() */
 	struct diag_msg	*next;		/* For linked lists of messages */
 
 	uint8_t	mcnt;		/* Number of elements on this list */

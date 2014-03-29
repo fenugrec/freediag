@@ -432,9 +432,10 @@ struct diag_msg *msg, char *buf, size_t bufsize)
  * Timer routine, called with time (in ms) since the "timer" value in
  * the L3 structure
  * This handles only P3 timeout (keepalive => TesterPresent)
+
  */
 static void
-diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
+diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
 {
 	struct diag_msg msg;
 	uint8_t data[6];
@@ -455,7 +456,7 @@ diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, int ms)
 	if (diag_l3_debug & DIAG_DEBUG_TIMER)
 	{
 		/* XXX Not async-signal-safe */
-		fprintf(stderr, FLFMT "P3 timeout impending for %p %d ms\n",
+		fprintf(stderr, FLFMT "P3 timeout impending for %p %lu ms\n",
 				FL, (void *)d_l3_conn, ms);
 	}
 

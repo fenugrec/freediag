@@ -283,22 +283,15 @@ cmd_rem(UNUSED(int argc), UNUSED(char **argv))
 	return CMD_OK;
 }
 
-struct timeval log_start;
 
 static void
 log_timestamp(const char *prefix)
 {
-	struct timeval tv;
-	long sec, usec;
+	unsigned long tv;
 
-	gettimeofday(&tv, NULL);
-	if (tv.tv_usec < log_start.tv_usec) {
-			tv.tv_usec += 1000*1000;
-		tv.tv_sec--;
-	}
-	sec = tv.tv_sec - log_start.tv_sec;
-	usec = tv.tv_usec - log_start.tv_usec;
-	fprintf(global_logfp, "%s %04ld.%03ld ", prefix, sec, usec / 1000);
+	tv=diag_os_chronoms(0);
+
+	fprintf(global_logfp, "%s %04lu.%03lu ", prefix, tv / 1000, tv % 1000);
 }
 
 static void
@@ -354,7 +347,11 @@ cmd_log(int argc, char **argv)
 	}
 
 	now = time(NULL);
-	gettimeofday(&log_start, NULL);
+	//reset stopwatch:
+	unsigned long t1;
+	t1=diag_os_chronoms(0);
+	(void) diag_os_chronoms(t1);
+//	gettimeofday(&log_start, NULL);
 	fprintf(global_logfp, "%s\n", LOG_FORMAT);
 	log_timestamp("#");
 	fprintf(global_logfp, "logging started at %s",

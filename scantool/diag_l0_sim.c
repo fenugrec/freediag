@@ -323,18 +323,17 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 // sine of the current system time (with a period of one second).
 uint8_t sine1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
 {
-	struct timeval now;
-	(void)gettimeofday(&now, NULL);
-	return (uint8_t) (0xFF * sin(now.tv_usec / 1000000 * 6.283185));
+	unsigned long now=diag_os_getms();
+	//sin() returns a float between -1.0 and 1.0
+	return (uint8_t) (0x7F * sin(now * 6.283185 / 1000));
 }
 
 // Returns a value between 0x00 and 0xFF directly proportional
 // to the value of the current system time (with a period of one second).
 uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
 {
-	struct timeval now;
-	(void)gettimeofday(&now, NULL);
-	return (uint8_t) (0xFF * now.tv_usec / 1000000);
+	unsigned long now=diag_os_getms();
+	return (uint8_t) (0xFF * (now % 1000));
 }
 
 // Parses a response's text to data.

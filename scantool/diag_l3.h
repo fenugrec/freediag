@@ -60,7 +60,9 @@ struct diag_l3_conn
 	struct diag_msg	*msg;
 
 	/* General purpose timer */
-	struct timeval	timer;
+//	struct timeval	timer;
+	//count in ms since an arbitrary reference (from diag_os_getms())
+	unsigned long timer;
 
 	/* Linked list held by main L3 code */
 	struct diag_l3_conn	*next;
@@ -93,7 +95,10 @@ typedef struct diag_l3_proto
 		const size_t bufsize);
 
 	/* Timer */
-	void (*diag_l3_proto_timer)(struct diag_l3_conn *, int ms);
+	//this function, if it exists, is called every time diag_l3_timer()
+	//is called from the periodic callback (in diag_os); the ms argument
+	//is the difference (in ms) between [now] and [diag_l3_conn->timer].
+	void (*diag_l3_proto_timer)(struct diag_l3_conn *, unsigned long ms);
 
 } diag_l3_proto_t;
 

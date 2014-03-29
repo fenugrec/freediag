@@ -448,7 +448,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					tmsg->fmt |= DIAG_FMT_FRAMED ;
 					memcpy(tmsg->data, dp->rxbuf,
 						(size_t)dp->rxoffset);
-					(void)gettimeofday(&tmsg->rxtime, NULL);
+					tmsg->rxtime = diag_os_chronoms(0);
 
 					if (diag_l2_debug & DIAG_DEBUG_READ)
 					{

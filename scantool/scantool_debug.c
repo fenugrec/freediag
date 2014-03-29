@@ -184,11 +184,10 @@ cmd_debug_common( const char *txt, int *val, int argc, char **argv)
 	int r;
 	int i;
 
-	if (argc !=2)
-		return CMD_FAILED;
-
-	r = htoi(argv[1]);
-	*val = r;
+	if (argc ==2) {
+		r = htoi(argv[1]);
+		*val = r;
+	}
 
 	printf("%s debug is 0x%X: ", txt, *val);
 	for (i=0; debugflags[i].mask != NIL; i++) {

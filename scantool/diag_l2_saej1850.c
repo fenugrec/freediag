@@ -297,7 +297,7 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 			return diag_iseterr(DIAG_ERR_BADDATA);
 		}
 
-		(void)gettimeofday(&tmsg->rxtime, NULL);
+		tmsg->rxtime = diag_os_chronoms(0);
 		dp->rxoffset = 0;
 
 		/*

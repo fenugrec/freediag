@@ -29,8 +29,10 @@ configure_file ( diag_config.c.in diag_config.c)
 
 if(WIN32)
 	set (OS_DIAGTTY "diag_tty_win.c")
+	set (OS_DIAGOS "diag_os_win.c")
 else()
 	set (OS_DIAGTTY "diag_tty_unix.c")
+	set (OS_DIAGOS "diag_os_unix.c")
 endif()
 
 if (NISPROG)
@@ -48,7 +50,7 @@ set (LIBDIAG_SRCS diag_l0_me.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c
 		diag_l2_iso9141.c diag_l2_iso9141.c diag_l2_iso14230.c
 	diag_l2_saej1850.c diag_l2_vag.c diag_l2_mb1.c
 	diag_l3.c diag_l3_saej1979.c diag_l3_iso14230.c diag_l3_vag.c
-	diag_os.c diag_general.c diag_dtc.c )
+	${OS_DIAGOS} diag_general.c diag_dtc.c )
 set (LIBDYNO_SRCS dyno.c)
 set (DIAGTEST_SRCS diag_test.c)
 set (SCANTOOL_SRCS scantool.c scantool_cli.c ${ST_DIAG} scantool_set.c
@@ -88,16 +90,19 @@ add_library(libdyno STATIC ${LIBDYNO_SRCS})
 
 if (WIN32)
 	message(WARNING "Not building diag_test.exe on win32 because of alarm()")
-else (WIN32)
+else ()
 	add_executable(diag_test ${DIAGTEST_SRCS})
 	target_link_libraries(diag_test libdiag)
 	install(TARGETS diag_test DESTINATION bin)
-endif(WIN32)
+endif ()
 
 
 # scantool binary
 
 add_executable(scantool  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
+#if required, link with -lrt (see top-level CMakeLists.txt)
+target_link_libraries(scantool ${LIBRT})
+
 
 target_link_libraries(scantool libdiag libdyno)
 install(TARGETS scantool DESTINATION bin)

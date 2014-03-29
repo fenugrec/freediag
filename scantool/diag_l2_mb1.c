@@ -278,7 +278,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	msg = diag_allocmsg((size_t)(rv - 4));
 	msg->data[0] = rxbuf[1];		/* Command */
 	memcpy(&msg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
-	(void)gettimeofday(&msg->rxtime, NULL);
+	msg->rxtime = diag_os_chronoms(0);
 	msg->len = (uint8_t) rv - 4;
 	msg->fmt = DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY;
 
@@ -392,7 +392,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		rmsg = diag_allocmsg((size_t)(rv - 4));
 		rmsg->data[0] = rxbuf[1];		/* Command */
 		memcpy(&rmsg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
-		(void)gettimeofday(&rmsg->rxtime, NULL);
+		rmsg->rxtime = diag_os_chronoms(0);
 		rmsg->len = (uint8_t) rv - 4;
 		rmsg->fmt = DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY;
 	}

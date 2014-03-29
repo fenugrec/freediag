@@ -72,8 +72,14 @@ struct diag_l2_conn
 
 	struct diag_l2_link *diag_link;		/* info about L1 connection */
 
-	struct timeval	diag_l2_lastsend;	/* Time we sent last message */
-	struct timeval	diag_l2_expiry;		/* When it expires */
+						//TODO : remove the following two in next release
+	//struct timeval	diag_l2_lastsend;	/* Time we sent last message */
+	//struct timeval	diag_l2_expiry;		/* When it expires */
+
+	//The following two are updated when diag_l2_send, _recv,
+	//  _request, and _startcomm are called succesfully.
+	unsigned long tlast;		// Time of last received || sent data, in ms.
+	unsigned long tinterval;	// How long before expiry (usually set by startcomms() once)
 
 	const struct diag_l2_proto *l2proto;	/* Protocol handlers */
 
@@ -89,7 +95,7 @@ struct diag_l2_conn
 	uint16_t	diag_l2_p2emin;
 	uint16_t	diag_l2_p2emax; // p2 in extended mode (ISO14230 "rspPending");
 	uint16_t	diag_l2_p3min;
-	uint16_t	diag_l2_p3max; // p3 = gap from response to new request;
+	uint16_t	diag_l2_p3max; // p3 = gap from end of all responses to new request;
 	uint16_t	diag_l2_p4min;
 	uint16_t	diag_l2_p4max; // p4 = byte gap from tester.
 
@@ -385,7 +391,10 @@ struct diag_l2_conn * diag_l2_StartCommunications(struct diag_l0_device *, int L
 int diag_l2_StopCommunications(struct diag_l2_conn *);
 
 int diag_l2_send(struct diag_l2_conn *connection, struct diag_msg *msg);
-void diag_l2_sendstamp(struct diag_l2_conn *d_l2_conn);
+//diag_l2_sendstamp: called from diag_l2_send when a packet is sent.
+//Updates ->expiry and ->lastsend timestamps.
+//XXX disabled. TODO: delete references to diag_l2_sendstamp after release 1.05
+//void diag_l2_sendstamp(struct diag_l2_conn *d_l2_conn);
 
 int diag_l2_recv(struct diag_l2_conn *connection, int timeout,
 	void (* rcv_call_back)(void *, struct diag_msg *), void *handle );
@@ -408,11 +417,15 @@ struct diag_l2_proto {
 	int diag_l2_protocol;
 	int diag_l2_flags;		//see #defines above
 
+	//_StartCommunications: the l2 proto implementation of this should modify
+	//the timing parameters in diag_l2_conn if required; by default (in
+	//diag_l2_startcommunications) iso14230 timings are used.
 	int (*diag_l2_proto_startcomms)(struct diag_l2_conn*,
 		flag_type, unsigned int bitrate, target_type, source_type);
 	int (*diag_l2_proto_stopcomms)(struct diag_l2_conn*);
 	//diag_l2_proto_send : returns 0 if ok
 	int (*diag_l2_proto_send)(struct diag_l2_conn*, struct diag_msg*);
+	//diag_l2_proto_recv: ret 0 if ok
 	int (*diag_l2_proto_recv)(struct diag_l2_conn *d_l2_conn,
 		int timeout, void (*callback)(void *handle, struct diag_msg *msg),
 		void *handle);

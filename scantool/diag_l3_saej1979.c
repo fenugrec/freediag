@@ -425,7 +425,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			}
 			free(data);
 
-			gettimeofday(&msg->rxtime, NULL);
+			msg->rxtime = diag_os_chronoms(0);
 
 			/* Add it to the list */
 			if (d_l3_conn->msg == NULL) {
@@ -762,7 +762,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
  * the L3 structure
  */
 static void
-diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
+diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
 {
 	struct diag_msg msg;
 	uint8_t data[6];
@@ -782,7 +782,7 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, int ms)
 
 	if (diag_l3_debug & DIAG_DEBUG_TIMER) {
 		/* XXX Not async-signal-safe */
-		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %d ms\n",
+		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %lu ms\n",
 				FL, (void *)d_l3_conn, ms);
 	}
 	diag_l2_debug=0;	//disable

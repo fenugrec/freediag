@@ -35,6 +35,10 @@
 
 #include "dyno.h"
 
+#ifdef DYNO_DEBUG
+	#include <math.h>	//for fake_loss_measure_data()
+#endif
+
 
 /* uncomment this to make fake dyno (to test dyno with disconnected EDU) */
 /* #define DYNO_DEBUG 1 */
@@ -145,27 +149,43 @@ static int measure_data(uint8_t data_pid, ecu_data_t *ep)
 
 #ifdef DYNO_DEBUG
 int counter;
-struct timeval tv0; /* measuring time */
+//struct timeval tv0d; /* measuring time */
+unsigned long tv0d;
 
 /* fake loss measures */
 int fake_loss_measure_data()
 {
-  struct timeval tv; /* measuring time */
-  int elapsed; /* elapsed time */
-  int speed;
+	//struct timeval tv; /* measuring time */
+	unsigned long tv;
+	unsigned long elapsed; /* elapsed time */
+	int speed;
 
-  if (counter == 0)
-  {
-    gettimeofday(&tv0, 0);
-  }
+	if (counter == 0)
+	{
+	//gettimeofday(&tv0d, 0);
+	tv0d=diag_os_getms();
+	}
 
-  diag_os_millisleep(250);
+	diag_os_millisleep(250);
 
-  /* get elapsed time */
-  gettimeofday(&tv, 0);
-  elapsed = MILLIS(tv) - MILLIS(tv0);
-  elapsed += 11000;
+	/* get elapsed time */
+	//gettimeofday(&tv, 0);
+	//elapsed = MILLIS(tv) - MILLIS(tv0d);
+	tv=diag_os_getms();
+	elapsed = tv - tv0d;
 
+
+	//I think we're supposed to simulate an exponential decreasing
+	//function ; speed = b * e^(elapsed / a).
+	float a= -62810;
+	float b= 25027;
+
+	return (int) (b * exp(elapsed / a));
+
+
+	elapsed += 11000;
+
+	//XXX This is a most interesting lookup table!!
   if      (elapsed < 11983) speed = 89*10000/36;
   else if (elapsed < 12723) speed = 88*10000/36;
   else if (elapsed < 13473) speed = 87*10000/36;
@@ -232,15 +252,13 @@ int fake_run_measure_data(int data_pid)
   else if (data_pid == SPEED_PID)
     return rpm * (9000*100/6000) / 36;
 }
-#endif /* DYNO_DEBUG */
 
-
-#ifdef DYNO_DEBUG
 #define LOSS_MEASURE_DATA(_pid_, _ep_) fake_loss_measure_data()
 #define RUN_MEASURE_DATA(_pid_, _ep_)  fake_run_measure_data(_pid_)
 #else /* DYNO_DEBUG */
 #define LOSS_MEASURE_DATA(_pid_, _ep_) measure_data(_pid_, _ep_)
 #define RUN_MEASURE_DATA(_pid_, _ep_)  measure_data(_pid_, _ep_)
+
 #endif
 
 
@@ -262,7 +280,7 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
   int speed;              /* measured speed */
   int speed_previous = 0; /* previous speed */
 
-  struct timeval tv0, tv;  /* measuring time */
+  unsigned long tv0, tv;
   int elapsed; /* elapsed time */
 
   int i, length; /* length of printed string */
@@ -287,7 +305,8 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
   /* Reset data */
   dyno_loss_reset(); /* dyno data */
   reset_results();
-  gettimeofday(&tv0, 0); /* initial time */
+  //gettimeofday(&tv0, NULL); /* initial time */
+  tv0=diag_os_getms();
   ep = ecu_info; /* ECU data */
 
   /* exclude 1st measure */
@@ -304,8 +323,10 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
     speed = LOSS_MEASURE_DATA(SPEED_PID, ep); /* m/s * 1000 */
 
     /* get elapsed time */
-    gettimeofday(&tv, 0);
-    elapsed = MILLIS(tv) - MILLIS(tv0);
+    //gettimeofday(&tv, NULL);
+    //elapsed = MILLIS(tv) - MILLIS(tv0);
+    tv=diag_os_getms();
+    elapsed = (int) (tv - tv0);
 
     if (speed < speed_previous)
     {
@@ -336,8 +357,10 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
   }
 
   /* display dyno time */
-  gettimeofday(&tv, 0);
-  elapsed = MILLIS(tv) - MILLIS(tv0);
+  //gettimeofday(&tv, 0);
+  //elapsed = MILLIS(tv) - MILLIS(tv0);
+  tv=diag_os_getms();
+  elapsed= (int) (tv - tv0);
   printf("d=%5.5f, f=%4.2f\n", dyno_loss_get_d(), dyno_loss_get_f());
   printf("Loss determination time : %ds.\n", (elapsed/1000));
 
@@ -404,8 +427,9 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
   int rpm;              /* measured rpm */
   int rpm_previous = 0; /* previous rpm */
 
-  struct timeval tv0, tv;  /* measuring time */
-  int elapsed; /* elapsed time */
+  //struct timeval tv0, tv;  /* measuring time */
+  unsigned long tv0, tv;
+  int elapsed; /* elapsed time (ms) */
 
   int i, length = 0; /* length of printed string */
   int nb = 0; /* number of measures */
@@ -436,7 +460,8 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
   /* Reset data */
   dyno_reset(); /* dyno data */
   reset_results();
-  gettimeofday(&tv0, 0); /* initial time */
+  //gettimeofday(&tv0, 0); /* initial time */
+  tv0=diag_os_getms();
   ep = ecu_info; /* ECU data */
 
   /* Measures */
@@ -460,8 +485,10 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
     }
 
     /* get elapsed time */
-    gettimeofday(&tv, 0);
-    elapsed = MILLIS(tv) - MILLIS(tv0);
+    //gettimeofday(&tv, 0);
+    //elapsed = MILLIS(tv) - MILLIS(tv0);
+    tv=diag_os_getms();
+    elapsed = (int) (tv - tv0);
 
     /* Add measure */
     dyno_add_measure(elapsed, rpm);
@@ -483,8 +510,10 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
   dyno_set_gear(speed, (rpm_previous + rpm) / 2);
 
   /* display dyno time */
-  gettimeofday(&tv, 0);
-  elapsed = MILLIS(tv) - MILLIS(tv0);
+  //gettimeofday(&tv, 0);
+  //elapsed = MILLIS(tv) - MILLIS(tv0);
+  tv=diag_os_getms();
+  elapsed = (int) (tv - tv0);
   printf("Dyno time : %ds.\n", (elapsed/1000));
 
   printf("\n");

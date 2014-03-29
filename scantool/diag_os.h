@@ -38,23 +38,52 @@ extern "C" {
 	typedef int OS_ERRTYPE;
 #endif
 
+#define ALARM_TIMEOUT 300	// ms interval timeout for timer callbacks (keepalive etc)
+
 /* Common prototypes but note that the source
-// is different and defined in OS specific
-// c files.
-*/
-void diag_os_sigalrm(int);
+ * is different and defined in OS specific
+ * c files.
+ */
 int diag_os_init(void);
 int diag_os_close(void);
+
+//diag_os_millisleep: return after (ms) has elapsed.
 int diag_os_millisleep(unsigned int ms);
+
 int diag_os_ipending(void);
+
 //diag_os_calibrate : measure & adjust OS timing performance.
+//Also verifies clock resolution of diag_os_getms()
 void diag_os_calibrate(void);
 
-//returns OS-specific error message or empty string if not found.
+//diag_os_geterr: return OS-specific error message or empty string if not found.
+//This should only be used from OS-specific code ! (diag_os*.c and diag_tty_*.c )
 const char * diag_os_geterr(OS_ERRTYPE os_errno);
 
 /* Scheduler */
 int diag_os_sched(void);
+
+//diag_os_getms: return current "time" in milliseconds. This must
+//use a monotonic (i.e. always increasing) clock source; this
+//means a *lot* of gettimeofday & similar functions are inadequate.
+// This is important because this value is used to
+// calculate time differentials.
+// Time zero can be any reference unrelated to actual
+//wall-clock time (unix EPOCH, system boot time, etc.)
+//This does not need fine resolutions; 15-20ms is good enough.
+unsigned long diag_os_getms(void);
+
+//diag_os_chronoms: used for logging purposes; it doesn't need
+//to be monotonic. if treset !=0, the internal offset is adjusted
+// (offset += treset); all subsequent calls to
+//chronoms will subtract offset before returning. This allows
+//to "reset" it like a stopwatch. Ex.:
+// a = diag_os_chronoms(0)	//get current relative time
+// b = diag_os_chronoms(a) //for this and the next calls, chronoms
+//				//will return elapsed time since chronoms(0) was called.
+//Internally, chronoms must adjust the offset before calculating the
+//return value.
+unsigned long diag_os_chronoms(unsigned long treset);
 
 #if defined(__cplusplus)
 }

@@ -304,7 +304,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				tmsg = diag_allocmsg((size_t)dp->rxoffset);
 				tmsg->len = (uint8_t) dp->rxoffset;
 				memcpy(tmsg->data, dp->rxbuf, (size_t)dp->rxoffset);
-				(void)gettimeofday(&tmsg->rxtime, NULL);
+				tmsg->rxtime = diag_os_chronoms(0);
 				dp->rxoffset = 0;
 				/*
 				 * ADD message to list
@@ -785,7 +785,7 @@ diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
 		free(rxmsg);
 	} else {
 		//no message received...
-		debugstr="ECU did not respond to request (err=";
+		debugstr="ECU did not respond to request, connection will timeout in 5s. (err=";
 	}
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE) {

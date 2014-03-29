@@ -298,7 +298,10 @@ diag_l2_proto_vag_send_byte(struct diag_l2_conn *d_l2_conn, databyte_type databy
 	if (rv < 0)
 		return rv;
 
-	diag_l2_sendstamp(d_l2_conn); /* update the last sent timer */
+//XXX	diag_l2_sendstamp(d_l2_conn); /* update the last sent timer */
+//since this function (_send_byte) should only be used internally;
+//and nobody is supposed to use diag_l2_vag by itself (always go through
+//the diag_l2 public interface; this shouldn't be required.
 
 	/* Receive the ack */
 

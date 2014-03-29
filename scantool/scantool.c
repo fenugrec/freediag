@@ -151,8 +151,8 @@ static void
 print_msg_header(FILE *fp, struct diag_msg *msg, int timestamp, int i)
 {
 	if (timestamp)
-		fprintf(fp, "%ld.%04ld: ",
-			(long)msg->rxtime.tv_sec, (long)msg->rxtime.tv_usec/100);
+		fprintf(fp, "%lu.%03lu: ",
+			msg->rxtime / 1000, msg->rxtime % 1000);
 	fprintf(fp, "msg %02d src 0x%lx dest 0x%lx ", i, (long)msg->src, (long)msg->dest);
 	fprintf(fp, "msg %02d: ", i);
 }
@@ -448,7 +448,7 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 	int i, j;
 
 	for ( tmsg = msg , i = 0; tmsg; tmsg=tmsg->next, i++ ) {
-		fprintf(stderr, "%ld.%04ld: ", (long)tmsg->rxtime.tv_sec, (long)tmsg->rxtime.tv_usec/100);
+		fprintf(stderr, "%lu.%03lu: ", tmsg->rxtime / 1000, tmsg->rxtime % 1000);
 		fprintf(stderr, "msg %02d src 0x%X dest 0x%X ", i, msg->src, msg->dest);
 		fprintf(stderr, "msg %02d: ", i);
 

@@ -210,14 +210,19 @@ static int diag_l2_rmconn(struct diag_l2_conn *d)
  * This parses through the diag_l2_connections linked-list and
  * calls the  ->diag_l2_proto_timeout function for every dl2conn
  * that has expired.
+ *
+ * In order for this to work well, all L2
  */
 void
 diag_l2_timer(void)
 {
 	struct diag_l2_conn	*d_l2_conn;
-	struct timeval now;
+	//struct timeval now;
 
-	(void)gettimeofday(&now, NULL);	/* XXX Not async safe */
+	//(void)gettimeofday(&now, NULL);	/* XXX Not async safe */
+	unsigned long now;
+	now=diag_os_getms();
+
 
 	for (d_l2_conn = diag_l2_connections;
 		d_l2_conn; d_l2_conn = d_l2_conn -> next)
@@ -235,8 +240,11 @@ diag_l2_timer(void)
 			continue;
 		}
 
-		/* Check the send timers vs the p3max timer */
-		expired = timercmp(&now, &d_l2_conn->diag_l2_expiry, >);
+		/* Check the send timers vs requested expiry time */
+		//expired = timercmp(&now, &d_l2_conn->diag_l2_expiry, >);
+		//we're subtracting unsigned values but since the clock is
+		//monotonic, the difference will always be >= 0
+		expired = ((now - d_l2_conn->tlast) > d_l2_conn->tinterval)? 1:0 ;
 
 		/* If expired, call the timeout routine */
 		if (expired && d_l2_conn->l2proto->diag_l2_proto_timeout)
@@ -568,6 +576,8 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	d_l2_conn->diag_l2_p4min = ISO_14230_TIM_MIN_P4;
 	d_l2_conn->diag_l2_p4max = ISO_14230_TIM_MAX_P4;
 
+	d_l2_conn->tinterval = (ISO_14230_TIM_MAX_P3 * 2/3);	//default keepalive interval.
+
 	d_l2_conn -> diag_l2_state = DIAG_L2_STATE_CLOSED;
 
 	/* Now do protocol version of StartCommunications */
@@ -656,15 +666,19 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 
 /*
  * Get the time of the last send time, and calculate expiration.
+ * Uses 2/3 * P3max to calculate the next expiry; this is ok for iso9141
+ * and 14230.
  */
-
-void
-diag_l2_sendstamp(struct diag_l2_conn *d_l2_conn) {
+// XXX this is replaced by the more portable mechanism
+// of diag_l2_conn->tlast, ->tinterval and diag_os_getms() !
+#if 0
+void diag_l2_sendstamp(struct diag_l2_conn *d_l2_conn) {
 
 	/*
 	 * Get the current time.
 	 */
-	(void) gettimeofday(&d_l2_conn->diag_l2_lastsend, NULL);
+
+//	(void) gettimeofday(&d_l2_conn->diag_l2_lastsend, NULL);
 
 	/*
 	 * Calculate the expiration time, we use 2/3 of P3max
@@ -681,10 +695,15 @@ diag_l2_sendstamp(struct diag_l2_conn *d_l2_conn) {
 		d_l2_conn->diag_l2_expiry.tv_sec ++;
 		d_l2_conn->diag_l2_expiry.tv_usec -= 1000000;
 	}
+	return;
 }
+#endif
+
 
 /*
  * Send a message. This is synchronous.
+ * calls the appropriate l2_proto_send()
+ * and updates the timestamps
  */
 int
 diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
@@ -696,10 +715,16 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 			FLFMT "diag_l2_send %p msg %p msglen %d called\n",
 				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
-	diag_l2_sendstamp(d_l2_conn);	/* Save timestamps */
+//	diag_l2_sendstamp(d_l2_conn);	/* Save timestamps */
 
 	/* Call protocol specific send routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_send(d_l2_conn, msg);
+
+	if (rv==0) {
+		//update timestamp
+		d_l2_conn->tlast = diag_os_getms();
+	}
+
 
 	return rv? diag_iseterr(rv):0 ;
 }
@@ -722,9 +747,13 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 	/* Call protocol specific send routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_request(d_l2_conn, msg, errval);
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
+	if (rv==0) {
+		//update timers if successful
+		d_l2_conn->tlast = diag_os_getms();
+	} else if (diag_l2_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "diag_l2_request returns %p, err %d\n",
 				FL, (void *)rv, *errval);
+	}
 
 	return rv;
 }
@@ -735,7 +764,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
  * or an error if an error has occurred
  *
  * At the moment this sleeps and the callback will happen before the recv()
- * returns - this is not the intention
+ * returns - this is not the intention XXX we need to clarify this
  *
  * Timeout is in ms
  */
@@ -753,8 +782,13 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	/* Call protocol specific recv routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_recv(d_l2_conn, timeout, callback, handle);
 
-	if (diag_l2_debug & DIAG_DEBUG_READ)
+	if (rv==0) {
+		//update timers if success
+		d_l2_conn->tlast = diag_os_getms();
+	} else if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "diag_l2_recv returns %d\n", FL, rv);
+	}
+
 	return rv;
 }
 

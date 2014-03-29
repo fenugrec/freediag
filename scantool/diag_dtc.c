@@ -52,15 +52,9 @@ void diag_dtc_init(void)
  * returns pointer to *buf, which may be useful to printf or fprintf...
  */
 
-//TODO : unify the args for diag_dtc_decode,
-//i.e. enum vs typedef (diag_dtc.h)
 char * diag_dtc_decode(uint8_t *data, int len,
 	UNUSED(const char *vehicle), UNUSED(const char *ecu),
-#ifdef WIN32
-	diag_dtc_protocol protocol,
-#else
 	enum diag_dtc_protocol protocol,
-#endif
 	char *buf, const size_t bufsize)
 {
 	char area;

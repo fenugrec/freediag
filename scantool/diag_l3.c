@@ -125,7 +125,8 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 			/*
 			 * Set time to now
 			 */
-			(void)gettimeofday(&d_l3_conn->timer, NULL);
+			d_l3_conn->timer=diag_os_getms();
+			//(void)gettimeofday(&d_l3_conn->timer, NULL);
 			/*
 			 * And add to list
 			 */
@@ -184,8 +185,11 @@ int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	int rv;
 	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
 
-	(void)gettimeofday(&d_l3_conn->timer, NULL);
+	//(void)gettimeofday(&d_l3_conn->timer, NULL);
 	rv = dp->diag_l3_proto_send(d_l3_conn, msg);
+
+	if (!rv)
+		d_l3_conn->timer=diag_os_getms();
 
 	return rv;
 }
@@ -243,9 +247,11 @@ void diag_l3_timer(void)
 	 * Call protocol specific timer
 	 */
 	struct diag_l3_conn *conn;
-	struct timeval now;
+//	struct timeval now;
+	unsigned long now=diag_os_getms();
 
-	(void)gettimeofday(&now, NULL);	/* XXX NOT ASYNC SIGNAL SAFE */
+//	(void)gettimeofday(&now, NULL);	/* XXX NOT ASYNC SIGNAL SAFE */
+
 
 	for (conn = diag_l3_list ; conn ; conn = conn->next )
 	{
@@ -253,13 +259,15 @@ void diag_l3_timer(void)
 		const diag_l3_proto_t *dp = conn->d_l3_proto;
 
 		if (dp->diag_l3_proto_timer) {
-			struct timeval diff;
-			int ms;
+			//struct timeval diff;
+			//int ms;
+			unsigned long diffms;
 
-			timersub(&now, &conn->timer, &diff);
-			ms = diff.tv_sec * 1000 + diff.tv_usec / 1000;
+			//timersub(&now, &conn->timer, &diff);
+			//ms = diff.tv_sec * 1000 + diff.tv_usec / 1000;
+			diffms = now - conn->timer;
 
-			(void)dp->diag_l3_proto_timer(conn, ms);
+			(void)dp->diag_l3_proto_timer(conn, diffms);
 		}
 	}
 }
