@@ -1,4 +1,6 @@
 #Process this with autoconf for magic.
+#Note: this is going to fall more and more behind the cmake-based build system.
+
 
 AC_PREREQ(2.62)		#But would probably work with earlier versions
 AC_INIT(freediag, 1.03, freediag-discuss@lists.sourceforge.net,,freediag.sourceforge.net)
@@ -18,6 +20,9 @@ AC_PROG_RANLIB
 
 AC_CHECK_LIB(m,sin)
 AC_CHECK_LIB(ncurses,tparm,,AC_CHECK_LIB(termcap,tgetent))
+#clock_gettime is supposedly not in librt for glibc >= 2.17 ?
+#
+AC_CHECK_LIB(rt,clock_gettime)
 
 
 # Checks for header files.

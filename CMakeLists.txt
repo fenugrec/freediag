@@ -21,7 +21,7 @@ if ( NOT(${CMAKE_INSTALL_PREFIX} STREQUAL ${TEMP_INSTPREFIX}))
 	#placed after project().
 endif ()
 
-#include (CheckLibraryExists) #maybe not needed just yet ,we can use "find_library" ?
+include (CheckLibraryExists)
 include (CheckFunctionExists)
 include (CheckTypeSize)
 
@@ -90,6 +90,25 @@ else()
 	#no need to check for these on WIN32 as the offending code (diag_os and diag_tty) was re-written
 	check_function_exists (alarm HAVE_ALARM)
 	check_function_exists (select HAVE_SELECT)
+	
+	#diag_os needs clock_gettime if _POSIX_TIMERS is defined.
+	#for clock_gettime, we need to link with -lrt if glibc < 2.17. What a mess.
+	set (CMAKE_REQUIRED_INCLUDE_FILES time.h)
+	check_function_exists (clock_gettime HAVE_CLOCK_GETTIME)
+	if (HAVE_CLOCK_GETTIME)
+		# all set, nothing to do. So glibc is recent enough
+		message (STATUS "Using glibc clock_gettime().")
+	else ()
+		#else, we try finding clock_gettime in librt
+		check_library_exists (rt clock_gettime time.h HAVE_LIBRT)
+		if (HAVE_LIBRT)
+			#set extra linker flag
+			set (LIBRT rt)
+		else ()
+			message(FATAL_ERROR "librt not found !")
+		endif ()
+		message (STATUS "Using clock_gettime() from librt.")
+	endif ()
 endif()
 
 

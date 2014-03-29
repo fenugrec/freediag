@@ -40,6 +40,13 @@ struct diag_l2_link : these are alloc'ed + filled by diag_l2_open; diag_l2_links
  diag_l2{.c, .h}.
  Note : despite the name, diag_l2_link says nothing about the L2 protocol used.
  See struct diag_l2_conn
+ 
+struct diag_l2_conn : these are alloc'ed + filled by diag_l2_startcommunications() only !
+ and they are free'd in diag_l2_stopcommunications. This is a complex structure defined in
+ diag_l2.h; it specifies a diag_l2_link, an l2 protocol handler and a lot of flags & settings.
+ A diag_l2_conn is required to call the "public" l2 functions (_send, _request, _ioctl, etc.)
+ The existence of a diag_l2_conn indicates connection to an ECU has been established
+ (or a monitoring / "sniffing" connection has been established).
 
 diag_l2_close : this is called from cmd_diag_disconnect to close the global_l2_dl0d XXX
 
@@ -101,10 +108,10 @@ L3 : there's also a linked-list for l3 connections : diag_l3_list;
 
 **** diag_l2_timer() & diag_l3_timer(), callbacks
 To handle keepalive messages of the various protocols, freediag sets up an OS-specific
-periodic callback function (see diag_os.c). This calls diag_l2_timer() and diag_l3_timer();
+periodic callback function (see diag_os_*.c). This calls diag_l2_timer() and diag_l3_timer();
 these functions parse through the active connections and call the _timeout() functions
-as required. The callback function is called at a much higher frequency than typical
-keep-alive message requirements (i.e. callback interval=50ms on win32, but iso14230
+as required. The callback function is called at a higher frequency than typical
+keep-alive message requirements (i.e. callback interval=300ms; iso14230
 needs a TesterPresent request every 5000ms).
 
 **** diag_l2_recv callbacks
@@ -128,6 +135,8 @@ A possible solution would be to create a diag_os_lock() function that uses OS-sp
 locking mechanisms (mutex, etc), and can be used to make the low-level functions
 re-entrant. 
 
-**** global elements that should have async safeness :
-(incomplete list)
-debug flags; 
+**** elements that should have async safeness :
+(very incomplete list)
+debug flags;
+diag_os_getms()
+diag_os_millisleep()
