@@ -14,8 +14,8 @@ as well.
 ***
 Physical interfaces (i.e. ELM323, dumb adaptor, etc) are connected to a serial port (usually called
 "subinterface" in the code). Only one L0 driver can use a given "subinterface", ex.: /dev/ttyUSB0
-is owned exclusively diag_l0_elm, etc.
-This association is a "struct diag_l0_device", often "dl0d" in the code.
+is used exclusively diag_l0_elm, etc.
+This association is described in a "struct diag_l0_device", often named "dl0d" in the code.
 
 struct diag_l0_device : as of 1.01, this contains general and OS-specific fields, and is defined
 in the relevant diag_tty_???.h header. diag_tty_open allocs and fills a diag_l0_device
@@ -29,6 +29,7 @@ its name; supported L1 protos, and pointers to "exposed" functions (diag_l0_init
 Those diag_l0 structs are added to the linked list l0dev_list by diag_l0_config.
 
 struct diag_l2_proto : every diag_l2_???.c handler fills in one of these to describe itself. 
+XXX linked-list
 
 struct diag_l2_link : these are alloc'ed + filled by diag_l2_open; diag_l2_links is a linked-list
  of all the active l2 links. An l2 link associates a diag_l0_device with one L1 protocol. This

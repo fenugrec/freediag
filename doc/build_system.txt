@@ -34,6 +34,11 @@ To compile freediag on win32, the general process is as such (rename directories
 	 be "cmake -L", or browsing the cached variable list from cmake-gui.
 	-compile according to your selected toolchain. I run mingw32-make from the builddir and off it goes.
 
+If generating makefiles, there are a few special targets added by CMake :
+	- make edit_cache		// open cmake-gui cache editor if applicable
+	- make package		// generate a binary package
+	- make package_source	// generate source tar.gz
+
 It's my hope that I can find a way to include pre-generated Makefiles and IDE-specific project files (for
 MSVS and Codeblocks for instance) along with freediag source packages, so most users will not need to install CMake.
 Please contact me if you have suggestions on how to accomplish this.

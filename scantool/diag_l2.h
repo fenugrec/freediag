@@ -432,6 +432,8 @@ struct diag_l2_proto {
 	//diag_l2_proto_request :
 	struct diag_msg * (*diag_l2_proto_request)(struct diag_l2_conn*,
 		struct diag_msg*, int*);
+	//diag_l2_proto_timeout : this is called periodically (interval
+	//defined in struct diag_l2_conn, usually to send keepalive messages.
 	void (*diag_l2_proto_timeout)(struct diag_l2_conn*);
 };
 

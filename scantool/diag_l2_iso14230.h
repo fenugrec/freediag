@@ -29,6 +29,35 @@
  *
  */
 
+/*
+ * ISO 14230 specific data
+ */
+struct diag_l2_14230
+{
+	uint8_t type;		/* FAST/SLOW/CARB */
+
+	uint8_t srcaddr;	/* Src address used */
+	uint8_t dstaddr;	/* Dest address used (for connect) */
+	uint16_t modeflags;	/* Flags; see diag_l2.h */
+
+	uint8_t state;
+
+	uint8_t first_frame;	/* First frame flag, used mainly for
+					monitor mode when we need to find
+					out whether we see a CARB or normal
+					init */
+
+	uint8_t rxbuf[MAXRBUF];	/* Receive buffer, for building message in */
+	int rxoffset;		/* Offset to write into buffer */
+};
+
+#define STATE_CLOSED	  0	/* Established comms */
+#define STATE_CONNECTING  1	/* Connecting */
+#define STATE_ESTABLISHED 2	/* Established */
+
+
+
+
 #if defined(__cplusplus)
 extern "C" {
 #endif

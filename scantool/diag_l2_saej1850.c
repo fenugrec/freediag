@@ -113,9 +113,9 @@ target_type target, source_type source)
 static int
 diag_l2_proto_j1850_stopcomms(struct diag_l2_conn* d_l2_conn)
 {
-	struct diag_l2_14230 *dp;
+	struct diag_l2_j1850 *dp;
 
-	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
+	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
 
 	if (dp)
 		free(dp);

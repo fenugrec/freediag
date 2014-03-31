@@ -42,33 +42,6 @@ CVSID("$Id$");
 
 
 /*
- * ISO 14230 specific data
- */
-struct diag_l2_14230
-{
-	uint8_t type;		/* FAST/SLOW/CARB */
-
-	uint8_t srcaddr;	/* Src address used */
-	uint8_t dstaddr;	/* Dest address used (for connect) */
-	uint16_t modeflags;	/* Flags */
-
-	uint8_t state;
-
-	uint8_t first_frame;	/* First frame flag, used mainly for
-					monitor mode when we need to find
-					out whether we see a CARB or normal
-					init */
-
-	uint8_t rxbuf[MAXRBUF];	/* Receive buffer, for building message in */
-	int rxoffset;		/* Offset to write into buffer */
-};
-
-#define STATE_CLOSED	  0	/* Established comms */
-#define STATE_CONNECTING  1	/* Connecting */
-#define STATE_ESTABLISHED 2	/* Established */
-
-
-/*
  * Useful internal routines
  */
 
@@ -439,11 +412,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				if (calc_sum != tmsg->data[tmsg->len -1]) {
 					fprintf(stderr, FLFMT "Bad checksum: needed %02X,got%02X. Data:",
 						FL, calc_sum, tmsg->data[tmsg->len -1]);
-					//TODO: if we get failed checksum, generate an error or
-					//find a way to signal the error to upper levels.
-					//We could discard the message, but that seems a bit drastic
-					//perhaps the best would be to add a "data_integrity" flag
-					//do the diag_msg structs ?
+					tmsg->iflags |= DIAG_MSG_BADCS;
 					diag_data_dump(stderr, tmsg->data, tmsg->len -1);
 					fprintf(stderr, "\n");
 				}
@@ -452,6 +421,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 			}
 			tmsg->fmt |= DIAG_FMT_CKSUMMED;	//checksum was verified
+			tmsg->iflags &= ~DIAG_MSG_BADCS;	//clear "bad checksum" flag
 
 			tmsg->src = source;
 			tmsg->dest = dest;
@@ -1005,10 +975,12 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 				 * So do a send again (if retries>0)
 				 */
 
-				if (retries > 0)
+				if (retries > 0) {
 					rv = diag_l2_send(d_l2_conn, msg);
-				else
+				} else {
 					rv=DIAG_ERR_GENERAL;
+					fprintf(stderr, FLFMT "got too many BusyRepeatRequest responses!\n", FL);
+				}
 
 				retries--;
 

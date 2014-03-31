@@ -1279,7 +1279,7 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset)
 		 */
 		fprintf(stderr, "Exploring Mode 0x%02X supported PIDs (block 0x%02X)...\n", mode, pid);
 		rv = l3_do_j1979_rqst(d_conn, mode, (uint8_t) pid, 0x00,
-			0x00, 0x00, 0x00, 0x00, (void *)0);
+			0x00, 0x00, 0x00, 0x00, NULL);
 		if (rv != 0) {
 			/* No response */
 			break;

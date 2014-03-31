@@ -199,6 +199,7 @@ struct diag_msg
 							 * of the initial *data pointer.*/
 	uint8_t	iflags;		/* Internal flags */
 	#define	DIAG_MSG_IFLAG_MALLOC	1	/* We malloced; we Free */
+	#define DIAG_MSG_BADCS	2		// message has bad checksum
 };
 
 struct diag_msg	*diag_allocmsg(size_t datalen);	/* Alloc a new message */

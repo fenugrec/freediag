@@ -103,7 +103,7 @@ diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
 #define DIAG_L2_STATE_CLOSED		0	/* Not in use (but not free for anyones use !!) */
 #define DIAG_L2_STATE_SENTCONREQ	1	/* Sent connection request (waiting for response/reject) */
 #define DIAG_L2_STATE_OPEN		2	/* Up and running */
-#define DIAG_L2_STATE_CLOSING		3	/* sending close request (possibly), waiting for response/timeout */
+#define DIAG_L2_STATE_CLOSING		4	/* sending close request (possibly), waiting for response/timeout */
 	//STATE_CLOSING will prevent L2 keepalive messages from being sent
 
 
@@ -222,7 +222,6 @@ diag_l2_timer(void)
 	//(void)gettimeofday(&now, NULL);	/* XXX Not async safe */
 	unsigned long now;
 	now=diag_os_getms();
-
 
 	for (d_l2_conn = diag_l2_connections;
 		d_l2_conn; d_l2_conn = d_l2_conn -> next)
@@ -741,7 +740,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
-			FLFMT "diag_l2_msg dl2c=%p msg=%p called\n",
+			FLFMT "_request dl2c=%p msg=%p called\n",
 				FL, (void *)d_l2_conn, (void *)msg);
 
 	/* Call protocol specific send routine */
@@ -751,7 +750,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 		//update timers if successful
 		d_l2_conn->tlast = diag_os_getms();
 	} else if (diag_l2_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "diag_l2_request returns %p, err %d\n",
+		fprintf(stderr, FLFMT "_request returns %p, err %d\n",
 				FL, (void *)rv, *errval);
 	}
 
