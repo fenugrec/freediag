@@ -1034,16 +1034,24 @@ int htoi(char *buf)
 	/* Hex text to int */
 	int rv = 0;
 	int base = 10;
+	int sign=1;	//1 = positive; 0 =neg
 
-	if (buf[0] == '$') {
+	if (*buf == '-') {
+		//change sign
+		sign=0;
+		buf++;
+	}
+
+	if (*buf == '$') {
 		base = 16;
 		buf++;
-	} else if (buf[0] == '0') {
-		base = 8;
+	} else if (*buf == '0') {
 		buf++;
-		if (tolower(buf[0]) == 'x') {
+		if (tolower(*buf) == 'x') {
 			base = 16;
 			buf++;
+		} else {
+			base = 8;
 		}
 	}
 
@@ -1065,7 +1073,7 @@ int htoi(char *buf)
 
 		buf++;
 	}
-	return rv;
+	return sign? rv:-rv ;
 }
 
 /*
