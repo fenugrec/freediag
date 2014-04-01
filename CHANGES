@@ -7,6 +7,56 @@ He also took the liberty of modifying the version number format to MAJOR.MINOR, 
 written with 2 digits ( %02d if you will), and occasionally suffixed by a lower-case letter indicating
 a snapshot of the CVS source tree.
 
+*** Release 1.04 ; 2014-04-02
+From the release notes:
+This release fixes some minor issues and increases usability of the command-line tool.
+
+New in 1.04:
+diag_l0_dumb: added DIAG_L1_BLOCKDUPLEX flag to accelerate P4==0 half-duplex removal
+scantool_debug: added l0test #7 and 8 for half duplex removal
+Split diag_os.c into diag_os_unix and diag_os_win.c
+
+
+Fixes: (summary of CVS commits)
+
+Minor fix to scantool_cli.c htoi() with negative values
+Added "bad checksum" flag to struct diag_msg.iflags
+Changed L2 & L3 timer expiry mechanism (in struct diag_l2_conn, diag_l3_conn)
+Replaced gettimeofday() by diag_os_getms() where monotonicity is needed (bug #14)
+Added diag_os_chronoms() as a general purpose resettable stopwatch (mostly for logging)
+Replaced gettimeofday() by diag_os_chronoms() for logging purposes  (bug #14)
+CMake + autotools : added check for librt if required
+diag_l0_sim.c : corrected sin() conversion to 8bit
+diag_l2_timer: skip keepalive messages for connections marked as _CLOSING
+diag_l2_iso14230: implemented StopCommunication request in _stopcomms()
+scantool_debug.c: added text description of debug flags
+Fixed diag_l0_sim not closing properly
+
+
+*** Release 1.03 ; 2014-03-26
+From the release notes:
+
+New in 1.03:
+-Major fixes in L0 code (introduced in previous overzealous clean-ups)
+-iso14230 : l2_14230_startcomm: added decoding of the keybytes to use proper header format
+-l2_14230_int_recv : added checksum verif
+-added more tests to l0test command
+-win: added diag_os_calibrate()
+-win: added diag_os_millisleep auto-adjustment
+
+
+Fixes: (summary of CVS commits)
+
+-l0_recv *: do not diag_iseterr if diag_err_timeout (fixed regression)
+-cmd_disconnect closes things properly now (bug #19)
+-l2_14230 and l3_j1979 timeout callback : disable debug messages while sending keepalive
+-Added L2 ioctl DIAG_IOCTL_IFLUSH to call diag_tty_iflush (bug #18)
+-Improved disconnect + connection closing in diag_l2.c
+-Fixed incomplete disconnect in diag_l2_stopcommunications()
+-diag_tty_win.c : CreateFile with no buffering; always flushfilebuffers in _write()
+-bug #17: removed debugging fprintf()s in critical sections
+
+
 *** Release 1.02 2014-03-23
 From the release notes:
 Many fixes to win32 code.
