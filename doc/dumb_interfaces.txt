@@ -42,6 +42,8 @@ use "set dumbopts [opts]" where [opts] is the addition of the desired flags:
  16: LLINE_INV : Invert polarity of the L line. Use only if you set USE_LLINE, CLEAR_DTR and SET_RTS;
  32: FAST_BREAK : use alternate iso14230 fastinit code. Instead of setting diag_tty_break for
 	25ms then waiting 25ms, this will send 0x00 at 360bps (==25ms) and wait a total of 50ms.
+ 64: BLOCKDUPLEX : use message-based half duplex removal (if P4==0).
+
  ex. : "dumbopts 9" will set MAN_BREAK and USE_LLINE.
 Note : these options are ignored on any non-DUMB interfaces.
 

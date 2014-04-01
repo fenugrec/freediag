@@ -61,7 +61,9 @@ static unsigned int dumb_flags=0;
 #define MAN_BREAK 0x08		//force bitbanged breaks for inits; enabled by default
 #define LLINE_INV 0x10		//invert polarity of the L line if set. see doc/dumb_interfaces.txt
 #define FAST_BREAK 0x20		//do we use diag_tty_fastbreak for iso14230-style fast init.
-#define DUMBDEFAULTS 0x40	//this is checked first in l0_dumb_open and indicates we should reset dumb_flags.
+#define BLOCKDUPLEX 0x40	//This allows half duplex removal on a whole message if P4==0 (see diag_l1_send())
+#define DUMBDEFAULTS 0x80	//this is checked first in l0_dumb_open and indicates we should reset dumb_flags.
+
 
 
 static const struct diag_l0 diag_l0_dumb;
@@ -658,10 +660,12 @@ const struct diag_serial_settings *pset)
 void diag_l0_dumb_setopts(unsigned int newflags)
 {
 
-	if (newflags & DUMBDEFAULTS)
-		dumb_flags = DUMBDEFAULTS & MAN_BREAK;
-	else
+	if (newflags & DUMBDEFAULTS) {
+		printf("Setting default dumb options.\n");
+		dumb_flags = DUMBDEFAULTS | MAN_BREAK;
+	} else {
 		dumb_flags = newflags;
+	}
 }
 unsigned int diag_l0_dumb_getopts(void) {
 	return dumb_flags & ~DUMBDEFAULTS;	//don't show our internal defaults flag.
@@ -676,9 +680,12 @@ diag_l0_dumb_getflags(struct diag_l0_device *dl0d)
 
 	dev = (struct diag_l0_dumb_device *)diag_l0_dl0_handle(dl0d);
 
+	if (dumb_flags & BLOCKDUPLEX)
+		flags |= DIAG_L1_BLOCKDUPLEX;
+
 	switch (dev->protocol) {
 	case DIAG_L1_ISO14230:
-		flags = DIAG_L1_FAST | DIAG_L1_PREFFAST;
+		flags |= DIAG_L1_FAST | DIAG_L1_PREFFAST;
 		//fall through to next:
 	case DIAG_L1_ISO9141:
 		flags |= DIAG_L1_SLOW | DIAG_L1_HALFDUPLEX;

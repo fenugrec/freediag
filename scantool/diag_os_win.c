@@ -239,43 +239,6 @@ diag_os_sched(void)
 }	//of diag_os_sched
 
 
-#ifndef HAVE_GETTIMEOFDAY	//like on win32
-//#define DELTA_EPOCH_IN_MICROSECS  11644473600000000 // =  0x48864000, not compiler-friendly
-#define DELTA_EPOCH_H 0x4886	//so we'll cheat
-#define DELTA_EPOCH_L 0x4000
-int gettimeofday(struct timeval *tv, UNUSED(struct timezone *tz)) {
-	FILETIME ft;
-	LARGE_INTEGER longtime;
-	const LONGLONG delta_epoch=((LONGLONG) DELTA_EPOCH_H <<32) + DELTA_EPOCH_L;
-
-	if (NULL != tv) {
-		GetSystemTimeAsFileTime(&ft);	//getnb of 100ns intvals since 1601-01-01
-		longtime.HighPart=ft.dwHighDateTime;
-		longtime.LowPart=ft.dwLowDateTime;	//load 64bit val
-
-		longtime.QuadPart /=10;	// convert to 1E-6s; use 64bit member of union
-
-		longtime.QuadPart -= delta_epoch; 	//convert to unix timeframe
-		//maybe useless for freediag's purpose, but it's there in any case.
-		tv->tv_sec = (long)(longtime.QuadPart / 1000000);
-		tv->tv_usec = (long)(longtime.QuadPart % 1000000);
-	}
-	return 0;
-}
-#endif	//HAVE_GETTIMEOFDAY
-
-#ifndef HAVE_TIMERSUB	//like on win32
-void timersub(struct timeval *a, struct timeval *b, struct timeval *res) {
-	//compute res=a-b
-	LONGLONG atime=1000000 * (a->tv_sec) + a->tv_usec;	//combine high+low
-	LONGLONG btime=1000000 * (b->tv_sec) + b->tv_usec;
-	LONGLONG restime=atime-btime;
-	res->tv_sec= restime/1000000;
-	res->tv_usec= restime % 1000000;
-	return;
-}
-#endif //HAVE_TIMERSUB
-
 
 //diag_os_geterr : get OS-specific error string.
 //Either gets the last error if os_errno==0, or print the

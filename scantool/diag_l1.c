@@ -214,6 +214,10 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 	int rv = DIAG_ERR_GENERAL;
 	int l0flags;
 	const struct diag_l0 *dl0 = diag_l0_device_dl0(dl0d);
+	uint8_t duplexbuf[MAXRBUF];
+
+	if (len > MAXRBUF)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	/*
 	 * If p4 is zero and not in half duplex mode, or if
@@ -229,12 +233,26 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 
 
 	if (   ((p4 == 0) && ((l0flags & DIAG_L1_HALFDUPLEX) == 0)) ||
-		(l0flags & DIAG_L1_DOESL2FRAME) || (l0flags & DIAG_L1_DOESP4WAIT) ) {
+		(l0flags & DIAG_L1_DOESL2FRAME) || (l0flags & DIAG_L1_DOESP4WAIT) ||
+		((p4==0) && (l0flags & DIAG_L1_BLOCKDUPLEX)) ) {
 		/*
-		 * Send the lot if we don't need to delay, or collect
-		 * the echos
+		 * Send the lot
 		 */
 		rv = (dl0->diag_l0_send)(dl0d, subinterface, data, len);
+		//optionally remove echos
+		if ((l0flags & DIAG_L1_BLOCKDUPLEX) && (rv==0)) {
+			//try to read the same number of sent bytes; timeout=300ms + 1ms/byte
+			//This is plenty OK for typical 10.4kbps but should be changed
+			//if ever slow speeds are used.
+			if (diag_l1_saferead(dl0d, duplexbuf, len, 300+len) != (int) len) {
+				rv=DIAG_ERR_GENERAL;
+			}
+			//compare to sent bytes
+			if ( memcmp(duplexbuf, data, len) !=0) {
+				fprintf(stderr,FLFMT "Bus Error: bad half duplex echo!\n", FL);
+				rv=DIAG_ERR_BUSERROR;
+			}
+		}
 	} else {
 		const uint8_t *dp = (const uint8_t *)data;
 

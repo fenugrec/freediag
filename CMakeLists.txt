@@ -26,7 +26,7 @@ include (CheckFunctionExists)
 include (CheckTypeSize)
 
 set (PKGVERSIONMAJOR "1")
-set (PKGVERSIONMINOR "03")
+set (PKGVERSIONMINOR "04")
 set (PKGVERSION "${PKGVERSIONMAJOR}.${PKGVERSIONMINOR}")
 set (SCANTOOL_PROGNAME "scantool")
 #that sets the command-line tool prompt.

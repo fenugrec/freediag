@@ -1027,6 +1027,7 @@ enter_cli(const char *name)
 
 /*
  * Decimal/Octal/Hex to integer routine
+ * Returns 0 if unable to decode.
  */
 int htoi(char *buf)
 {
@@ -1055,7 +1056,7 @@ int htoi(char *buf)
 		} else if ((upp >= 'A') && (upp <= 'F')) {
 			val = (upp - 'A' + 10);
 		} else {
-			return -1;
+			return 0;
 		}
 		if (val >= base)	/* Value too big for this base */
 			return 0;

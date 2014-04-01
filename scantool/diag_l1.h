@@ -101,6 +101,11 @@ extern "C" {
 //from calling diag_tty_*
 #define DIAG_L1_NOTTY	0x800
 
+//BLOCKDUPLEX
+//This tells diag_l1_send() to do half-duplex removal on the whole
+//block instead of byte per byte ( if P4=0 ; no interbyte spacing)
+#define DIAG_L1_BLOCKDUPLEX 0x1000
+
 
 
 /*
@@ -164,7 +169,7 @@ struct diag_l1_initbus_args
  * _close(), always succeeds and returns 0. Close & free everything
  * _initbus : ret 0 if ok; must reset port settings (speed etc)
  * _send() Send data, same args as Unix write() + the sub interface,
- * 	returns 0 on OK, -1 on success
+ * 	returns 0 on OK, <0 on fail
  * _recv() - get data, same args as Unix read() + the sub interface
  *	ret # of bytes read if successful, <0 otherwise
  * _setspeed(), returns 0 on success,  speed = speed, bits = data bits (5,6,7,8)
@@ -192,6 +197,7 @@ struct diag_l0
 	int	(*diag_l0_close)(struct diag_l0_device **);
 	int	(*diag_l0_initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);
+	//diag_l0_send: return 0 on success
 	int	(*diag_l0_send)(struct diag_l0_device *,
 		const char *subinterface, const void *data, size_t len);
 	int	(*diag_l0_recv)(struct diag_l0_device *,

@@ -17,6 +17,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>	//for memcmp
 
 #include "diag.h"
 #include "diag_err.h"
@@ -41,6 +42,11 @@ static unsigned int dumb_flags=0;
 
 
 static const struct diag_l0 diag_l0_dt;
+
+static int
+diag_l0_dt_send(struct diag_l0_device *dl0d,
+UNUSED(const char *subinterface),
+const void *data, size_t len);
 
 /*
  * Init must be callable even if no physical interface is
@@ -152,6 +158,87 @@ static void dtest_6(struct diag_l0_device *dl0d) {
 	return;
 }
 
+//dtest_7 : half duplex echo removal 1 : send bytes and remove echo
+//one by one; P4=0. Print per-byte time to do this; use _dumb_send() instead
+// of diag_tty directly, like l1_send().
+static void dtest_7(struct diag_l0_device *dl0d) {
+	uint8_t i, echo;
+	int rv, badechos=0;
+	unsigned long ti, tf;
+#define DT7_ITERS 100
+	printf("Starting test 7: half duplex single echo removal...\n");
+
+	ti=diag_os_getms();	//get starting time.
+	for (i=0; i<=DT7_ITERS; i++) {
+		echo=i-1;	//init to bad value
+		rv=diag_l0_dt_send(dl0d, NULL, &i, 1);
+		if (rv==0) {
+			while ( (rv = diag_tty_read(dl0d, &echo, 1, 100)) < 0) {
+				if (errno != EINTR)
+					break;
+				rv = 0; /* Interrupted read, nothing transferred. */
+			}
+			//check echo
+			if (echo != i)
+				badechos++;
+			else
+				rv=0;
+		} else {
+			break;	//dumb_send failed, this is bad
+		}
+	}	//for
+	tf=diag_os_getms();	//stop time
+	tf = (tf-ti)/DT7_ITERS;	//average time per byte
+	printf("Average speed : %lu ms/byte. %d bad echos received.\n", tf, badechos);
+
+
+	return;
+}	//dtest_7
+
+//dtest_8 : block half duplex removal; send 10 bytes per message
+static void dtest_8(struct diag_l0_device *dl0d) {
+#define DT8_MSIZE 10
+	uint8_t tx[DT8_MSIZE], echo[DT8_MSIZE];
+	int i, rv, badechos=0;
+	unsigned long ti, tf;
+#define DT8_ITERS 10
+	printf("Starting test 8: half duplex block echo removal...\n");
+	//fill i[] first
+	for (i=0; i<DT8_MSIZE; i++)
+		tx[i]=(uint8_t) i;
+
+
+	ti=diag_os_getms();	//get starting time.
+	for (i=0; i<=DT8_ITERS; i++) {
+
+		rv=diag_l0_dt_send(dl0d, NULL, tx, DT8_MSIZE);
+		if (rv==0) {
+			while ( (rv = diag_tty_read(dl0d, echo, DT8_MSIZE, 100)) < 0) {
+				if (errno != EINTR)
+					break;
+				rv = 0; /* Interrupted read, nothing transferred. */
+			}
+			//check echo
+			if ( (rv>0) && ( memcmp(tx, echo, DT8_MSIZE) == 0))
+				rv=0;	//all's well
+			else
+				badechos++;
+
+		} else {
+			break;	//dumb_send failed, this is bad
+		}
+	}	//for
+	if (rv != 0) {
+		printf("Error, test did not complete.\n");
+	} else {
+		tf=diag_os_getms();	//stop time
+		tf = (tf-ti)/(DT8_ITERS * DT8_MSIZE);	//average time per byte
+		printf("Average speed : %lu ms/byte. %d bad echos received.\n", tf, badechos);
+	}
+
+	return;
+}	//dtest_8
+
 /*
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
@@ -217,6 +304,12 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		break;
 	case 6:
 		dtest_6(dl0d);
+		break;
+	case 7:
+		dtest_7(dl0d);
+		break;
+	case 8:
+		dtest_8(dl0d);
 		break;
 	default:
 		break;

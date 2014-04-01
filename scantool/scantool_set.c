@@ -361,31 +361,28 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 	if (argc >1) {
 		if ( argv[1][0]=='?' ) {
 			printf("dumbopts: use \"set dumbopts [opts]\" where [opts] is the addition of the desired flags:\n"
-				" 1 : USE_LLINE : use if the L line (driven by RTS) is required for init. Interface must support this\n"
+				" 0x01 : USE_LLINE : use if the L line (driven by RTS) is required for init. Interface must support this\n"
 				"\t(VAGTOOL for example).\n"
-				" 2 : CLEAR_DTR : use if your interface needs DTR to be always clear (neg. voltage).\n"
+				" 0x02 : CLEAR_DTR : use if your interface needs DTR to be always clear (neg. voltage).\n"
 				"\tThis is unusual. By default DTR will always be SET (pos. voltage)\n"
-				" 4 : SET_RTS : use if your interface needs RTS to be always set (pos. voltage).\n"
+				" 0x04 : SET_RTS : use if your interface needs RTS to be always set (pos. voltage).\n"
 				"\tThis is unusual. By default RTS will always be CLEAR (neg. voltage)\n"
 				"\tThis option should not be used with USE_LLINE.\n"
-				" 8 : MAN_BREAK : essential for USB-serial converters that don't support 5bps\n"
+				" 0x08 : MAN_BREAK : essential for USB-serial converters that don't support 5bps\n"
 				"\tsuch as FTDI232*, P230* and other ICs (enabled by default).\n"
-				" 16: LLINE_INV : Invert polarity of the L line. see\n"
-				"\tdoc/dumb_interfaces.txt !!\n"
-				" 32: FAST_BREAK : use alternate iso14230 fastinit code.\n\n"
+				" 0x10: LLINE_INV : Invert polarity of the L line. see\n"
+				"\tdoc/dumb_interfaces.txt !! This is unusual.\n"
+				" 0x20: FAST_BREAK : use alternate iso14230 fastinit code.\n"
+				" 0x40: BLOCKDUPLEX : use message-based half duplex removal (if P4==0)\n\n"
 				"ex.: \"dumbopts 9\" for MAN_BREAK and USE_LLINE.\n"
 				"Note : these options are ignored on any non-DUMB interfaces.\n");
 			return CMD_OK;
 		}
-		if ( ! sscanf(argv[1], "%u", &tmp)) {	//interpret the options as decimal. I might change this to %X if I add a lot more flags
-			printf("could not parse \"%s\" ! verify input.\n\n", argv[1]);
-			return CMD_USAGE;
-		}
-		//we just set the l0 flags to whatever sscanf parsed. Let diag_l0_dumb do the parsing
+		tmp=htoi(argv[1]);
+		//we just set the l0 flags to whatever htoi parsed.
 		diag_l0_dumb_setopts(tmp);
-	} else {
-		printf("Current dumbopts=%u\n", diag_l0_dumb_getopts());
 	}
+	printf("Current dumbopts=0x%X\n", diag_l0_dumb_getopts());
 
 	return CMD_OK;
 }

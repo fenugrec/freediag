@@ -251,6 +251,8 @@ int fake_run_measure_data(int data_pid)
     return rpm;
   else if (data_pid == SPEED_PID)
     return rpm * (9000*100/6000) / 36;
+
+	return 0;
 }
 
 #define LOSS_MEASURE_DATA(_pid_, _ep_) fake_loss_measure_data()
