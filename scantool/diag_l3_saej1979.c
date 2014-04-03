@@ -28,6 +28,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "diag.h"
 #include "diag_err.h"
@@ -214,8 +215,6 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	struct diag_l2_conn *d_conn;
 	uint8_t buf[32];
 	struct diag_msg newmsg;
-	uint8_t cksum;
-	int i;
 
 	/* Get l2 connection info */
 	d_conn = d_l3_conn->d_l3l2_conn;
@@ -229,6 +228,8 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 		d_l3_conn->src = msg->src;
 
 
+	//TODO: always use diag_l2_send; L2's job is to add headers and checksum...
+	//if required we can override msg->src and msg->dst;
 	if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_DATA_ONLY) {
 		/* L2 does framing, adds addressing and CRC, so do nothing */
 		rv = diag_l2_send(d_conn, msg);
@@ -260,9 +261,7 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 		if ( ((d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_DOESCKSUM)==0)
 			&& ((d_l3_conn->d_l3l1_flags & DIAG_L1_DOESL2CKSUM)==0)) {
 			/* No one else does checksum, so we do it */
-			for (i=0, cksum = 0; i<msg->len+3; i++)
-				cksum += buf[i];
-			buf[msg->len+3] = cksum;
+			buf[msg->len+3]=diag_cks1(buf, msg->len+3);
 
 			newmsg.len = msg->len + 4; /* Old len + hdr + cksum */
 		} else {
@@ -345,7 +344,7 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
  * Note: J1979 doesn't specify particular checksums beyond what 9141 and 14230 already provide,
  * i.e. a J1979 message is maximum 7 bytes long except on CANBUS.
  * headers, address and checksum should be handled at the l2 level (9141, 14230, etc)
- * The code currently doesn't verify checksums but have provisions for stripping headers + checksums.
+ * The code currently doesn't verify checksums but has provisions for stripping headers + checksums.
  * Also, the _getlen() function assumes 3 header bytes + 1 checksum byte.
  *
  * Another validity check is comparing message length (expected vs real).
@@ -465,7 +464,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 	int tout;
 	int state;
 //State machine. XXX states should be described somewhere...
-#define ST_STATE1 1
+#define ST_STATE1 1	// timeout=0 to get data already in buffer
 #define ST_STATE2 2
 #define ST_STATE3 3
 #define ST_STATE4 4
@@ -593,6 +592,8 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 
 	return rv;
 }
+
+
 
 /*
  * This is called without the ADDR_ADDR_1 on it, ie it contains
@@ -755,36 +756,12 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 }
 
 
-/*
- * Timer routine, called with time (in ms) since the "timer" value in
- * the L3 structure
- */
-static void
-diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
-{
+//Send a service 1, pid 0 request and check for a valid reply.
+static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 	struct diag_msg msg;
+	struct diag_msg *rxmsg;
 	uint8_t data[6];
-	int debug_l2_orig=diag_l2_debug;	//save debug flags; disable them for this procedure
-	int debug_l1_orig=diag_l1_debug;
-
-	/* J1979 needs keepalive at least every 5 seconds (P3), we use 3.5s */
-
-	if (ms < J1979_KEEPALIVE)
-		return;
-
-	/* Does L2 do keepalive for us ? */
-	if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_KEEPALIVE)
-		return;
-
-	/* OK, do keep alive on this connection */
-
-	if (diag_l3_debug & DIAG_DEBUG_TIMER) {
-		/* XXX Not async-signal-safe */
-		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %lu ms\n",
-				FL, (void *)d_l3_conn, ms);
-	}
-	diag_l2_debug=0;	//disable
-	diag_l1_debug=0;
+	int errval;
 
 	/*
 	 * Service 1 Pid 0 request is the SAEJ1979 idle message
@@ -804,19 +781,82 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
 	else
 		msg.src = 0xF1;		/* Default as used in SAE J1979 */
 
-	/* Send it */
-	(void)diag_l3_send(d_l3_conn, &msg);
+	/* Send it: using l3_request() makes sure the connection's timestamp is updated */
+	rxmsg=diag_l3_request(d_l3_conn, &msg, &errval);
 
-	/* Get and ignore the response */
-	(void) diag_l3_recv(d_l3_conn, 50, NULL, NULL);
+	if (rxmsg==NULL)
+		return diag_iseterr(DIAG_ERR_TIMEOUT);
+
+	if (diag_l3_debug & DIAG_DEBUG_PROTO)
+		fprintf(stderr, FLFMT "keepalive : got %u bytes, %02X ...\n",
+			FL, rxmsg->len, rxmsg->data[0]);
+
+	/* Check if its a valid SID 1 PID 0 response */
+	if ((rxmsg->len < 1) || (rxmsg->data[0] != 0x41)) {
+		return diag_iseterr(DIAG_ERR_ECUSAIDNO);
+	}
+
+	return 0;
+
+}
+
+//_start : send service 1 pid 0 request (J1979 keepalive); according to SAE J1979 (p.7) :
+// " IMPORTANT — All emissions-related OBD ECUs which at least support one of the services defined in this
+//	document shall support service $01 and PID $00. Service $01 with PID $00 is defined as the universal
+//	“initialisation/keep alive/ping” message for all emissions-related OBD ECUs. "
+//That sounds like a sure-fire way to make sure we have a succesful connection to a J1979-compliant ECU.
+int diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
+	int rv;
+
+	assert(d_l3_conn != NULL);
+	rv=diag_l3_j1979_keepalive(d_l3_conn);
+	//TODO : check if keepalive response was received
+	return rv;
+}
+
+/*
+ * Timer routine, called with time (in ms) since the "timer" value in
+ * the L3 structure
+ * return 0 if ok
+ */
+static int
+diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
+{
+	int rv;
+	int debug_l2_orig=diag_l2_debug;	//save debug flags; disable them for this procedure
+	int debug_l1_orig=diag_l1_debug;
+
+	/* J1979 needs keepalive at least every 5 seconds (P3), we use 3.5s */
+
+	assert(d_l3_conn != NULL);
+	if (ms < J1979_KEEPALIVE)
+		return 0;
+
+	/* Does L2 do keepalive for us ? */
+	if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_KEEPALIVE)
+		return 0;
+
+	/* OK, do keep alive on this connection */
+
+	if (diag_l3_debug & DIAG_DEBUG_TIMER) {
+		/* XXX Not async-signal-safe */
+		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %lu ms\n",
+				FL, (void *)d_l3_conn, ms);
+	}
+	diag_l2_debug=0;	//disable
+	diag_l1_debug=0;
+
+	rv=diag_l3_j1979_keepalive(d_l3_conn);
+	//TODO : check if keepalive response was received
+
 	diag_l2_debug=debug_l2_orig;	//restore debug flags
 	diag_l1_debug=debug_l1_orig;
 
-	return;
+	return rv;
 }
 
 const diag_l3_proto_t diag_l3_j1979 = {
-	"SAEJ1979", diag_l3_base_start, diag_l3_base_stop,
-	diag_l3_j1979_send, diag_l3_j1979_recv, NULL,
+	"SAEJ1979", diag_l3_j1979_start, diag_l3_base_stop,
+	diag_l3_j1979_send, diag_l3_j1979_recv, NULL, diag_l3_base_request,
 	diag_l3_j1979_decode, diag_l3_j1979_timer
 };

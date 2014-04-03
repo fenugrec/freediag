@@ -178,7 +178,7 @@ struct debugflags_descr {
  */
 struct diag_msg
 {
-	uint8_t	fmt;			/* Message format: TODO: convert to enum ? */
+	uint8_t	fmt;			/* Message format: */
 	#define DIAG_FMT_ISO_FUNCADDR	0x01	/* ISO Functional addressing */
 	#define DIAG_FMT_FRAMED		0x02	/* Rcvd data is framed, ie not raw */
 	#define	DIAG_FMT_DATAONLY	0x04	/* Rcvd data had L2/L3 headers removed */

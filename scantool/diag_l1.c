@@ -309,7 +309,7 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 	const char *subinterface, void *data, size_t len, int timeout)
 {
 	if (!len)
-		return 0;
+		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	return diag_l0_device_dl0(dl0d)->diag_l0_recv(dl0d, subinterface, data, len, timeout);
 }

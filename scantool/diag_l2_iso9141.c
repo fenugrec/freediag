@@ -413,15 +413,18 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 				tout = d_l2_conn->diag_l2_p3min;
 				if (l1_doesl2frame)
 					tout += SMART_TIMEOUT;
+				break;
 		}
 
 		// If L0/L1 does L2 framing, we get full frames, so we don't
 		// need to do the read byte-per-byte (skip state2):
 		if ( (state == ST_STATE2) && l1_doesl2frame )
 			rv = DIAG_ERR_TIMEOUT;
+		else if (dp->rxoffset == MAXLEN_ISO9141)
+			rv = DIAG_ERR_TIMEOUT;	//we got a full frame already !
 		else
 			// Receive data into the buffer:
-			rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+			rv = diag_l1_recv(d_l2_conn->diag_link->diag_l2_dl0d, 0,
 					&dp->rxbuf[dp->rxoffset],
 					MAXLEN_ISO9141 - dp->rxoffset,
 					tout);
@@ -584,7 +587,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		}
 	}
 
-	return rv? diag_iseterr(rv):0;
+	return (rv<0)? diag_iseterr(rv):0;
 }
 
 

@@ -318,33 +318,28 @@ int diag_l2_end() {
 }
 
 /*
- * diag_l2_closelink : Close/kill a diag_l2_link,
- * remove from the linked list,
- * and close its dl0d link with diag_l1_close.
- * This should only be called if we're sure pdl2l
+ * diag_l2_closelink :
+ * remove it from the linked list,
+ * close its dl0d link with diag_l1_close and free
+ * the dl2l.
+ * This should only be called if we're sure the dl2l
  * is not used anymore...
  */
 static int
-diag_l2_closelink(struct diag_l2_link **pdl2l)
+diag_l2_closelink(struct diag_l2_link *dl2l)
 {
-	if (pdl2l && *pdl2l) {
-		struct diag_l2_link *dl2l = *pdl2l;
+	if (dl2l) {
 
 		if (diag_l2_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr,FLFMT "l2_closelink %p called\n",
 				FL, (void *)dl2l);
 
-		if (dl2l)
-		{
 			/* Clear out this link */
 			diag_l2_rmlink(dl2l);	/* Take off list */
 			diag_l1_close(&dl2l->diag_l2_dl0d);
 			free(dl2l);
-		}
 
-		*pdl2l = NULL;
 	}
-
 
 	return 0;
 }
@@ -381,7 +376,8 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 		/* device open */
 		if (dl2l->diag_l2_l1protocol != L1protocol) {
 			/* Wrong L1 protocol, close link */
-			diag_l2_closelink(&dl2l);
+			diag_l2_closelink(dl2l);
+			dl2l=NULL;
 		} else 	{
 			/* Device was already open, with correct protocol  */
 			return dl2l->diag_l2_dl0d;
@@ -461,7 +457,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 		if (diag_l2_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, "\tclosing unused dl2link %p.\n",
 				(void *)dl0d->dl2_link);
-		diag_l2_closelink(&dl0d->dl2_link);	//closelink calls diag_l1_close() as required
+		diag_l2_closelink(dl0d->dl2_link);	//closelink calls diag_l1_close() as required
 		return 0;
 	}
 	// this dl0d had no ->dl2_link; check in the linked-list anyway in case

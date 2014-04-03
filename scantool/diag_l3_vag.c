@@ -145,6 +145,6 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 
 const diag_l3_proto_t diag_l3_vag = {
 	"VAG", diag_l3_vag_start, diag_l3_base_stop,
-	diag_l3_base_send, diag_l3_base_recv, NULL,
+	diag_l3_base_send, diag_l3_base_recv, NULL, diag_l3_base_request,
 	diag_l3_vag_decode, NULL
 };

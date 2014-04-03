@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "diag.h"
 #include "diag_err.h"
@@ -71,6 +72,8 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 	unsigned int i;
 	int rv;
 	const diag_l3_proto_t *dp;
+
+	assert(d_l2_conn != NULL);
 
 	if (diag_l3_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,FLFMT "start protocol %s l2 %p\n",
@@ -237,6 +240,39 @@ int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, unsigned int cmd, void *data)
 	return rv;
 }
 
+/*
+ * Send a message and return a new message with the reply.
+ */
+struct diag_msg *
+diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval)
+{
+	struct diag_msg *rxmsg;
+	const diag_l3_proto_t * dl3p = dl3c->d_l3_proto;
+
+	if (diag_l3_debug & DIAG_DEBUG_WRITE)
+		fprintf(stderr,
+			FLFMT "_request dl3c=%p msg=%p called\n",
+				FL, (void *)dl3c, (void *)txmsg);
+
+	/* Call protocol specific send routine */
+	if (dl3p->diag_l3_proto_request)
+		rxmsg = dl3p->diag_l3_proto_request(dl3c, txmsg, errval);
+	else
+		rxmsg = NULL;
+
+	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+		fprintf(stderr, FLFMT "_request returns %p, err %d\n",
+				FL, (void *)rxmsg, *errval);
+	}
+
+	if (rxmsg==NULL) {
+		return (struct diag_msg *) diag_pseterr(*errval);
+	}
+		//update timers
+	dl3c->timer = diag_os_getms();
+
+	return rxmsg;
+}
 
 /*
  * Note: This is called regularly from a signal handler.
@@ -251,10 +287,7 @@ void diag_l3_timer(void)
 	 * Call protocol specific timer
 	 */
 	struct diag_l3_conn *conn;
-//	struct timeval now;
 	unsigned long now=diag_os_getms();
-
-//	(void)gettimeofday(&now, NULL);	/* XXX NOT ASYNC SIGNAL SAFE */
 
 
 	for (conn = diag_l3_list ; conn ; conn = conn->next )
@@ -263,15 +296,11 @@ void diag_l3_timer(void)
 		const diag_l3_proto_t *dp = conn->d_l3_proto;
 
 		if (dp->diag_l3_proto_timer) {
-			//struct timeval diff;
-			//int ms;
 			unsigned long diffms;
 
-			//timersub(&now, &conn->timer, &diff);
-			//ms = diff.tv_sec * 1000 + diff.tv_usec / 1000;
 			diffms = now - conn->timer;
 
-			(void)dp->diag_l3_proto_timer(conn, diffms);
+			(void) dp->diag_l3_proto_timer(conn, diffms);
 		}
 	}
 }
@@ -308,10 +337,31 @@ int diag_l3_base_send(struct diag_l3_conn *d_l3_conn,
  */
 
 int
-diag_l3_base_recv(UNUSED(struct diag_l3_conn *d_l3_conn),
+diag_l3_base_recv(struct diag_l3_conn *d_l3_conn,
 	UNUSED(int timeout),
 	UNUSED(void (* rcv_call_back)(void *handle ,struct diag_msg *)),
 	UNUSED(void *handle))
 {
+	d_l3_conn->timer=diag_os_getms();
 	return 0;
+}
+
+//this implementation is rather naive and untested. It simply forwards the
+//txmsg straight to the L2 request function and returns the response msg
+//as-is.
+struct diag_msg * diag_l3_base_request(struct diag_l3_conn *dl3c,
+	struct diag_msg* txmsg, int* errval) {
+
+	struct diag_msg *rxmsg = NULL;
+
+	*errval=0;
+
+	rxmsg = diag_l2_request(dl3c->d_l3l2_conn, txmsg, errval);
+
+	if (rxmsg == NULL) {
+		return (struct diag_msg *)diag_pseterr(*errval);
+	}
+	dl3c->timer=diag_os_getms();
+
+	return rxmsg;
 }

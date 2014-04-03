@@ -81,6 +81,7 @@ typedef struct diag_l3_proto
 {
 	const char *proto_name;
 
+	//start, stop : initiate L3 comms, filling the given diag_l3_conn
 	int (*diag_l3_proto_start)(struct diag_l3_conn *);
 	int (*diag_l3_proto_stop)(struct diag_l3_conn *);
 	//proto_recv: ret 0 if ok?
@@ -89,6 +90,9 @@ typedef struct diag_l3_proto
 	int (*diag_l3_proto_recv)(struct diag_l3_conn *, int,
 		void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *);
 	int (*diag_l3_proto_ioctl)(struct diag_l3_conn *, int cmd, void *data);
+	//proto_request : send request and return a new message with the reply.
+	struct diag_msg * (*diag_l3_proto_request)(struct diag_l3_conn*,
+		struct diag_msg* txmsg, int* errval);
 
 /* Pretty text decode routine */
 	char *(*diag_l3_proto_decode)(struct diag_l3_conn *,
@@ -100,7 +104,8 @@ typedef struct diag_l3_proto
 	//this function, if it exists, is called every time diag_l3_timer()
 	//is called from the periodic callback (in diag_os); the ms argument
 	//is the difference (in ms) between [now] and [diag_l3_conn->timer].
-	void (*diag_l3_proto_timer)(struct diag_l3_conn *, unsigned long ms);
+	//ret 0 if ok
+	int (*diag_l3_proto_timer)(struct diag_l3_conn *, unsigned long ms);
 
 } diag_l3_proto_t;
 
@@ -114,6 +119,10 @@ int	diag_l3_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle);
 char * diag_l3_decode(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg,
 	char *buf, const size_t bufsize);
+//_request : send the request in txmsg and return a new msg with the response.
+//Caller must free that msg
+struct diag_msg *diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg,
+		int *errval);
 
 /* Base implementations:
  * these are defined in diag_l3.c and perform no operation.
@@ -124,7 +133,9 @@ int diag_l3_base_send(struct diag_l3_conn *, struct diag_msg *);
 int diag_l3_base_recv(struct diag_l3_conn *, int,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *);
 //XXX diag_l3_base_ioctl : there's no code for this one ?
-int diag_l3_base_ioctl(struct diag_l3_conn *, int cmd, void *data);
+//int diag_l3_base_ioctl(struct diag_l3_conn *, int cmd, void *data);
+struct diag_msg * diag_l3_base_request(struct diag_l3_conn *dl3c,
+	struct diag_msg* txmsg, int* errval);
 
 
 /* Pretty text decode routine */

@@ -43,7 +43,7 @@ endif ()
 
 
 if (CMAKE_COMPILER_IS_GNUCC)
-	set (CMAKE_C_FLAGS_DEBUG "-ggdb")
+	set (CMAKE_C_FLAGS_DEBUG "-g")
 	set (CMAKE_C_FLAGS_RELEASE "-DNDEBUG")
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -std=gnu99 -Wstrict-prototypes -Wsign-compare -Wredundant-decls" )
 #else ()

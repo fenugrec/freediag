@@ -150,6 +150,7 @@ struct diag_msg *find_ecu_msg(int byte, databyte_type val);
 
 /*
  * Handle values for above
+ * XXX This is extremely irregular. These get passed as void pointers...
  */
 #define RQST_HANDLE_NORMAL	0	/* Normal mode */
 #define RQST_HANDLE_WATCH	1	/* Watching, add timestamp */

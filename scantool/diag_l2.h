@@ -270,21 +270,24 @@ struct	diag_l2_data
  * ( for struct diag_l2_proto->diag_l2_flags )
  */
 
-/*
+/*FLAG_FRAMED:
  * Received data is sent upwards in frames (ie L3 doesn't have to try
  * and re-frame the code - this is done by timing windows or by the
  * protocol itself
  */
 #define DIAG_L2_FLAG_FRAMED	0x01
-/*
+
+/* FLAG_DATA_ONLY: ????
  * L2 interface assumes addressing is in header not data, and that
  * it must calculate the checksum
  */
 #define DIAG_L2_FLAG_DATA_ONLY	0x02
+
 /*
  * L2 does keep alive to ECU
  */
 #define DIAG_L2_FLAG_KEEPALIVE	0x04
+
 /*
  * L2 adds checksum
  */

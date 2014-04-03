@@ -197,7 +197,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	uint8_t *data = msg->data;
 	struct diag_msg *tmsg;
 	unsigned int i;
-	int * ihandle= (int *) handle;
+	int ihandle= (int) handle;
 	ecu_data_t	*ep;
 
 	const char *O2_strings[] = {
@@ -225,7 +225,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	}
 
 	/* Deal with the diag type responses (send/recv/watch) */
-	switch (*ihandle) {
+	switch (ihandle) {
 	/* There is no difference between watch and decode ... */
 		case RQST_HANDLE_WATCH:
 		case RQST_HANDLE_DECODE:
@@ -235,6 +235,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 			}
 			return;
 	}
+
 
 	/* All other responses are J1979 response messages */
 
@@ -300,7 +301,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		 * response
 		 */
 		data = msg->data;
-		switch (*ihandle) {
+		switch (ihandle) {
 			case RQST_HANDLE_READINESS:
 				/* Handled in cmd_test_readiness() */
 				break;
@@ -329,7 +330,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 					lim = (data[5]*255) + data[6];
 
 					if ((data[2] & 0x80) == 0) {
-						if (*ihandle == RQST_HANDLE_NCMS2) {
+						if (ihandle == RQST_HANDLE_NCMS2) {
 							/* Only print fails */
 							if (val > lim) {
 								fprintf(stderr, "Test 0x%X Component 0x%X FAILED ",
@@ -352,7 +353,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 								lim, val);
 						}
 					} else {
-						if (*ihandle == RQST_HANDLE_NCMS2) {
+						if (ihandle == RQST_HANDLE_NCMS2) {
 							if (val < lim) {
 								fprintf(stderr, "Test 0x%X Component 0x%X FAILED ",
 									data[1], data[2] & 0x7f);
@@ -532,7 +533,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 {
 	struct diag_msg	msg;
 	uint8_t data[7];	//was 256?
-	int * ihandle=(int *) handle;
+	int ihandle=(int) handle;
 	int rv;
 	ecu_data_t *ep;
 	unsigned int i;
@@ -572,29 +573,42 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	data[4] = p4;
 	data[5] = p5;
 	data[6] = p6;
-	diag_l3_send(d_conn, &msg);
+	if ((rv=diag_l3_send(d_conn, &msg)))
+		return diag_iseterr(rv);
 
 	/* And get response(s) within a short while */
 	rv = diag_l3_recv(d_conn, 300, j1979_data_rcv, handle);
 	if (rv < 0) {
 		fprintf(stderr, "Request failed, retrying...\n");
-		diag_l3_send(d_conn, &msg);
+		if ((rv=diag_l3_send(d_conn, &msg)))
+			return diag_iseterr(rv);
 		rv = diag_l3_recv(d_conn, 300, j1979_data_rcv, handle);
 		if (rv < 0) {
 			fprintf(stderr, "Retry failed, resynching...\n");
-			rv = do_l3_md1pid0_rqst(global_l2_conn);
-			if (rv < 0)
-				fprintf(stderr, "Resync failed, connection to ECU may be lost!\n");
+			//rv = do_l3_md1pid0_rqst(global_l2_conn);
+			rv= d_conn->d_l3_proto->diag_l3_proto_timer(d_conn, 6000);	//force keepalive
+			if (rv < 0) {
+				fprintf(stderr, "\tfailed, connection to ECU may be lost!\n");
+				return diag_iseterr(rv);
+			}
+			fprintf(stderr, "\tOK.\n");
 			return rv;
+
 		}
 	}
 
-	switch (*ihandle) {
+	//This part is super confusing: ihandle comes from the handle from a callback passed
+	//between L2 and L3 with handles to handles etc..
+	switch (ihandle) {
 		/* We dont process the info in watch/decode mode */
 		case RQST_HANDLE_WATCH:
 		case RQST_HANDLE_DECODE:
 			return rv;
-		}
+			break;
+		default:
+			break;
+	}
+
 
 		/*
 		 * Go thru the ecu_data and see what was received.
@@ -703,8 +717,7 @@ clear_data(void)
  * Common start routine used by all protocols
  * - initialises the diagnostic layer
  * - opens a Layer 2 device for the specified Layer 1 protocol
- * If necessary tries to poll the ECU
- * returns L2 file descriptor
+  * returns L2 file descriptor
  */
 static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 	uint32_t type, unsigned int bitrate, target_type target, source_type source )
@@ -756,13 +769,17 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 	 * For those type of interfaces we send a J1979 mode1 pid1 request
 	 * (since we are a scantool, thats the correct thing to send)
 	 */
-	if (diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_FLAGS, &l2flags) != 0) {
+	//Disabled : this function is called "l2_common_start"; if StartComms
+	//succeeded then our job is done.
+	if (0 && (diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_FLAGS, &l2flags) != 0)) {
 		fprintf(stderr, "Failed to get Layer 2 flags\n");
 		diag_l2_StopCommunications(d_conn);
 		diag_l2_close(dl0d);
 		return NULL;
 	}
-	if (l2flags & DIAG_L2_FLAG_CONNECTS_ALWAYS) {
+	//disabled : sending SID 1 PID 0 is L3 stuff (J9179 keepalive);
+	//so the caller has to handle this situation.
+	if (0 && (l2flags & DIAG_L2_FLAG_CONNECTS_ALWAYS)) {
 		rv = do_l3_md1pid0_rqst(d_conn);
 		if (rv < 0) {
 			/* Not actually there, close L2 and go */
@@ -779,12 +796,9 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
  * (a) See if there is an ECU there
  * (b) Error recovery if we get multiple timeouts on an ECU
  *
- * It cant use the normal request routine, since that calls this
- *
- *
- * XXX This is wrong and needs to talk to L3 not L2, so this breaks
- * on ISO9141 type interfaces
- */
+ * XXX Since this is used as a J1979 keepalive, I'm replacing it with
+ * the timeout function in diag_l3_j1979.
+  */
 int do_l3_md1pid0_rqst( struct diag_l2_conn *d_conn )
 {
 	struct diag_msg	msg;
@@ -804,18 +818,13 @@ int do_l3_md1pid0_rqst( struct diag_l2_conn *d_conn )
 	rmsg = diag_l2_request(d_conn, &msg, &errval);
 	if (rmsg != NULL) {
 		/* Check its a Mode1 Pid0 response */
-		if (rmsg->len < 1) {
+		if ((rmsg->len < 1) || (rmsg->data[0] != 0x41)) {
 			return diag_iseterr(DIAG_ERR_BADDATA);
 		}
-// What is this???
-/*		if (rmsg->data[0] != 0x41) */
-/*		{ */
-/*			return diag_iseterr(DIAG_ERR_BADDATA);	*/
-/*		} */
 
 		return 0;
 	}
-	return errval;
+	return diag_iseterr(DIAG_ERR_ECUSAIDNO);
 }
 
 /*
@@ -978,7 +987,7 @@ do_j1979_getdata(int interruptible)
 		if (merged_mode1_info[i]) {
 			fprintf(stderr, "Requesting Mode 1 Pid 0x%02X...\n", i);
 			rv = l3_do_j1979_rqst(d_conn, 0x1, (uint8_t) i, 0x00,
-				0x00, 0x00, 0x00, 0x00, (void *)0);
+				0x00, 0x00, 0x00, 0x00, NULL);
 			if (rv < 0) {
 				fprintf(stderr, "Mode 1 Pid 0x%02X request failed (%d)\n",
 					i, rv);
@@ -1258,6 +1267,8 @@ do_j1979_ncms(int printall)
 /*
  * Get mode info
  * response_offset : index into received packet where the the supported_pid bytemasks start.
+ * TODO: add return value to signal total failure (if l3_do_j1979_rqst lost the connection to
+ * the ECU)
  */
 void
 do_j1979_getmodeinfo(uint8_t mode, int response_offset)
@@ -1340,7 +1351,7 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset)
 		/* Now, check if all ECUs said the next pid isnt supported */
 		if (not_done == 0)
 			break;
-	}
+	}	//for
 	return;
 }
 
@@ -1623,40 +1634,42 @@ ecu_connect(void)
 	int rv = DIAG_ERR_GENERAL;
 	const struct protocol *p;
 
-	fprintf(stderr, "\n");
 
 	for (p = protocols; !connected && p < &protocols[ARRAY_SIZE(protocols)]; p++) {
-		fprintf(stderr,"Trying %s:\n", p->desc);
+		fprintf(stderr,"\nTrying %s:\n", p->desc);
 		rv = p->start(p->flags);
 		if (rv == 0) {
+			struct diag_l3_conn *d_l3_conn;
+
+			fprintf(stderr, "L2 connection OK; tring to add SAE J1979 layer...\n");
+	//At this point we have a valid L2 connection, but it is possible that
+	//no communication has been established with an ECU yet (see DIAG_L2_FLAG_CONNECTS_ALWAYS)
+	//To confirm we really have a connection we try to start the J1979 L3 layer and try
+	//sending a J1979 keep-alive request (service 1 pid 0).
+	//diag_l3_start() does exactly that.
+
+			d_l3_conn = diag_l3_start("SAEJ1979", global_l2_conn);
+			if (d_l3_conn == NULL) {
+				fprintf(stderr, "Failed to enable SAEJ1979 mode\n");
+				//So we'll try another protocol. But close that L2 first:
+				diag_l2_StopCommunications(global_l2_conn);
+				diag_l2_close(global_l2_dl0d);
+
+				global_l2_conn = NULL;
+				global_state = STATE_IDLE;
+				continue;
+			}
 			global_conmode = p->conmode;
 			global_protocol = p->protoID;
-			connected = 1;
+			global_l3_conn = d_l3_conn;
+			global_state = STATE_L3ADDED;
+
 			fprintf(stderr, "%s Connected.\n", p->desc);
+			break;	//exit for loop
+
 		} else {
 			fprintf(stderr, "%s Failed!\n", p->desc);
 		}
-		fprintf(stderr, "\n");
-	}
-
-	fprintf(stderr, "\n");
-
-	/*
-	 * Connected, now add J1979 protocol
-	 */
-	if (connected) {
-		struct diag_l3_conn *d_l3_conn;
-
-		global_state = STATE_CONNECTED;
-
-		d_l3_conn = diag_l3_start("SAEJ1979", global_l2_conn);
-		if (d_l3_conn == NULL) {
-			fprintf(stderr, "Failed to enable SAEJ1979 mode\n");
-			rv = DIAG_ERR_GENERAL;
-		}
-		global_l3_conn = d_l3_conn;
-
-		global_state = STATE_L3ADDED;
 	}
 
 	if (diag_cmd_debug)
@@ -1811,8 +1824,12 @@ static const struct pid pids[] = {
 	{0x11, "Absolute Throttle Position", format_data, 1,
 		"%5.1f%%", (100.0/255), 0.0,
 		"", 0.0, 0.0},
-	/* XXX 0x12 Commanded secondary air status */
-	/* XXX 0x13 Oxygen sensor locations */
+	{0x12, "Commanded Secondary Air Status", format_data, 1,
+		"", 0, 0,
+		"", 0, 0},	//can't format bit fields
+	{0x13, "Location of Oxygen Sensors", format_data, 1,
+		"", 0, 0,
+		"", 0, 0},	//can't format bit fields
 	{0x14, "Bank 1 Sensor 1 Voltage/Trim", format_o2, 2,
 		"%5.3fV", 0.005, 0.0,
 		"%5.3fV/%5.1f%%", (100.0/128), -100.0},

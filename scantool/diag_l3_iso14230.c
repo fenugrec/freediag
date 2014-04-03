@@ -56,28 +56,6 @@ char *buf, const size_t bufsize)
 
 	switch (*msg->data)
 	{
-	default:
-		if ((msg->data[0] >= 0x50) && (msg->data[0] <= 0x7e))
-		{
-			snprintf(buf, bufsize, "Positive response, %s ",
-					l3_iso14230_sidlookup(msg->data[0] & ~0x40));
-			if ((msg->data[0] & ~0x40) == DIAG_KW2K_SI_REID)
-			{
-				snprintf(buf2, sizeof(buf2), "identOption 0x%02X", msg->data[1]);
-				smartcat(buf, bufsize, buf2);
-			}
-			else if ((msg->data[0] & ~0x40) == DIAG_KW2K_SI_RDDBLI)
-			{
-				snprintf(buf2, sizeof(buf2), "RLI 0x%02X", msg->data[1]);
-				smartcat(buf, bufsize, buf2);
-			}
-		}
-		else
-		{
-			snprintf(buf, bufsize, "Unknown_response_code 0x%X",
-					msg->data[0]);
-		}
-		break;
 	case DIAG_KW2K_RC_SCRPR:
 		snprintf(buf, bufsize, "StartCommunications_OK");
 		break;
@@ -105,6 +83,30 @@ char *buf, const size_t bufsize)
 			/* Don't overflow our buffers. */
 
 			smartcat(buf, bufsize, buf2 );
+		}
+		break;
+	default:
+		if ((msg->data[0] >= 0x50) && (msg->data[0] <= 0x7e))
+		{
+			snprintf(buf, bufsize, "Positive response, %s ",
+					l3_iso14230_sidlookup(msg->data[0] & ~0x40));
+			if ((msg->data[0] & ~0x40) == DIAG_KW2K_SI_REID)
+			{
+				snprintf(buf2, sizeof(buf2), "identOption 0x%02X", msg->data[1]);
+				smartcat(buf, bufsize, buf2);
+			}
+			else if ((msg->data[0] & ~0x40) == DIAG_KW2K_SI_RDDBLI)
+			{
+				snprintf(buf2, sizeof(buf2), "RLI 0x%02X", msg->data[1]);
+				smartcat(buf, bufsize, buf2);
+			}
+			//TODO : add "custom" printout for every SID that has a local ID ?
+
+		}
+		else
+		{
+			snprintf(buf, bufsize, "Unknown_response_code 0x%X",
+					msg->data[0]);
 		}
 		break;
 	}
@@ -428,63 +430,6 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 
 
 /*
- * Timer routine, called with time (in ms) since the "timer" value in
- * the L3 structure
- * This handles only P3 timeout (keepalive => TesterPresent)
-
- */
-static void
-diag_l3_iso14230_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
-{
-	struct diag_msg msg;
-	uint8_t data[6];
-
-	/* ISO14230 ? XXX J1979 needs keepalive at least every 5 seconds, we use 3.5s */
-	// "keepalive" corresponds to P3max, defined as 5000 ms by iso9141 and
-	// ISO14230 (unless it has been adjusted with AccessTimingParameters)
-	//P3 starts withthe last bit of all responses from the vehicle.
-	if (ms < ISO14230_KEEPALIVE)
-		return;
-
-	/* Does L2 do keepalive for us ? */
-	if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_KEEPALIVE)
-		return;
-
-	/* OK, do keep alive on this connection */
-
-	if (diag_l3_debug & DIAG_DEBUG_TIMER)
-	{
-		/* XXX Not async-signal-safe */
-		fprintf(stderr, FLFMT "P3 timeout impending for %p %lu ms\n",
-				FL, (void *)d_l3_conn, ms);
-	}
-
-	msg.data = data;
-	msg.len = 1;
-	data[0] = DIAG_KW2K_SI_TP ;
-
-	/*
-	 * And set the source address, if no sends have happened, then
-	 * the src address will be 0, so use the default used in J1979
-	 */
-	if (d_l3_conn->src)
-		msg.src = d_l3_conn->src;
-	else
-		msg.src = 0xF1;	 /* Default as used in SAE J1979 */
-
-	/* Send it */
-	(void)diag_l3_send(d_l3_conn, &msg);
-
-	/* Get and ignore the response */
-	(void)diag_l3_recv(d_l3_conn, 50, NULL, NULL);
-	// TODO : actually check if it responded positively !
-	// And signal to close the connection if it didn't respond...
-
-	return;
-}
-
-
-/*
  * Table of english descriptions of the ISO14230 SIDs
  */
 static const struct
@@ -595,6 +540,6 @@ static const char *l3_iso14230_neglookup(const int id)
 
 const diag_l3_proto_t diag_l3_iso14230 = {
 	"ISO14230", diag_l3_base_start, diag_l3_base_stop,
-	diag_l3_iso14230_send, diag_l3_iso14230_recv, NULL,
-	diag_l3_iso14230_decode, diag_l3_iso14230_timer
+	diag_l3_iso14230_send, diag_l3_iso14230_recv, NULL, diag_l3_base_request,
+	diag_l3_iso14230_decode, NULL
 };
