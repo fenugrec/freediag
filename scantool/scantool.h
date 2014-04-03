@@ -149,8 +149,10 @@ int ecu_connect(void);
 struct diag_msg *find_ecu_msg(int byte, databyte_type val);
 
 /*
- * Handle values for above
- * XXX This is extremely irregular. These get passed as void pointers...
+ * Handle values for above (l3_do_j1979_rqst, j1979_data_rcv, etc)
+ * XXX This was extremely irregular: they were passed as void pointers.
+ * Now they are rather declared as const ints so we can pass
+ * pointers to that instead of masquerading ints as void pointers.
  */
 #define RQST_HANDLE_NORMAL	0	/* Normal mode */
 #define RQST_HANDLE_WATCH	1	/* Watching, add timestamp */
@@ -159,6 +161,13 @@ struct diag_msg *find_ecu_msg(int byte, databyte_type val);
 #define RQST_HANDLE_NCMS2	4	/* Ditto, print fails only */
 #define RQST_HANDLE_O2S		5	/* O2 sensor tests */
 #define RQST_HANDLE_READINESS	6	/* Readiness Tests */
+extern const int _RQST_HANDLE_NORMAL;	//Normal mode
+extern const int _RQST_HANDLE_WATCH;	//Watching; add timestamp
+extern const int _RQST_HANDLE_DECODE;	//Just decode what arrived
+extern const int _RQST_HANDLE_NCMS;	//Non cont. mon. tests
+extern const int _RQST_HANDLE_NCMS2;	//Ditto; print fails only
+extern const int _RQST_HANDLE_O2S;	//O2 sensor tests
+extern const int _RQST_HANDLE_READINESS;	//Readiness tests
 
 int do_j1979_getdata(int interruptible_flag);
 void do_j1979_basics(void) ;

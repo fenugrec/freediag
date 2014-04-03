@@ -517,7 +517,7 @@ cmd_watch(int argc, char **argv)
 		printf("Waiting for data to be received\n");
 		while (1) {
 			rv = diag_l2_recv(d_l2_conn, 10000,
-				j1979_data_rcv, (void *)RQST_HANDLE_WATCH);
+				j1979_data_rcv, (void *)&_RQST_HANDLE_WATCH);
 			if (rv == 0)
 				continue;
 			if (rv == DIAG_ERR_TIMEOUT)

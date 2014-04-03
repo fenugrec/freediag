@@ -86,7 +86,7 @@ get_vit_info(struct diag_l3_conn *d_conn, uint8_t rqst, const char *descr)
 	int rv, offset ;
 
 	/* Now request the VIN */
-	rv = l3_do_j1979_rqst(d_conn, 9, rqst, 0, 0, 0, 0, 0, (void *)0);
+	rv = l3_do_j1979_rqst(d_conn, 9, rqst, 0, 0, 0, 0, 0, (void *)&_RQST_HANDLE_NORMAL);
 	if (rv < 0)
 	{
 		printf("Failed to get %s info\n", descr);
@@ -132,7 +132,7 @@ cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
 	d_conn = global_l3_conn;
 
 	/* 1st ask for the supported types */
-	rv = l3_do_j1979_rqst(d_conn, 9, 0, 0, 0, 0, 0, 0, (void *)0);
+	rv = l3_do_j1979_rqst(d_conn, 9, 0, 0, 0, 0, 0, 0, (void *)&_RQST_HANDLE_NORMAL);
 	if (rv < 0)
 	{
 		printf("rvi: supported types request failed\n");
@@ -233,7 +233,7 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 	/* Do Mode 1 Pid 1 request */
 	rv = l3_do_j1979_rqst(d_conn, 1, 1, 0x00,
 			0x00, 0x00, 0x00, 0x00,
-			(void *)RQST_HANDLE_READINESS);
+			(void *)&_RQST_HANDLE_READINESS);
 
 	if ((rv < 0) || (find_ecu_msg(0, 0x41) == NULL))
 	{

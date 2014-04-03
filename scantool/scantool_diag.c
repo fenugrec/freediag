@@ -369,7 +369,7 @@ cmd_diag_read(int argc, char **argv)
 	else
 	{
 		(void)diag_l3_recv(global_l3_conn, timeout, j1979_data_rcv,
-			(void *)RQST_HANDLE_WATCH);
+			(void *)&_RQST_HANDLE_WATCH);
 	}
 	return CMD_OK;
 }
@@ -406,13 +406,13 @@ cmd_diag_sendreq(int argc, char **argv)
 	if (global_state < STATE_L3ADDED)
 	{
 		rv = l2_do_send( global_l2_conn, data, len,
-			(void *)RQST_HANDLE_DECODE);
+			(void *)&_RQST_HANDLE_DECODE);
 	}
 	else
 	{
 		/* Send data with handle to tell callback to print results */
 		rv = l3_do_send( global_l3_conn, data, len,
-			(void *)RQST_HANDLE_DECODE);
+			(void *)&_RQST_HANDLE_DECODE);
 	}
 
 	if (rv != 0)

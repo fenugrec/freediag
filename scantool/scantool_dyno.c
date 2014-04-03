@@ -129,7 +129,7 @@ static int measure_data(uint8_t data_pid, ecu_data_t *ep)
 
   /* measure */
   rv = l3_do_j1979_rqst(global_l3_conn, 0x1, data_pid, 0x00,
-      0x00, 0x00, 0x00, 0x00, (void *)0);
+      0x00, 0x00, 0x00, 0x00, (void *)&_RQST_HANDLE_NORMAL);
   if (rv < 0)
     return 0;
 
