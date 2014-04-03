@@ -330,8 +330,11 @@ diag_l2_proto_iso9141_decode(uint8_t *data, int len,
  * This implements the reading of all the ECU responses to a Tester request.
  * One ECU may send multiple responses to one request.
  * Multiple ECUS may send responses to one request.
- * The end of all responses is marked by p3max timeout, but since that is very
- * long (5 seconds), we're using p3min (55ms).
+ * The end of all responses is marked by p2max timeout. (p3min > p2max so
+ * that if we (the tester) send a new request after p3min, we are guaranteed
+ * not to clobber an ECU response)
+ * Ret 0 if OK.
+ *
  * "timeout" has to be long enough to receive at least 1 byte;
  *  in theory it could be P2min + (8 / baudrate) but there is no
  * harm in using P2max.
@@ -397,20 +400,19 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 				// we give ourselves up to p2min minus a little bit.
 				tout = d_l2_conn->diag_l2_p2min - 2;
 				if (tout < d_l2_conn->diag_l2_p1max)
-				tout = d_l2_conn->diag_l2_p1max;
+					tout = d_l2_conn->diag_l2_p1max;
 				break;
 
 			case ST_STATE3:
 				// This is the timeout waiting for any more
-				// responses from the ECU. ISO says min is p3max
-				// but we'll cut it short at p3min.
+				// responses from the ECU. ISO says min is p2max
+				// but we'll use p3min.
 				// Aditionaly, for "smart" interfaces, we expand
 				// the timeout to let them process the data.
-				//P3min is perhaps too short and could exclude some responses...
 				//TODO: maybe set tout=p3min + margin ?
 				tout = d_l2_conn->diag_l2_p3min;
 				if (l1_doesl2frame)
-				tout += SMART_TIMEOUT;
+					tout += SMART_TIMEOUT;
 		}
 
 		// If L0/L1 does L2 framing, we get full frames, so we don't
@@ -472,12 +474,12 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					 */
 					rv = d_l2_conn->diag_msg->len;
 				break;
-			}
+			}	//switch (state)
 
 			// end of all response messages:
 			if (state == ST_STATE3)
 				break;
-		}
+		}	//if diag_err_timeout
 
 		// Other reception errors.
 		if (rv < 0 || rv > 255)
@@ -515,10 +517,11 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0)
 			{
 				uint8_t rx_cs = tmsg->data[tmsg->len - 1];
-				if(rx_cs != diag_cks1(tmsg->data, tmsg->len - 1))
-				{
+				if(rx_cs != diag_cks1(tmsg->data, tmsg->len - 1)) {
 					fprintf(stderr, FLFMT "Checksum error in received message!\n", FL);
-					return -1;
+					tmsg->iflags |= DIAG_MSG_BADCS;
+				} else {
+					tmsg->iflags &= ~DIAG_MSG_BADCS;
 				}
 				// "Remove" the checksum byte:
 				tmsg->len--;
@@ -581,13 +584,14 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		}
 	}
 
-	return diag_iseterr(rv);
+	return rv? diag_iseterr(rv):0;
 }
 
 
 
 //_recv : timeout is fed directly to _int_recv and should be long enough
 //to guarantee we receive at least one byte. (P2Max should do the trick)
+//ret 0 if ok
 static int
 diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 			void (*callback)(void *handle, struct diag_msg *msg), void *handle)
@@ -611,7 +615,7 @@ diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		d_l2_conn->diag_msg = NULL;
 	}
 
-	return diag_iseterr(rv);
+	return (rv<0)? diag_iseterr(rv):0 ;
 }
 
 /*
@@ -691,6 +695,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 }
 
 
+//_request: ret a new message if ok; NULL if failed
 static struct diag_msg *
 diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 				  int *errval)
@@ -706,8 +711,7 @@ diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *m
 	}
 
 	/* And wait for response */
-	// instead of 1000 we could use P2Max; but 1000 is maybe safer...
-	rv = diag_l2_proto_iso9141_int_recv(d_l2_conn, 1000);
+	rv = diag_l2_proto_iso9141_int_recv(d_l2_conn, d_l2_conn->diag_l2_p2max + RXTOFFSET);
 	if ((rv >= 0) && d_l2_conn->diag_msg)
 	{
 		/* OK */

@@ -785,7 +785,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	static char nullstr[2];
 
 	rv = 0, done = 0;
-	snprintf(promptbuf, sizeof(promptbuf), "%s> ", prompt);
+	snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
 	while (!done) {
 		char *inptr, *s;
 
@@ -816,6 +816,8 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 				cmd_argv[cmd_argc] = s;
 				cmd_argc++;
 				inptr = NULL;
+				if (cmd_argc == ARRAY_SIZE(cmd_argv))
+					break;
 			}
 			nullstr[0] = 0;
 			nullstr[1] = 0;
@@ -833,7 +835,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 				if (strcasecmp(ctp->command, cmd_argv[0]) == 0) {
 					if (ctp->sub_cmd_tbl) {
 						log_command(1, cmd_argv);
-						snprintf(promptbuf, sizeof(promptbuf),"%s/%s",
+						snprintf(promptbuf, PROMPTBUFSIZE,"%s/%s",
 							prompt, ctp->command);
 						/* Sub menu */
 						rv = do_cli(ctp->sub_cmd_tbl,
@@ -842,7 +844,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 							&cmd_argv[1]);
 						if (rv==CMD_EXIT)	//allow exiting prog. from a submenu
 							done=1;
-						snprintf(promptbuf, sizeof(promptbuf), "%s> ", prompt);
+						snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
 					} else {
 						/* Found command */
 						log_command(cmd_argc, cmd_argv);

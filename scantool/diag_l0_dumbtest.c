@@ -3,14 +3,14 @@
 
  *************************************************************************
  * dumbtest
- * Diag, Layer 0, interface tester. This is *NOT* meant to be used while
+ * Diag, Layer 0, interface tester. This should *NOT* be used while
  * a vehicle is connected; only for debugging the electrical interface itself.
 
-* The dumb_flags variable is set according to particular type (VAGtool, SE)
+ * The dumb_flags variable is set according to particular type (VAGtool, SE)
  * to enable certain features (L line on RTS, etc)
 
- * This is a non-standard l0 driver : most functions do nothing except
- * _open which opens the subinterface, runs tests, and closes everything
+ * This is a dummy l0 driver : most functions do nothing except
+ * _open which opens the subinterface, runs the specified test, and closes everything
  * before returning.
  */
 
@@ -239,6 +239,28 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 	return;
 }	//dtest_8
 
+//dtest_9 : test accuracy of read timeouts.
+static void dtest_9(struct diag_l0_device *dl0d) {
+	int i;
+	int iters;
+	uint8_t garbage[MAXRBUF];
+	unsigned long t0, tf;
+	printf("Starting test 9: checking accuracy of read timeouts.\n");
+	diag_tty_iflush(dl0d);	//purge before starting
+
+	for (i=10; i<=200; i += 20) {
+		printf("Timeout=%d: ", i);
+		t0=diag_os_getms();
+		for (iters=0; iters <= 3; iters++) {
+			diag_tty_read(dl0d, garbage, MAXRBUF, i);
+		}
+		tf = (diag_os_getms() - t0)/(iters-1);	//average measured timeout
+		printf("avg=%lums\n", tf);
+	}
+
+	return;
+}	//dtest_9
+
 /*
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
@@ -311,6 +333,9 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	case 8:
 		dtest_8(dl0d);
 		break;
+	case 9:
+		dtest_9(dl0d);
+		break;
 	default:
 		break;
 	}
@@ -321,26 +346,13 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	return NULL;
 }
 
-//diag_l0_dt_close : free the specified diag_l0_device and close TTY handle.
-//this shouldn't be needed : diag_l0_dt_open closes diag_l0_device before
+
+//this should never be called : diag_l0_dt_open never returns a diag_l0_device !
 //returning !
 static int
-diag_l0_dt_close(struct diag_l0_device **pdl0d)
+diag_l0_dt_close(UNUSED(struct diag_l0_device **pdl0d))
 {
-	if (pdl0d && *pdl0d) {
-		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_dt_device *dev =
-			(struct diag_l0_dt_device *)diag_l0_dl0_handle(dl0d);
-
-		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "l0 link %p closing\n",
-				FL, (void *)dl0d);
-
-		if (dev)
-			free(dev);
-
-		(void) diag_tty_close(pdl0d);
-	}
+	fprintf(stderr, FLFMT "**** we're in diag_l0_dt_close()... how did this happen?\n", FL);
 
 	return 0;
 }
@@ -357,7 +369,7 @@ diag_l0_dt_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 
 	struct diag_l0_dt_device *dev;
 
-	dev = (struct diag_l0_dt_device *)diag_l0_dl0_handle(dl0d);
+	dev = (struct diag_l0_dt_device *)(dl0d->dl0_handle);
 
 	fprintf(stderr, FLFMT "device link %p info %p initbus type %d, doing nothing.\n",
 			FL, (void *)dl0d, (void *)dev, in->type);
@@ -447,7 +459,7 @@ const struct diag_serial_settings *pset)
 {
 	struct diag_l0_dt_device *dev;
 
-	dev = (struct diag_l0_dt_device *)diag_l0_dl0_handle(dl0d);
+	dev = (struct diag_l0_dt_device *)(dl0d->dl0_handle);
 
 	dev->serial = *pset;
 

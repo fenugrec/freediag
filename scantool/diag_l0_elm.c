@@ -462,10 +462,6 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 	if (!dev)
 		return diag_iseterr(rv);
 
-	/* Wait the idle time (Tidle > 300ms) */
-	/* Although this is probably already taken care of in ELM's firmware*/
-	diag_os_millisleep(300);
-
 	switch (in->type) {
 		case DIAG_L1_INITBUS_FAST:
 			rv = diag_l0_elm_fastinit(dl0d);
@@ -590,12 +586,12 @@ void *data, size_t len, int timeout)
 		if (xferd == 0) {
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return -1;
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		if (errno != EINTR) {
 			/* Error, EOF */
 			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-			return -1;
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
 	if (diag_l0_debug & DIAG_DEBUG_READ) {

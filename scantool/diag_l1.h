@@ -200,6 +200,7 @@ struct diag_l0
 	//diag_l0_send: return 0 on success
 	int	(*diag_l0_send)(struct diag_l0_device *,
 		const char *subinterface, const void *data, size_t len);
+	//diag_l0_recv: ret # of bytes read
 	int	(*diag_l0_recv)(struct diag_l0_device *,
 		const char *subinterface, void *data, size_t len, int timeout);
 	int	(*diag_l0_setspeed)(struct diag_l0_device *,

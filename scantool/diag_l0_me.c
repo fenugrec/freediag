@@ -404,16 +404,14 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 
 	dev = (struct diag_l0_muleng_device *)diag_l0_dl0_handle(dl0d);
 
+	if (!dev)
+		return diag_iseterr(DIAG_ERR_GENERAL);
+
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d proto %d\n",
-			FL, (void *)dl0d, (void *)dev, in->type,
-			dev ? dev->protocol : -1);
-
-	if (!dev)
-		return -1;
+			FL, (void *)dl0d, (void *)dev, in->type, dev->protocol);
 
 	diag_tty_iflush(dl0d); /* Empty the receive buffer, wait for idle bus */
-	diag_os_millisleep(300);
 
 	if (in->type == DIAG_L1_INITBUS_5BAUD)
 		rv = diag_l0_muleng_slowinit(dl0d, in, dev);
@@ -553,7 +551,7 @@ const void *data, size_t len)
 		break;
 	default:
 		fprintf(stderr, FLFMT "Command never initialised.\n", FL);
-		return -1;
+		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 	}
 
 	/*
@@ -698,13 +696,13 @@ void *data, size_t len, int timeout)
 			{
 				/* Error, EOF */
 				fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-				return -1;
+				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 			if (errno != EINTR)
 			{
 				/* Error, EOF */
 				fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-				return -1;
+				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 		}
 		dev->dev_rxlen += xferd;
@@ -759,9 +757,10 @@ void *data, size_t len, int timeout)
 		case 0x07:	/* No J1850 response to request */
 		case 0x0c:	/* No KWP response to request */
 			return DIAG_ERR_TIMEOUT;
+			break;
 
 		default:
-			return -1;
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		/* NOTREACHED */
 	}

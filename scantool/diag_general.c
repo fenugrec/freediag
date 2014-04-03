@@ -123,6 +123,7 @@ diag_allocmsg(size_t datalen)
 	else
 		newmsg->data = NULL;
 
+	newmsg->next=NULL;
 	newmsg->idata = newmsg->data;	/* Keep tab as users change newmsg->data */
 	// i.e. some functions do (diagmsg->data += skiplen) which would prevent us
 	// from doing free(diagmsg->data)  (the pointer was changed).
@@ -352,11 +353,16 @@ diag_geterr(void) {
 int diag_flcalloc(const char *name, const int line,
 void **pp, size_t n, size_t s) {
 	void *p;
-	if (s !=0) {
+
+	//sanity check: make sure we weren't given a null ptr
+	//or a null size.
+
+	if ((s !=0) && (pp != NULL)) {
 		p = calloc(n, s);
 	} else {
 		p=NULL;
 	}
+
 	*pp = p;
 
 	if (p == NULL) {
@@ -373,7 +379,8 @@ void **pp, size_t n, size_t s) {
 //flmalloc = malloc with logging (filename+line) and size check (!=0)
 int diag_flmalloc(const char *name, const int line, void **pp, size_t s) {
 	void *p;
-	if (s !=0) {
+
+	if ((s !=0) && (pp != NULL)) {
 		p = malloc(s);
 	} else {
 		p=NULL;

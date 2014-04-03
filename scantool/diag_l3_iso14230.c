@@ -113,6 +113,7 @@ char *buf, const size_t bufsize)
 }
 
 
+//return 0 if ok?
 static int
 diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 {
@@ -384,9 +385,7 @@ diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 					msg->len -= 4;
 				}
 				rcv_call_back(handle, msg);
-				if (msg->len)
-					free (msg->data);
-				free (msg);
+				diag_freemsg(msg);
 				rv = 0;
 				/* And quit while we are ahead */
 				break;

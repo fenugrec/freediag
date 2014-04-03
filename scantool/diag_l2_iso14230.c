@@ -171,6 +171,19 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
  *
  *Similar to 9141_int_recv; timeout has to be long enough to catch at least
  *1 byte.
+ * XXX this implementation doesn't accurately detect end-of-responses, because
+ * it's trying to read MAXRBUF (a large number) of bytes, for every state.
+ *if there is a short (say 3 byte) response from the ECU while in state 1,
+ *the timer will expire because it's waiting for MAXBUF
+ *bytes (MAXRBUF is much larger than any message, by design). Then, even
+ *though there are no more responses, we still do another MAXRBUF read
+ *in state 2 for P2min, and a last P2max read in state 3 !
+ * TODO: change state1 to read 1 byte maybe ?
+ * I think a more rigorous way to do this (if L1 doesn't do L2 framing), would
+ * be to loop, reading 1 byte at a time, with timeout=P1max or p2min to split
+ * messages, and timeout=P2max to detect the last byte of a response... this
+ * means calling diag_l1_recv a whole lot more often however.
+
  */
 static int
 diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
@@ -190,8 +203,8 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "_int_recv dl2conn=%p offset %X\n",
-				FL, (void *) d_l2_conn, dp->rxoffset);
+			FLFMT "_int_recv dl2conn=%p offset %X, tout=%d\n",
+				FL, (void *) d_l2_conn, dp->rxoffset, timeout);
 
 	state = ST_STATE1;
 	tout = timeout;
@@ -218,11 +231,14 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 			tout = timeout;
 			break;
 		case ST_STATE2:
+			//State 2 : if we're between bytes of the same message; if we timeout with P2min it's
+			//probably because the message is ended.
 			tout = d_l2_conn->diag_l2_p2min - 2;
 			if (tout < d_l2_conn->diag_l2_p1max)
 				tout = d_l2_conn->diag_l2_p1max;
 			break;
 		case ST_STATE3:
+			//State 3: we timed out during state 2
 			if (l1_doesl2frame)
 				tout = 150;	/* Arbitrary, short, value ... */
 			else
@@ -752,7 +768,7 @@ diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
 			debugstr="ECU refused request; connection will time-out in 5s.(RC=";
 		}
 		errval=rxmsg->data[0];
-		free(rxmsg);
+		diag_freemsg(rxmsg);
 	} else {
 		//no message received...
 		debugstr="ECU did not respond to request, connection will timeout in 5s. (err=";
@@ -933,8 +949,8 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 //iso14230 diag_l2_proto_request. See diag_l2.h
 //This handles busyRepeatRequest and RspPending negative responses.
 //return NULL if failed, or a newly alloced diag_msg if succesful.
-//Caller must free that diag_msg
-//
+//Caller must free that diag_msg.
+//Sends using diag_l2_send() in order to have the timestamps updated
 static struct diag_msg *
 diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		int *errval)
@@ -1075,7 +1091,7 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 	 * Get the response in p2max, we allow longer, and even
 	 * longer on "smart" L2 interfaces
 	 */
-	timeout = d_l2_conn->diag_l2_p3min;
+	timeout = d_l2_conn->diag_l2_p2max;
 	if (d_l2_conn->diag_link->diag_l2_l1flags &
 			(DIAG_L1_DOESL2FRAME|DIAG_L1_DOESP4WAIT)) {
 		if (timeout < 100)

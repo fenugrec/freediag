@@ -146,11 +146,17 @@ diag_l2_findlink(const char *dev_name)
 
 /*
  * Remove a link, caller should free it
+ * This is only called from diag_l2_closelink();
+ *
  */
 static int
 diag_l2_rmlink(struct diag_l2_link *d)
 {
 	struct diag_l2_link *dl2l, *d_l2_last;
+
+	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
+		fprintf(stderr, FLFMT "l2_rmlink: removing %p from diag_l2_links\n",
+				FL, (void *) d);
 
 	dl2l = diag_l2_links;
 	d_l2_last = NULL;
@@ -229,12 +235,12 @@ diag_l2_timer(void)
 		int expired = 0;
 
 		/*
-		 * If in monitor mode or the connection is closing,
+		 * If in monitor mode or the connection isn't open,
 		 * do nothing
 		 */
 		if (((d_l2_conn->diag_l2_type & DIAG_L2_TYPE_INITMASK)
 			== DIAG_L2_TYPE_MONINIT) ||
-				(d_l2_conn->diag_l2_state & DIAG_L2_STATE_CLOSING))
+				!(d_l2_conn->diag_l2_state & DIAG_L2_STATE_OPEN))
 		{
 			continue;
 		}
@@ -313,6 +319,7 @@ int diag_l2_end() {
 
 /*
  * diag_l2_closelink : Close/kill a diag_l2_link,
+ * remove from the linked list,
  * and close its dl0d link with diag_l1_close.
  * This should only be called if we're sure pdl2l
  * is not used anymore...
@@ -324,7 +331,7 @@ diag_l2_closelink(struct diag_l2_link **pdl2l)
 		struct diag_l2_link *dl2l = *pdl2l;
 
 		if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr,FLFMT "diag_l2_closelink %p called\n",
+			fprintf(stderr,FLFMT "l2_closelink %p called\n",
 				FL, (void *)dl2l);
 
 		if (dl2l)
@@ -362,7 +369,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_open %s on %s, L1proto=%d\n",
+			FLFMT "l2_open %s on %s, L1proto=%d\n",
 			FL, dev_name, subinterface, L1protocol);
 
 	dl2l = diag_l2_findlink(dev_name);
@@ -370,18 +377,14 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 	if (dl2l)
 	{
 		if (diag_l2_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr, FLFMT "existing L2 link \"%s\" found\n", FL, dl2l->diag_l2_name);
+			fprintf(stderr, "\texisting L2 link \"%s\" found\n", dl2l->diag_l2_name);
 		/* device open */
-		if (dl2l->diag_l2_l1protocol != L1protocol)
-		{
+		if (dl2l->diag_l2_l1protocol != L1protocol) {
 			/* Wrong L1 protocol, close link */
 			diag_l2_closelink(&dl2l);
-			free(dl2l);
-		}
-		else
-		{
+		} else 	{
 			/* Device was already open, with correct protocol  */
-		return dl2l->diag_l2_dl0d;
+			return dl2l->diag_l2_dl0d;
 		}
 	}
 
@@ -438,8 +441,11 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 	struct diag_l2_link *dl2l;
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr,FLFMT "Entered diag_l2_close for dl0d=%p; ",
+		fprintf(stderr,FLFMT "Entered diag_l2_close for dl0d=%p;\n",
 			FL, (void *)dl0d);
+
+	if (dl0d==NULL)
+		return 0;
 
 	if (dl0d->dl2_link != NULL) {
 		// Check if dl2_link is still referenced by someone in diag_l2_connections
@@ -453,9 +459,9 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 		}
 		//So we found nobody in diag_l2_connections that uses this dl0d + dl2link.
 		if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "closing unused dl2link %p.\n", FL,
+			fprintf(stderr, "\tclosing unused dl2link %p.\n",
 				(void *)dl0d->dl2_link);
-		diag_l2_closelink(&dl0d->dl2_link);
+		diag_l2_closelink(&dl0d->dl2_link);	//closelink calls diag_l1_close() as required
 		return 0;
 	}
 	// this dl0d had no ->dl2_link; check in the linked-list anyway in case
@@ -470,7 +476,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 	//So we parsed all d2 links and found no parents; let's close dl0d.
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr, "closing unused dl0d.\n");
+		fprintf(stderr, "\tclosing unused dl0d.\n");
 	diag_l1_close(&dl0d);
 
 	return 0;
@@ -517,7 +523,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 			reusing = 1;
 			break;
 		}
-		d_l2_conn = d_l2_conn -> diag_l2_next ;
+		d_l2_conn = d_l2_conn->next;
 	}
 
 	if (d_l2_conn == NULL)
@@ -603,7 +609,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 	 * - unless we're re-using a established connection, then no need
 	 * to re-note.
 	 */
-	if ( (reusing == 0) && d_l2_conn )
+	if ( reusing == 0 )
 	{
 		/* And attach connection info to our main list */
 		d_l2_conn->next = diag_l2_connections ;
@@ -614,8 +620,8 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 		diag_l2_conbyid[target] = d_l2_conn;
 
 	}
-	if (d_l2_conn)
-		d_l2_conn -> diag_l2_state = DIAG_L2_STATE_OPEN;
+	d_l2_conn->tlast=diag_os_getms();
+	d_l2_conn -> diag_l2_state = DIAG_L2_STATE_OPEN;
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
@@ -635,6 +641,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, uint32_
 int
 diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 {
+	struct diag_msg * tempmsg;
 	if (! d_l2_conn)
 		return 0;
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSING;
@@ -656,6 +663,13 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 			if (diag_l2_debug & DIAG_DEBUG_CLOSE)
 				fprintf(stderr, FLFMT "l2_stopcomm: removing dl2 for ID=%X\n", FL, i);
 		}
+	}
+	//We assume the protocol-specific _stopcomms() cleared out anything it
+	//may have alloc'ed. inside the l2 connection struct.
+	// But we might still have some attached messages that
+	//were never freed, so we need to purge those:
+	for (tempmsg=d_l2_conn->diag_msg; tempmsg!=NULL; tempmsg = tempmsg->next) {
+		diag_freemsg(tempmsg);
 	}
 	//and free() the connection.
 	free(d_l2_conn);
@@ -714,8 +728,6 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 			FLFMT "diag_l2_send %p msg %p msglen %d called\n",
 				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
-//	diag_l2_sendstamp(d_l2_conn);	/* Save timestamps */
-
 	/* Call protocol specific send routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_send(d_l2_conn, msg);
 
@@ -736,7 +748,7 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 struct diag_msg *
 diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval)
 {
-	struct diag_msg *rv;
+	struct diag_msg *rxmsg;
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
@@ -744,17 +756,20 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 				FL, (void *)d_l2_conn, (void *)msg);
 
 	/* Call protocol specific send routine */
-	rv = d_l2_conn->l2proto->diag_l2_proto_request(d_l2_conn, msg, errval);
+	rxmsg = d_l2_conn->l2proto->diag_l2_proto_request(d_l2_conn, msg, errval);
 
-	if (rv==0) {
-		//update timers if successful
-		d_l2_conn->tlast = diag_os_getms();
-	} else if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "_request returns %p, err %d\n",
-				FL, (void *)rv, *errval);
+				FL, (void *)rxmsg, *errval);
 	}
 
-	return rv;
+	if (rxmsg==NULL) {
+		return (struct diag_msg *) diag_pseterr(*errval);
+	}
+		//update timers
+	d_l2_conn->tlast = diag_os_getms();
+
+	return rxmsg;
 }
 
 

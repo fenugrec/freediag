@@ -49,14 +49,16 @@ struct diag_l2_link
 	struct diag_l0_device * 	diag_l2_dl0d;	/* Link we're using to talk to lower layer */
 	int	diag_l2_l1protocol;		/* L1 protocol used*/
 
-	char	diag_l2_name[DIAG_NAMELEN];	/* XXX this is set the l0 driver shortname !? */
+	char	diag_l2_name[DIAG_NAMELEN];	/* XXX this is set to the l0 driver shortname !? */
 
 	int	diag_l2_l1flags;		/* L1 flags, filled with diag_l1_getflags in diag_l2_open*/
 	int	diag_l2_l1type;			/* L1 type (see diag_l1.h): filled with diag_l1_gettype*/
 
 	struct diag_l2_link *next;		/* linked list of all connections */
-	struct diag_l2_link *l1_next;		/* linked list of all ECUs with same ID on different interfaces */
-	struct diag_l2_link *l1_prev;		/* prev to make list removal easy */
+
+	//these two elements are unused/not required right now.
+//	struct diag_l2_link *l1_next;		/* linked list of all ECUs with same ID on different interfaces */
+//	struct diag_l2_link *l1_prev;		/* prev to make list removal easy */
 };
 
 struct diag_msg;
@@ -76,12 +78,13 @@ struct diag_l2_conn
 	//struct timeval	diag_l2_lastsend;	/* Time we sent last message */
 	//struct timeval	diag_l2_expiry;		/* When it expires */
 
-	//The following two are updated when diag_l2_send, _recv,
-	//  _request, and _startcomm are called succesfully.
+	//The following two members are used for periodic keep-alive messages.
+	//tlast is updated when diag_l2_send, _recv,
+	//  _request, or _startcomm is called succesfully.
 	unsigned long tlast;		// Time of last received || sent data, in ms.
 	unsigned long tinterval;	// How long before expiry (usually set by startcomms() once)
 
-	const struct diag_l2_proto *l2proto;	/* Protocol handlers */
+	const struct diag_l2_proto *l2proto;	/* Protocol handler */
 
 	uint32_t diag_l2_type;		/* Type info for this L2 connection */
 
@@ -129,8 +132,11 @@ struct diag_l2_conn
 	struct diag_l2_conn *next;
 
 	/* List of connections per L1 interface */
-	struct diag_l2_conn *diag_l2_next;
-	struct diag_l2_conn *diag_l2_prev;
+	//XXXI'm not sure what these next two were for. They were not
+	//referenced anywhere; and we already have a linked-list of
+	//L2 connections.
+//	struct diag_l2_conn *diag_l2_next;
+//	struct diag_l2_conn *diag_l2_prev;
 
 	/* Generic receive buffer */
 	uint8_t	rxbuf[MAXRBUF];
@@ -418,8 +424,8 @@ struct diag_l2_proto {
 	int diag_l2_flags;		//see #defines above
 
 	//_StartCommunications: the l2 proto implementation of this should modify
-	//the timing parameters in diag_l2_conn if required; by default (in
-	//diag_l2_startcommunications) iso14230 timings are used.
+	//the timing parameters in diag_l2_conn if required; by default in
+	//diag_l2_startcommunications() iso14230 timings are used.
 	int (*diag_l2_proto_startcomms)(struct diag_l2_conn*,
 		flag_type, unsigned int bitrate, target_type, source_type);
 	int (*diag_l2_proto_stopcomms)(struct diag_l2_conn*);
@@ -429,7 +435,7 @@ struct diag_l2_proto {
 	int (*diag_l2_proto_recv)(struct diag_l2_conn *d_l2_conn,
 		int timeout, void (*callback)(void *handle, struct diag_msg *msg),
 		void *handle);
-	//diag_l2_proto_request :
+	//diag_l2_proto_request : return a new diag_msg if succesful.
 	struct diag_msg * (*diag_l2_proto_request)(struct diag_l2_conn*,
 		struct diag_msg*, int*);
 	//diag_l2_proto_timeout : this is called periodically (interval

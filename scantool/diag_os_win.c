@@ -35,8 +35,8 @@
 static int diag_os_init_done=0;
 
 LARGE_INTEGER perfo_freq={{0,0}};	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
-float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds
-int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_millisleep
+float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds, i.e. [us]=[counts]*pf_conv
+int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_millisleep & diag_os_calibrate
 
 
 /* periodic callback:
@@ -49,12 +49,11 @@ HANDLE hDiagTimer;
 VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
 	static int timerproblem=0;
 	if (!timedout) {
-		//this should not happen...
+		//this should never happen.
 		if (!timerproblem) {
 			fprintf(stderr, FLFMT "Problem with OS timer callback! Report this !\n", FL);
 			timerproblem=1;	//so we dont flood the screen with errors
 		}
-		//SetEvent(timerproblem) // probably not needed ?
 	} else {
 		timerproblem=0;
 		diag_l3_timer();	/* Call L3 Timer */
@@ -80,25 +79,30 @@ diag_os_init(void)
 	//is the timer queue... so that's what we do.
 	//we create the timer in the default timerqueue
 	diag_os_sched();	//call os_sched to increase thread priority.
-	//we do this in the hope that the OS increases the performance counter frequency
-	//to its maximum, in case it was previously in a low-power, low-freqency state.
-	//I have no evidence of that ever happening, however.
 
 	if (! CreateTimerQueueTimer(&hDiagTimer, NULL,
 			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo,
 			WT_EXECUTEDEFAULT)) {
 		fprintf(stderr, FLFMT "CTQT error.\n", FL);
-		return -1;
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	//and get the current performance counter frequency.
-	if (! QueryPerformanceFrequency(&perfo_freq)) {
-		fprintf(stderr, FLFMT "Could not QPF. Please report this !\n", FL);
+	//From MSDN docs :	The frequency of the performance counter is fixed at system boot
+	//					and is consistent across all processors. Therefore, the frequency
+	//					need only be queried upon application initialization, and the result can be cached.
+	//
+	//					Under what circumstances does QueryPerformanceFrequency return FALSE,
+	//					or QueryPerformanceCounter return zero?
+	//						->This won't occur on any system that runs Windows XP or later.
+
+	if ( !QueryPerformanceFrequency(&perfo_freq) || (perfo_freq.QuadPart==0)) {
+		fprintf(stderr, FLFMT "Fatal: could not QPF. Please report this !\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	if (perfo_freq.QuadPart !=0) {
-		pf_conv=1.0E6 / perfo_freq.QuadPart;
-	}
+
+	pf_conv=1.0E6 / perfo_freq.QuadPart;
+
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "Performance counter frequency : %9"PRIu64"Hz\n", FL, perfo_freq.QuadPart);
 	}
@@ -137,9 +141,7 @@ int diag_os_close() {
 } 	//diag_os_close
 
 
-//different os_millisleep implementations
-//TODO : add timing verification for *unix
-
+//
 int
 diag_os_millisleep(unsigned int ms)
 {
@@ -150,18 +152,17 @@ diag_os_millisleep(unsigned int ms)
 	//will almost always run through the NOP loop.
 	LARGE_INTEGER qpc1, qpc2;
 	long real_t;
-	static long correction;	//auto-adjusment (in us)
+	static long correction=0;	//auto-adjusment (in us)
 	LONGLONG tdiff;	//measured (elapsed) time (in counts)
 
 	QueryPerformanceCounter(&qpc1);
 	tdiff=0;
-	correction=0;
-	LONGLONG reqt= (ms * perfo_freq.QuadPart)/1000;	//required # of counts
+
 	if (perfo_freq.QuadPart ==0) {
 		Sleep(ms);
 		return 0;
 	}
-
+	LONGLONG reqt= (ms * perfo_freq.QuadPart)/1000;	//required # of counts
 
 	if ( shortsleep_reliable || (((long) ms-(correction/1000)) > 5)) {
 		//if reliable, or long sleep : try
@@ -278,7 +279,7 @@ void diag_os_calibrate(void) {
 
 	if (perfo_freq.QuadPart == 0) {
 		fprintf(stderr, FLFMT "_calibrate will not work without a performance counter.\n", FL);
-		return;
+		calibrate_done=1;
 	}
 	if (calibrate_done)
 		return;
@@ -311,6 +312,8 @@ void diag_os_calibrate(void) {
 				max = timediff;
 		}
 		avgerr= (LONGLONG) (((tsum/iters)-counts) * pf_conv);	//average error in us
+		//a high spread (max-min) indicates initbus with dumb interfaces will be
+		//fragile. We just print it out; there's not much we can do to fix this.
 		if ((min < counts) || (avgerr > 900))
 			printf("diag_os_millisleep(%d) off by %+"PRId64"%% (%+"PRId64"us)"
 			"; spread=%"PRIu64"%%\n", testval, (avgerr*100/1000)/testval, avgerr, ((max-min)*100)/counts);
@@ -335,8 +338,7 @@ void diag_os_calibrate(void) {
 	//before us :
 	(void) diag_os_chronoms(-t3);	//this should do it
 
-	printf("diag_os_chronoms() : initial time %lums; resolution: ~%lums\n",
-		t3, t2-t1);
+	printf("diag_os_chronoms() : resolution: ~%lums\n", t2-t1);
 
 
 	printf("Calibration done.\n");
@@ -346,7 +348,7 @@ void diag_os_calibrate(void) {
 }	//diag_os_calibrate
 
 //return monotonic clock time, ms precision.
-//resolution is not important; GetTickCount() is good enough
+//resolution and accuracy are not important; GetTickCount() is good enough
 unsigned long diag_os_getms(void) {
 	return (unsigned long) GetTickCount();
 }

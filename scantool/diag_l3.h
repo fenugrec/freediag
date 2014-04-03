@@ -83,7 +83,9 @@ typedef struct diag_l3_proto
 
 	int (*diag_l3_proto_start)(struct diag_l3_conn *);
 	int (*diag_l3_proto_stop)(struct diag_l3_conn *);
+	//proto_recv: ret 0 if ok?
 	int (*diag_l3_proto_send)(struct diag_l3_conn *, struct diag_msg *);
+	//proto_recv: ret 0 if ok?
 	int (*diag_l3_proto_recv)(struct diag_l3_conn *, int,
 		void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *);
 	int (*diag_l3_proto_ioctl)(struct diag_l3_conn *, int cmd, void *data);

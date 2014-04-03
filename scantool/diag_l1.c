@@ -180,16 +180,19 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 //diag_l1_close : call the ->diag_l0_close member of the
 //specified diag_l0_device.
 int
-diag_l1_close(struct diag_l0_device **pdl0d)
+diag_l1_close(struct diag_l0_device **ppdl0d)
 {
 	if (diag_l1_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr, FLFMT "entering diag_l1_close\n", FL);
-	return pdl0d ?
-		(diag_l0_device_dl0(*pdl0d)->diag_l0_close)(pdl0d) : 0;
+		fprintf(stderr, FLFMT "entering diag_l1_close: ppdl0d=%p\n", FL,
+			(void *) ppdl0d);
+	return (ppdl0d && *ppdl0d)?
+		(diag_l0_device_dl0(*ppdl0d)->diag_l0_close)(ppdl0d) : 0;
 }
 
 /*
  * Do wakeup/init on the net.
+ * Caller must have waited the appropriate time before calling this, since any
+ * bus-idle requirements are specified at the L2 level.
  */
 int
 diag_l1_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
@@ -299,11 +302,15 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 
 /*
  * Get data (blocking, unless timeout is 0)
+ * returns
  */
 int
 diag_l1_recv(struct diag_l0_device *dl0d,
 	const char *subinterface, void *data, size_t len, int timeout)
 {
+	if (!len)
+		return 0;
+
 	return diag_l0_device_dl0(dl0d)->diag_l0_recv(dl0d, subinterface, data, len, timeout);
 }
 

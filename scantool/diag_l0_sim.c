@@ -122,7 +122,6 @@ sim_new_ecu_response_txt(const char* text)
 	struct sim_ecu_response *resp;
 	int rv;
 
-	//~ resp = calloc(1, sizeof(struct sim_ecu_response));
 	if ((rv=diag_calloc(&resp, 1)))
 		return (struct sim_ecu_response *)diag_pseterr(rv);
 
@@ -131,8 +130,7 @@ sim_new_ecu_response_txt(const char* text)
 	resp->text = NULL;
 	resp->next = NULL;
 
-	if (text != NULL && strlen(text)) {
-		// resp->text = calloc(strlen(text)+1, sizeof(char));
+	if ((text != NULL) && strlen(text)) {
 		if ((rv=diag_calloc(&(resp->text), strlen(text)+1))) {
 			free(resp);
 			return (struct sim_ecu_response *)diag_pseterr(rv);
@@ -151,14 +149,20 @@ sim_new_ecu_response_bin(const uint8_t* data, const uint8_t len)
 {
 	struct sim_ecu_response *resp;
 
-	resp = calloc(1, sizeof(struct sim_ecu_response));
+	if (diag_calloc(&resp, 1))
+		return (struct sim_ecu_response *)diag_pseterr(DIAG_ERR_NOMEM);
+	//resp = calloc(1, sizeof(struct sim_ecu_response));
 	resp->data = NULL;
 	resp->len = 0;
 	resp->text = NULL;
 	resp->next = NULL;
 
-	if (len > 0 && data != NULL) {
-		resp->data = calloc(len, sizeof(uint8_t));
+	if ((len > 0) && (data != NULL)) {
+		if (diag_calloc(&resp->data, len)) {
+			free(resp);
+			return (struct sim_ecu_response *)diag_pseterr(DIAG_ERR_NOMEM);
+		}
+		//resp->data = calloc(len, sizeof(uint8_t));
 		memcpy(resp->data, data, len);
 		resp->len = len;
 	}
@@ -172,18 +176,21 @@ sim_free_ecu_response(struct sim_ecu_response** resp)
 {
 	struct sim_ecu_response* next_resp = NULL;
 
-	if (*resp == NULL)
-		return next_resp;
+	if (resp && *resp) {
 
-	//get pointer to next one.
-	next_resp = (*resp)->next;
+		//get pointer to next one.
+		next_resp = (*resp)->next;
 
-	//free this one.
-	(*resp)->len = 0;
-	(*resp)->next = 0;
-	free((*resp)->data);
-	free(*resp);
-	resp = NULL;
+		//free this one.
+		(*resp)->len = 0;
+		(*resp)->next = 0;
+		if ((*resp)->data)
+			free((*resp)->data);
+		if ((*resp)->text)
+			free((*resp)->text);
+		free(*resp);
+		*resp = NULL;
+	}
 
 	//return next one.
 	return next_resp;
@@ -196,6 +203,9 @@ void sim_free_ecu_responses(struct sim_ecu_response** resp_pp)
 	struct sim_ecu_response** temp_resp_pp = resp_pp;
 	uint8_t count = 0;
 
+	if ((resp_pp==NULL) || (*resp_pp==NULL))
+		return;
+
 	while (*temp_resp_pp != NULL) {
 		*temp_resp_pp = sim_free_ecu_response(temp_resp_pp);
 		count++;
@@ -203,6 +213,7 @@ void sim_free_ecu_responses(struct sim_ecu_response** resp_pp)
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr, FLFMT " %d responses freed from queue.\n", FL, count);
+	return;
 }
 
 // for debug purposes.
@@ -544,6 +555,8 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 				fclose(dev->fp);
 			free(dev);
 		}
+		if (dl0d==NULL)
+			return 0;
 		// dl0d->name, ->ttystate and dl0d are usually free()d by diag_tty_close
 		// so we have to do it ourselves
 		if (dl0d->name)
@@ -680,8 +693,8 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "dl0d=%p recv %d byte;s\n", FL, (void *)dl0d, (int) len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+		fprintf(stderr, FLFMT "dl0d=%p recv %d byte;\n", FL, (void *)dl0d, (int) len);
+		if ((diag_l0_debug & DIAG_DEBUG_DATA) && (xferd>0)) {
 			fprintf(stderr, FLFMT "L0 sim receiving: ", FL);
 			diag_data_dump(stderr, data, xferd);
 			fprintf(stderr, "\n");

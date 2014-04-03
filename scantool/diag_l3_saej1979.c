@@ -437,7 +437,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				}
 				lmsg->next = msg;
 			}
-			free(msg);
+			diag_freemsg(msg);
 			if (badpacket) {
 				/* No point in continuing */
 				break;
@@ -570,9 +570,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 					msg->len -= 4;
 				}
 				rcv_call_back(handle, msg);
-				if (msg->len)
-					free (msg->data);
-				free (msg);
+				diag_freemsg(msg);
 				rv = 0;
 				/* And quit while we are ahead */
 				break;

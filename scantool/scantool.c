@@ -128,19 +128,19 @@ struct diag_msg *
 find_ecu_msg(int byte, databyte_type val)
 {
 	ecu_data_t *ep;
-	struct diag_msg *rv = NULL;
+	struct diag_msg *rxmsg = NULL;
 	unsigned int i;
 
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		if (ep->rxmsg) {
 			/* Some data arrived from this ecu */
 			if (ep->rxmsg->data[byte] == val) {
-				rv = ep->rxmsg;
+				rxmsg = ep->rxmsg;
 				break;
 			}
 		}
 	}
-	return rv;
+	return rxmsg;
 }
 
 
@@ -741,6 +741,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 
 	if (d_conn == NULL) {
 		diag_l2_close(dl0d);
+		fprintf(stderr, FLFMT "l2_common_start: l2_StartComm failed\n", FL);
 		return NULL;
 	}
 
@@ -757,6 +758,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 	 */
 	if (diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_FLAGS, &l2flags) != 0) {
 		fprintf(stderr, "Failed to get Layer 2 flags\n");
+		diag_l2_StopCommunications(d_conn);
 		diag_l2_close(dl0d);
 		return NULL;
 	}
@@ -764,6 +766,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 		rv = do_l3_md1pid0_rqst(d_conn);
 		if (rv < 0) {
 			/* Not actually there, close L2 and go */
+			diag_l2_StopCommunications(d_conn);
 			diag_l2_close(dl0d);
 			return NULL;
 		}
@@ -828,7 +831,7 @@ do_l2_9141_start(int destaddr)
 		set_testerid);
 
 	if (d_conn == NULL)
-		return -1;
+		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	/* Connected ! */
 	global_l2_conn = d_conn;
@@ -858,7 +861,7 @@ do_l2_14230_start(int init_type)
 		flags, set_speed, set_destaddr, set_testerid);
 
 	if (d_conn == NULL)
-		return -1;
+		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	/* Connected ! */
 	global_l2_conn = d_conn;
@@ -879,7 +882,7 @@ do_l2_j1850_start(int l1_type)
 		flags, set_speed, 0x6a, set_testerid);
 
 	if (d_conn == NULL)
-		return -1;
+		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	/* Connected ! */
 	global_l2_conn = d_conn;
@@ -963,6 +966,8 @@ do_j1979_getdata(int interruptible)
 	struct diag_msg *msg;
 
 	d_conn = global_l3_conn;
+	if (d_conn == NULL)
+		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	diag_os_ipending();	//this is necessary on WIN32 to "purge" the last state of the enter key; we can't just poll stdin.
 
@@ -998,12 +1003,12 @@ do_j1979_getdata(int interruptible)
 
 	if (rv < 0) {
 		fprintf(stderr, "Mode 0x02 Pid 0x02 request failed (%d)\n", rv);
-		return -1;
+		return DIAG_ERR_GENERAL;
 	}
 	msg = find_ecu_msg(0, 0x42);
 	if (msg == NULL) {
 		fprintf(stderr, "Mode 0x02 Pid 0x02 request no-data (%d)\n", rv);
-		return -1;
+		return DIAG_ERR_GENERAL;
 	}
 	diag_os_ipending();	//again, required for WIN32 to "purge" last keypress
 	/* Now go thru the ECUs that have responded with mode2 info */
@@ -1018,11 +1023,12 @@ do_j1979_getdata(int interruptible)
 						0x00, 0x00, 0x00, 0x00, (void *)0);
 					if (rv < 0) {
 						fprintf(stderr, "Mode 0x02 Pid 0x%02X request failed (%d)\n", i, rv);
-					}
-					msg = find_ecu_msg(0, 0x42);
-					if (msg == NULL) {
-						fprintf(stderr, "Mode 0x02 Pid 0x%02X request no-data (%d)\n", i, rv);
-						return -1;
+					} else {
+						msg = find_ecu_msg(0, 0x42);
+						if (msg == NULL) {
+							fprintf(stderr, "Mode 0x02 Pid 0x%02X request no-data (%d)\n", i, rv);
+							return DIAG_ERR_GENERAL;
+						}
 					}
 
 				}

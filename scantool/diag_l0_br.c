@@ -217,9 +217,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 			fprintf(stderr, FLFMT "CHIP CONNECT write failed link %p\n",
 				FL, (void *)dl0d);
 		}
-
 		diag_l0_br_close(&dl0d);
-		free(dev);
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	/* And expect 0xff as a response */
@@ -230,7 +228,6 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 		}
 
 		diag_l0_br_close(&dl0d);
-		free(dev);
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	if (buf[0] != 0xff) {
@@ -240,7 +237,6 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 		}
 
 		diag_l0_br_close(&dl0d);
-		free(dev);
 		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
@@ -261,7 +257,6 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	}
 	if (rv) {
 		diag_l0_br_close(&dl0d);
-		free(dev);
 		return (struct diag_l0_device *)diag_pseterr(rv);
 	}
 
@@ -423,10 +418,9 @@ diag_l0_br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 			dev ? dev->protocol : -1);
 
 	if (!dev)
-		return -1;
+		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	diag_tty_iflush(dl0d); /* Flush unread input */
-	diag_os_millisleep(300);	/* Wait for idle bus */
 
 	switch (in->type)
 	{
@@ -437,7 +431,7 @@ diag_l0_br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 		if ((dev->dev_features & BR_FEATURE_FASTINIT) == 0)
 		{
 			/* Fast init Not supported */
-			rv = -1;
+			rv = DIAG_ERR_INIT_NOTSUPP;
 		}
 		else
 		{
@@ -447,10 +441,10 @@ diag_l0_br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 		}
 		break;
 	default:
-		rv = -1;
+		rv = DIAG_ERR_INIT_NOTSUPP;
 		break;
 	}
-	return rv;
+	return rv? diag_iseterr(rv):0 ;
 }
 
 /*

@@ -82,7 +82,7 @@ target_type target, source_type source)
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "diag_l2_j1850_startcomms conn %p\n",
+			FLFMT "diag_l2_j1850_startcomms dl2conn %p\n",
 				FL, (void *)d_l2_conn);
 
 	if (diag_calloc(&dp, 1))
@@ -367,7 +367,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	if (rv < 0)
 	{
 		*errval = rv;
-		return diag_pseterr(DIAG_ERR_GENERAL);
+		return (struct diag_msg *) diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* And now wait for a response */
@@ -376,7 +376,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	if (rv < 0)
 	{
 		*errval = rv;
-		return diag_pseterr(DIAG_ERR_GENERAL);
+		return (struct diag_msg *) diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* Return the message to user, who is responsible for freeing it */

@@ -97,7 +97,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		 * Malloc us a L3
 		 */
 		if (diag_calloc(&d_l3_conn, 1))
-			return diag_pseterr(DIAG_ERR_NOMEM);
+			return (struct diag_l3_conn *) diag_pseterr(DIAG_ERR_NOMEM);
 
 		d_l3_conn->d_l3l2_conn = d_l2_conn;
 		d_l3_conn->d_l3_proto = dp;
@@ -118,7 +118,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		{
 			free(d_l3_conn);
 			d_l3_conn = NULL;
-			return diag_pseterr(rv);
+			return (struct diag_l3_conn *) diag_pseterr(rv);
 		}
 		else
 		{
@@ -174,10 +174,8 @@ int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 	rv = dp->diag_l3_proto_stop(d_l3_conn);
 
 	free(d_l3_conn);
-	if (rv)
-		return diag_iseterr(rv);
 
-	return 0;
+	return rv? diag_iseterr(rv):0;
 }
 
 int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
@@ -191,16 +189,22 @@ int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	if (!rv)
 		d_l3_conn->timer=diag_os_getms();
 
-	return rv;
+	return rv? diag_iseterr(rv):0;
 }
 
 int diag_l3_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle)
 {
 	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
+	int rv;
 
-	return dp->diag_l3_proto_recv(d_l3_conn, timeout,
+	rv=dp->diag_l3_proto_recv(d_l3_conn, timeout,
 		rcv_call_back, handle);
+
+	if (rv==0)
+		d_l3_conn->timer=diag_os_getms();
+
+	return rv? diag_iseterr(rv):0;
 }
 
 //diag_l3_decode:
@@ -288,9 +292,10 @@ int diag_l3_base_stop(UNUSED(struct diag_l3_conn *d_l3_conn))
  * Send a Message doing all the handshaking needed
  */
 
-int diag_l3_base_send(UNUSED(struct diag_l3_conn *d_l3_conn),
+int diag_l3_base_send(struct diag_l3_conn *d_l3_conn,
 	UNUSED(struct diag_msg *msg))
 {
+	d_l3_conn->timer=diag_os_getms();
 	return 0;
 }
 

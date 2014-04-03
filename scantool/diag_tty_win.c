@@ -271,20 +271,11 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 int
 diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rts)
 {
-	LARGE_INTEGER perftest;	// making sure the frequency is the same
 	unsigned int escapefunc;
 
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-
-	QueryPerformanceFrequency(&perftest);
-	if (perfo_freq.QuadPart != perftest.QuadPart) {
-		//this sanity check takes ~ 4us on my system
-		fprintf(stderr, FLFMT "Warning: your system changed its performance counter frequency !\n", FL);
-		perfo_freq.QuadPart = perftest.QuadPart;
-		//we update the global setting, since it's just use for validation at the moment (not control)
 	}
 
 	if (dtr)
@@ -420,7 +411,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 // diag_tty_break #1 : use Set / ClearCommBreak
 // and return as soon as break is cleared.
 int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
-	LARGE_INTEGER qpc1, qpc2, perftest;	//for timing verification
+	LARGE_INTEGER qpc1, qpc2;	//for timing verification
 	static long correction=0;	//running average offset (us) to add to the timeout
 	long real_t;	//"real" duration measured in us
 	int errval=0;
@@ -432,14 +423,6 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 	if ( (ms + correction/1000)<1)
 		return diag_iseterr(DIAG_ERR_GENERAL);
-
-	QueryPerformanceFrequency(&perftest);
-		//this sanity check takes ~ 4us on my system
-	if (perfo_freq.QuadPart != perftest.QuadPart) {
-		fprintf(stderr, FLFMT "Warning: your system changed its performance counter frequency !\n", FL);
-		perfo_freq.QuadPart = perftest.QuadPart;
-		pf_conv=1.0E6 / perftest.QuadPart;
-	}
 
 	QueryPerformanceCounter(&qpc1);
 	errval=!SetCommBreak(dl0d->fd);
