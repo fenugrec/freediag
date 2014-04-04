@@ -68,15 +68,9 @@ endif ()
 ###### Global function & library checks
 find_library (HAVE_LIBREADLINE libreadline)
 
-check_function_exists (gettimeofday HAVE_GETTIMEOFDAY)
 #check_function_exists (malloc HAVE_MALLOC)
 #no use in checking for malloc() since we don't have a fallback solution...
 check_function_exists (strcasecmp HAVE_STRCASECMP)
-
-set (CMAKE_REQUIRED_INCLUDES "sys/time.h")
-#we could use CMakePushCheckState to push / pop CMAKE_REQUIRED_INCLUDES
-#but I think it has no influence on the rest of the build...
-check_function_exists (timersub HAVE_TIMERSUB)
 
 ###### Platform-specific function checks
 
@@ -90,6 +84,13 @@ else()
 	#no need to check for these on WIN32 as the offending code (diag_os and diag_tty) was re-written
 	check_function_exists (alarm HAVE_ALARM)
 	check_function_exists (select HAVE_SELECT)
+	check_function_exists (gettimeofday HAVE_GETTIMEOFDAY)
+	
+	set (CMAKE_REQUIRED_INCLUDES "sys/time.h")
+	#we could use CMakePushCheckState to push / pop CMAKE_REQUIRED_INCLUDES
+	#but I think it has no influence on the rest of the build...
+	check_function_exists (timersub HAVE_TIMERSUB)
+
 	
 	#diag_os needs clock_gettime if _POSIX_TIMERS is defined.
 	#for clock_gettime, we need to link with -lrt if glibc < 2.17. What a mess.

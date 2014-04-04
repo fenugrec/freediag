@@ -22,9 +22,6 @@
  *
  * L3 code to do SAE J1979 messaging
  *
- * TODO : all of this expects a 3-byte header; but it may be possible
- * (iso14230 in some cases) to have no header... shouldn't we check
- * some "STRIPHEADER" flags ?
  */
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +38,8 @@ CVSID("$Id$");
 
 /*
  * Return the expected J1979 packet length for a given mode byte
- * This includes the 3 header bytes, up to 7 data bytes, 1 ERR byte
+ * This includes *only* up to 7 data bytes (headers and checksum are stripped and
+ * generated in L2)
  *
  * XXX DOESN'T COPE WITH in-frame-response - will break check routine as well
  * Also doesn't support 15765 (CAN) which has more modes.
@@ -51,26 +49,19 @@ CVSID("$Id$");
  */
 static int diag_l3_j1979_getlen(uint8_t *data, int len)
 {
-	static const int rqst_lengths[] = { -1, 6, 7, 5, 5, 6, 6, 5, 11, 6 };
+	static const int rqst_lengths[] = { -1, 2, 3, 1, 1, 2, 2, 1, 7, 2 };
 	int rv;
 	uint8_t mode;
 
-	if (len < 5)	/* Need 3 header bytes and 1 data byte, and 1 cksum*/
+	if (len < 1)	/* Need at least 1 data byte*/
 		return diag_iseterr(DIAG_ERR_INCDATA);
 
-	mode = data[3];
+	mode = data[0];
 
 	//J1979 specifies 9 modes (0x01 - 0x09) except with iso15765 (CAN) which has 0x0A modes.
 
 	if (mode > 0x49)
 		return diag_iseterr(DIAG_ERR_BADDATA);
-
-	/* Mode 8 responses vary in length dependent on request */
-	//J1979 section 6.8+
-	//the requests, however, are fixed length
-	// There is a filler byte inserted when using TID 00 to request supported TIDs. But length is still 7+4
-	//if ((mode == 8) && ((data[4]&0x1f) == 0))
-	//	len = 6;
 
 	if (mode < 0x41) {
 		if (mode <= 9)
@@ -82,39 +73,35 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 
 	//Here, all modes < 0x0A are taken care of.
 	//Modes > 0x40 are responses and therefore need specific treatment
-	//data[4] contains the PID / TID number.
+	//data[1] contains the PID / TID number.
 	switch (mode) {
 	case 0x41:
 	case 0x42:		//almost identical modes except PIDS 1,2
-		//len<5 already covered at top of function
-		//if (len < 5) {
-			/* Need 1st 2 bytes of data to find length */
-		//	rv = DIAG_ERR_INCDATA;
-		//	break;
-		// }
-		if ((data[4] & 0x1f) == 0) {
+		if ((data[1] & 0x1f) == 0) {
 			/* PID 00 or 0x20 : return supported PIDs */
-			rv = 10;
+			rv = 6;
 			break;
 		}
 
-		switch (data[4]) {
+		switch (data[1]) {
 		case 1:	//Status. Only with service 01 (mode 0x41)
-			rv=10;
 			if (mode==0x42)
 				rv=DIAG_ERR_BADDATA;
+			else
+				rv=6;
 			break;
 		case 2:	//request freeze DTC. Only with Service 02 (mode=0x42)
-			rv=8;
 			if (mode==0x41)
 				rv = DIAG_ERR_BADDATA;
+			else
+				rv=4;
 			break;
 		case 3:
-			rv = 8;
+			rv = 4;
 			break;
 		case 0x04:
 		case 0x05:
-			rv=7;
+			rv=3;
 			break;
 		case 0x06:
 		case 0x07:
@@ -122,27 +109,27 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		case 0x09:
 			//XXX For PIDs 0x06 thru 0x09, there may be an additional data byte based on PID 0x13 / 0x1D results
 			// (presence of a bank3 O2 sensor. Not implemented...
-			rv=7;
+			rv=3;
 			break;
 		case 0x0A:
 		case 0x0B:
-			rv=7;
+			rv=3;
 			break;
 		case 0x0C:
-			rv=8;
+			rv=4;
 			break;
 		case 0x0D:
 		case 0x0E:
 		case 0x0F:
-			rv=7;
+			rv=3;
 			break;
 		case 0x10:
-			rv=8;
+			rv=4;
 			break;
 		case 0x11:
 		case 0x12:
 		case 0x13:
-			rv = 7;
+			rv = 3;
 			break;
 		case 0x14:
 		case 0x15:
@@ -152,15 +139,15 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		case 0x19:
 		case 0x1A:
 		case 0x1B:
-			rv = 8;
+			rv = 4;
 			break;
 		case 0x1C:
 		case 0x1D:
 		case 0x1E:
-			rv = 7;
+			rv = 3;
 			break;
 		case 0x1F:
-			rv = 8;
+			rv = 4;
 			break;
 		default:
 			/* Sometime add J2190 support (PID>0x1F) */
@@ -169,33 +156,33 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		}
 		break;
 	case 0x43:
-		rv=11;
+		rv=7;
 		break;
 	case 0x44:
-		rv = 5;
+		rv = 1;
 		break;
 	case 0x45:
-		//if len>=5
-		if ((data[4] & 0x1f) == 0)
-			rv = 11;		// Read supported TIDs
-		else if (data[4]<4)
-			rv=8;			//J1979 sec 6.5.2.4 : conditional TIDs.
+		if ((data[1] & 0x1f) == 0)
+			rv = 7;		// Read supported TIDs
+		else if (data[1] <= 4)
+			rv=4;			//J1979 sec 6.5.2.4 : conditional TIDs.
 		else
-			rv = 10;		//Request TID result
+			rv = 6;		//Request TID result
 		break;
 	case 0x46:
-		//J1979 sec6.6 : response length should depend on one of the data bytes. Screwed.
+		//J1979 sec6.6 : I think there are always 7 bytes. If we're
+		//requesting test results (min or max), I think the two last bytes
+		//are always included despited being marked "Conditional"
 	case 0x47:
 	case 0x48:
-		rv = 11;
+		rv = 7;
 		break;
 	case 0x49:
-		//if (len < 5)
-		if ((data[4] & 0x01) ==0) {
-			rv=11;	//7+4 bytes if even
+		if ((data[1] & 0x01) ==0) {
+			rv=7;	//7 bytes if even
 			break;
 		} else {
-			rv=7;		//else just 3+4
+			rv=3;
 			break;
 		}
 	default:
@@ -207,6 +194,8 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 
 /*
  * Send a J1979 packet - we know the length (from looking at the data)
+ * since we're L3, we assume msg->data[0] is the mode (service id), i.e. there
+ * aren't any headers.
  */
 static int
 diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
@@ -223,17 +212,27 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 		fprintf(stderr,FLFMT "send %d bytes, l2 flags 0x%X\n",
 			FL, msg->len, d_l3_conn->d_l3l2_flags);
 
+	//and make sure src address was set in msg:
+	if (! msg->src)
+		msg->src=0xF1;
+
 	/* Note source address on 1st send */
 	if (d_l3_conn->src == 0)
 		d_l3_conn->src = msg->src;
 
 
-	//TODO: always use diag_l2_send; L2's job is to add headers and checksum...
-	//if required we can override msg->src and msg->dst;
-	if (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_DATA_ONLY) {
-		/* L2 does framing, adds addressing and CRC, so do nothing */
-		rv = diag_l2_send(d_conn, msg);
-	} else {
+
+	//we can't set destination address because it's L2-defined.
+	// (iso14230 : dest = 0x33 phys;
+	// (iso9141 + J1850 : dest = 0x6A )
+
+
+	/* L2 does framing, adds addressing and CRC, so do nothing else*/
+	rv = diag_l2_send(d_conn, msg);
+
+	// This is redundant. L2 is supposed to take care of these details
+	// TODO : remove this L3 header construction within 1-2 releases
+	if (0) {
 		/* Put data in buffer */
 		memcpy(&buf[3], msg->data, msg->len);
 
@@ -244,7 +243,7 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 		 */
 		if (msg->data[0] >= 0x40) {
 			/* Response */
-			buf[0] = 0x48;
+			buf[0] = 0x48;	//XXX why would we generate responses ? we're not an ECU !
 			buf[1] = 0x6B;	/* We chose to overide msg->dest */
 		} else {
 			/* Request */
@@ -294,32 +293,7 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
 			FL, msg->len, msg->fmt, d_l3_conn->rxoffset);
 
 	if (msg->fmt & DIAG_FMT_FRAMED) {
-		if ( (msg->fmt & DIAG_FMT_DATAONLY) == 0) {
-			/* Remove header etc */
-			struct diag_msg *tmsg;
-			/*
-			 * Have to remove L3 header and checksum from each response
-			 * on the message
-			 *
-			 * XXX checksum check needed ...
-			 */
-			for (tmsg = msg ; tmsg; tmsg = tmsg->next) {
-				tmsg->fmt |= DIAG_FMT_ISO_FUNCADDR;
-				tmsg->fmt |= DIAG_FMT_DATAONLY;
-				tmsg->type = tmsg->data[0];
-				tmsg->dest = tmsg->data[1];
-				tmsg->src = tmsg->data[2];
-				/* Length sanity check */
-				if (tmsg->len >= 4) {
-					tmsg->data += 3;
-					tmsg->len -= 4;	/* Remove header and checksum */
-				}
-			}
-		} else {
-			/* XXX check checksum */
-
-		}
-		/* And send data upward if needed */
+		/* Send data upward if needed */
 		if (d_l3_conn->callback)
 			d_l3_conn->callback(d_l3_conn->handle, msg);
 	} else {
@@ -343,13 +317,12 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
  * VVVVVVVV
  * Note: J1979 doesn't specify particular checksums beyond what 9141 and 14230 already provide,
  * i.e. a J1979 message is maximum 7 bytes long except on CANBUS.
- * headers, address and checksum should be handled at the l2 level (9141, 14230, etc)
+ * headers, address and checksum are handled at the l2 level (9141, 14230, etc);
  * The code currently doesn't verify checksums but has provisions for stripping headers + checksums.
- * Also, the _getlen() function assumes 3 header bytes + 1 checksum byte.
- *
+  *
  * Another validity check is comparing message length (expected vs real).
  * Upper levels can also verify that the responses correspond to the requests (i.e. Service ID 0x02 -> 0x42 )
- *
+ * XXX Broken for the moment because I'm moving the header stuff completely out of L3
  *
  */
 static void
@@ -358,7 +331,6 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 	/* Process the received data into messages if complete */
 	struct diag_msg *msg;
 	int sae_msglen;
-	int i;
 
 	while (d_l3_conn->rxoffset) {
 		int badpacket=0;
@@ -371,14 +343,13 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				FL, d_l3_conn->rxoffset, (long)sae_msglen);
 			fprintf(stderr,FLFMT "process_data hex data is ",
 				FL);
-			for (i=0; i < d_l3_conn->rxoffset; i++)
-				fprintf(stderr,"%02X ", d_l3_conn->rxbuf[i]);
+			diag_data_dump(stderr, d_l3_conn->rxbuf, d_l3_conn->rxoffset -1);
 			fprintf(stderr,"\n");
 		}
 
-		if (sae_msglen < 0 || sae_msglen > (255+4)) {
+		if (sae_msglen < 0 || sae_msglen > 255) {
 			if (sae_msglen == DIAG_ERR_INCDATA) {
-				/* Not enough data in this frame */
+				/* Not enough data in this frame, this isn't catastrophic */
 				return;
 			} else {
 				/* Duff data received, bad news ! */
@@ -407,7 +378,8 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				msg->len = 0;
 			} else {
 				msg->fmt = DIAG_FMT_ISO_FUNCADDR;
-				msg->type = d_l3_conn->rxbuf[0];
+				// XXX This won't do at all !
+				//msg->type = d_l3_conn->rxbuf[0];	//nobody checks this
 				msg->dest = d_l3_conn->rxbuf[1];
 				msg->src = d_l3_conn->rxbuf[2];
 				/* Copy in J1979 part of message */
@@ -422,7 +394,6 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				msg->data = data;
 				msg->len = (uint8_t) sae_msglen - 4;
 			}
-			free(data);
 
 			msg->rxtime = diag_os_chronoms(0);
 
@@ -436,7 +407,8 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				}
 				lmsg->next = msg;
 			}
-			diag_freemsg(msg);
+			free(data);
+			free(msg);	//we don't use diag_freemsg() since we alloc'ed it manually
 			if (badpacket) {
 				/* No point in continuing */
 				break;
@@ -454,6 +426,8 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
  * - timeout expiry will cause return before complete packet
  *
  * Successful packet receive will call the callback routine with the message
+ * XXX I'm not sure why we need a j1979-specific _recv() function ?
+ * Anyway it's currently broken because I'm halfway through modifying _process_data
  */
 static int
 diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
@@ -563,11 +537,6 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 			if (msg) {
 				d_l3_conn->msg = msg->next;
 
-				if ( (d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_DATA_ONLY) == 0) {
-					/* Strip hdr/checksum */
-					msg->data += 3;
-					msg->len -= 4;
-				}
 				rcv_call_back(handle, msg);
 				diag_freemsg(msg);
 				rv = 0;

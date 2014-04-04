@@ -280,7 +280,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	memcpy(&msg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
 	msg->rxtime = diag_os_chronoms(0);
 	msg->len = (uint8_t) rv - 4;
-	msg->fmt = DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY;
+	msg->fmt = DIAG_FMT_FRAMED ;
 
 	/*
 	 * Call user callback routine
@@ -394,7 +394,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		memcpy(&rmsg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
 		rmsg->rxtime = diag_os_chronoms(0);
 		rmsg->len = (uint8_t) rv - 4;
-		rmsg->fmt = DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY;
+		rmsg->fmt = DIAG_FMT_FRAMED;
 	}
 	return rmsg;
 }
@@ -431,7 +431,7 @@ diag_l2_proto_mb1_timeout(struct diag_l2_conn *d_l2_conn)
 }
 
 static const struct diag_l2_proto diag_l2_proto_mb1 = {
-	DIAG_L2_PROT_MB1, DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_DATA_ONLY
+	DIAG_L2_PROT_MB1, DIAG_L2_FLAG_FRAMED
 	| DIAG_L2_FLAG_KEEPALIVE | DIAG_L2_FLAG_DOESCKSUM,
 	diag_l2_proto_mb1_startcomms,
 	diag_l2_proto_raw_stopcomms,

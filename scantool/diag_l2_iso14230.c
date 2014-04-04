@@ -420,7 +420,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 			} else {
 				tmsg->fmt = 0;
 			}
-			tmsg->fmt |= DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY ;
+			tmsg->fmt |= DIAG_FMT_FRAMED;
 
 			//if cs wasn't stripped, we check it:
 			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0) {
@@ -428,7 +428,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 				if (calc_sum != tmsg->data[tmsg->len -1]) {
 					fprintf(stderr, FLFMT "Bad checksum: needed %02X,got%02X. Data:",
 						FL, calc_sum, tmsg->data[tmsg->len -1]);
-					tmsg->iflags |= DIAG_MSG_BADCS;
+					tmsg->fmt |= DIAG_FMT_BADCS;
 					diag_data_dump(stderr, tmsg->data, tmsg->len -1);
 					fprintf(stderr, "\n");
 				}
@@ -437,7 +437,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 
 			}
 			tmsg->fmt |= DIAG_FMT_CKSUMMED;	//checksum was verified
-			tmsg->iflags &= ~DIAG_MSG_BADCS;	//clear "bad checksum" flag
+			tmsg->fmt &= ~DIAG_FMT_BADCS;	//clear "bad checksum" flag
 
 			tmsg->src = source;
 			tmsg->dest = dest;
@@ -489,14 +489,19 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		return diag_iseterr(DIAG_ERR_NOMEM);
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
-	dp->type = flags & DIAG_L2_TYPE_INITMASK;
+	dp->initype = flags & DIAG_L2_TYPE_INITMASK;	//only keep initmode flags
 
 	dp->srcaddr = source;
 	dp->dstaddr = target;
-	dp->modeflags = flags;
+	//set iso14230-specific flags according to what we were given
+	if (flags & DIAG_L2_IDLE_J1978)
+		dp->modeflags |= ISO14230_IDLE_J1978;
+	if (flags & DIAG_L2_TYPE_FUNCADDR)
+		dp->modeflags |= ISO14230_FUNCADDR;
+
 	dp->first_frame = 1;
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
-		fprintf(stderr, FLFMT "_startcomms flags=%u tgt=%u src=%u\n",
+		fprintf(stderr, FLFMT "_startcomms flags=%u tgt=%X src=%X\n",
 			FL, flags, target, source);
 
 	memset(data, 0, sizeof(data));
@@ -528,7 +533,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	diag_os_millisleep(300);
 
 	//inside this switch, we set rv=0 or rv=error before "break;"
-	switch (dp->type) {
+	switch (dp->initype & DIAG_L2_TYPE_INITMASK) {
 	/* Fast initialisation */
 	case DIAG_L2_TYPE_FASTINIT:
 
@@ -683,7 +688,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	default:
 		rv = DIAG_ERR_INIT_NOTSUPP;
 		break;
-	}	//end of switch dp->type
+	}	//end of switch dp->initype
 	//At this point we just finished the handshake and got KB1 and KB2
 
 	if (rv < 0) {
@@ -693,10 +698,10 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	}
 	// Analyze keybytes and set modeflags properly. See
 	// iso14230 5.2.4.1 & Table 8
-	dp->modeflags |= ((d_l2_conn->diag_l2_kb1 & 1)? DIAG_L2_FMTLEN:0) |
-			((d_l2_conn->diag_l2_kb1 & 2)? DIAG_L2_LENBYTE:0) |
-			((d_l2_conn->diag_l2_kb1 & 4)? DIAG_L2_SHORTHDR:0) |
-			((d_l2_conn->diag_l2_kb1 & 8)? DIAG_L2_LONGHDR:0);
+	dp->modeflags |= ((d_l2_conn->diag_l2_kb1 & 1)? ISO14230_FMTLEN:0) |
+			((d_l2_conn->diag_l2_kb1 & 2)? ISO14230_LENBYTE:0) |
+			((d_l2_conn->diag_l2_kb1 & 4)? ISO14230_SHORTHDR:0) |
+			((d_l2_conn->diag_l2_kb1 & 8)? ISO14230_LONGHDR:0);
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr, FLFMT "new modeflags=0x%04X\n", FL, dp->modeflags);
 	//For now, we won't bother with Normal / Extended timings. We don't
@@ -821,11 +826,11 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	/* Build the new message */
 
-	if ((dp->modeflags & DIAG_L2_LONGHDR) || !(dp->modeflags & DIAG_L2_SHORTHDR)) {
+	if ((dp->modeflags & ISO14230_LONGHDR) || !(dp->modeflags & ISO14230_SHORTHDR)) {
 		//we use full headers if they're supported or if we don't have a choice.
 		//set the "address present" bit
 		//and functional addressing if applicable
-		if (dp->modeflags & DIAG_L2_TYPE_FUNCADDR)
+		if (dp->modeflags & ISO14230_FUNCADDR)
 			buf[0] = 0xC0;
 		else
 			buf[0] = 0x80;
@@ -841,7 +846,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		else
 			buf[2] = dp->srcaddr;
 		offset = 3;
-	} else if (dp->modeflags & DIAG_L2_SHORTHDR) {
+	} else if (dp->modeflags & ISO14230_SHORTHDR) {
 		//here, short addressless headers are required.
 		//basic format byte : 0
 		buf[0]=0;
@@ -850,13 +855,13 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 
 
-	if ((dp->modeflags & DIAG_L2_FMTLEN)|| !(dp->modeflags & DIAG_L2_LENBYTE))  {
+	if ((dp->modeflags & ISO14230_FMTLEN)|| !(dp->modeflags & ISO14230_LENBYTE))  {
 		//if ECU supports length in format byte, or doesn't support extra len byte
 		if (msg->len < 64) {
 			buf[0] |= msg->len;
 		} else {
 			//len >=64, can we use a length byte ?
-			if (dp->modeflags & DIAG_L2_LENBYTE) {
+			if (dp->modeflags & ISO14230_LENBYTE) {
 				buf[offset] = msg->len;
 				offset += 1;
 			} else {
@@ -864,7 +869,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 				return diag_iseterr(DIAG_ERR_BADLEN);
 			}
 		}
-	} else if (dp->modeflags & DIAG_L2_LENBYTE) {
+	} else if (dp->modeflags & ISO14230_LENBYTE) {
 		// if the ecu needs a length byte
 		buf[offset] = msg->len;
 		offset += 1;
@@ -1053,8 +1058,8 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 
 	/* XXX fprintf not async-signal-safe */
 	if (diag_l2_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "\ntimeout impending for dl2c=%p type=%d\n",
-				FL, (void *)d_l2_conn, dp->type);
+		fprintf(stderr, FLFMT "\ntimeout impending for dl2c=%pd\n",
+				FL, (void *)d_l2_conn);
 	}
 
 	diag_l2_debug=0;	//disable
@@ -1064,8 +1069,8 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 	msg.data = data;
 
 	/* Prepare the "keepalive" message */
-	if (dp->modeflags & DIAG_L2_IDLE_J1978) {
-		/* Idle using J1978 spec */
+	if (dp->modeflags & ISO14230_IDLE_J1978) {
+		/* Idle using J1978 / J1979 keep alive message : SID 1 PID 0 */
 		msg.len = 2;
 		data[0] = 1;
 		data[1] = 0;
@@ -1105,7 +1110,7 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 }
 static const struct diag_l2_proto diag_l2_proto_14230 = {
 	DIAG_L2_PROT_ISO14230,
-	DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_DATA_ONLY |
+	DIAG_L2_FLAG_FRAMED |
 		DIAG_L2_FLAG_KEEPALIVE | DIAG_L2_FLAG_DOESCKSUM,
 	diag_l2_proto_14230_startcomms,
 	diag_l2_proto_14230_stopcomms,

@@ -603,7 +603,6 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 		rv = diag_l3_recv(d_conn, 300, j1979_data_rcv, handle);
 		if (rv < 0) {
 			fprintf(stderr, "Retry failed, resynching...\n");
-			//rv = do_l3_md1pid0_rqst(global_l2_conn);
 			rv= d_conn->d_l3_proto->diag_l3_proto_timer(d_conn, 6000);	//force keepalive
 			if (rv < 0) {
 				fprintf(stderr, "\tfailed, connection to ECU may be lost!\n");
@@ -738,7 +737,7 @@ clear_data(void)
   * returns L2 file descriptor
  */
 static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
-	uint32_t type, unsigned int bitrate, target_type target, source_type source )
+	flag_type type, unsigned int bitrate, target_type target, source_type source )
 {
 	int rv;
 	struct diag_l0_device *dl0d;
@@ -774,6 +773,8 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 		fprintf(stderr, FLFMT "l2_common_start: l2_StartComm failed\n", FL);
 		return NULL;
 	}
+
+	global_l2_dl0d=dl0d;
 
 	/*
 	 * Now Get the L2 flags, and if this is a network type where

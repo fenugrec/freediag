@@ -8,7 +8,7 @@
  */
 
 
-#include "diag_l1.h"
+#include "diag.h"
 
 #define IFLUSH_TIMEOUT 30	//timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX buffer.
 

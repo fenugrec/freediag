@@ -133,11 +133,13 @@ diag_l0_dl0_handle(struct diag_l0_device *dl0d) {
 	return dl0d->dl0_handle;
 }
 
+//unused now
 struct diag_l2_link *
 diag_l0_dl2_link(struct diag_l0_device *dl0d) {
 	return dl0d->dl2_link;
 }
 
+//unused now
 void
 diag_l0_set_dl2_link(struct diag_l0_device *dl0d,
 	struct diag_l2_link *dl2_link) {

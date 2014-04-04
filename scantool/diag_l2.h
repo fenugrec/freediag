@@ -56,7 +56,8 @@ struct diag_l2_link
 
 	struct diag_l2_link *next;		/* linked list of all connections */
 
-	//these two elements are unused/not required right now.
+	//these two elements are unused/not required right now. I don't see how they can possibly
+	//be used with the current structure of freediag, so they're commented out for the time being.
 //	struct diag_l2_link *l1_next;		/* linked list of all ECUs with same ID on different interfaces */
 //	struct diag_l2_link *l1_prev;		/* prev to make list removal easy */
 };
@@ -70,13 +71,9 @@ struct diag_msg;
  */
 struct diag_l2_conn
 {
-	uint8_t	diag_l2_state;		/* State of this */
+	uint8_t	diag_l2_state;		/* State of this; see DIAG_L2_STATE_* defines below */
 
 	struct diag_l2_link *diag_link;		/* info about L1 connection */
-
-						//TODO : remove the following two in next release
-	//struct timeval	diag_l2_lastsend;	/* Time we sent last message */
-	//struct timeval	diag_l2_expiry;		/* When it expires */
 
 	//The following two members are used for periodic keep-alive messages.
 	//tlast is updated when diag_l2_send, _recv,
@@ -86,7 +83,10 @@ struct diag_l2_conn
 
 	const struct diag_l2_proto *l2proto;	/* Protocol handler */
 
-	uint32_t diag_l2_type;		/* Type info for this L2 connection */
+	flag_type diag_l2_type;		/* Type info for this L2 connection;  */
+							//will contain init type (slow/mon/fast/etc) and anything else passed
+							//in the flag_type flags argument of l2_startcomms. See DIAG_L2_TYPE_*
+							// defines below.
 
 	// Message timing values.
 	// See SAE-J1979 for general usage;
@@ -123,6 +123,9 @@ struct diag_l2_conn
 	 * because they only apply to ISO protocols (move at some time
 	 * unless they are useful in other protocols, but I haven't
 	 * written any other protocols to find out ;-))
+	 * XXX Doing that would require protocol-specific ioctl handlers
+	 * to handle DIAG_IOCTL_GET_L2_DATA . It could stay in here for
+	 * the moment
 	 */
 	uint8_t	diag_l2_kb1;	/* KB 1, (ISO stuff really) */
 	uint8_t	diag_l2_kb2;	/* KB 2, (ISO stuff really) */
@@ -147,17 +150,17 @@ struct diag_l2_conn
 
 };
 
-// Special Timeout for so-called "Smart" interfaces;
-// Slower than any protocol, give them time to unframe
-// and checksum the data:
-#define SMART_TIMEOUT 150
-#define RXTOFFSET 20	//ms to add to some diag_l1_recv calls in L2 code
-				//In theory this should be 0... It's a band-aid
-				//hack to allow system to system variations but NEEDS
-				//to be replaced by something runtime-configurable either
-				//by the user or some auto-configured feature of the
-				//scantool (not implemented yet)
-
+/*
+ * Values for diag_l2_state
+ *
+ * The state values are mainly used by the timer code to determine if
+ * keepalive timers are needed.
+ */
+#define DIAG_L2_STATE_CLOSED		0	/* Not in use (but not free for anyones use !!) */
+#define DIAG_L2_STATE_SENTCONREQ	1	/* Sent connection request (waiting for response/reject) */
+#define DIAG_L2_STATE_OPEN		2	/* Up and running */
+#define DIAG_L2_STATE_CLOSING		4	/* sending close request (possibly), waiting for response/timeout */
+	//STATE_CLOSING will prevent L2 keepalive messages from being sent
 
 /*
  * Default ISO 14230 timing values, ms, used as defaults for L2 timeouts
@@ -197,32 +200,32 @@ struct diag_l2_conn
 #define DIAG_L2_PROT_MAX	9	/* Maximum number of protocols */
 
 
-/*
- * Flags for diag_l2_proto_startcomms; this is not the same
+/* *****
+ * Flags for diag_l2_proto_startcomms(...flag_type flags); this is not the same
  * as the L2 handler flags (diag_l2_proto->diag_l2_flags) above.
- * Some flags are also iso14230-specific and are meant to be used inside
- * struct diag_l2_14230->modelfags.
+ * Some flags are iso14230-specific and have no meaning with other
+ * L2 protos.
 
- * Bits 0/1/2 used to tell what kind of initialisation to be done on the
- * diagnostic bus.
+ * The bottom 4 bits are not a bit mask because of how scantool_set.c works, i.e.
+ * "5BAUD" has to be ==0, etc. That's also why we need _INITMASK
  */
-#define DIAG_L2_TYPE_SLOWINIT	0x00		/* Do 5 Baud init */
-#define DIAG_L2_TYPE_FASTINIT	0x01		/* Do fast init */
-#define DIAG_L2_TYPE_CARBINIT	0x02		/* Do CARB init (see ISO14230-2 5.2.4) */
-#define DIAG_L2_TYPE_MONINIT	0x04		/* Don't do any init, just connect to bus */
-#define DIAG_L2_TYPE_INITMASK	0x07		/* Init options mask */
+#define DIAG_L2_TYPE_SLOWINIT	0		/* Do 5 Baud init */
+#define DIAG_L2_TYPE_FASTINIT	1		/* Do fast init */
+#define DIAG_L2_TYPE_CARBINIT	2		/* Do CARB init (see ISO14230-2 5.2.4), not implemented. */
+#define DIAG_L2_TYPE_MONINIT	3		/* Don't do any init, just connect to bus */
+#define DIAG_L2_TYPE_INITMASK	0x0F		/* Init options mask */
 /*
- * Bit 3 shows whether the address supplied is a functional or physical
- * address, used for protocols such as ISO14230
+ * DIAG_L2_TYPE_FUNCADDR : the address supplied is a functional
+ * address (instead of physical), used for protocols such as ISO14230
  */
-#define DIAG_L2_TYPE_FUNCADDR	0x08
+#define DIAG_L2_TYPE_FUNCADDR	0x10
 
 /*
  * DIAG_L2_TYPE_PHYSCONN: tell protocols that support both functional and physical
  * addressing to switch to physical addressing after initial communications
  * are established (such as ISO14230)
  */
-#define DIAG_L2_TYPE_PHYSCONN	0x10	//XXX unused !!
+//#define DIAG_L2_TYPE_PHYSCONN	0x10	//XXX unused !!
 
 /*
  * DIAG_L2_IDLE_J1978: tell the ISO14230 code to use SAE J1978 idle
@@ -232,31 +235,28 @@ struct diag_l2_conn
  * SAE J1978 is the ODB II ScanTool specification document
  */
 #define DIAG_L2_IDLE_J1978	0x20
+//*****
 
-// DIAG_L2_SHORTHDR (for iso14230) : if set, we support address-less
-// headers; this is set if the keybytes received from StartComms require it.
-// By default we send fully addressed headers (iso14230 5.2.4.1)
-#define DIAG_L2_SHORTHDR 0x80
 
-//DIAG_L2_LONGHDR : if set, we can send headers with the address bytes.
-// Set according to the keybytes. If this and SHORTHDR are set, we
-// send addressless headers by default.
-#define DIAG_L2_LONGHDR 0x100
 
-//DIAG_L2_LENBYTE: If set, tell the iso14230 code to always use messages
-// with a length byte. This is primarily for SSF14230 - the Swedish vehicle
-// implementation of ISO14230, but is set if required by the StartComms keybytes.
-//If FMTLEN and LENBYTE are set, then we choose the most adequate.
-#define DIAG_L2_LENBYTE 0x200
 
-//DIAG_L2_FMTLEN: if set, we can send headers with the length encoded in
-// the format byte. (iso14230)
-#define DIAG_L2_FMTLEN 0x400
-
+// Special Timeout for so-called "Smart" interfaces;
+// Slower than any protocol, give them time to unframe
+// and checksum the data:
+#define SMART_TIMEOUT 150
+#define RXTOFFSET 20	//ms to add to some diag_l1_recv calls in L2 code
+				//In theory this should be 0... It's a band-aid
+				//hack to allow system to system variations but NEEDS
+				//to be replaced by something runtime-configurable either
+				//by the user or some auto-configured feature of the
+				//scantool (not implemented yet)
 
 
 
 /* struct diag_l2_data: Used for DIAG_IOCTL_GET_L2_DATA */
+//this isn't used frequently but L3_vag will eventually need it,
+//and cmd_diag_probe uses it to report found ECUs.
+
 struct	diag_l2_data
 {
 	uint8_t physaddr;	/* Physical address of ECU */
@@ -277,11 +277,6 @@ struct	diag_l2_data
  */
 #define DIAG_L2_FLAG_FRAMED	0x01
 
-/* FLAG_DATA_ONLY: ????
- * L2 interface assumes addressing is in header not data, and that
- * it must calculate the checksum
- */
-#define DIAG_L2_FLAG_DATA_ONLY	0x02
 
 /*
  * L2 does keep alive to ECU
@@ -395,15 +390,11 @@ struct diag_l0_device * diag_l2_open(const char *device_name, const char *subint
 int diag_l2_close(struct diag_l0_device *);
 
 struct diag_l2_conn * diag_l2_StartCommunications(struct diag_l0_device *, int L2protocol,
-	uint32_t type, unsigned int bitrate, target_type target, source_type source );
+	flag_type type, unsigned int bitrate, target_type target, source_type source );
 
 int diag_l2_StopCommunications(struct diag_l2_conn *);
 
 int diag_l2_send(struct diag_l2_conn *connection, struct diag_msg *msg);
-//diag_l2_sendstamp: called from diag_l2_send when a packet is sent.
-//Updates ->expiry and ->lastsend timestamps.
-//XXX disabled. TODO: delete references to diag_l2_sendstamp after release 1.05
-//void diag_l2_sendstamp(struct diag_l2_conn *d_l2_conn);
 
 int diag_l2_recv(struct diag_l2_conn *connection, int timeout,
 	void (* rcv_call_back)(void *, struct diag_msg *), void *handle );

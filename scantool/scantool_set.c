@@ -197,6 +197,8 @@ const char * const l2_names[] = //these MUST match the listing in diag_l2.h !
 	"J1850", "CAN", "VAG", "MB1", NULL
 };
 
+//These MUST match the DIAG_L2_TYPE_* flags in diag_l2.h  so that
+// l2_initmodes[DIAG_L2_TYPE_XX] == "XX" !!
 const char * const l2_initmodes[] =
 {
 	"5BAUD", "FAST", "CARB", NULL
@@ -244,11 +246,7 @@ static int cmd_set_interface(int argc, char **argv)
 		if (strcmp(argv[1], "?") == 0) {
 			helping = 1;
 			printf("hardware interface: use \"set interface NAME [dev]\" .\n"
-#ifdef OLD_DEVNAME
-			"[id] is either an integer to be appended as /dev/obdII[id] or\n"
-#else
 			"NAME is the interface type and [dev] is\n"
-#endif
 			"a complete device path such as \"/dev/ttyS0\" or \"\\\\.\\COM11\"\n"
 			"Valid NAMEs are: \n");
 		}

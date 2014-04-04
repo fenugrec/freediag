@@ -263,7 +263,7 @@ UNUSED(int *datalen))
 				tmsg->fmt = 0;
 			}
 
-			tmsg->fmt |= DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY ;
+			tmsg->fmt |= DIAG_FMT_FRAMED;
 			tmsg->fmt |= DIAG_FMT_CKSUMMED;
 
 			tmsg->src = source;

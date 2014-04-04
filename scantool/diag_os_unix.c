@@ -310,9 +310,6 @@ diag_os_millisleep(unsigned int ms)
 /*
  * diag_os_ipending: Is input available on stdin. ret 1 if yes.
  *
- * currently (like 2014), it is only used a few places to break long loops ?
- * the effect is that diag_os_ipending returns immediately, and it returns 1 only if Enter was pressed.
- * the WIN32 version of this is clumsier : it returns 1 if Enter was pressed since the last time diag_os_ipending() was called.
  *
  */
 int

@@ -30,6 +30,7 @@
  */
 
 #include "diag.h"		//we need this for uint8_t
+#include "diag_tty.h"	//for structs serial_settings and diag_l0_device
 
 
 #if defined(__cplusplus)
@@ -60,12 +61,14 @@ extern "C" {
 
 /* following flags are for semi-intelligent interfaces */
 
+//XXX we need a "L1 removes headers" flag as well. ELMs returns totally stripped data
+// by default
 /*
- * DOESL2SEND
  *	L1 is intelligent and does L2 stuff, this means it will
  *	- Return a complete L3 frame of data as one recv()
  *	- Expect complete L3 data to be sent to it, with the address header
- *	in one write, interface does the P4 interbyte delay
+ *	in one write,
+ * DOESL2FRAME: interface expects and returns full L2 frames XXX
  */
 #define	DIAG_L1_DOESL2FRAME		0x20
 /*
@@ -117,7 +120,6 @@ extern "C" {
  * This is a bitmask of what is supported;
  * used for struct diag_l0 (diag_l0_type)
  */
-//#define	DIAG_L1_SPARE		0x00	/* Not used */
 #define	DIAG_L1_ISO9141		0x01	/* K line */
 #define	DIAG_L1_ISO14230	0x02	/* K line,XXX not sure of the difference with 9141 at this level */
 #define DIAG_L1_J1850_VPW	0x04	/* J1850 interface, 10400 baud, VPW */
@@ -160,26 +162,6 @@ struct diag_l1_initbus_args
 #define DIAG_L1_INITBUS_5BAUD	2	/* 5 baud init */
 #define DIAG_L1_INITBUS_2SLOW	3	/* 2 second low on bus, ISO9141-1989 style ? */
 
-/*
- * _init(), returns 0 on success (always succeeds)
- * 	 must not be used to allocate memory or open handles !
- * _open(), returns a *diag_l0_device on success, 0 on failure (pseterr).
- * 	Often calls diag_tty_open; alloc + fill + return a diag_l0_device
- *	struct if succesful.
- * _close(), always succeeds and returns 0. Close & free everything
- * _initbus : ret 0 if ok; must reset port settings (speed etc)
- * _send() Send data, same args as Unix write() + the sub interface,
- * 	returns 0 on OK, <0 on fail
- * _recv() - get data, same args as Unix read() + the sub interface
- *	ret # of bytes read if successful, <0 otherwise
- * _setspeed(), returns 0 on success,  speed = speed, bits = data bits (5,6,7,8)
- *	 stopbits (1, 2), parflag as above
- * _getflags(), return the flags as above
- * _gettype(), return the type as above
- */
-
-struct diag_l0_device;  // this contains platform-specific members, so it's in diag_tty_???.h
-struct diag_serial_settings;
 
 
 // diag_l0 : every diag_l0_???.c "driver" fills in one of these to describe itself.
@@ -209,29 +191,48 @@ struct diag_l0
 };
 
 
+
+//********** Public L1 interface
 //diag_l1_init : parse through the l0dev_list linked list
-//and call diag_l0_init for each of them
+//and call diag_l0_init for each of them. returns 0 on success (always succeeds)
+// must not be used to allocate memory or open handles !
 int diag_l1_init(void);
 //diag_l1_end : opposite of diag_l1_init . does nothing for now
 int diag_l1_end(void);
+
 //diag_l1_initbus : calls ->diag_l0_initbus. Must return as soon as possible,
-//and restore original port settings (speed, etc)
+//and restore original port settings (speed, etc). Ret 0 if ok
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
-//diag_l1_open : calls diag_l0_open with the specified L1 protocol
+
+//diag_l1_open : calls diag_l0_open with the specified L1 protocol; returns a
+// *diag_l0_device on success, 0 on failure (pseterr).
+//	Often calls diag_tty_open; alloc + fill + return a new diag_l0_device
+//	struct if succesful.
 struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, int L1protocol);
-//diag_l1_close : calls diag_l0_close as required
+//diag_l1_close : calls diag_l0_close as required; always succeeds and returns 0. Close & free everything.
 int diag_l1_close(struct diag_l0_device **);
+
+//diag_l1_send : send data, ret 0 if ok, <0 failed
 int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, unsigned int p4);
-//diag_l1_recv : return # of bytes read, DIAG_ERR_TIMEOUT or error ?
+//diag_l1_recv : return # of bytes read, DIAG_ERR_TIMEOUT or error if failed. DIAG_ERR_TIMEOUT is not a hard failure
+//since a lot of L2 code uses this to detect end of responses
 int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, int timeout);
+
+//diag_l1_setspeed: returns 0 on success,  speed = speed, bits = data bits (5,6,7,8)
+ //	 stopbits (1, 2), parflag as above
 int diag_l1_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pset);
+	const struct diag_serial_settings *pset);
+
+//getflags, gettype: get flags and type as defined above
 int diag_l1_getflags(struct diag_l0_device *);
 int diag_l1_gettype(struct diag_l0_device *);
+//**********
 
+//diag_l1_add_l0dev : only called from l0 drivers to add themselves to the l0 device
+//linked-list.
 int diag_l1_add_l0dev(const struct diag_l0 *l0dev);
 
-extern int diag_l1_debug;
+extern int diag_l1_debug;	//L1 debug flags (see diag.h)
 
 #if defined(__cplusplus)
 }

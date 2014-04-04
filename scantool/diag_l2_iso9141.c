@@ -232,10 +232,18 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	}
 
 	// Initialize ECU (unless if in monitor mode):
-	if ( (flags & DIAG_L2_TYPE_INITMASK) ==  DIAG_L2_TYPE_MONINIT)
-		rv = 0;
-	else
-		rv = diag_l2_proto_iso9141_wakeupECU(d_l2_conn);
+	switch (flags & DIAG_L2_TYPE_INITMASK) {
+		case DIAG_L2_TYPE_MONINIT:
+			rv = 0;
+			break;
+		case DIAG_L2_TYPE_SLOWINIT:
+			rv = diag_l2_proto_iso9141_wakeupECU(d_l2_conn);
+			break;
+		default:
+			//CARB and FASTINIT are not in iso9141.
+			rv = DIAG_ERR_INIT_NOTSUPP;
+			break;
+	}
 
 
 	if (rv) {
@@ -522,9 +530,9 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 				uint8_t rx_cs = tmsg->data[tmsg->len - 1];
 				if(rx_cs != diag_cks1(tmsg->data, tmsg->len - 1)) {
 					fprintf(stderr, FLFMT "Checksum error in received message!\n", FL);
-					tmsg->iflags |= DIAG_MSG_BADCS;
+					tmsg->fmt |= DIAG_FMT_BADCS;
 				} else {
-					tmsg->iflags &= ~DIAG_MSG_BADCS;
+					tmsg->fmt &= ~DIAG_FMT_BADCS;
 				}
 				// "Remove" the checksum byte:
 				tmsg->len--;
@@ -577,8 +585,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 			}
 
 			// Message done. Flag it up:
-			tmsg->fmt |= DIAG_FMT_FRAMED;  //???
-			tmsg->fmt |= DIAG_FMT_DATAONLY; //We removed the frame;
+			tmsg->fmt |= DIAG_FMT_FRAMED;  //"framed" => complete / coherent
 			tmsg->fmt |= DIAG_FMT_CKSUMMED; //We checked the checksum;
 
 			// Prepare to decode next message:
@@ -671,7 +678,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		buf[offset++] = dp->srcaddr;
 	}
 
-	// Now copy in data, should check for buffer overrun really.
+	// Now copy in data
 	memcpy(&buf[offset], msg->data, msg->len);
 	offset += msg->len;
 
@@ -734,7 +741,7 @@ diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *m
 static const struct diag_l2_proto diag_l2_proto_iso9141 =
 {
 	DIAG_L2_PROT_ISO9141,
-	DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_DATA_ONLY |  DIAG_L2_FLAG_DOESCKSUM,
+	DIAG_L2_FLAG_FRAMED |  DIAG_L2_FLAG_DOESCKSUM,
 	diag_l2_proto_iso9141_startcomms,
 	diag_l2_proto_iso9141_stopcomms,
 	diag_l2_proto_iso9141_send,

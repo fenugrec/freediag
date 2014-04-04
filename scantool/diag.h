@@ -40,7 +40,6 @@
 	#include <windows.h>
 #else
 	#include <sys/types.h>
-	#include <sys/time.h>	/* For timeval */
 #endif
 
 #include <stdint.h>		/* For uint8_t, etc. This is a C99 header */
@@ -60,19 +59,20 @@ extern "C" {
 
 
 #ifdef HAVE_GETTIMEOFDAY
-	#include <sys/time.h>	//probably the right place where gettimeofday() would be defined ?
+	#include <sys/time.h>	//probably the right place where gettimeofday(), timeval etc would be defined ?
 #else	//no HAVE_GETTIMEOFDAY	//like on win32?
 	struct timezone {
-	  int  tz_minuteswest;
-	  int  tz_dsttime;
+	  int tz_minuteswest;
+	  int tz_dsttime;
 	};
 
-	//this is a bare implementation with no timezone support. Returns 0. see diag_os.c
+	//this is a bare implementation with no timezone support. Returns 0. Must be defined
+	//in diag_os_??.c
 	int gettimeofday(struct timeval *tv, struct timezone *tz);
 #endif //HAVE_GETTIMEOFDAY
 
 #ifndef HAVE_TIMERSUB
-	//bare implementation, in diag_os.c
+	//bare implementation, in diag_os_??.c
 	void timersub(struct timeval *a, struct timeval *b, struct timeval *res);
 #endif	//HAVE_TIMERSUB
 
@@ -106,15 +106,14 @@ extern "C" {
 
 
 /*
- * Many receive buffers are set to 1024, which seems large. At least
- * now it is defined in one place.
+ * Many receive buffers are set to this, which is voluntarily larger than
+ * any possible valid message to/from an ECU.
  */
 #define MAXRBUF 1024
 
 typedef uint8_t target_type, source_type, databyte_type, command_type;
-typedef uint16_t flag_type;	//this is used for L2 type flags (diag_l2.h)
-			//only used for diag_l2_proto_startcomms() parameter
-			//XXX diag_l2_proto_startcomms specifies "uint32_t type"...
+typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
+			//only used for diag_l2_startcomms() arg
 
 /*
  * IOCTLs
@@ -161,7 +160,7 @@ enum debugflag_enum {OPEN=DIAG_DEBUG_OPEN,
 	TIMER=DIAG_DEBUG_TIMER,
 	NIL=0
 };
-// struct  : used in scantool_debug.c
+// struct debugflags_descr : filled + used in scantool_debug.c
 struct debugflags_descr {
 	enum debugflag_enum mask;
 	const char * descr;		//associate short description for each flag.
@@ -175,22 +174,24 @@ struct debugflags_descr {
  * which cause data to be transmitted to layer 1
  *
  * The receiver of the message *must* copy the data if it wants it !!!
+ * The flags are arranged such as zeroing out the whole structure sets "safe" defaults.
  */
 struct diag_msg
 {
-	uint8_t	fmt;			/* Message format: */
+	uint8_t	fmt;			/* Message format (doesn't absolutely need to be uint8_t) : */
 	#define DIAG_FMT_ISO_FUNCADDR	0x01	/* ISO Functional addressing */
 	#define DIAG_FMT_FRAMED		0x02	/* Rcvd data is framed, ie not raw */
-	#define	DIAG_FMT_DATAONLY	0x04	/* Rcvd data had L2/L3 headers removed */
-	#define DIAG_FMT_CKSUMMED	0x08	/* L2 checked the checksum */
+//	#define	DIAG_FMT_DATAONLY	0x04	/* Rcvd data had L2/L3 headers removed XXX ALWAYS ! */
+	#define DIAG_FMT_CKSUMMED	0x08	/* Someone (L1/L2) checked the checksum */
+	#define DIAG_FMT_BADCS	0x10		// message has bad checksum
 
-	uint8_t	type;		/* Type from received frame */
+	//uint8_t	type;		/* Type from received frame XXX? This was never used */
 	uint8_t	dest;		/* Destination from received frame */
 	uint8_t	src;		/* Source from received frame */
 	uint8_t	len;		/* calculated data length */
 	uint8_t	*data;		/* The data; can be dynamically alloc'ed */
 
-	unsigned long	 rxtime;	/* Processed time, in ms given by diag_os_chronoms() */
+	unsigned long	 rxtime;	/* Processed time, in ms given by diag_os_chronoms(0) */
 	struct diag_msg	*next;		/* For linked lists of messages */
 
 	uint8_t	mcnt;		/* Number of elements on this list */
@@ -198,8 +199,8 @@ struct diag_msg
 	uint8_t	*idata;		/* For free() of data later: this is a "backup"
 							 * of the initial *data pointer.*/
 	uint8_t	iflags;		/* Internal flags */
-	#define	DIAG_MSG_IFLAG_MALLOC	1	/* We malloced; we Free */
-	#define DIAG_MSG_BADCS	2		// message has bad checksum
+	#define	DIAG_MSG_IFLAG_MALLOC	1	/* We malloced; we Free -- this is set when the msg
+										 * was created by diag_allocmsg()*/
 };
 
 struct diag_msg	*diag_allocmsg(size_t datalen);	/* Alloc a new message */

@@ -185,8 +185,11 @@ diag_l1_close(struct diag_l0_device **ppdl0d)
 	if (diag_l1_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr, FLFMT "entering diag_l1_close: ppdl0d=%p\n", FL,
 			(void *) ppdl0d);
-	return (ppdl0d && *ppdl0d)?
-		(diag_l0_device_dl0(*ppdl0d)->diag_l0_close)(ppdl0d) : 0;
+	if (ppdl0d && *ppdl0d) {
+		diag_l0_device_dl0(*ppdl0d)->diag_l0_close(ppdl0d);
+		*ppdl0d=NULL;
+	}
+	return 0;
 }
 
 /*

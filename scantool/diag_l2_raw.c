@@ -23,7 +23,7 @@
  * Diag
  *
  * L2 driver for "raw" interface (just sends and receives data without
- * modifying it
+ * modifying it)
  *
  */
 
@@ -40,16 +40,16 @@
 
 CVSID("$Id$");
 
-/*
-*/
+
 
 int
 diag_l2_proto_raw_startcomms( struct diag_l2_conn *d_l2_conn,
 UNUSED(flag_type flags),
 unsigned int bitrate,
-UNUSED(target_type target),
-UNUSED(source_type source))
+target_type target,
+source_type source)
 {
+	int rv;
 	struct diag_serial_settings set;
 
 	set.speed = bitrate;
@@ -58,7 +58,16 @@ UNUSED(source_type source))
 	set.parflag = diag_par_n;
 
 	/* Set the speed as shown */
-	return diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set);
+	rv=diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set);
+
+	if (!rv)
+		return diag_iseterr(DIAG_ERR_GENERAL);
+
+	//set tgt and src address in d_l2_conn
+	d_l2_conn->diag_l2_destaddr=target;
+	d_l2_conn->diag_l2_srcaddr=source;
+
+	return 0;
 }
 
 /*
@@ -97,7 +106,7 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
 {
 	uint8_t rxbuf[MAXRBUF];
-	struct diag_msg msg;
+	struct diag_msg msg;	//we use an local message structure that will disappear when we return
 	int rv;
 
 	/*
@@ -109,12 +118,13 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if (rv <= 0 || rv > 255)		/* Failure, or 0 bytes (which cant happen) */
 		return rv;
 
+	memset(&msg, 0, sizeof(msg));	//zero out structure
 
 	msg.len = (uint8_t) rv;
 	msg.data = rxbuf;
-	/* This is raw, unframed data */
-	msg.fmt = 0;
-	msg.next = 0;
+	/* This is raw, unframed data; we don't set .fmt */
+	msg.next = NULL;
+	msg.idata=NULL;
 	msg.rxtime = diag_os_chronoms(0);
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)

@@ -52,7 +52,7 @@ struct diag_l2_j1850
 
 	uint8_t srcaddr;	/* Src address used */
 	uint8_t dstaddr;	/* Dest address used */
-	uint16_t modeflags;	/* Flags */
+	//uint16_t modeflags;	/* Flags XXXunused ! */
 
 	uint8_t state;
 	uint8_t rxbuf[MAXRBUF];	/* Receive buffer, for building message in */
@@ -74,7 +74,7 @@ uint8_t diag_l2_proto_j1850_crc(uint8_t *msg_buf, int nbytes);
 
 static int
 diag_l2_proto_j1850_startcomms(struct diag_l2_conn	*d_l2_conn,
-flag_type flags,
+UNUSED(flag_type flags),
 UNUSED(unsigned int bitrate),
 target_type target, source_type source)
 {
@@ -92,15 +92,12 @@ target_type target, source_type source)
 
 	dp->srcaddr = source;
 	dp->dstaddr = target;
-	dp->modeflags = flags;
 
 	dp->state = STATE_CONNECTING;
 
 	/* Empty our Receive buffer and wait for idle bus */
 	/* XXX is the timeout value right ? It is 300 in other places. */
 
-	/* Flush unread input, then wait for idle bus. */
-	/* XXX is the timeout value right ? It is 300 in other places. */
 	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 	diag_os_millisleep(50);
 
@@ -201,7 +198,6 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if ((l1flags & DIAG_L1_DOESL2CKSUM) == 0)
 	{
 		// Add in J1850 CRC
-		/* XXX This had nasty side effects.  I changed it to what I thought was wanted. */
 		int curoff = offset;
 		buf[offset++] = diag_l2_proto_j1850_crc(buf, curoff);
 	}
@@ -280,16 +276,23 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		{
 			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0)
 			{
-				/* XXX check checksum */
+				//XXX Not sure if I'm doing this properly. I don't have a J1850 ECU
+				//to test it
+				uint8_t tcrc=diag_l2_proto_j1850_crc(tmsg->data, tmsg->len -1);
+				if (tmsg->data[tmsg->len - 1] != tcrc) {
+					fprintf(stderr, "Bad checksum detected: needed %02X got %02X\n",
+							tcrc, tmsg->data[tmsg->len -1]);
+					tmsg->fmt |= DIAG_FMT_BADCS;
+				}
+				tmsg->len--;	//trim crc byte
+
 			}
+			tmsg->fmt |= DIAG_FMT_CKSUMMED;	//either L1 did it or we just did
 			tmsg->dest = tmsg->data[1];
 			tmsg->src = tmsg->data[2];
 			tmsg->data +=3;
 			tmsg->len -=3;
 
-			/* remove checksum byte if needed */
-			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0)
-				tmsg->len--;
 		}
 		else
 		{
@@ -335,8 +338,7 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	tmsg = d_l2_conn->diag_msg;
 	d_l2_conn->diag_msg = NULL;
 
-	tmsg->fmt |= DIAG_FMT_FRAMED | DIAG_FMT_DATAONLY ;
-	tmsg->fmt |= DIAG_FMT_CKSUMMED;
+	tmsg->fmt |= DIAG_FMT_FRAMED;
 
 
 	/* Call used callback */
@@ -386,7 +388,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 }
 
 static const struct diag_l2_proto diag_l2_proto_j1850 = {
-	DIAG_L2_PROT_SAEJ1850, DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_DATA_ONLY
+	DIAG_L2_PROT_SAEJ1850, DIAG_L2_FLAG_FRAMED
 	| DIAG_L2_FLAG_DOESCKSUM | DIAG_L2_FLAG_CONNECTS_ALWAYS,
 	diag_l2_proto_j1850_startcomms,
 	diag_l2_proto_j1850_stopcomms,

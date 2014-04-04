@@ -191,7 +191,7 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 				fprintf(stderr, FLFMT "fastinit: Failed to set L\\_\n", FL);
 				return DIAG_ERR_GENERAL;
 				}
-			rv=diag_tty_break(dl0d, 25);   //K line low for 25ms
+			rv=diag_tty_break(dl0d, 25);	//K line low for 25ms
 				/* Now restore DTR/RTS */
 			if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 				fprintf(stderr, FLFMT "fastinit: Failed to restore DTR & RTS!\n",
@@ -205,7 +205,7 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 			rv=diag_tty_fastbreak(dl0d, 50-WUPFLUSH);
 		} else {
 			//normal break
-			rv=diag_tty_break(dl0d, 25);   //K line low for 25ms
+			rv=diag_tty_break(dl0d, 25);	//K line low for 25ms
 			diag_os_millisleep(25-WUPFLUSH);
 		}
 	}	//if USE_LLINE
@@ -380,7 +380,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		// so we have 60ms to diag_tty_iflush, the risk is if it takes too long
 		// the "sync pattern byte" may be lost !
 		// TODO : add before+after timing check to see if diag_tty_iflush takes too long
-		diag_tty_iflush(dl0d);  //try it anyway
+		diag_tty_iflush(dl0d);	//try it anyway
 	} else {	//so it's not a man_break
 		/* Set to 5 baud, 8 N 1 */
 
@@ -440,7 +440,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 			fprintf(stderr, FLFMT "_slowinit: could not reset serial settings !\n", FL);
 			return DIAG_ERR_GENERAL;
 		}
-	}	//if  !man_break
+	}	//if !man_break
 	//Here, we sent 0x33 @ 5bps and read back the echo or purged it.
 	diag_os_millisleep(60-IFLUSH_TIMEOUT);		//W1 minimum, less the time we spend in diag_tty_iflush
 	//Now the ECU is about to, or already, sending the sync byte 0x55.
@@ -468,7 +468,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		tout = 300;		/* It should be the same thing, but let's put 300. */
 	} else {
 		fprintf(stderr, FLFMT "warning : using Slowinit with a strange L1 protocol !\n", FL);
-		tout=300;   //but try anyway
+		tout=300;	//but try anyway
 	}
 
 	rv = diag_tty_read(dl0d, cbuf, 1, tout);

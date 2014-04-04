@@ -35,7 +35,7 @@
 #include "diag_l1.h"
 #include "diag_l2.h"
 
-#define ERR_STR_LEN 30	//length of "i
+#define ERR_STR_LEN 30	//length of "illegal error X" string
 CVSID("$Id$");
 
 static int diag_initialized=0;
@@ -148,7 +148,7 @@ diag_dupmsg(struct diag_msg *msg)
 		return 0;
 
 	newmsg->fmt = msg->fmt;
-	newmsg->type = msg->type;
+//	newmsg->type = msg->type;
 	newmsg->dest = msg->dest;
 	newmsg->src = msg->src;
 	newmsg->len = msg->len;
@@ -167,7 +167,7 @@ diag_dupmsg(struct diag_msg *msg)
 			return NULL;	/* Out of memory */
 
 		tmsg->fmt = msg->fmt;
-		tmsg->type = msg->type;
+//		tmsg->type = msg->type;
 		tmsg->dest = msg->dest;
 		tmsg->src = msg->src;
 		tmsg->len = msg->len;
@@ -200,7 +200,7 @@ diag_dupsinglemsg(struct diag_msg *msg)
 		return 0;
 
 	newmsg->fmt = msg->fmt;
-	newmsg->type = msg->type;
+//	newmsg->type = msg->type;
 	newmsg->dest = msg->dest;
 	newmsg->src = msg->src;
 	newmsg->len = msg->len;
