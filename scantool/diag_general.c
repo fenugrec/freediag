@@ -108,7 +108,7 @@ diag_allocmsg(size_t datalen)
 	struct diag_msg *newmsg;
 
 	if (diag_calloc(&newmsg, 1))
-		return (struct diag_msg *)diag_pseterr(DIAG_ERR_NOMEM);
+		return diag_pseterr(DIAG_ERR_NOMEM);
 
 	newmsg->iflags |= DIAG_MSG_IFLAG_MALLOC;
 
@@ -117,7 +117,7 @@ diag_allocmsg(size_t datalen)
 		if (diag_calloc(&newmsg->data, datalen))
 		{
 			free(newmsg);
-			return (struct diag_msg *)diag_pseterr(DIAG_ERR_NOMEM);
+			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
 	}
 	else

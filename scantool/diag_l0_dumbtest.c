@@ -281,11 +281,11 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	diag_l0_dt_init();	 //make sure it is initted
 
 	if ((rv=diag_calloc(&dev, 1)))
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_NOMEM);
+		return diag_pseterr(DIAG_ERR_NOMEM);
 
 	dev->protocol = DIAG_L1_RAW;	//cheat !
 	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dt, (void *)dev))) {
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	pset.speed=10400;
@@ -295,13 +295,13 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 
 	if (diag_tty_setup(dl0d, &pset)) {
 		diag_tty_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	//set initial DTR and RTS lines before starting tests;
 	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 		diag_tty_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	(void)diag_tty_iflush(dl0d);	/* Flush unread input */

@@ -297,14 +297,14 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	diag_l0_elm_init();
 
 	if ((rv=diag_calloc(&dev, 1)))
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 
 	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_elm, (void *)dev))) {
 		diag_l0_elm_close(&dl0d);
 		fprintf(stderr, FLFMT "Problem opening %s.\n", FL, subinterface);
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	//set speed to 9600;8n1.
@@ -319,7 +319,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		fprintf(stderr, FLFMT "Error setting 9600;8N1 on %s\n",
 			FL, subinterface);
 		diag_l0_elm_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	diag_tty_iflush(dl0d);	/* Flush unread input */
@@ -357,7 +357,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 			fprintf(stderr, FLFMT "Error setting 38400;8N1 on %s\n",
 				FL, subinterface);
 			diag_l0_elm_close(&dl0d);
-			return (struct diag_l0_device *)diag_pseterr(rv);
+			return diag_pseterr(rv);
 		}
 
 		diag_tty_iflush(dl0d);	/* Flush unread input */
@@ -366,7 +366,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 			//failed @ 38400
 			diag_l0_elm_close(&dl0d);
 			fprintf(stderr, FLFMT "sending ATZ @ 38400 failed.\n", FL);
-			return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
+			return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 		}
 		dev->elmflags |= ELM_38400;
 
@@ -385,7 +385,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 			fprintf(stderr, FLFMT "sending \"ATE0\" failed\n", FL);
 		}
 		diag_l0_elm_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
 	//at this point : ELM is ready for further ops

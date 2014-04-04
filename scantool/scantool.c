@@ -760,7 +760,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 			(rv != DIAG_ERR_PROTO_NOTSUPP))
 			fprintf(stderr, "Failed to open hardware interface\n");
 
-		return (struct diag_l2_conn *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	/* Now do the Layer 2 startcommunications */

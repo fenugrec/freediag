@@ -969,7 +969,7 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	rv = diag_l2_send(d_l2_conn, msg);
 	if (rv < 0) {
 		*errval = rv;
-		return (struct diag_msg *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	while (1) {
@@ -978,7 +978,7 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 
 		if (rv < 0) {
 			*errval = DIAG_ERR_TIMEOUT;
-			return (struct diag_msg *)diag_pseterr(rv);
+			return diag_pseterr(rv);
 		}
 
 		/*
@@ -1007,7 +1007,7 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 
 				if (rv < 0) {
 					*errval = rv;
-					return (struct diag_msg *)diag_pseterr(rv);
+					return diag_pseterr(rv);
 				}
 				if (diag_l2_debug & DIAG_DEBUG_PROTO)
 					fprintf(stderr, FLFMT "got BusyRepeatRequest: retrying...\n", FL);

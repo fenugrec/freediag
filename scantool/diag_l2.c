@@ -379,7 +379,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 
 	/* Else, create the link */
 	if ((rv=diag_calloc(&dl2l, 1))) {
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	dl0d = diag_l1_open(dev_name, subinterface, L1protocol);
@@ -387,7 +387,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 	{
 		rv=diag_geterr();
 		free(dl2l);
-		return (struct diag_l0_device *)diag_pseterr(rv);	//forward error to next level
+		return diag_pseterr(rv);	//forward error to next level
 	}
 
 //	diag_l0_set_dl2_link(dl0d, dl2l);	/* Associate ourselves with this */
@@ -522,7 +522,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	{
 		/* New connection */
 		if (diag_calloc(&d_l2_conn, 1))
-			return (struct diag_l2_conn *)diag_pseterr(DIAG_ERR_NOMEM);
+			return diag_pseterr(DIAG_ERR_NOMEM);
 
 		reusing = 0;
 	}
@@ -531,7 +531,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	//dl2l = diag_l0_dl2_link(dl0d);
 	if (dl2l == NULL) {
 		free(d_l2_conn);
-		return (struct diag_l2_conn *)diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* Link to the L1 device info that we keep (name, type, flags, dl0d) */
@@ -552,7 +552,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 		fprintf(stderr,
 			FLFMT "Protocol %d not installed.\n", FL, L2protocol);
 		free(d_l2_conn);
-		return (struct diag_l2_conn *)diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	d_l2_conn->diag_l2_type = flags ;
@@ -593,7 +593,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 			free(d_l2_conn);
 		}
 
-		return (struct diag_l2_conn *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	/*
@@ -720,7 +720,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 	}
 
 	if (rxmsg==NULL) {
-		return (struct diag_msg *) diag_pseterr(*errval);
+		return diag_pseterr(*errval);
 	}
 		//update timers
 	d_l2_conn->tlast = diag_os_getms();

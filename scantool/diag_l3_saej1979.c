@@ -449,10 +449,8 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 		 * with nicely formed frames
 		 */
 		state = ST_STATE4;
-		tout = timeout;
 	} else {
 		state = ST_STATE1;
-		tout = 0;
 	}
 
 	/* Store the callback routine for use if needed */
@@ -472,7 +470,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 			case ST_STATE1:
 				tout = 0;
 				break;
-			case	ST_STATE2:
+			case ST_STATE2:
 				tout = timeout;
 				break;
 			case ST_STATE3:

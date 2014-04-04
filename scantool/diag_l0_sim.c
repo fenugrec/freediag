@@ -123,7 +123,7 @@ sim_new_ecu_response_txt(const char* text)
 	int rv;
 
 	if ((rv=diag_calloc(&resp, 1)))
-		return (struct sim_ecu_response *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 
 	resp->data = NULL;
 	resp->len = 0;
@@ -133,7 +133,7 @@ sim_new_ecu_response_txt(const char* text)
 	if ((text != NULL) && strlen(text)) {
 		if ((rv=diag_calloc(&(resp->text), strlen(text)+1))) {
 			free(resp);
-			return (struct sim_ecu_response *)diag_pseterr(rv);
+			return diag_pseterr(rv);
 		}
 
 		strncpy(resp->text, text, strlen(text));
@@ -150,7 +150,7 @@ sim_new_ecu_response_bin(const uint8_t* data, const uint8_t len)
 	struct sim_ecu_response *resp;
 
 	if (diag_calloc(&resp, 1))
-		return (struct sim_ecu_response *)diag_pseterr(DIAG_ERR_NOMEM);
+		return diag_pseterr(DIAG_ERR_NOMEM);
 	//resp = calloc(1, sizeof(struct sim_ecu_response));
 	resp->data = NULL;
 	resp->len = 0;
@@ -160,7 +160,7 @@ sim_new_ecu_response_bin(const uint8_t* data, const uint8_t len)
 	if ((len > 0) && (data != NULL)) {
 		if (diag_calloc(&resp->data, len)) {
 			free(resp);
-			return (struct sim_ecu_response *)diag_pseterr(DIAG_ERR_NOMEM);
+			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
 		//resp->data = calloc(len, sizeof(uint8_t));
 		memcpy(resp->data, data, len);
@@ -487,14 +487,14 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 
 	// Create diag_l0_sim_device:
 	if ((rv=diag_calloc(&dev, 1)))
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 
 	// Create diag_l0_device:
 	if ((rv=diag_calloc(&dl0d, 1))) {
 		free(dev);
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	dl0d->fd = DL0D_INVALIDHANDLE;
@@ -504,7 +504,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 	if ((rv=diag_calloc(&dl0d->name, strlen(simfile)+1))) {
 		free(dev);
 		free(dl0d);
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 	strcpy(dl0d->name, simfile);
 
@@ -512,7 +512,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 		free(dl0d->name);
 		free(dev);
 		free(dl0d);
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 	// Open the DB file:
 	if ((dev->fp = fopen(dl0d->name, "r")) == NULL) {
@@ -522,7 +522,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 		free(dl0d->name);
 		free(dev);
 		free(dl0d);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	//dl0d->fd = (dl0d_handletype) 1; nobody checks for this

@@ -174,7 +174,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	diag_l0_br_init();
 
 	if ((rv=diag_calloc(&dev, 1)))
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 	dev->dev_rdoffset = 0;
@@ -186,7 +186,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	/* Get an L0 link */
 	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_br, (void *)dev))) {
 		free(dev);
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
@@ -202,7 +202,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	if (diag_tty_setup(dl0d, &set)) {
 		fprintf(stderr, FLFMT "open: TTY setup failed\n", FL);
 		diag_l0_br_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	diag_tty_iflush(dl0d);	/* Flush unread input data */
@@ -218,7 +218,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 				FL, (void *)dl0d);
 		}
 		diag_l0_br_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	/* And expect 0xff as a response */
 	if (diag_tty_read(dl0d, buf, 1, 100) < 1) {
@@ -228,7 +228,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 		}
 
 		diag_l0_br_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	if (buf[0] != 0xff) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
@@ -237,7 +237,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 		}
 
 		diag_l0_br_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
 	/* If it's J1850, send initialisation string now */
@@ -257,7 +257,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	}
 	if (rv) {
 		diag_l0_br_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {

@@ -609,7 +609,7 @@ diag_l2_proto_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	if (rv < 0)
 	{
 		*errval = rv;
-		return (struct diag_msg *) diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* And wait for response */

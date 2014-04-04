@@ -109,11 +109,11 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 	diag_l0_dumb_init();	 //make sure it is initted
 
 	if ((rv=diag_calloc(&dev, 1)))
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_NOMEM);
+		return diag_pseterr(DIAG_ERR_NOMEM);
 
 	dev->protocol = iProtocol;
 	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dumb, (void *)dev))) {
-		return (struct diag_l0_device *)diag_pseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	/*
@@ -123,7 +123,7 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 	 */
 	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 		diag_tty_close(&dl0d);
-		return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	if (dumb_flags & DUMBDEFAULTS)

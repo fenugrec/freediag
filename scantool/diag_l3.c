@@ -100,7 +100,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		 * Malloc us a L3
 		 */
 		if (diag_calloc(&d_l3_conn, 1))
-			return (struct diag_l3_conn *) diag_pseterr(DIAG_ERR_NOMEM);
+			return diag_pseterr(DIAG_ERR_NOMEM);
 
 		d_l3_conn->d_l3l2_conn = d_l2_conn;
 		d_l3_conn->d_l3_proto = dp;
@@ -121,7 +121,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		{
 			free(d_l3_conn);
 			d_l3_conn = NULL;
-			return (struct diag_l3_conn *) diag_pseterr(rv);
+			return diag_pseterr(rv);
 		}
 		else
 		{
@@ -266,7 +266,7 @@ diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval)
 	}
 
 	if (rxmsg==NULL) {
-		return (struct diag_msg *) diag_pseterr(*errval);
+		return diag_pseterr(*errval);
 	}
 		//update timers
 	dl3c->timer = diag_os_getms();
@@ -359,7 +359,7 @@ struct diag_msg * diag_l3_base_request(struct diag_l3_conn *dl3c,
 	rxmsg = diag_l2_request(dl3c->d_l3l2_conn, txmsg, errval);
 
 	if (rxmsg == NULL) {
-		return (struct diag_msg *)diag_pseterr(*errval);
+		return diag_pseterr(*errval);
 	}
 	dl3c->timer=diag_os_getms();
 

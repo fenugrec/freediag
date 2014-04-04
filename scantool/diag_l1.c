@@ -165,7 +165,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 
 			/* Check h/w supports this l1 protocol */
 			if ((l0dev->diag_l0_type & l1protocol) == 0)
-				return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
+				return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
 
 			/* Call the open routine */
 			// Forward the requested L1 protocol
@@ -174,7 +174,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 	}
 	fprintf(stderr, FLFMT "diag_l1_open: did not recognize %s\n", FL, name);
 	/* Not found */
-	return (struct diag_l0_device *)diag_pseterr(DIAG_ERR_BADIFADAPTER);
+	return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 }
 
 //diag_l1_close : call the ->diag_l0_close member of the

@@ -369,7 +369,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	if (rv < 0)
 	{
 		*errval = rv;
-		return (struct diag_msg *) diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* And now wait for a response */
@@ -378,7 +378,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	if (rv < 0)
 	{
 		*errval = rv;
-		return (struct diag_msg *) diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* Return the message to user, who is responsible for freeing it */
