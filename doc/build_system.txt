@@ -1,11 +1,11 @@
 freediag build system overview
-CSB / fenugrec 03/2014
+CSB / fenugrec 07/2014
 
 1- CMake
 I added a CMake build system specifically to support WIN targets, as the GNU autotools
 (autoconf, ./configure & friends) are not trivial to use on MS platforms. CMake should also make
 other platforms (OSX) easier to support as well.
-The main drawback is that the CMake package is quite large (>30MB), and is an additional
+The main drawback is that the CMake package is quite large (~30MB), and is an additional
 dependency that I force on anyone who wants to compile freediag. However for
 the moment, I am able to maintain both build systems (autotools and CMake), so linux users
 won't need to touch CMake. On the other hand, win users would have to install something
@@ -22,6 +22,7 @@ CMakeLists.txt	//there's one of these in every subdirectory with compiled code.
 The CMakeLists.txt are roughly equivalent to the autotools' configure.ac and Makefile.am files, which
 are edited manually to describe the build process : dependencies, required source files, executable names, etc.
 
+**** 1A- Steps to compile freediag on win32 (requires CMake) ****
 To compile freediag on win32, the general process is as such (rename directories as required)
 	-make sure cmake is installed and %PATH% holds the cmake/bin directory
 	-extract the source tree (from CVS or a source package) to  srcdir\
@@ -29,22 +30,49 @@ To compile freediag on win32, the general process is as such (rename directories
 	-cd to builddir
 	-run "cmake-gui ..\srcdir" : this uses the current directory (builddir) to store the CMake cache & all output files.
 	-set the desired "Generator" (i.e. I use "MingW native toolchain" but you could select VS9 or whatever)
-	-Configure then Generate.
+	-click Configure then Generate.
 	 (Make sure to look at the configurable options. The nearest equivalent to "./configure --help" would
 	 be "cmake -L", or browsing the cached variable list from cmake-gui.
 	-compile according to your selected toolchain. I run mingw32-make from the builddir and off it goes.
+	
+**** 1B- Steps to compile freediag on linux (with CMake instead of autotools) ****
+The instructions given above for win32 may be used almost as-is on linux; here are methods without using
+"cmake-gui"
+	-extract the source tree (from CVS or a source package) to  <srcdir>
+	-make an empty build directory not far from the source tree, I recommend <srcdir>/../<builddir>
+	-cd to builddir (important !!)
+	
+	either A) (preferred, if ncurses is available)
+		-run "ccmake [-G <generator_name>] ../<srcdir>"
+		(note: specifying -G <generator name> may be optional, I think it defaults to "UNIX Makefiles" )
+		-press "c" to configure
+		-customize options as required
+		-press "g" to generate Makefiles or project files as applicable
+	or B) ( command-line only)
+		-run "cmake [-G <generator_name>] ../<srcdir>" ; example : "cmake ../freediag"
+		(note: specifying -G <generator name> may be optional, I think it defaults to "UNIX Makefiles"
+		 which is usually fine.)
+	
+		-As required, run "cmake -L" to view current cache values. This is similar to "./configure --help".
+		-As required, run "cmake -D <var>:<type>=<value>" to modify one of the previously listed values, such as
+		 USE_RCFILE, etc. Example : "cmake -D USE_RCFILE:BOOL=ON" 
+		 
+	then
+	-run make; or open IDE project file if applicable
+
 
 If generating makefiles, there are a few special targets added by CMake :
 	- make edit_cache		// open cmake-gui cache editor if applicable
 	- make package		// generate a binary package
 	- make package_source	// generate source tar.gz
 
-It's my hope that I can find a way to include pre-generated Makefiles and IDE-specific project files (for
-MSVS and Codeblocks for instance) along with freediag source packages, so most users will not need to install CMake.
-Please contact me if you have suggestions on how to accomplish this.
+Once the Makefiles are generated, it's usually not necessary to run cmake again unless the CMakeLists.txt files
+were changed, or build options were changed. 
+
+
 
 2- Autotools
-GNU autotools, while arcane and truculent, are also widespread and familiar to most. Here is just
+GNU autotools, while arcane, are also widespread and familiar to most. Here is just
 some information specific to freediag:
 	- make sure you run "./configure --help" to see available build options. They may change before the
 	online docs are updated.
