@@ -1,7 +1,14 @@
 "dumb" interfaces means any cable with very simple circuitry limited to level-shifting.
 A USB -> FT232 -> optocoupler -> OBD cable is a dumb interface.
 A RS232 -> ELM327 -> OBD cable is NOT a dumb interface.
-A Bluetooth -> CP2103 / FT232 -> OBD cable is a dumb interface.
+A Bluetooth -> CP2103 or FT232 -> OBD cable is a dumb interface.
+
+These are dumb interfaces :
+http://pinoutsguide.com/CarElectronics/obd2_simple_cable_pinout.shtml
+http://jeff.noxon.cc/2013/05/18/opendiag-obd-ii-schematics-pcb-layout/
+
+If it says ELM327 or ELM*** anywhere, it's NOT a dumb interface !!
+
 
 (Remember : logic 1, on RXD and TXD, is negative voltage.)
 (However, signals like RTS are the opposite : "set RTS" means positive voltage!)
@@ -55,3 +62,13 @@ called "DUMBT" (diag_l0_dumbtest.c). This implements a few low-level tests such 
  - sending slow pulses on RTS and DTR (useful to check L-line polarity and/or correct
    level-shifting if the interface is powered by RTS + DTR)
 To access these tests there is an "l0test" command in the "debug" sub-menu.
+
+example of a troubleshooting session : (with no car connected !)
+
+scantool>set interface dumbt /dev/ttyUSB0
+scantool>set dumbopts 8
+scantool>debug
+scantool/debug>l0test ?
+	(... list of available test)
+scantool/debug>l0test 1
+	(...)

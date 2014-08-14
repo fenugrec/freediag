@@ -26,7 +26,7 @@ include (CheckFunctionExists)
 include (CheckTypeSize)
 
 set (PKGVERSIONMAJOR "1")
-set (PKGVERSIONMINOR "04")
+set (PKGVERSIONMINOR "05")
 set (PKGVERSION "${PKGVERSIONMAJOR}.${PKGVERSIONMINOR}")
 set (SCANTOOL_PROGNAME "scantool")
 #that sets the command-line tool prompt.
@@ -38,6 +38,7 @@ add_definitions (-DCMAKE_ENABLED)
 ###### Compiler flags & build types
 if (NOT CMAKE_BUILD_TYPE)
 	message(STATUS "No build type selected, defaulting to Debug")
+	message(STATUS "Available build types : Debug, Release, RelWithDebInfo")
 	set(CMAKE_BUILD_TYPE "DEBUG")
 endif ()
 
@@ -45,6 +46,7 @@ endif ()
 if (CMAKE_COMPILER_IS_GNUCC)
 	set (CMAKE_C_FLAGS_DEBUG "-g")
 	set (CMAKE_C_FLAGS_RELEASE "-DNDEBUG")
+	set (CMAKE_C_FLAGS_RELWITHDEBINFO "")
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -std=gnu99 -Wstrict-prototypes -Wsign-compare -Wredundant-decls" )
 #else ()
 	#not sure what we should use on other compilers.
@@ -78,7 +80,7 @@ if(WIN32)
 	if (${CMAKE_SYSTEM_VERSION} VERSION_LESS 5.1)
 		#require at least winXP
 		message(WARNING "At least Win XP is required ! Proceed at your risk !")
-	endif (${CMAKE_SYSTEM_VERSION} VERSION_LESS 5.1)
+	endif ()
 	set (PLATF "-win32")
 else()
 	#no need to check for these on WIN32 as the offending code (diag_os and diag_tty) was re-written
@@ -165,7 +167,6 @@ set (CPACK_PACKAGE_VERSION_MINOR ${PKGVERSIONMINOR})
 set (CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PKGVERSION}${PLATF}")
 set (CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PKGVERSION}-src")
 set (CPACK_SOURCE_IGNORE_FILES "xcf"
-	"Makefile\\\\.in$"
 	"~$"
 	"^${PROJECT_SOURCE_DIR}.*/autom4te.*"
 	"^${PROJECT_SOURCE_DIR}.*/\\\\.deps/"

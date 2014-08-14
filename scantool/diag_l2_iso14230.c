@@ -780,7 +780,7 @@ diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
 	}
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE) {
-		fprintf(stderr, FLFMT "_stopcomms: %s%d).\n", FL, debugstr, errval);
+		fprintf(stderr, FLFMT "_stopcomms: %s0x%02X).\n", FL, debugstr, errval);
 	}
 
 	//and free() what startcomms alloc'ed.

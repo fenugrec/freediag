@@ -25,7 +25,7 @@ are edited manually to describe the build process : dependencies, required sourc
 **** 1A- Steps to compile freediag on win32 (requires CMake) ****
 To compile freediag on win32, the general process is as such (rename directories as required)
 	-make sure cmake is installed and %PATH% holds the cmake/bin directory
-	-extract the source tree (from CVS or a source package) to  srcdir\
+	-extract the source tree (from CVS or a source package) to somewhere\srcdir\
 	-make an empty build directory not far from the source tree, I recommend srcdir\..\builddir\
 	-cd to builddir
 	-run "cmake-gui ..\srcdir" : this uses the current directory (builddir) to store the CMake cache & all output files.
@@ -77,5 +77,5 @@ some information specific to freediag:
 	- make sure you run "./configure --help" to see available build options. They may change before the
 	online docs are updated.
 	- the scantool/Makefile creates diag_config.c by running genconfig.sh ; 
-	you can edit l0config and l2config to select which "modules" you want to build. I don't recommend
-	modifying these files however.
+	you can edit l0config and l2config to select which "modules" you want to build. I recommend
+	leaving them as-is.

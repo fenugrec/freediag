@@ -110,18 +110,20 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	// The L1 device has read the 0x55, and reset the previous speed.
 
 	// Receive the first KeyByte:
-	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0, &kb1, 1, W2max);
+	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0, &kb1, 1, W2max+RXTOFFSET);
 	if (rv < 0)
 		return diag_iseterr(DIAG_ERR_WRONGKB);
 
 	// Receive the second KeyByte:
-	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0, &kb2, 1, W3max);
+	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0, &kb2, 1, W3max+RXTOFFSET);
 	if (rv < 0)
 		return diag_iseterr(DIAG_ERR_WRONGKB);
 
 	// Check keybytes, these can be 0x08 0x08 or 0x94 0x94:
-	if ( (kb1 != kb2) || ( (kb1 != 0x08) && (kb1 != 0x94) ) )
+	if ( (kb1 != kb2) || ( (kb1 != 0x08) && (kb1 != 0x94) ) ) {
+		fprintf(stderr, FLFMT "Wrong Keybytes: got %02X %02X\n", FL, kb1, kb2);
 		return diag_iseterr(DIAG_ERR_WRONGKB);
+	}
 
 	// Copy KeyBytes to protocol session data:
 	d_l2_conn->diag_l2_kb1 = kb1;

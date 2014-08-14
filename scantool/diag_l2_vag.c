@@ -71,7 +71,7 @@ struct diag_l2_vag
 
 #if notyet
 /*
- * Decode the message header
+ * Decode the message header XXX this seems copied from iso14230, and probably inadequate
  */
 static int
 diag_l2_proto_vag_decode(uint8_t *data, int len,

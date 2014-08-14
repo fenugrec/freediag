@@ -48,16 +48,16 @@ typically not very microcontroller friendly.
 7- malloc, calloc, etc. : these should never be called directly; instead
 use the diag_*alloc wrappers defined in diag.h and diag_general.c
 
-8- anything remotely OS-dependant should be constrained to diag_os*
- and diag_tty*. Work in progress.
+8- anything remotely OS-dependant should be constrained to diag_os*.c
+ and diag_tty*.c. Work in progress.
  
 9- I think aiming for a silent ouptut when compiling with 
- "-Wall -Wextra -pedantic -gnu99" flags will help find many potential bugs.
+ "-Wall -Wextra -pedantic -std=gnu99" flags will help find many potential bugs.
   The code should be as C99-compliant as possible, as a guideline.
  
 10- regarding casts : many parts of the code casted function
  pointers to object pointers implicitly such as 
-  printf("callback %p", diag_callback) which is not strictly correct.
+  printf("callback %p", diag_function) which is not strictly correct.
  I know of no easy, portable method of printfing a function pointer.
  http://stackoverflow.com/questions/2741683/how-to-format-a-function-pointer
  has excellent information on the subject.
