@@ -60,7 +60,8 @@ extern "C" {
 
 #ifdef HAVE_GETTIMEOFDAY
 	#include <sys/time.h>	//probably the right place where gettimeofday(), timeval etc would be defined ?
-#else	//no HAVE_GETTIMEOFDAY	//like on win32?
+#else	//no HAVE_GETTIMEOFDAY
+	//win32 code doesn't use gettimeofday, but declaring these should do no harm.
 	struct timezone {
 	  int tz_minuteswest;
 	  int tz_dsttime;
@@ -72,6 +73,7 @@ extern "C" {
 #endif //HAVE_GETTIMEOFDAY
 
 #ifndef HAVE_TIMERSUB
+	//win32 code doesn't use timersub, but declaring this should do no harm.
 	//bare implementation, in diag_os_??.c
 	void timersub(struct timeval *a, struct timeval *b, struct timeval *res);
 #endif	//HAVE_TIMERSUB

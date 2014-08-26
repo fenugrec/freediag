@@ -4,7 +4,7 @@
 
 AC_PREREQ(2.62)		#But would probably work with earlier versions
 AC_INIT(freediag, 1.05, freediag-discuss@lists.sourceforge.net,,freediag.sourceforge.net)
-AM_INIT_AUTOMAKE([-Wall -Werror])
+AM_INIT_AUTOMAKE([-Wall])		#we had -Werror in here but it caused problems on some versions of autotools
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 

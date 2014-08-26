@@ -39,7 +39,7 @@ if (NISPROG)
 	set (ST_DIAG "scantool_nisprog.c")
 	message (WARNING "*****Compiling with nisprog !!!!!!*****")
 else()
-	set (ST_DIAGG "scantool_debug.c")
+	set (ST_DIAG "scantool_diag.c")
 endif()
 
 
@@ -82,8 +82,17 @@ endforeach()
 
 # libdiag and libdyno (required for binaries)
 
-add_library(libdiag STATIC ${LIBDIAG_SRCS})
-add_library(libdyno STATIC ${LIBDYNO_SRCS})
+add_library(diag STATIC ${LIBDIAG_SRCS})
+
+if (NOT WIN32)
+	#link to libmath (m); not required on win32 (msvcrt provides sin() etc)
+	target_link_libraries(diag m)
+endif ()
+
+#if required, link with -lrt (see top-level CMakeLists.txt)
+target_link_libraries(diag ${LIBRT})
+
+add_library(dyno STATIC ${LIBDYNO_SRCS})
 
 
 # diag_test binary
@@ -92,7 +101,7 @@ if (WIN32)
 	message(WARNING "Not building diag_test.exe on win32 because of alarm()")
 else ()
 	add_executable(diag_test ${DIAGTEST_SRCS})
-	target_link_libraries(diag_test libdiag)
+	target_link_libraries(diag_test diag)
 	install(TARGETS diag_test DESTINATION bin)
 endif ()
 
@@ -100,12 +109,10 @@ endif ()
 # scantool binary
 
 add_executable(scantool  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
-#if required, link with -lrt (see top-level CMakeLists.txt)
-target_link_libraries(scantool ${LIBRT})
 
-
-target_link_libraries(scantool libdiag libdyno)
+target_link_libraries(scantool diag dyno)
 install(TARGETS scantool DESTINATION bin)
+
 
 ### install & copy targets
 # defined mainly to simplify packaging

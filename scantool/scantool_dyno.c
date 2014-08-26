@@ -101,6 +101,7 @@ const struct cmd_tbl_entry dyno_cmd_table[] =
  */
 static int cmd_dyno_mass(int argc, char **argv)
 {
+	// TODO : check for mass < 0 somewhere
 	if (argc > 1)
 		dyno_set_mass(htoi(argv[1]));
 	else
@@ -126,7 +127,7 @@ static int cmd_dyno_mass(int argc, char **argv)
 static int measure_data(uint8_t data_pid, ecu_data_t *ep)
 {
   int rv;
-
+	//TODO : make sure we have a connection first.
   /* measure */
   rv = l3_do_j1979_rqst(global_l3_conn, 0x1, data_pid, 0x00,
       0x00, 0x00, 0x00, 0x00, (void *)&_RQST_HANDLE_NORMAL);
@@ -532,7 +533,9 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
 static void get_measures(dyno_measure ** measures, int * nb_measures)
 {
   /* allocate memory */
-  (*nb_measures) = dyno_get_nb_measures();
+	(*nb_measures) = dyno_get_nb_measures();
+	if ((*nb_measures)==0)
+		return;
   if (diag_malloc(measures, (*nb_measures) * sizeof(dyno_measure)))
     return;
 
@@ -692,6 +695,8 @@ static void get_results(void)
   if (dyno_results == NULL)
   {
     dyno_nb_results = dyno_get_nb_results();
+	  if (dyno_nb_results == 0)
+		  return;
     if (diag_malloc(&dyno_results, dyno_nb_results * sizeof(dyno_result)))
       return;
   }

@@ -69,6 +69,7 @@
  * J1979 (ODBII) protocol
  */
 
+#include <assert.h>
 #include "diag.h"
 #include "diag_dtc.h"
 #include "diag_l1.h"
@@ -545,6 +546,7 @@ int
 l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t p2,
 	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle)
 {
+	assert(d_conn != NULL);
 	struct diag_msg	msg;
 	uint8_t data[7];	//was 256?
 	int ihandle;

@@ -92,6 +92,12 @@ else()
 	#we could use CMakePushCheckState to push / pop CMAKE_REQUIRED_INCLUDES
 	#but I think it has no influence on the rest of the build...
 	check_function_exists (timersub HAVE_TIMERSUB)
+	#timersub isn't detected properly on some systems. We'll assume it's common enough to be available
+	#on all non-windows OSes...
+	if (NOT HAVE_TIMERSUB)
+		message(WARNING "timersub() not detected, but it may be available anyway. Forcing HAVE_TIMERSUB !")
+		set(HAVE_TIMERSUB 1)
+	endif ()
 
 	
 	#diag_os needs clock_gettime if _POSIX_TIMERS is defined.
@@ -104,13 +110,13 @@ else()
 	else ()
 		#else, we try finding clock_gettime in librt
 		check_library_exists (rt clock_gettime time.h HAVE_LIBRT)
+		message (STATUS "Using clock_gettime() from librt.")
 		if (HAVE_LIBRT)
 			#set extra linker flag
 			set (LIBRT rt)
 		else ()
 			message(FATAL_ERROR "librt not found !")
 		endif ()
-		message (STATUS "Using clock_gettime() from librt.")
 	endif ()
 endif()
 
@@ -141,8 +147,12 @@ configure_file (cconf.h.in cconf.h)
 add_subdirectory(scantool)
 
 if (BUILDGUI)
-	#add_subdirectory(scangui)
-	message(FATAL_ERROR "scangui can't be built through cmake yet")
+	find_package(FLTK)
+	if (FLTK_FOUND)
+		add_subdirectory(scangui)
+	else ()
+		message(FATAL_ERROR "Cannot build scangui without FLTK !")
+	endif()
 endif ()
 
 ###### misc files to include in bin packages
