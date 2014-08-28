@@ -18,8 +18,11 @@ AC_PROG_RANLIB
 
 # Checks for libraries.
 
-AC_CHECK_LIB(m,sin)
-AC_CHECK_LIB(ncurses,tparm,,AC_CHECK_LIB(termcap,tgetent))
+AC_CHECK_LIB(m,sin,,AC_MSG_ERROR(libmath is required!))
+
+#readline is optional.
+AC_CHECK_LIB(readline, readline)
+
 #clock_gettime is supposedly not in librt for glibc >= 2.17 ?
 #
 AC_CHECK_LIB(rt,clock_gettime)

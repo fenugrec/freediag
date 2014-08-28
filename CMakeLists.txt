@@ -75,13 +75,12 @@ find_library (HAVE_LIBREADLINE libreadline)
 check_function_exists (strcasecmp HAVE_STRCASECMP)
 
 ###### Platform-specific function checks
-
 if(WIN32)
 	if (${CMAKE_SYSTEM_VERSION} VERSION_LESS 5.1)
 		#require at least winXP
 		message(WARNING "At least Win XP is required ! Proceed at your risk !")
 	endif ()
-	set (PLATF "-win32")
+	set (PLATF "-win32")	#for package name string generation only.
 else()
 	#no need to check for these on WIN32 as the offending code (diag_os and diag_tty) was re-written
 	check_function_exists (alarm HAVE_ALARM)

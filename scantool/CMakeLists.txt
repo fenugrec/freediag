@@ -111,6 +111,10 @@ endif ()
 add_executable(scantool  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
 
 target_link_libraries(scantool diag dyno)
+if (HAVE_LIBREADLINE)
+	#this was optional
+	target_link_libraries(scantool readline)
+endif ()
 install(TARGETS scantool DESTINATION bin)
 
 
