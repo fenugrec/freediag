@@ -230,48 +230,6 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	/* L2 does framing, adds addressing and CRC, so do nothing else*/
 	rv = diag_l2_send(d_conn, msg);
 
-	// This is redundant. L2 is supposed to take care of these details
-	// TODO : remove this L3 header construction within 1-2 releases
-	if (0) {
-		/* Put data in buffer */
-		memcpy(&buf[3], msg->data, msg->len);
-
-		/*
-		 * Add addresses. Were using default addresses here, suitable
-		 * for ISO9141 and one of the J1850 protocols. However our
-		 * L2 J1850 code does framing for us, so thats no issue.
-		 */
-		if (msg->data[0] >= 0x40) {
-			/* Response */
-			buf[0] = 0x48;	//XXX why would we generate responses ? we're not an ECU !
-			buf[1] = 0x6B;	/* We chose to overide msg->dest */
-		} else {
-			/* Request */
-			buf[0] = 0x68;
-			buf[1] = 0x6A;	/* We chose to overide msg->dest */
-		}
-		buf[2] = msg->src;
-
-		/*
-		 * We do an ISO type checksum as default. This wont be
-		 * right for J1850, but that is handled by our L2 J1850 code
-		 * so thats no issue.
-		 */
-		if ( ((d_l3_conn->d_l3l2_flags & DIAG_L2_FLAG_DOESCKSUM)==0)
-			&& ((d_l3_conn->d_l3l1_flags & DIAG_L1_DOESL2CKSUM)==0)) {
-			/* No one else does checksum, so we do it */
-			buf[msg->len+3]=diag_cks1(buf, msg->len+3);
-
-			newmsg.len = msg->len + 4; /* Old len + hdr + cksum */
-		} else {
-			newmsg.len = msg->len + 3;	/* Old len + hdr */
-		}
-
-		newmsg.data = buf;
-
-		/* And send message */
-		rv = diag_l2_send(d_conn, &newmsg);
-	}
 	return rv;
 }
 
@@ -313,14 +271,13 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
  * so we employ this algorithm
  *
  * Look at the data and try and work out the length of the message based
- * on the J1979 protocol.
+ * on the J1979 protocol. Returns length (excluding headers & checksum !)
  * VVVVVVVV
  * Note: J1979 doesn't specify particular checksums beyond what 9141 and 14230 already provide,
  * i.e. a J1979 message is maximum 7 bytes long except on CANBUS.
  * headers, address and checksum are handled and stripped at the l2 level (9141, 14230, etc);
- * The code currently doesn't verify checksums but has provisions for stripping headers + checksums.
-  *
- * Another validity check is comparing message length (expected vs real).
+ *
+ * Another validity check is comparing message length (expected vs real); not implemented XXX?
  * Upper levels can also verify that the responses correspond to the requests (i.e. Service ID 0x02 -> 0x42 )
  * XXX Broken for the moment because I'm moving the header stuff completely out of L3
  *
@@ -428,8 +385,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
  * - timeout expiry will cause return before complete packet
  *
  * Successful packet receive will call the callback routine with the message
- * XXX I'm not sure why we need a j1979-specific _recv() function ?
- * Anyway it's currently broken because I'm halfway through modifying _process_data
+ * XXX currently broken because I'm halfway through modifying _process_data
  */
 static int
 diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
@@ -439,7 +395,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 	struct diag_msg *msg;
 	int tout;
 	int state;
-//State machine. XXX states should be described somewhere...
+//State machine:
 #define ST_STATE1 1	// timeout=0 to get data already in buffer
 #define ST_STATE2 2
 #define ST_STATE3 3
@@ -464,7 +420,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 	 * any data that was present on the link, if no messages complete
 	 * then read with the normal timeout, then read with a timeout
 	 * of p4max ms until no more data is left (or timeout), then call
-	 * the callback routine (if there is a message complete)
+	 * the callback routine (if there is a complete message)
 	 */
 	while (1) {
 		/* State machine for setting timeout values */
@@ -726,6 +682,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 
 
 //Send a service 1, pid 0 request and check for a valid reply.
+//ret 0 if ok
 static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 	struct diag_msg msg;
 	struct diag_msg *rxmsg;
@@ -779,8 +736,12 @@ int diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
 
 	assert(d_l3_conn != NULL);
 	rv=diag_l3_j1979_keepalive(d_l3_conn);
-	//TODO : check if keepalive response was received
-	return rv;
+
+	if (rv<0) {
+		fprintf(stderr, FLFMT "J1979 Keepalive failed ! Try to disconnect and reconnect.\n", FL);
+	}
+
+	return (rv<0)? diag_iseterr(rv):0;
 }
 
 /*
@@ -816,7 +777,10 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
 	diag_l1_debug=0;
 
 	rv=diag_l3_j1979_keepalive(d_l3_conn);
-	//TODO : check if keepalive response was received
+
+	if (rv<0) {
+		fprintf(stderr, FLFMT "J1979 Keepalive failed ! Try to disconnect and reconnect.\n", FL);
+	}
 
 	diag_l2_debug=debug_l2_orig;	//restore debug flags
 	diag_l1_debug=debug_l1_orig;

@@ -102,7 +102,10 @@ makes it mostly pass-through except for diag_l1_send which takes care of P4 timi
 removal.
 There are no specific data structures linking the L1 and L0 levels.
 
-L2 : As I understand, this layer tries to abstract much of the differences between standards.
+L2 : As I understand, this layer tries to abstract much of the differences between standards. Data
+received from L0 levels is framed and stripped of headers + checksum bytes at the L2 level in the _recv()
+functions. When sending data on the bus with _send(), L2 also adds headers and checksums as
+required, so L3 and up don't need to bother with this.
 
 L3 : there's also a linked-list for l3 connections : diag_l3_list; 
 

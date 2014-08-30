@@ -284,14 +284,15 @@ struct	diag_l2_data
 #define DIAG_L2_FLAG_KEEPALIVE	0x04
 
 /*
- * L2 adds checksum
+ * L2 adds L2 checksum : ALWAYS !! Either it lets L1 handle it, or does it itself.
  */
-#define DIAG_L2_FLAG_DOESCKSUM	0x08
+//#define DIAG_L2_FLAG_DOESCKSUM	0x08
+
 /*
  * L2 startcomms() always suceeds, but only way to find out if
  * a connection really exists is to send some data and wait for
  * response. This is useful when connected to car networks such as CAN or J1850
- * networks as oppose to normal diagnostic type interface such as ISO9141
+ * networks as opposed to normal diagnostic type interface such as ISO9141
  */
 #define DIAG_L2_FLAG_CONNECTS_ALWAYS 0x10
 

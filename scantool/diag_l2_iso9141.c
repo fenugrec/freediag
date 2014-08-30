@@ -343,6 +343,10 @@ diag_l2_proto_iso9141_decode(uint8_t *data, int len,
  * "timeout" has to be long enough to receive at least 1 byte;
  *  in theory it could be P2min + (8 / baudrate) but there is no
  * harm in using P2max.
+ *
+ * XXX Dilemma. To properly split messages, do we trust our timing VS iso9141 P2min/max requirements?
+ * Do we try to find valid headers + checksum and filter out bad frames ?
+ * Do we let L3_saej1979 try and DJ the framing through L2 ?
  */
 int
 diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
@@ -435,10 +439,8 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					tout);
 
 		// Timeout = end of message or end of responses.
-		if (rv == DIAG_ERR_TIMEOUT)
-		{
-			switch (state)
-			{
+		if (rv == DIAG_ERR_TIMEOUT) {
+			switch (state) {
 				case ST_STATE1:
 					// If we got 0 bytes on the 1st read,
 					// just return the timeout error.
@@ -449,13 +451,13 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					// this message.
 					state = ST_STATE2;
 					continue;
+					break;
 
 				case ST_STATE2:
 					// End of that message, maybe more to come;
 					// Copy data into a message.
 					tmsg = diag_allocmsg((size_t)dp->rxoffset);
 					tmsg->len = dp->rxoffset;
-					tmsg->fmt |= DIAG_FMT_FRAMED ;
 					memcpy(tmsg->data, dp->rxbuf,
 						(size_t)dp->rxoffset);
 					tmsg->rxtime = diag_os_chronoms(0);
@@ -475,13 +477,16 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					// Finished this one, get more:
 					state = ST_STATE3;
 					continue;
+					break;
 
 				case ST_STATE3:
 					/*
 					 * No more messages, but we did get one
 					 */
 					rv = d_l2_conn->diag_msg->len;
-				break;
+					break;
+				default:
+					break;
 			}	//switch (state)
 
 			// end of all response messages:
@@ -562,9 +567,12 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					tmsg->fmt |= DIAG_FMT_BADCS;
 				} else {
 					tmsg->fmt &= ~DIAG_FMT_BADCS;
+					tmsg->fmt |= DIAG_FMT_FRAMED ;	//if the checksum fits, it means we framed things properly.
 				}
 				// "Remove" the checksum byte:
 				tmsg->len--;
+			} else {
+				tmsg->fmt |= DIAG_FMT_FRAMED ;	//if L1 stripped the checksum, it was probably valid ?
 			}
 
 			//if the headers aren't stripped by L1 already:
@@ -581,8 +589,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 
 			// Message done. Flag it up:
-			tmsg->fmt |= DIAG_FMT_FRAMED;  //"framed" => complete / coherent
-			tmsg->fmt |= DIAG_FMT_CKSUMMED; //We checked the checksum;
+			tmsg->fmt |= DIAG_FMT_CKSUMMED;
 
 			// Prepare to decode next message:
 			lastmsg = tmsg;
@@ -737,7 +744,7 @@ diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *m
 static const struct diag_l2_proto diag_l2_proto_iso9141 =
 {
 	DIAG_L2_PROT_ISO9141,
-	DIAG_L2_FLAG_FRAMED |  DIAG_L2_FLAG_DOESCKSUM,
+	DIAG_L2_FLAG_FRAMED,
 	diag_l2_proto_iso9141_startcomms,
 	diag_l2_proto_iso9141_stopcomms,
 	diag_l2_proto_iso9141_send,

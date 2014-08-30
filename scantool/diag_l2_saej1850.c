@@ -389,7 +389,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 
 static const struct diag_l2_proto diag_l2_proto_j1850 = {
 	DIAG_L2_PROT_SAEJ1850, DIAG_L2_FLAG_FRAMED
-	| DIAG_L2_FLAG_DOESCKSUM | DIAG_L2_FLAG_CONNECTS_ALWAYS,
+	| DIAG_L2_FLAG_CONNECTS_ALWAYS,
 	diag_l2_proto_j1850_startcomms,
 	diag_l2_proto_j1850_stopcomms,
 	diag_l2_proto_j1850_send,

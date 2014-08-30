@@ -52,12 +52,11 @@ static const char *l3_iso14230_neglookup(const int id);
  */
 char *
 diag_l3_iso14230_decode_response(struct diag_msg *msg,
-char *buf, const size_t bufsize)
+	char *buf, const size_t bufsize)
 {
 	char buf2[80];
 
-	switch (msg->data[0])
-	{
+	switch (msg->data[0]) {
 		//for these 3 SID's,
 	case DIAG_KW2K_RC_SCRPR:
 		snprintf(buf, bufsize, "StartCommunications_OK");
@@ -70,12 +69,9 @@ char *buf, const size_t bufsize)
 		break;
 
 	case DIAG_KW2K_RC_NR:
-		if (msg->len < 3)
-		{
+		if (msg->len < 3) {
 			snprintf(buf, bufsize,  "General_Error, no response code");
-		}
-		else
-		{
+		} else {
 
 			snprintf(buf, bufsize,  "General_Error, Requested_SID_%s ",
 						l3_iso14230_sidlookup(msg->data[1]));

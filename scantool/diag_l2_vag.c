@@ -667,7 +667,7 @@ diag_l2_proto_vag_timeout(struct diag_l2_conn *d_l2_conn)
 }
 
 static const struct diag_l2_proto diag_l2_proto_vag = {
-	DIAG_L2_PROT_VAG, DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_DOESCKSUM,
+	DIAG_L2_PROT_VAG, DIAG_L2_FLAG_FRAMED,
 	diag_l2_proto_vag_startcomms,
 	diag_l2_proto_vag_stopcomms,
 	diag_l2_proto_vag_send,
