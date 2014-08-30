@@ -235,7 +235,7 @@ diag_l2_timer(void)
 		}
 
 		/* Check the send timers vs requested expiry time */
-		//expired = timercmp(&now, &d_l2_conn->diag_l2_expiry, >);
+
 		//we're subtracting unsigned values but since the clock is
 		//monotonic, the difference will always be >= 0
 		expired = ((now - d_l2_conn->tlast) > d_l2_conn->tinterval)? 1:0 ;
@@ -257,7 +257,7 @@ diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if (d_l2_conn->diag_msg == NULL)
 	{
 		d_l2_conn->diag_msg = msg;
-		d_l2_conn->diag_msg->mcnt = 1;
+//		d_l2_conn->diag_msg->mcnt = 1;
 		return;
 	}
 	/* Add to end of list */
@@ -267,7 +267,7 @@ diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		{
 			msg->next = NULL;
 			tmsg->next = msg;
-			d_l2_conn->diag_msg->mcnt ++;
+//			d_l2_conn->diag_msg->mcnt ++;
 			break;
 		}
 		tmsg = tmsg->next;

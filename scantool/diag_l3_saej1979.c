@@ -317,7 +317,7 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
  * VVVVVVVV
  * Note: J1979 doesn't specify particular checksums beyond what 9141 and 14230 already provide,
  * i.e. a J1979 message is maximum 7 bytes long except on CANBUS.
- * headers, address and checksum are handled at the l2 level (9141, 14230, etc);
+ * headers, address and checksum are handled and stripped at the l2 level (9141, 14230, etc);
  * The code currently doesn't verify checksums but has provisions for stripping headers + checksums.
   *
  * Another validity check is comparing message length (expected vs real).
@@ -369,8 +369,10 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			}
 
 			if (!badpacket)
-				if (diag_malloc(&data, (size_t)sae_msglen))
+				if (diag_malloc(&data, (size_t)sae_msglen)) {
+					free(msg);
 					return;
+				}
 
 			if (badpacket || (data == NULL)) {
 				/* Failure indicated by zero len msg */

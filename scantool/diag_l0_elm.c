@@ -373,7 +373,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	}
 
 	//Correct prompt received:
-	dev->elmflags=ELM_323_BASIC;	//we don't really know so 323 by default.
+	dev->elmflags |= ELM_323_BASIC;	//we don't really know so 323 by default.
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "ELM reset success.\n", FL);
 	}
@@ -383,6 +383,16 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 500)) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATE0\" failed\n", FL);
+		}
+		diag_l0_elm_close(&dl0d);
+		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+	}
+
+	//TODO : check if ATH1 is supported by clones too
+	buf=(uint8_t *)"ATH1\x0D";
+	if (diag_l0_elm_sendcmd(dl0d, buf, 5, 500)) {
+		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+			fprintf(stderr, FLFMT "sending \"ATH1\" failed\n", FL);
 		}
 		diag_l0_elm_close(&dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
@@ -643,11 +653,14 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 	case DIAG_L1_ISO9141:
 		flags = DIAG_L1_SLOW | DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM;
 		flags |= DIAG_L1_DOESP4WAIT | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_AUTOSPEED;
+		// XXX verify if clones support ATH1...
+		//flags |= DIAG_L1_NOHDRS;
 		break;
 	case DIAG_L1_ISO14230:
 		flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
 		flags |= DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM;
 		flags |= DIAG_L1_DOESP4WAIT | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_AUTOSPEED;
+		//flags |= DIAG_L1_NOHDRS;	//Same thing. I think this is default ELM behavior
 		break;
 	default:
 		break;

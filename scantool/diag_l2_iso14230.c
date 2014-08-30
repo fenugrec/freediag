@@ -46,10 +46,11 @@ CVSID("$Id$");
  */
 
 /*
- * Decode the message header, returning the length
- * of the message (hdr+data+checksum) if a whole message has been received.
+ * Decode the message header, returning the expected length
+ * of the message (hdr+data+checksum) if a complete header was received.
  * Note that this may be called with more than one message
  * but it only worries about the first message
+ * only proto_14230_intrecv should use this...
  */
 static int
 diag_l2_proto_14230_decode(uint8_t *data, int len,
@@ -143,6 +144,17 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 	if (*datalen == 0)
 		return diag_iseterr(DIAG_ERR_BADDATA);
 
+
+	if (diag_l2_debug & DIAG_DEBUG_PROTO)
+	{
+		fprintf(stderr, FLFMT "decode hdrlen=%d, datalen=%d, cksum=1\n",
+			FL, *hdrlen, *datalen);
+	}
+
+	// return "theoretical" frame length, including headers + data + checksum byte. We
+	// don't complain if the actual len is shorter because sometimes the cksum will be stripped.
+	return (*hdrlen + *datalen + 1);
+
 	/*
 	 * And confirm data is long enough, incl cksum
 	 * If not, return saying data is incomplete so far
@@ -150,11 +162,6 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 	if (len < (*hdrlen + *datalen + 1))
 		return diag_iseterr(DIAG_ERR_INCDATA);
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO)
-	{
-		fprintf(stderr, FLFMT "decode hdrlen=%d, datalen=%d, cksum=1\n",
-			FL, *hdrlen, *datalen);
-	}
 	return (*hdrlen + *datalen + 1);
 }
 
@@ -163,7 +170,8 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
  * do call back. Strips header and checksum; if address info was present
  * then msg->dest and msg->src are >0.
  *
- * Data from the first message is put into *data, and len into *datalen
+ * Data from the first message is put into *data, and len into *datalen if
+ * those pointers are non-null.
  *
  * If the L1 interface is clever (DOESL2FRAME), then each read will give
  * us a complete message, and we will wait a little bit longer than the normal
@@ -186,8 +194,7 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 
  */
 static int
-diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
-	uint8_t *data, int *pDatalen)
+diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 {
 	struct diag_l2_14230 *dp;
 	int rv, l1_doesl2frame, l1flags;
@@ -209,7 +216,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	state = ST_STATE1;
 	tout = timeout;
 
-	/* Clear out last received message if not done already */
+	/* Clear out last received messages if not done already */
 	if (d_l2_conn->diag_msg) {
 		diag_freemsg(d_l2_conn->diag_msg);
 		d_l2_conn->diag_msg = NULL;
@@ -308,12 +315,6 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 						fprintf(stderr, "\n");
 					}
 
-					/* 1st one */
-					if (data) {
-						memcpy(data, tmsg->data,
-							(size_t)tmsg->len);
-						*pDatalen = tmsg->len;
-					}
 				}
 				state = ST_STATE3;
 				continue;
@@ -358,99 +359,109 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	 * Now check the messages that we have checksum etc, stripping
 	 * off headers etc
 	 */
-	if (rv >= 0) {
-		tmsg = d_l2_conn->diag_msg;
-		lastmsg = NULL;
+	if (rv < 0)
+		return rv;
 
-		while (tmsg) {
-			int datalen;
-			uint8_t hdrlen=0, source=0, dest=0;
+	tmsg = d_l2_conn->diag_msg;
+	lastmsg = NULL;
 
-			/*
-			 * We have the message with the header etc, we
-			 * need to strip the header and checksum
-			 */
+	while (tmsg != NULL) {
+		int datalen;
+		uint8_t hdrlen=0, source=0, dest=0;
+
+
+		if ((l1flags & DIAG_L1_NOHDRS)==0) {
+
 			dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 			rv = diag_l2_proto_14230_decode( tmsg->data,
 				tmsg->len,
 				&hdrlen, &datalen, &source, &dest,
 				dp->first_frame);
 
-			if (rv < 0 || rv>255)		/* decode failure */
+			if (rv <= 0 || rv>255)		/* decode failure */
 				return diag_iseterr(rv);
 
-			//here rv=message length including checksum
-			/*
-			 * If L1 isnt doing L2 framing then it is possible
-			 * we have misframed this message and it is infact
-			 * more than one message, so see if we can decode it
-			 */
-			if ((l1_doesl2frame == 0) && (rv < tmsg->len)) {
-				/*
-				 * This message contains more than one
-				 * data frame (because it arrived with
-				 * odd timing), this means we have to
-				 * do horrible copy about the data
-				 * things ....
-				 */
-				struct diag_msg	*amsg;
-				amsg = diag_dupsinglemsg(tmsg);
-				amsg->len = (uint8_t) rv;
-				tmsg->len -= (uint8_t) rv;
-				tmsg->data += rv;
-
-				/*  Insert new amsg before old msg */
-				amsg->next = tmsg;
-				if (lastmsg == NULL)
-					d_l2_conn->diag_msg = amsg;
-				else
-					lastmsg->next = amsg;
-
-				tmsg = amsg; /* Finish processing this one */
+			// check for sufficient data: (rv = expected len = hdrlen + datalen + ckslen)
+			if (l1_doesl2frame == 0) {
+				if ((!(l1flags & DIAG_L1_STRIPSL2CKSUM) && (tmsg->len < rv)) ||
+						((l1flags & DIAG_L1_STRIPSL2CKSUM) && (tmsg->len < (rv-1))))
+					return diag_iseterr(DIAG_ERR_INCDATA);
 			}
-
-			if (diag_l2_debug & DIAG_DEBUG_PROTO)
-				fprintf(stderr,
-				FLFMT "msg %p decode/rejig done rv=%d hdrlen=%u datalen=%d src=%02X dst=%02X\n",
-					FL, (void *)tmsg, rv, hdrlen, datalen, source, dest);
-
-
-			if ((tmsg->data[0] & 0xC0) == 0xC0) {
-				tmsg->fmt = DIAG_FMT_ISO_FUNCADDR;
-			} else {
-				tmsg->fmt = 0;
-			}
-			tmsg->fmt |= DIAG_FMT_FRAMED;
-
-			//if cs wasn't stripped, we check it:
-			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0) {
-				uint8_t calc_sum=diag_cks1(tmsg->data, (tmsg->len)-1);
-				if (calc_sum != tmsg->data[tmsg->len -1]) {
-					fprintf(stderr, FLFMT "Bad checksum: needed %02X,got%02X. Data:",
-						FL, calc_sum, tmsg->data[tmsg->len -1]);
-					tmsg->fmt |= DIAG_FMT_BADCS;
-					diag_data_dump(stderr, tmsg->data, tmsg->len -1);
-					fprintf(stderr, "\n");
-				}
-				/* and remove checksum byte */
-				tmsg->len--;
-
-			}
-			tmsg->fmt |= DIAG_FMT_CKSUMMED;	//checksum was verified
-			tmsg->fmt &= ~DIAG_FMT_BADCS;	//clear "bad checksum" flag
-
-			tmsg->src = source;
-			tmsg->dest = dest;
-			tmsg->data += hdrlen;	/* Skip past header */
-			tmsg->len -= hdrlen; /* remove header */
-
-
-
-			dp->first_frame = 0;
-
-			lastmsg = tmsg;
-			tmsg = tmsg->next;
 		}
+
+
+
+		/*
+		 * If L1 isnt doing L2 framing then it is possible
+		 * we have misframed this message and it is infact
+		 * more than one message, so see if we can decode it
+		 */
+		if ((l1_doesl2frame == 0) && (rv < tmsg->len)) {
+			/*
+			 * This message contains more than one
+			 * data frame (because it arrived with
+			 * odd timing), this means we have to
+			 * do horrible copy about the data
+			 * things ....
+			 */
+			struct diag_msg	*amsg;
+			amsg = diag_dupsinglemsg(tmsg);
+			amsg->len = (uint8_t) rv;
+			tmsg->len -= (uint8_t) rv;
+			tmsg->data += rv;
+
+			/*  Insert new amsg before old msg */
+			amsg->next = tmsg;
+			if (lastmsg == NULL)
+				d_l2_conn->diag_msg = amsg;
+			else
+				lastmsg->next = amsg;
+
+			tmsg = amsg; /* Finish processing this one */
+		}
+
+		if (diag_l2_debug & DIAG_DEBUG_PROTO)
+			fprintf(stderr,
+			FLFMT "msg %p decode/rejig done rv=%d hdrlen=%u datalen=%d src=%02X dst=%02X\n",
+				FL, (void *)tmsg, rv, hdrlen, datalen, source, dest);
+
+
+		tmsg->fmt = DIAG_FMT_FRAMED;
+
+		if ((l1flags & DIAG_L1_NOHDRS)==0) {
+			if ((tmsg->data[0] & 0xC0) == 0xC0) {
+				tmsg->fmt |= DIAG_FMT_ISO_FUNCADDR;
+			}
+		}
+
+
+		//if cs wasn't stripped, we check it:
+		if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0) {
+			uint8_t calc_sum=diag_cks1(tmsg->data, (tmsg->len)-1);
+			if (calc_sum != tmsg->data[tmsg->len -1]) {
+				fprintf(stderr, FLFMT "Bad checksum: needed %02X,got%02X. Data:",
+					FL, calc_sum, tmsg->data[tmsg->len -1]);
+				tmsg->fmt |= DIAG_FMT_BADCS;
+				diag_data_dump(stderr, tmsg->data, tmsg->len -1);
+				fprintf(stderr, "\n");
+			}
+			/* and remove checksum byte */
+			tmsg->len--;
+
+		}
+		tmsg->fmt |= DIAG_FMT_CKSUMMED;	//checksum was verified
+
+		tmsg->src = source;
+		tmsg->dest = dest;
+		tmsg->data += hdrlen;	/* Skip past header */
+		tmsg->len -= hdrlen; /* remove header */
+
+
+
+		dp->first_frame = 0;
+
+		lastmsg = tmsg;
+		tmsg = tmsg->next;
 	}
 	return rv;
 }
@@ -476,10 +487,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	struct diag_msg	msg;
 	uint8_t data[MAXRBUF];
 	int rv, wait_time;
-	int datalen;
-	uint8_t datasrc, hdrlen;
 	uint8_t cbuf[MAXRBUF];
-	int len;
 	int timeout;
 	struct diag_serial_settings set;
 
@@ -574,29 +582,28 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			timeout = d_l2_conn->diag_l2_p2max + RXTOFFSET;
 
 		/* And wait for a response, ISO14230 says will arrive in P2 */
-		rv = diag_l2_proto_14230_int_recv(d_l2_conn,
-				timeout, data, &len);
+		rv = diag_l2_proto_14230_int_recv(d_l2_conn, timeout);
 		if (rv < 0)
 			break;
 
-		//XXX _int_recv already calls _decode internally. Why do we
-		//need to do this ?
-		rv = diag_l2_proto_14230_decode( data, len,
-			&hdrlen, &datalen, &datasrc, NULL, dp->first_frame);
-		if (rv < 0)
+		// _int_recv() should have filled  d_l2_conn->diag_msg properly.
+		// check if message is OK :
+		if (d_l2_conn->diag_msg->fmt & DIAG_FMT_BADCS) {
+			rv=DIAG_ERR_BADCSUM;
 			break;
+		}
 
-		switch (data[hdrlen]) {
-		case DIAG_KW2K_RC_SCRPR:	/* StartComms +ve response */
+		switch (d_l2_conn->diag_msg->data[0]) {
+		case DIAG_KW2K_RC_SCRPR:	/* StartComms positive response */
 
-			d_l2_conn->diag_l2_kb1 = data[hdrlen+1];
-			d_l2_conn->diag_l2_kb2 = data[hdrlen+2];
-			d_l2_conn->diag_l2_physaddr = datasrc;
+			d_l2_conn->diag_l2_kb1 = d_l2_conn->diag_msg->data[1];
+			d_l2_conn->diag_l2_kb2 = d_l2_conn->diag_msg->data[2];
+			d_l2_conn->diag_l2_physaddr = d_l2_conn->diag_msg->src;
 
 			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
 				fprintf(stderr,
 					FLFMT "_StartComms Physaddr=0x%X KB1=%02X, KB2=%02X\n",
-					FL, datasrc, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
+					FL, d_l2_conn->diag_l2_physaddr, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
 			}
 			rv=0;
 			dp->state = STATE_ESTABLISHED ;
@@ -612,11 +619,11 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
 				fprintf(stderr,
 					FLFMT "_StartComms got unexpected response 0x%X\n",
-					FL, data[hdrlen]);
+					FL, d_l2_conn->diag_msg->data[0]);
 			}
 			rv=DIAG_ERR_ECUSAIDNO;
 			break;
-		}	//switch data[hdrlen]
+		}	//switch data[0]
 		break;	//case _FASTINIT
 	/* 5 Baud init */
 	case DIAG_L2_TYPE_SLOWINIT:
@@ -627,13 +634,8 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			break;
 
 		/* Mode bytes are in 7-Odd-1, read as 8N1 and ignore parity */
-		//XXX why don't we call _recv with 2 bytes (we want 2 keybytes...) ?
 		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
-			cbuf, 1, 100);
-		if (rv < 0)
-			break;
-		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
-			&cbuf[1], 1, 100);
+			cbuf, 2, 100);
 		if (rv < 0)
 			break;
 
@@ -921,12 +923,10 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
 	void *handle)
 {
-	uint8_t data[256];
 	int rv;
-	int datalen;
 
 	/* Call internal routine */
-	rv = diag_l2_proto_14230_int_recv(d_l2_conn, timeout, data, &datalen);
+	rv = diag_l2_proto_14230_int_recv(d_l2_conn, timeout);
 
 	if (rv < 0)	/* Failure */
 		return rv;
@@ -974,7 +974,7 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 
 	while (1) {
 		rv = diag_l2_proto_14230_int_recv(d_l2_conn,
-			d_l2_conn->diag_l2_p2max + 10, NULL, NULL);
+			d_l2_conn->diag_l2_p2max + 10);
 
 		if (rv < 0) {
 			*errval = DIAG_ERR_TIMEOUT;

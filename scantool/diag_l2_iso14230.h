@@ -58,8 +58,8 @@ struct diag_l2_14230
 //******* flags for ->modeflags :
 //(these are set in 14230_startcomms() according to init type and keybytes received)
 
-// ISO14230_SHORTHDR (for iso14230) : if set, we support address-less
-// headers; this is set if the keybytes received from StartComms require it.
+// ISO14230_SHORTHDR (for iso14230) : if set, the ECU supports address-less
+// headers; this is set according to the keybytes received during StartComms.
 // By default we send fully addressed headers (iso14230 5.2.4.1)
 #define ISO14230_SHORTHDR 0x01
 

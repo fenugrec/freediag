@@ -229,8 +229,8 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		};
 
 	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
-		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src %X, dest %X; msgcnt %d\n",
-			(void *)handle, len, msg->src, msg->dest, msg->mcnt);
+		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src %X, dest %X\n",
+			(void *)handle, len, msg->src, msg->dest);
 	}
 
 	/* Debug level for showing received data */

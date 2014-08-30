@@ -181,7 +181,7 @@ struct debugflags_descr {
 struct diag_msg
 {
 	uint8_t	fmt;			/* Message format (doesn't absolutely need to be uint8_t) : */
-	#define DIAG_FMT_ISO_FUNCADDR	0x01	/* ISO Functional addressing */
+	#define DIAG_FMT_ISO_FUNCADDR	0x01	/* ISO Functional addressing (default : phys) */
 	#define DIAG_FMT_FRAMED		0x02	/* Rcvd data is framed, ie not raw */
 //	#define	DIAG_FMT_DATAONLY	0x04	/* Rcvd data had L2/L3 headers removed XXX ALWAYS ! */
 	#define DIAG_FMT_CKSUMMED	0x08	/* Someone (L1/L2) checked the checksum */
@@ -196,7 +196,7 @@ struct diag_msg
 	unsigned long	 rxtime;	/* Processed time, in ms given by diag_os_chronoms(0) */
 	struct diag_msg	*next;		/* For linked lists of messages */
 
-	uint8_t	mcnt;		/* Number of elements on this list */
+//	uint8_t	mcnt;		/* Number of elements on this list ; nobody used this*/
 
 	uint8_t	*idata;		/* For free() of data later: this is a "backup"
 							 * of the initial *data pointer.*/

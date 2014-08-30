@@ -613,8 +613,8 @@ diag_l2_proto_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	}
 
 	/* And wait for response */
-
-	rv = diag_l2_proto_iso9141_int_recv(d_l2_conn, 1000);	/* XXX Really 9141? */
+	//XXX this l2_iso9141 function should be re-written for l2_vag; they may be incompatible...
+	rv = diag_l2_proto_iso9141_int_recv(d_l2_conn, 1000);
 	if ((rv >= 0) && d_l2_conn->diag_msg)
 	{
 		/* OK */

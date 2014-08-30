@@ -272,7 +272,7 @@ struct	diag_l2_data
 
 /*FLAG_FRAMED:
  * Received data is sent upwards in frames (ie L3 doesn't have to try
- * and re-frame the code - this is done by timing windows or by the
+ * and re-frame the data - this is done by timing windows or by the
  * protocol itself
  */
 #define DIAG_L2_FLAG_FRAMED	0x01

@@ -61,8 +61,6 @@ extern "C" {
 
 /* following flags are for semi-intelligent interfaces */
 
-//XXX we need a "L1 removes headers" flag as well. ELMs returns totally stripped data
-// by default
 /*
  *	L1 is intelligent and does L2 stuff, this means it will
  *	- Return a complete L3 frame of data as one recv()
@@ -109,6 +107,9 @@ extern "C" {
 //block instead of byte per byte ( if P4=0 ; no interbyte spacing)
 #define DIAG_L1_BLOCKDUPLEX 0x1000
 
+//NOHDRS
+//this indicates that L1 already stripped the headers from the frame (ELM default behavior)
+#define DIAG_L1_NOHDRS 0x2000
 
 
 /*
