@@ -59,9 +59,7 @@ struct diag_l3_conn
 	/* Received messages */
 	struct diag_msg	*msg;
 
-	/* General purpose timer */
-//	struct timeval	timer;
-	//count in ms since an arbitrary reference (from diag_os_getms())
+	// Count in ms since an arbitrary reference (from diag_os_getms())
 	unsigned long timer;
 
 	/* Linked list held by main L3 code */

@@ -567,7 +567,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 #define J1979_MODE_MAX 9
 
 	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
-		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %X\n",
+		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %#X\n",
 			(void *)handle, (void *)d_conn, mode);
 
 	}
@@ -1026,15 +1026,11 @@ do_j1979_getdata(int interruptible)
  *
  * This is the basic work horse routine
  */
-void
-do_j1979_basics()
+void do_j1979_basics()
 {
-//	struct diag_l3_conn *d_conn;
 	ecu_data_t *ep;
 	unsigned int i;
 	int o2monitoring = 0;
-
-//	d_conn = global_l3_conn;	//not used ?
 
 	/*
 	 * Get supported PIDs and Tests etc
@@ -1593,9 +1589,7 @@ const struct protocol protocols[] = {
 /*
  * Connect to ECU by trying all protocols
  * - We do the fast initialising protocols before the slow ones
- * This (over)-writes global_l3_conn !
- * the caller MUST make sure global_state isn't alreay STATE_CONNECTED
- * before calling ecu_connect.
+ * This will set global_l3_conn. Ret 0 if ok
  */
 int
 ecu_connect(void)
@@ -1603,6 +1597,11 @@ ecu_connect(void)
 	int connected=0;
 	int rv = DIAG_ERR_GENERAL;
 	const struct protocol *p;
+
+	if ((global_state >= STATE_CONNECTED) || (global_l3_conn != NULL)) {
+		printf("ecu_connect() : already connected !\n");
+		return DIAG_ERR_GENERAL;
+	}
 
 
 	for (p = protocols; !connected && p < &protocols[ARRAY_SIZE(protocols)]; p++) {

@@ -117,19 +117,16 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 
 		/* Call the proto routine */
 		rv = dp->diag_l3_proto_start(d_l3_conn);
-		if (rv < 0)
-		{
+		if (rv < 0) {
 			free(d_l3_conn);
 			d_l3_conn = NULL;
 			return diag_pseterr(rv);
-		}
-		else
-		{
+		} else {
 			/*
 			 * Set time to now
 			 */
 			d_l3_conn->timer=diag_os_getms();
-			//(void)gettimeofday(&d_l3_conn->timer, NULL);
+
 			/*
 			 * And add to list
 			 */

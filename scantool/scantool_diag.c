@@ -48,6 +48,7 @@ static int cmd_diag_sendreq(int argc, char **argv);
 static int cmd_diag_read(int argc, char **argv);
 
 static int cmd_diag_addl3(int argc, char **argv);
+static int cmd_diag_reml3(UNUSED(int argc), UNUSED(char **argv));
 
 static int cmd_diag_probe(int argc, char **argv);
 static int cmd_diag_fastprobe(int argc, char **argv);
@@ -74,11 +75,14 @@ const struct cmd_tbl_entry diag_cmd_table[] =
 	{ "rx", "read [waittime]", "Receive some data from the ECU",
 		cmd_diag_read, FLAG_HIDDEN, NULL},
 
-	{ "addl3", "addl3 protocol", "Add [start] a L3 protocol",
+	{ "addl3", "addl3 protocol", "Add (start) a L3 protocol",
 		cmd_diag_addl3, 0, NULL},
+	{ "reml3", "reml3", "Remove (stop) an L3 protocol",
+		cmd_diag_reml3, 0, NULL},
 
 	{ "probe", "probe start_addr stop_addr", "Scan bus using ISO9141 5 baud init [slow!]", cmd_diag_probe, 0, NULL},
 	{ "fastprobe", "fastprobe start_addr stop_addr [func]", "Scan bus using ISO14230 fast init with physical or functional addressing", cmd_diag_fastprobe, 0, NULL},
+
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
 	{ "quit","quit", "Return to previous menu level",
@@ -103,41 +107,43 @@ cmd_diag_addl3(int argc, char **argv)
 	const char *proto;
 
 	/* Add a L3 stack above the open L2 */
-	if (global_state < STATE_CONNECTED)
-	{
+	if (global_state < STATE_CONNECTED) {
 		printf("Not connected to ECU\n");
-		return CMD_OK;
+		return CMD_FAILED;
 	}
-	if (global_state >= STATE_L3ADDED)
-	{
+
+	if (global_state >= STATE_L3ADDED) {
 		printf("L3 protocol already connected\n");
 		return CMD_OK;
 	}
-	if (argc == 1)
-	{
+
+	if (global_l3_conn != NULL) {
+		fprintf(stderr, FLFMT "Oops : there's a global L3 conn with an invalid global_state ! Report this !\n", FL);
+		return CMD_FAILED;
+	}
+
+	if (argc != 2) {
 		return CMD_USAGE;
 	}
-	if (strcmp(argv[1], "?") == 0)
-	{
+
+	if (strcmp(argv[1], "?") == 0) {
 		printf("Valid protocols are: ");
-		for (i=0; l3_protos[i] != NULL; i++)
-		{
+		for (i=0; l3_protos[i] != NULL; i++) {
 			printf("%s ", l3_protos[i]);
 		}
 		printf("\n");
 		return CMD_OK;
 	}
+
 	//match specified L3proto with available protos
-	for (i=0, proto = NULL; l3_protos[i] != NULL; i++)
-	{
-		if (strcasecmp(l3_protos[i], argv[1]) == 0)
-		{
+	for (i=0, proto = NULL; l3_protos[i] != NULL; i++) {
+		if (strcasecmp(l3_protos[i], argv[1]) == 0) {
 			proto = l3_protos[i];
 			break;
 		}
 	}
-	if (proto == NULL)
-	{
+
+	if (proto == NULL) {
 		printf("No such protocol, use %s ? for list of protocols\n",
 			argv[0]);
 		return CMD_OK;
@@ -146,7 +152,7 @@ cmd_diag_addl3(int argc, char **argv)
 	//use the global L2 connection to start an L3 connection.
 	global_l3_conn = diag_l3_start(proto, global_l2_conn);
 
-	if (global_l3_conn) {
+	if (global_l3_conn !=NULL) {
 		global_state = STATE_L3ADDED ;
 		printf("Done\n");
 	}
@@ -157,6 +163,31 @@ cmd_diag_addl3(int argc, char **argv)
 
 
 	return CMD_OK;
+}
+
+// cmd_diag_reml3 : undoes what diag_addl3 did.
+static int cmd_diag_reml3(UNUSED(int argc), UNUSED(char **argv)) {
+	int rv;
+	struct diag_l3_conn *old_dl3c = global_l3_conn;
+
+	if (global_l3_conn == NULL) {
+		printf("No active global L3 connection.\n");
+		return CMD_OK;
+	}
+
+	if (global_state < STATE_L3ADDED) {
+		printf("Global state wasn't set properly ? Report this !\n");
+		return CMD_FAILED;
+	}
+
+	global_l3_conn = global_l3_conn->next;	//in case there was more than 1
+
+	rv=diag_l3_stop(old_dl3c);
+
+	if (global_l3_conn==NULL)
+		global_state = STATE_CONNECTED;		//we probably still have an L2 hanging there
+
+	return rv? diag_iseterr(rv):0;
 }
 
 
@@ -260,7 +291,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			if (fastflag)
 				printf("Keybytes: 0x%X 0x%X\n", d.kb1, d.kb2);
 			else
-				printf("msg 00: 0x%X 0x%X\n", d.kb1, d.kb2);
+				printf("received: 0x%X 0x%X\n", d.kb1, d.kb2);
 
 			/* Now read some data */
 
@@ -303,6 +334,11 @@ cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 {
 	int rv;
 
+	if (global_state >= STATE_CONNECTED) {
+		printf("Already connected !\n");
+		return CMD_OK;
+	}
+
 	rv = do_l2_generic_start();
 	if (rv==0)
 	{
@@ -321,25 +357,34 @@ cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 }
 
 
+//Currently, this stops + removes the current global L3 conn.
+//If there are no more L3 conns, also stop + close the global L2 conn.
 static int
 cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
 {
-	if (global_state < STATE_CONNECTED)
-	{
+	if (global_state < STATE_CONNECTED) {
 		printf("Not connected to ECU\n");
 		return CMD_OK;
 	}
 
-	if (global_state >= STATE_L3ADDED)
-	{
+	if (global_state >= STATE_L3ADDED) {
 		/* Close L3 protocol */
-		diag_l3_stop(global_l3_conn);
+		cmd_diag_reml3(0,NULL);
 	}
+
+	if (global_l3_conn == NULL) {
+		// no other l3 conns, so stop the global L2 conn
 	diag_l2_StopCommunications(global_l2_conn);
 	diag_l2_close(global_l2_dl0d);
 
 	global_l2_conn = NULL;
 	global_state = STATE_IDLE;
+	} else {
+		printf("There is another active L3 connection : %p\n : %s",
+			(void *) global_l3_conn, global_l3_conn->d_l3_proto->proto_name);
+		printf("Run disconnect again to close it.\n");
+		return CMD_OK;
+	}
 
 	return CMD_OK;
 }

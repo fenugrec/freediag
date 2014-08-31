@@ -11,11 +11,13 @@ At the moment this is just a collection of notes : whenever I spend
 more than a few minutes investigating something in the code, I write
 a brief summary in here. Hopefully this will benefit someone else
 as well.
-***
+*** general notes
 Physical interfaces (i.e. ELM323, dumb adaptor, etc) are connected to a serial port (usually called
 "subinterface" in the code). Only one L0 driver can use a given "subinterface", ex.: /dev/ttyUSB0
 (a subinterface) is used exclusively by diag_l0_elm (the L0 driver) to manage a physical ELM32x interface.
 This association is described in a "struct diag_l0_device", often named "dl0d" in the code.
+
+*** data structures
 
 struct diag_l0_device : as of 1.01, this contains general and OS-specific fields, and is defined
 in the relevant diag_tty_???.h header. diag_tty_open allocs and fills a diag_l0_device
@@ -45,9 +47,16 @@ struct diag_l2_link : these are alloc'ed + filled by diag_l2_open; diag_l2_links
 struct diag_l2_conn : these are alloc'ed + filled by diag_l2_startcommunications() only !
  and they are free'd in diag_l2_stopcommunications. This is a complex structure defined in
  diag_l2.h; it specifies a diag_l2_link, an l2 protocol handler and a lot of flags & settings.
- A diag_l2_conn is required to call the "public" l2 functions (_send, _request, _ioctl, etc.)
+ A diag_l2_conn is needed to use the "public" l2 functions (_send, _request, _ioctl, etc.)
  The existence of a diag_l2_conn indicates connection to an ECU has been established
- (or a monitoring / "sniffing" connection has been established).
+ (or a monitoring / "sniffing" connection has been established). A diag_l2_conn can be used
+ by (one or more ?) L3 connection(s), see struct diag_l3_conn.
+ 
+struct diag_l3_conn : these are alloc'ed / freed by diag_l3_start and diag_l3_stop, respectively;
+ and added to the global diag_l3_list linked list. Associates a diag_l2_conn with a diag_l3_proto.
+
+ 
+*** functions
 
 diag_l2_close : this is called from cmd_diag_disconnect to close the global_l2_dl0d XXX
 
@@ -80,7 +89,9 @@ the different implementations handle this.
 
 
 cmd_diag_addl3 : this supposes we already have a global L2 connection to an ECU; it
- defines global_l3_conn if diag_l3_start() is succesful
+ defines global_l3_conn if diag_l3_start() is succesfull.
+ 
+cmd_diag_reml3 : does the opposite of addl3
 
 **** layer "tree"
 As of 1.01, here's roughly how the layers can be interconnected :
@@ -107,7 +118,7 @@ received from L0 levels is framed and stripped of headers + checksum bytes at th
 functions. When sending data on the bus with _send(), L2 also adds headers and checksums as
 required, so L3 and up don't need to bother with this.
 
-L3 : there's also a linked-list for l3 connections : diag_l3_list; 
+L3 : 
 
 
 **** Time & freediag

@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include "diag.h"
 #include "diag_err.h"
@@ -328,13 +329,13 @@ cmd_log(int argc, char **argv)
 			file = argv[1];	//if a file name was specified, use that
 	} else {
 		//else, generate an auto log file
-		for (i = 0; i < 99; i++) {
+		for (i = 0; i <= 100; i++) {
 			sprintf(autofilename,"log.%02d",i);
 			if (stat(file, &buf) == -1 && errno == ENOENT)
 				break;
 		}
-		if (i > 99) {
-			printf("Can't create log.%02d; remember to clean old auto log files\n",i);
+		if (i == 100) {
+			printf("Can't create log.%d; remember to clean old auto log files\n",i);
 			return CMD_FAILED;
 		}
 	}
@@ -580,6 +581,7 @@ static void
 log_response(int ecu, response_t *r)
 {
 	int i;
+	assert(global_logfp != NULL);
 
 	/* Only print good records */
 	if (r->type != TYPE_GOOD)
@@ -671,22 +673,34 @@ cmd_monitor(int argc, char **argv)
 	return CMD_OK;
 }
 
+// scan : use existing L3 J1979 connection, or establish a new one by trying all known protos.
 
 static int
 cmd_scan(UNUSED(int argc), UNUSED(char **argv))
 {
-	int rv;
+	int rv=DIAG_ERR_GENERAL;
 	if (argc > 1)
 		return CMD_USAGE;
 
-	if (global_state >= STATE_CONNECTED) {
-		printf("Already connected, please disconnect first\n");
-		// XXX maybe if we're already connected we can just skip
-		// ecu_connect but proceed with the rest ?
+	if (global_state == STATE_L3ADDED) {
+		if (global_l3_conn != NULL) {
+			if (strcmp(global_l3_conn->d_l3_proto->proto_name, "SAEJ1979") ==0) {
+				printf("Re-using active L3 connection.\n");
+				rv=0;
+			} else {
+				printf("L3 connection must be SAEJ1979 ! Try disconnecting and running scan again.\n");
+				return CMD_FAILED;
+			}
+		} else {
+			printf("Error: inconsistent global_state. Report this!\n");
+			return CMD_FAILED;
+		}
+	} else if (global_state >= STATE_CONNECTED) {
+		printf("Already connected, please disconnect first, or manually add SAEJ1979 L3 layer.\n");
 		return CMD_FAILED;
+	} else {
+		rv = ecu_connect();
 	}
-
-	rv = ecu_connect();
 
 	if (rv == 0) {
 		printf("Connection to ECU established\n");

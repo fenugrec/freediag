@@ -202,8 +202,8 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 {
 	int rv;
 	struct diag_l2_conn *d_conn;
-	uint8_t buf[32];
-	struct diag_msg newmsg;
+//	uint8_t buf[32];
+//	struct diag_msg newmsg;
 
 	/* Get l2 connection info */
 	d_conn = d_l3_conn->d_l3l2_conn;
