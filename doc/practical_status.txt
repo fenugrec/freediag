@@ -1,13 +1,25 @@
 #############################
 fenugrec
 -interface: DUMB K-line only with optocouplers
--serial port : FTDI USB->serial converter
+-serial port : FTDI USB->serial converter; dumbopts=0x48
 -system: WinXP 1.4GHz
--freediag version: 1.03
+-freediag version: 1.03, 1.04, CVS@2014/08/30
 ----------
 -car: 2004 Nissan Sentra Spec-V
--protocol : L2 iso14230 fastinit, phys. destaddr=0x10, testerid=0xfc
+-protocol : L2 iso14230 fastinit, phys. destaddr=0x10, testerid=0xfc;
 -result: success, tested SID 3E (testerpresent), 1A 81 (get ECUID)
+-protocol : L2 iso9141 5bps slow init, phys destaddr 0x33 testerid = 0xf1 (standard J1979 OBD2 session)
+-result: scan command: OK. Manual connect: OK. Monitor mode: rather slow. J1979 periodic keepalive fragile
+
+
+-interface: cheapo ebay "VAG KKL 409" USB->OBD cable
+-serial port: cable has built-in cheap clone CH340 USB IC. dumbopts=0x48
+-system: T61, WinXP 2.5GHz with a bunch of programs running
+-freediag version: CVS@2014/09/10
+----------
+-car: 2005 Toyota Corolla
+-protocol : L2 iso9141 (standard J1979 OBD2 session)
+-result: manual connect: OK. Commands tested : scan, rvi, cms, ncms; all OK
 
 #############################
 

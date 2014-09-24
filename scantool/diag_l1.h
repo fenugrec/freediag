@@ -73,7 +73,7 @@ extern "C" {
  * DOESSLOWINIT
  *	L1 interface does the slowinit stuff, so L2 doesn't need to do complex
  *	handshake. L1 will send the keybytes on the first recv(). (All L1's
- *	read the 0x55 and do the right thing, L2 never sees that)
+ *	read the 0x55 and do the right thing, L2 never sees that) See DIAG_L1_DOESFULLINIT
  */
 #define	DIAG_L1_DOESSLOWINIT		0x40
 /*
@@ -109,7 +109,16 @@ extern "C" {
 
 //NOHDRS
 //this indicates that L1 already stripped the headers from the frame (ELM default behavior)
+//but the l0_elm init code enables headers so this is not useful at the moment.
 #define DIAG_L1_NOHDRS 0x2000
+
+//DOESFULLINIT
+//indicates that L0 does the full init, including keybyte stuff. (like ELMs)
+#define DIAG_L1_DOESFULLINIT 0x4000
+
+//DATAONLY
+//indicates that L0 adds headers + checksums before sending to ECU (like ELMs).
+#define DIAG_L1_DATAONLY 0x8000
 
 
 /*
@@ -155,7 +164,9 @@ extern "C" {
 struct diag_l1_initbus_args
 {
 	uint8_t	type;	/* Init type */
-	uint8_t	addr;	/* Address, if 5 baud init */
+	uint8_t	addr;	/* ECU (target) address, if iso9141 or 14230 init */
+	uint8_t	testerid;	/* tester address, for 14230 init */
+	uint8_t	physaddr;	//1:physical addressing, 0: func. iso14230 only.
 };
 //initbus types:
 #define DIAG_L1_INITBUS_NONE	0	/* Not needed */

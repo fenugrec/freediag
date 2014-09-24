@@ -220,7 +220,7 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 	if (set_interface==CARSIM)
 		printf("simfile: %s\n", set_simfile);
 	if (set_interface==DUMB)
-		printf("dumbopts: %u\n", diag_l0_dumb_getopts());
+		printf("dumbopts: %#x\n", diag_l0_dumb_getopts());
 	printf("speed:    Connect speed: %d\n", set_speed);
 	printf("display:  %s units\n", set_display?"english":"metric");
 	printf("testerid: Source ID to use: 0x%X\n", set_testerid);

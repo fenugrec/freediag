@@ -1043,6 +1043,11 @@ enter_cli(const char *name)
 
 /*
  * Decimal/Octal/Hex to integer routine
+ * formats:
+ * [-]0[0-7] : octal
+ * [-]0x[0-9,A-F,a-f] : hex
+ * [-]$[0-9,A-F,a-f] : hex
+ * [-][0-9] : dec
  * Returns 0 if unable to decode.
  */
 int htoi(char *buf)
@@ -1050,11 +1055,12 @@ int htoi(char *buf)
 	/* Hex text to int */
 	int rv = 0;
 	int base = 10;
-	int sign=1;	//1 = positive; 0 =neg
+	int sign=0;	//1 = positive; 0 =neg
 
-	if (*buf == '-') {
+	if (*buf != '-') {
 		//change sign
-		sign=0;
+		sign=1;
+	} else {
 		buf++;
 	}
 

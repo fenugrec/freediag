@@ -546,15 +546,14 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	case DIAG_L2_TYPE_FASTINIT:
 
 		/* Build an ISO14230 StartComms message */
-		if (flags & DIAG_L2_TYPE_FUNCADDR)
-		{
+		if (flags & DIAG_L2_TYPE_FUNCADDR) {
 			msg.fmt = DIAG_FMT_ISO_FUNCADDR;
 			d_l2_conn->diag_l2_physaddr = 0; /* Don't know it yet */
-		}
-		else
-		{
+			in.physaddr = 0;
+		} else {
 			msg.fmt = 0;
 			d_l2_conn->diag_l2_physaddr = target;
+			in.physaddr = 1;
 		}
 		msg.src = source;
 		msg.dest = target;
@@ -564,8 +563,17 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 		/* Do fast init stuff */
 		in.type = DIAG_L1_INITBUS_FAST;
-		//in.addr is ignored by fastinit
+		in.addr = target;
+		in.testerid = source;
 		rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
+
+		// some L0 devices already do the full startcomm transaction:
+		if ((d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESFULLINIT) && (rv==0)) {
+			//TODO : somehow extract keybyte data for those cases...
+			//original elm327s have the "atkw" command to get the keybytes, but clones suck.
+			dp->state = STATE_ESTABLISHED;
+			break;
+		}
 
 		if (rv < 0)
 			break;
@@ -630,6 +638,13 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		in.type = DIAG_L1_INITBUS_5BAUD;
 		in.addr = target;
 		rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
+
+		//some L0 devices handle the full init transaction:
+		if ((d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESFULLINIT) && (rv==0)) {
+			dp->state = STATE_ESTABLISHED ;
+			break;
+		}
+
 		if (rv < 0)
 			break;
 
@@ -825,6 +840,14 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
+
+
+	//if L1 requires headerless data, send directly :
+	if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DATAONLY) {
+		rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, NULL,
+				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
+		return rv? diag_iseterr(rv):0;
+	}
 
 	/* Build the new message */
 

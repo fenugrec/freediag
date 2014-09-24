@@ -239,7 +239,13 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 			rv = 0;
 			break;
 		case DIAG_L2_TYPE_SLOWINIT:
-			rv = diag_l2_proto_iso9141_wakeupECU(d_l2_conn);
+			if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESFULLINIT) {
+				rv=0;	//assume success
+				d_l2_conn->diag_l2_kb1=0x08;
+				d_l2_conn->diag_l2_kb2=0x08; //possibly not true, but who cares.
+			} else {
+				rv = diag_l2_proto_iso9141_wakeupECU(d_l2_conn);
+			}
 			break;
 		default:
 			//CARB and FASTINIT are not in iso9141.
