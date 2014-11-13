@@ -36,10 +36,14 @@ set (SCANTOOL_PROGNAME "scantool")
 add_definitions (-DCMAKE_ENABLED)
 
 ###### Compiler flags & build types
-if (NOT CMAKE_BUILD_TYPE)
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
 	message(STATUS "No build type selected, defaulting to Debug")
 	message(STATUS "Available build types : Debug, Release, RelWithDebInfo")
-	set(CMAKE_BUILD_TYPE "DEBUG")
+	set(CMAKE_BUILD_TYPE "DEBUG" CACHE STRING
+		"Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel."
+		FORCE)
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+		"MinSizeRel" "RelWithDebInfo")
 endif ()
 
 

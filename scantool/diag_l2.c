@@ -523,7 +523,6 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 		/* New connection */
 		if (diag_calloc(&d_l2_conn, 1))
 			return diag_pseterr(DIAG_ERR_NOMEM);
-
 		reusing = 0;
 	}
 
@@ -555,6 +554,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
+
 	d_l2_conn->diag_l2_type = flags ;
 	d_l2_conn->diag_l2_srcaddr = source ;
 	d_l2_conn->diag_l2_destaddr = target ;
@@ -576,7 +576,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 	d_l2_conn->tinterval = (ISO_14230_TIM_MAX_P3 * 2/3);	//default keepalive interval.
 
-	d_l2_conn -> diag_l2_state = DIAG_L2_STATE_CLOSED;
+	d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSED;
 
 	/* Now do protocol version of StartCommunications */
 

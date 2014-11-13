@@ -352,7 +352,7 @@ cmd_log(int argc, char **argv)
 	unsigned long t1;
 	t1=diag_os_chronoms(0);
 	(void) diag_os_chronoms(t1);
-//	gettimeofday(&log_start, NULL);
+
 	fprintf(global_logfp, "%s\n", LOG_FORMAT);
 	log_timestamp("#");
 	fprintf(global_logfp, "logging started at %s",

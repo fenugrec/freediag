@@ -484,7 +484,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	unsigned int bitrate, target_type target, source_type source)
 {
 	struct diag_l2_14230 *dp;
-	struct diag_msg	msg;
+	struct diag_msg msg;	//manually cleared
 	uint8_t data[MAXRBUF];
 	int rv, wait_time;
 	uint8_t cbuf[MAXRBUF];
@@ -495,6 +495,8 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 	if (diag_calloc(&dp, 1))
 		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	memset(&msg, 0, sizeof(msg));
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
 	dp->initype = flags & DIAG_L2_TYPE_INITMASK;	//only keep initmode flags
@@ -768,11 +770,13 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 static int
 diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
 {
-	struct diag_msg stopmsg;
+	struct diag_msg stopmsg;	//manually cleared
 	struct diag_msg *rxmsg;
 	uint8_t stopreq=DIAG_KW2K_SI_SPR;
 	int errval=0;
 	char * debugstr;
+
+	memset(&stopmsg, 0, sizeof(stopmsg));
 
 	stopmsg.len=1;
 	stopmsg.data=&stopreq;
@@ -1070,12 +1074,14 @@ static void
 diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 {
 	struct diag_l2_14230 *dp;
-	struct diag_msg	msg;
+	struct diag_msg msg;	//manually cleared
 	uint8_t data[256];
 	int timeout;
 	int debug_l2_orig=diag_l2_debug;	//save debug flags; disable them for this procedure
 	int debug_l1_orig=diag_l1_debug;
 	int debug_l0_orig=diag_l0_debug;
+
+	memset(&msg, 0, sizeof(msg));
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 

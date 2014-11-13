@@ -55,6 +55,7 @@ struct diag_l0_elm_device {
 #define ELM_327_BASIC	2	//device type is 327
 #define ELM_32x_CLONE	4	 //device is a clone; some commands will not be supported
 #define ELM_38400	8	//device is using 38.4kbps; default is 9600
+#define ELM_INITDONE	0x10	//set when "BUS INIT" has happened. This is important for clones.
 
 
 // possible error messages returned by the ELM IC
@@ -131,6 +132,33 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 }
 
 
+//elm_parse_errors : look for known error messages in the reply.
+// return any match or NULL if nothing found.
+// data[] must be \0-terminated !
+const char * elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) {
+	struct diag_l0_elm_device *dev;
+	const char ** elm_errors;	//just used to select between the 2 error lists
+	int i;
+
+	dev = (struct diag_l0_elm_device *) dl0d->dl0_handle;
+
+	//pick the right set of error messages. Although we could just systematically
+	//use the vaster ELM327 set of error messages...
+
+	if (dev->elmflags & ELM_323_BASIC)
+		elm_errors=elm323_errors;
+	else
+		elm_errors=elm327_errors;
+
+	for (i=0; elm_errors[i]; i++) {
+		if (strstr((char *)data, elm_errors[i])) {
+				//we found an error msg, return it.
+				return elm_errors[i];
+		}
+	}
+	return NULL;
+}
+
 //Send a command to ELM device and make sure no error occured. Data is passed on directly as a string;
 //caller must make sure the string is \r-terminated , i.e. 0x0D-terminated.
 //Sending 0A after 0D will cause ELM to interrupt what it's doing to "process" 0A, resulting in a
@@ -145,11 +173,11 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len
 	//note : we better not request (len == (size_t) -1) bytes ! The casts between ssize_t and size_t are
 	// "muddy" in here
 	ssize_t xferd;
-	int i, rv;
+	int rv;
 	uint8_t ebuf[ELM_BUFSIZE];	//local buffer if caller provides none.
 	uint8_t *buf;
 	struct diag_l0_elm_device *dev;
-	const char ** elm_errors;	//just used to select between the 2 error lists
+	const char *err_str;	//hold a possible error message
 
 	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 	//we need access to diag_l0_elm_device to access .elmflags
@@ -171,6 +199,9 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len
 		//the %.*s is pure magic : limits the string length to len, even if the string is not null-terminated.
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+	diag_tty_iflush(dl0d);	//currently the code often "forgets" data in the input buffer, especially if the previous
+					//transaction failed. Flushing the input increases the odds of not crashing soon
+
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "sending command to ELM: %.*s\n", FL, (int) len-1, (char *)data);
 	}
@@ -233,26 +264,18 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len
 
 	//ex. of good reply : "41 00 00 \r>", bad reply :"NO DATA\r>"
 	//let's just use strstr() to find occurences for each known error.
-	//it'll take a while but speed isn't normally critical when sendind commands
+	//it'll take a while but speed isn't normally critical when sending commands
 
-	//let's null-terminate the reply first;
+	//null-terminate the reply first;
 	buf[rv]=0;
 
-	//pick the right set of error messages. Although we could just systematically
-	//use the vaster ELM327 set of error messages...
+	err_str = elm_parse_errors(dl0d, buf);
 
-	if (dev->elmflags & ELM_323_BASIC)
-		elm_errors=elm323_errors;
-	else
-		elm_errors=elm327_errors;
-
-	for (i=0; elm_errors[i]; i++) {
-			if (strstr((char *)buf, elm_errors[i])) {
-					//we found an error msg : print the whole buffer
-					fprintf(stderr, FLFMT "ELM returned error : %s\n", FL, elm_errors[i]);
-					return diag_iseterr(DIAG_ERR_GENERAL);
-			}
+	if (err_str != NULL) {
+		fprintf(stderr, FLFMT "ELM returned error : %s\n", FL, err_str);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+
 	//and make sure we got a positive response "OK".
 	if (strstr((char *)buf, "OK") == NULL) {
 		fprintf(stderr, FLFMT "Response not recognized ! Report this ! Reply was:\n%s\n", FL, buf);
@@ -266,8 +289,7 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len
 
 }
 /*
- * Open the diagnostic device, returns a file descriptor
- * records original state of term interface so we can restore later
+ * Open the diagnostic device
  * ELM settings used : no echo (E0), headers on (H1), linefeeds off (L0), mem off (M0)
  */
 static struct diag_l0_device *
@@ -400,6 +422,10 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		printf("ELM version not recognized! Please report this ! Resp=%s\n", rxbuf);
 	}
 
+	if ((dev->elmflags & ELM_323_BASIC) && (dev->elmflags & ELM_32x_CLONE)) {
+		printf("A 323 clone ? Report this !\n");
+	}
+
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "ELM reset success, elmflags=%#x\n", FL, dev->elmflags);
@@ -492,7 +518,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 /*
  * Fastinit & slowinit:
- * ELM will manage slow/fast init automatically... Until the code from levels L1 and up can deal with
+ * ELM should manage slow/fast init automatically... Until the code from levels L1 and up can deal with
  * this, the bus will manually be initialized.
  * Only callable internally. Not for export !!
  * Unsupported by some (all?) clones !! (they handle the init internally, on demand)
@@ -532,15 +558,66 @@ diag_l0_elm_slowinit(struct diag_l0_device *dl0d)
 
 }
 
+//elm_bogusinit : send a 01 00 request to force ELM to init bus.
+//Only used to force clones to establish a connection... hack-grade because it assumes all ECUs support this.
+// non-OBD ECUs may not work with this. ELM clones suck...
+// TODO : add argument to allow either a 01 00 request (SID1 PID0, J1979) or 3E (iso14230 TesterPresent) request to force init.
+static int
+elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout)
+{
+	int rv;
+	uint8_t buf[MAXRBUF];
+	uint8_t data[]={0x01,0x00};
+	const char *err_str;
+
+	rv = diag_l0_elm_send(dl0d, NULL, data, 2);
+	if (rv)
+		return diag_iseterr(rv);
+
+	// receive everything; we're hoping for a prompt at the end and no error message.
+	rv=diag_tty_read(dl0d, buf, MAXRBUF-5, timeout);	//rv=# bytes read
+	if (diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_READ)) {
+		fprintf(stderr, FLFMT "received %d bytes\n", FL, rv);
+		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+			elm_parse_cr(buf, rv);
+			fprintf(stderr, FLFMT "(got %.*s)\n", FL, rv, buf);
+		}
+	}
+
+	if (rv<1) {
+		//no data or error
+		if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+			fprintf(stderr, FLFMT "ELM did not respond\n", FL);
+		}
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	buf[rv]=0;	//terminate string
+	if (buf[rv-1] != '>') {
+		//if last character isn't the input prompt, there is a problem
+		fprintf(stderr, FLFMT "ELM not ready (no prompt received): %s\n", FL, buf);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	err_str = elm_parse_errors(dl0d, buf);
+
+	if (err_str != NULL) {
+		fprintf(stderr, FLFMT "got error while forcing init: %s\n", FL, err_str);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	return 0;
+
+}
+
 /*
- * Do wakeup on the bus
- * For now, the address specified in initbus_args is ignored.
+ * Do manual wakeup on the bus, if supported
  */
 static int
 diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
 	const uint8_t *buf;
 	int rv = DIAG_ERR_INIT_NOTSUPP;
+	int timeout;	//for bogus init
 
 	struct diag_l0_elm_device *dev;
 
@@ -555,7 +632,8 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 
 
 	if (dev->elmflags & ELM_32x_CLONE) {
-		printf("Note : ELM clones do not support explicit bus initialization. Errors here are ignored.\n");
+		printf("Note : explicit bus init not available on clones. Errors here are ignored.\n");
+		dev->elmflags &= ~ELM_INITDONE;	//clear flag
 	}
 
 	switch (in->type) {
@@ -578,18 +656,18 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 			sprintf((char *) sethdr, "ATSH %02X %02X %02X\x0D", fmt, tgt, src);
 			rv=diag_l0_elm_sendcmd(dl0d, sethdr, 14, 500, NULL);
 
-			//explicit init is not supported by clones, but they should work anyway...
-			if (dev->elmflags & ELM_32x_CLONE)
+			//explicit init is not supported by clones, they wait for the first OBD request...
+			if (dev->elmflags & ELM_32x_CLONE) {
+				timeout=1500;
 				rv=0;
-			else
+			} else {
 				rv = diag_l0_elm_fastinit(dl0d);
+				if (!rv)
+					dev->elmflags |= ELM_INITDONE;
 			}
+			}	//case fastinit
 			break;	//case fastinit
 		case DIAG_L1_INITBUS_5BAUD:
-			if ((dev->elmflags & ELM_323_BASIC) && (dev->elmflags & ELM_32x_CLONE)) {
-				printf("A 323 clone ? Report this !\n");
-			}
-
 			//if 327 : set proto first
 			if (dev->elmflags & ELM_327_BASIC) {
 				if (dev->protocol & DIAG_L1_ISO9141)
@@ -600,15 +678,32 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 				rv=diag_l0_elm_sendcmd(dl0d, buf, 6, 500, NULL);
 			}
 
-			//explicit init is not supported by clones, but they should work anyway...
-			if (dev->elmflags & ELM_32x_CLONE)
+			//explicit init is not supported by clones
+			if (dev->elmflags & ELM_32x_CLONE) {
+				timeout=4200;	//slow init is slow !
 				rv=0;
-			else
+			} else {
 				rv = diag_l0_elm_slowinit(dl0d);
+				if (!rv)
+					dev->elmflags |= ELM_INITDONE;
+			}
 			break;
 		default:
 			rv = DIAG_ERR_INIT_NOTSUPP;
 			break;
+	}
+
+	if ((dev->elmflags & ELM_INITDONE)==0) {
+		// init not done, either because it's a clone (explicit init unsupported), or another reason.
+		// two choices : A) assume comms will be OBD compliant, so request "01 00" has to be supported
+		// B) tweak _recv() to skip the "BUS INIT: " line that ELM will send at the next request.
+		// A is easier for now...
+		// Note that since we don't check for "DIAG_ERR_INIT_NOTSUPP" here, we allow the ELM to (possibly)
+		// carry out an incorrect init. I can't see when this can be a problem.
+		// Note : clones suck
+		rv=elm_bogusinit(dl0d, timeout);
+		if (rv==0)
+			dev->elmflags |= ELM_INITDONE;
 	}
 
 	return rv? diag_iseterr(rv):0;
@@ -628,9 +723,7 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 
 static int
 diag_l0_elm_send(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
-const void *data, size_t len)
-
+	UNUSED(const char *subinterface), const void *data, size_t len)
 {
 	uint8_t buf[ELM_BUFSIZE];
 	ssize_t xferd;
@@ -646,10 +739,7 @@ const void *data, size_t len)
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "ELM: sending %d bytes \n", FL, (int) len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
-			diag_data_dump(stderr, data, len);
-		}
+		fprintf(stderr, FLFMT "ELM: sending %d bytes\n", FL, (int) len);
 	}
 
 	for (i=0; i<len; i++) {
@@ -661,7 +751,7 @@ const void *data, size_t len)
 	buf[i+1]=0x00;	//terminate string
 
 	if ((diag_l0_debug & DIAG_DEBUG_WRITE) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
-		fprintf(stderr, FLFMT "ELM: sending %s\n", FL, (char *) buf);
+		fprintf(stderr, FLFMT "ELM: (sending string %s)\n", FL, (char *) buf);
 	}
 
 	while ((xferd = diag_tty_write(dl0d, buf, i+1)) != (ssize_t)(i+1)) {
@@ -687,29 +777,29 @@ const void *data, size_t len)
 }
 
 /*
- * Get data (blocking), returns number of chars read, between 1 and len
- * If timeout is set to 0, this becomes non-blocking
- * ELM returns a string with format "%02X %02X %02X[...]\n" .
+ * Get data (blocking), returns number of bytes read, between 1 and len
+  * ELM returns a string with format "%02X %02X %02X[...]\n" . But it's slow so we add a fixed 400ms to the specified timeout.
  * We convert this received ascii string to hex before returning.
+ * note : "len" is the number of bytes read on the OBD bus, *NOT* the number of ASCII chars received on the serial link !
+ * TODO: parse continuously while receiving data to count actual databytes received ?
  */
 static int
 diag_l0_elm_recv(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
-void *data, size_t len, int timeout)
+	UNUSED(const char *subinterface), void *data, size_t len, int timeout)
 {
 	int xferd;
-	uint8_t rxbuf[ELM_BUFSIZE];		//need max (7 digits *2chars) + (6 space *1) + 1(CR) + 1(>) + (NUL) bytes.
+	uint8_t rxbuf[3*MAXRBUF];	//I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
 	char *rptr, *bp;
 	unsigned int rbyte;
 
-	if (!len)
+	if ((!len) || (len > MAXRBUF))
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	//possibly not useful until ELM323 vs 327 distinction is made :
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "Expecting %d bytes from ELM, %d ms timeout\n", FL, (int) len, timeout);
+		fprintf(stderr, FLFMT "Expecting 3*%d bytes from ELM, %d ms timeout(+400)\n", FL, (int) len, timeout);
 
-	while ( (xferd = diag_tty_read(dl0d, rxbuf, len, timeout)) <= 0) {
+	while ( (xferd = diag_tty_read(dl0d, rxbuf, 3*len, timeout+400)) <= 0) {
 		if (xferd == DIAG_ERR_TIMEOUT) {
 			return DIAG_ERR_TIMEOUT;
 		}
@@ -725,7 +815,7 @@ void *data, size_t len, int timeout)
 		}
 	}
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		diag_data_dump(stderr, &rxbuf, (size_t)xferd);
+		diag_data_dump(stderr, rxbuf, (size_t)xferd);
 		fprintf(stderr, "\n");
 	}
 
@@ -734,13 +824,12 @@ void *data, size_t len, int timeout)
 	rptr=(char *)(rxbuf + strspn((char *)rxbuf, " \n\r"));	//skip all leading spaces and linefeeds
 	while ((bp=strtok(rptr, " >\n\r")) !=NULL) {
 		//process token delimited by spaces or prompt character
-		//this is very sketchy and deserves to be tested more...
+		//this is very sketchy and deserves to be tested more... note : rxbuf is modified by strtok !!
 		sscanf(bp, "%02X", &rbyte);
 		((uint8_t *)data)[xferd]=(uint8_t) rbyte;
 		xferd++;
 		if ( (size_t)xferd==len)
 			break;
-		//printf("%s\t0x%02X\n", bp, i);
 		rptr=NULL;
 	}
 	return xferd;

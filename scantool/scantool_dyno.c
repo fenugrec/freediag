@@ -313,8 +313,7 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
 	/* Reset data */
 	dyno_loss_reset(); /* dyno data */
 	reset_results();
-	//gettimeofday(&tv0, NULL); /* initial time */
-	tv0=diag_os_getms();
+	tv0=diag_os_getms(); /* initial time */
 	ep = ecu_info; /* ECU data */
 
 	/* exclude 1st measure */
@@ -368,7 +367,6 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
 	}
 
 	/* display dyno time */
-	//gettimeofday(&tv, 0);
 	//elapsed = MILLIS(tv) - MILLIS(tv0);
 	tv=diag_os_getms();
 	elapsed= (int) (tv - tv0);

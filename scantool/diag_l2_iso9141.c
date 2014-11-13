@@ -107,6 +107,13 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	if (rv < 0)
 		return diag_iseterr(rv);
 
+	if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESFULLINIT) {
+		d_l2_conn->diag_l2_kb1=0x08;
+		d_l2_conn->diag_l2_kb2=0x08;	//possibly not true, but who cares.
+		d_l2_conn->diag_l2_p2min = 25;
+		return 0;
+	}
+
 	// The L1 device has read the 0x55, and reset the previous speed.
 
 	// Receive the first KeyByte:
@@ -239,13 +246,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 			rv = 0;
 			break;
 		case DIAG_L2_TYPE_SLOWINIT:
-			if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESFULLINIT) {
-				rv=0;	//assume success
-				d_l2_conn->diag_l2_kb1=0x08;
-				d_l2_conn->diag_l2_kb2=0x08; //possibly not true, but who cares.
-			} else {
-				rv = diag_l2_proto_iso9141_wakeupECU(d_l2_conn);
-			}
+			rv = diag_l2_proto_iso9141_wakeupECU(d_l2_conn);
 			break;
 		default:
 			//CARB and FASTINIT are not in iso9141.
@@ -618,7 +619,7 @@ diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	int rv;
 
 	rv = diag_l2_proto_iso9141_int_recv(d_l2_conn, timeout);
-	if ((rv >= 0) && d_l2_conn->diag_msg)
+	if ((rv >= 0) && (d_l2_conn->diag_msg !=NULL))
 	{
 		if (diag_l2_debug & DIAG_DEBUG_READ)
 			fprintf(stderr, FLFMT "_recv : handle=%p\n", FL,

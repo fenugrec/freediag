@@ -183,7 +183,6 @@ int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	int rv;
 	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
 
-	//(void)gettimeofday(&d_l3_conn->timer, NULL);
 	rv = dp->diag_l3_proto_send(d_l3_conn, msg);
 
 	if (!rv)

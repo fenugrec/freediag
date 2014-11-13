@@ -259,7 +259,7 @@ diag_data_dump(FILE *out, const void *data, size_t len)
 	const uint8_t *p = (const uint8_t *)data;
 	size_t i;
 	for (i=0; i<len; i++)
-		fprintf(out, "0x%02X ", p[i]);
+		fprintf(out, "0x%02X ", p[i]);	//the formatter %#02X gives silly "0X6A" formatting. %#02x gives "0x6a", not perfect either...
 }
 
 //smartcat() : make sure s1 is not too large, then strncat

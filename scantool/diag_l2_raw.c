@@ -106,7 +106,7 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
 {
 	uint8_t rxbuf[MAXRBUF];
-	struct diag_msg msg;	//we use an local message structure that will disappear when we return
+	struct diag_msg msg;	//local message structure that will disappear when we return
 	int rv;
 
 	/*
@@ -118,7 +118,7 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	if (rv <= 0 || rv > 255)		/* Failure, or 0 bytes (which cant happen) */
 		return rv;
 
-	memset(&msg, 0, sizeof(msg));	//zero out structure
+	memset(&msg, 0, sizeof(msg));
 
 	msg.len = (uint8_t) rv;
 	msg.data = rxbuf;

@@ -484,8 +484,7 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 
 
 void
-l2raw_data_rcv(UNUSED(void *handle),
-struct diag_msg *msg)
+l2raw_data_rcv(UNUSED(void *handle), struct diag_msg *msg)
 {
 	/*
 	 * Layer 2 call back, just print the data, this is used if we
@@ -493,18 +492,11 @@ struct diag_msg *msg)
 	 */
 	struct diag_msg *tmsg;
 	int i;
-	int len;
-	uint8_t *data;
 
-	for ( tmsg = msg , i = 0; tmsg; tmsg=tmsg->next, i++ ) {
-		fprintf(stderr, "msg %02d src 0x%X dest 0x%X ", i, tmsg->src, tmsg->dest);
-		fprintf(stderr, "msg %02d: ", i);
-		len = tmsg->len;
-		data = tmsg->data;
-		while (len) {
-			fprintf(stderr, "0x%02X ", *data);
-			len--; data++;
-		}
+	for ( tmsg = msg , i = 0; tmsg != NULL; tmsg=tmsg->next, i++ ) {
+		fprintf(stderr, "msg %02d src 0x%X dest 0x%X\n", i, tmsg->src, tmsg->dest);
+		fprintf(stderr, "msg %02d data: ", i);
+		diag_data_dump(stderr, tmsg->data, tmsg->len);
 		fprintf(stderr, "\n");
 	}
 }
@@ -547,7 +539,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle)
 {
 	assert(d_conn != NULL);
-	struct diag_msg	msg;
+	struct diag_msg msg;	//manually cleared
 	uint8_t data[7];	//was 256?
 	int ihandle;
 	int rv;
@@ -557,6 +549,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	uint8_t *rxdata;
 	struct diag_msg *rxmsg;
 
+	memset(&msg, 0, sizeof(msg));
 	if (handle !=NULL)
 		ihandle= * (int *) handle;
 	else
@@ -567,7 +560,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 #define J1979_MODE_MAX 9
 
 	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
-		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %#X\n",
+		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %#02X\n",
 			(void *)handle, (void *)d_conn, mode);
 
 	}
@@ -673,10 +666,12 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 int
 l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle)
 {
-	struct diag_msg	msg;
+	struct diag_msg msg;	//manually cleared
 	int rv;
 	if (len > 255)
 		return DIAG_ERR_GENERAL;
+
+	memset(&msg, 0, sizeof(msg));
 
 	/* Put in src/dest etc, L3 or L2 may override/ignore them */
 	msg.src = set_testerid;
@@ -697,10 +692,12 @@ l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle)
 int
 l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle)
 {
-	struct diag_msg	msg;
+	struct diag_msg msg;	//manually cleared
 	int rv;
 	if (len > 255)
 		return DIAG_ERR_GENERAL;
+
+	memset(&msg, 0, sizeof(msg));
 
 	/* Put in src/dest etc, L2 may override/ignore them */
 	msg.src = set_testerid;

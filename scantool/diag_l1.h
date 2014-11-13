@@ -114,6 +114,7 @@ extern "C" {
 
 //DOESFULLINIT
 //indicates that L0 does the full init, including keybyte stuff. (like ELMs)
+//this implies that the initbus ioctl still has to be used.
 #define DIAG_L1_DOESFULLINIT 0x4000
 
 //DATAONLY

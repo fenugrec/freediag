@@ -60,16 +60,6 @@ extern "C" {
 
 #ifdef HAVE_GETTIMEOFDAY
 	#include <sys/time.h>	//probably the right place where gettimeofday(), timeval etc would be defined ?
-#else	//no HAVE_GETTIMEOFDAY
-	//win32 code doesn't use gettimeofday, but declaring these should do no harm.
-	struct timezone {
-	  int tz_minuteswest;
-	  int tz_dsttime;
-	};
-
-	//this is a bare implementation with no timezone support. Returns 0. Must be defined
-	//in diag_os_??.c
-	int gettimeofday(struct timeval *tv, struct timezone *tz);
 #endif //HAVE_GETTIMEOFDAY
 
 #ifndef HAVE_TIMERSUB
