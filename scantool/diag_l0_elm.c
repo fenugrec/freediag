@@ -276,16 +276,15 @@ diag_l0_elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	//and make sure we got a positive response "OK".
-	if (strstr((char *)buf, "OK") == NULL) {
-		fprintf(stderr, FLFMT "Response not recognized ! Report this ! Reply was:\n%s\n", FL, buf);
-		//problem : some commands (maybe just ATZ) don't send "OK", despite the success of the commmand.
-		//elm_open depends on this returning DIAG_ERR_INCDATA to ignore the error. Hax
-		//TODO : don't return an error if OK wasn't found ?
-		return diag_iseterr(DIAG_ERR_INCDATA);
+	//check if we either 1)got a positive response "OK"
+	//2)were sending ATZ (special case hack, it doesn't answer "OK")
+	if ((strstr((char *)buf, "OK") != NULL) ||
+		(strstr((char *)data, "ATZ") != NULL)) {
+		return 0;
 	}
 
-	return 0;
+	fprintf(stderr, FLFMT "Response not recognized ! Report this ! Reply was:\n%s\n", FL, buf);
+	return diag_iseterr(DIAG_ERR_GENERAL);
 
 }
 /*
@@ -352,8 +351,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 	buf=(uint8_t *)"ATZ\x0D";
 	rv=diag_l0_elm_sendcmd(dl0d, buf, 4, 2000, rxbuf);
-	//it seems ELMs don't say "OK" after ATZ, this confuses elm_sendcmd().
-	if ((rv!=DIAG_ERR_INCDATA) && (rv < 0)) {
+	if (!rv) {
 		//failed @ 9600:
 		fprintf(stderr, FLFMT "sending ATZ @ 9600 failed; trying @ 38400...\n", FL);
 
@@ -371,7 +369,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 		rv=diag_l0_elm_sendcmd(dl0d, buf, 4, 2000, rxbuf);
 
-		if ((rv!=DIAG_ERR_INCDATA) && (rv < 0)) {
+		if (!rv) {
 			diag_l0_elm_close(&dl0d);
 			fprintf(stderr, FLFMT "sending ATZ @ 38400 failed.\n", FL);
 			return diag_pseterr(DIAG_ERR_BADIFADAPTER);

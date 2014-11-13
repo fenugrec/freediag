@@ -638,7 +638,7 @@ static void
 diag_l2_proto_vag_timeout(struct diag_l2_conn *d_l2_conn)
 {
 	//struct diag_l2_vag *dp;
-	struct diag_msg msg;	//manually cleared
+	struct diag_msg msg={0};
 	uint8_t data[256];
 /*	int rv;*/
 
@@ -650,7 +650,6 @@ diag_l2_proto_vag_timeout(struct diag_l2_conn *d_l2_conn)
 				FL, (void *)d_l2_conn);
 	}
 
-	memset(&msg, 0, sizeof(msg));
 	msg.data = data;
 
 	/*

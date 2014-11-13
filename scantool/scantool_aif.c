@@ -355,16 +355,16 @@ static void do_aif_command (void)
 	{
 		command = & ( aif_commands [ i ] ) ;
 
-		if ( command -> code == cmd )
+		if ( command->code == cmd )
 		{
 			if ( debugging )
-			fprintf ( stderr, "CMD: %d %s\n", cmd, command -> name ) ;
+			fprintf ( stderr, "CMD: %d %s\n", cmd, command->name ) ;
 
 			break ;
 		}
 	}
 
-	if ( command -> name == NULL )
+	if ( command->name == NULL )
 	{
 		fprintf ( stderr,
 		"scantool: Application sent AIF an illegal command '%d'\n",
@@ -373,7 +373,7 @@ static void do_aif_command (void)
 		exit ( 1 ) ;
 	}
 
-	for ( j = 0 ; j < command -> length &&
+	for ( j = 0 ; j < command->length &&
 	j < FREEDIAG_AIF_INPUT_MAX &&
 	! feof ( stdin ) ; j++ )
 		data_buffer [ j ] = getc ( stdin ) ;

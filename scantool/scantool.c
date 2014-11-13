@@ -203,6 +203,7 @@ print_msg(FILE *fp, struct diag_msg *msg, int timestamp)
 void
 j1979_data_rcv(void *handle, struct diag_msg *msg)
 {
+	assert(msg != NULL);
 	int len = msg->len;
 	uint8_t *data = msg->data;
 	struct diag_msg *tmsg;
@@ -249,6 +250,9 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 					print_msg(stdout, msg, 0);
 			}
 			return;
+			break;
+		default:
+			break;
 	}
 
 
@@ -256,7 +260,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 
 	/* Clear out old messages */
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
-		if (ep->rxmsg) {
+		if (ep->rxmsg != NULL) {
 			/* Old msg. release it */
 			diag_freemsg(ep->rxmsg);
 			ep->rxmsg = NULL;
@@ -267,7 +271,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	 * We may get more than one msg here, as more than one
 	 * ECU may respond.
 	 */
-	for (tmsg = msg; tmsg; tmsg=tmsg->next) {
+	for (tmsg = msg; tmsg != NULL; tmsg=tmsg->next) {
 		uint8_t src = tmsg->src;
 		struct diag_msg *rmsg;
 		int found;
@@ -533,13 +537,14 @@ l2_check_pid_bits(uint8_t *data, int pid)
  * Send a SAE J1979 request, and get a response, and part process it
  * J1979 messages are 7 data bytes long: mode(SID) byte + max 6 extra bytes
  * (J1979 5.3.2; table 8)
-  */
+ * ret 0 if ok
+*/
 int
 l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t p2,
 	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle)
 {
 	assert(d_conn != NULL);
-	struct diag_msg msg;	//manually cleared
+	struct diag_msg msg={0};
 	uint8_t data[7];	//was 256?
 	int ihandle;
 	int rv;
@@ -549,7 +554,6 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	uint8_t *rxdata;
 	struct diag_msg *rxmsg;
 
-	memset(&msg, 0, sizeof(msg));
 	if (handle !=NULL)
 		ihandle= * (int *) handle;
 	else
@@ -622,41 +626,41 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	}
 
 
-		/*
-		 * Go thru the ecu_data and see what was received.
-		 */
-		for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
-			if (ep->rxmsg) {
-				/* Some data arrived from this ecu */
-				rxmsg = ep->rxmsg;
-				rxdata = ep->rxmsg->data;
+	/*
+	 * Go thru the ecu_data and see what was received.
+	 */
+	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
+		if (ep->rxmsg) {
+			/* Some data arrived from this ecu */
+			rxmsg = ep->rxmsg;
+			rxdata = ep->rxmsg->data;
 
-				switch (mode) {
-					case 1:
-						if (rxdata[0] != 0x41) {
-							ep->mode1_data[p1].type = TYPE_FAILED;
-							break;
-						}
-						memcpy(ep->mode1_data[p1].data, rxdata,
-							rxmsg->len);
-						ep->mode1_data[p1].len = rxmsg->len;
-						ep->mode1_data[p1].type = TYPE_GOOD;
+			switch (mode) {
+				case 1:
+					if (rxdata[0] != 0x41) {
+						ep->mode1_data[p1].type = TYPE_FAILED;
+						break;
+					}
+					memcpy(ep->mode1_data[p1].data, rxdata,
+						rxmsg->len);
+					ep->mode1_data[p1].len = rxmsg->len;
+					ep->mode1_data[p1].type = TYPE_GOOD;
 
+					break;
+				case 2:
+					if (rxdata[0] != 0x42) {
+						ep->mode2_data[p1].type = TYPE_FAILED;
 						break;
-					case 2:
-						if (rxdata[0] != 0x42) {
-							ep->mode2_data[p1].type = TYPE_FAILED;
-							break;
-						}
-						memcpy(ep->mode2_data[p1].data, rxdata,
-							rxmsg->len);
-						ep->mode2_data[p1].len = rxmsg->len;
-						ep->mode2_data[p1].type = TYPE_GOOD;
-						break;
-				}
+					}
+					memcpy(ep->mode2_data[p1].data, rxdata,
+						rxmsg->len);
+					ep->mode2_data[p1].len = rxmsg->len;
+					ep->mode2_data[p1].type = TYPE_GOOD;
+					break;
 			}
 		}
-		return 0;
+	}
+	return 0;
 }
 
 
@@ -666,12 +670,10 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 int
 l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle)
 {
-	struct diag_msg msg;	//manually cleared
+	struct diag_msg msg={0};
 	int rv;
 	if (len > 255)
 		return DIAG_ERR_GENERAL;
-
-	memset(&msg, 0, sizeof(msg));
 
 	/* Put in src/dest etc, L3 or L2 may override/ignore them */
 	msg.src = set_testerid;
@@ -692,12 +694,10 @@ l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle)
 int
 l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle)
 {
-	struct diag_msg msg;	//manually cleared
+	struct diag_msg msg={0};
 	int rv;
 	if (len > 255)
 		return DIAG_ERR_GENERAL;
-
-	memset(&msg, 0, sizeof(msg));
 
 	/* Put in src/dest etc, L2 may override/ignore them */
 	msg.src = set_testerid;

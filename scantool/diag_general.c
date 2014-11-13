@@ -144,8 +144,8 @@ diag_dupmsg(struct diag_msg *msg)
 	 */
 
 	newmsg = diag_allocmsg(msg->len);
-	if (!newmsg)
-		return 0;
+	if (newmsg == NULL)
+		return diag_pseterr(DIAG_ERR_NOMEM);
 
 	newmsg->fmt = msg->fmt;
 //	newmsg->type = msg->type;
@@ -164,7 +164,7 @@ diag_dupmsg(struct diag_msg *msg)
 	{
 		tmsg = diag_allocmsg(msg->len);
 		if (tmsg == NULL)
-			return NULL;	/* Out of memory */
+			return diag_pseterr(DIAG_ERR_NOMEM);
 
 		tmsg->fmt = msg->fmt;
 //		tmsg->type = msg->type;
@@ -196,8 +196,8 @@ diag_dupsinglemsg(struct diag_msg *msg)
 	/* Dup first msg */
 
 	newmsg = diag_allocmsg(msg->len);
-	if (!newmsg)
-		return 0;
+	if (newmsg == NULL)
+		return diag_pseterr(DIAG_ERR_NOMEM);
 
 	newmsg->fmt = msg->fmt;
 //	newmsg->type = msg->type;
@@ -241,7 +241,7 @@ diag_freemsg(struct diag_msg *msg)
 
 // diag_cks1: return simple 8-bit checksum of
 // [len] bytes at *data. Everybody needs this !
-uint8_t diag_cks1(uint8_t * data, unsigned int len) {
+uint8_t diag_cks1(const uint8_t * data, unsigned int len) {
 	uint8_t rv=0;
 
 	while (len > 0) {
@@ -351,7 +351,8 @@ diag_geterr(void) {
 //diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
 // also checks for size !=0
 int diag_flcalloc(const char *name, const int line,
-void **pp, size_t n, size_t s) {
+	void **pp, size_t n, size_t s)
+{
 	void *p;
 
 	//sanity check: make sure we weren't given a null ptr

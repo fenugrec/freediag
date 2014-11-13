@@ -199,7 +199,7 @@ struct diag_msg	*diag_allocmsg(size_t datalen);	/* Alloc a new message */
 struct diag_msg	*diag_dupmsg(struct diag_msg *);	/* Duplicate a message */
 struct diag_msg	*diag_dupsinglemsg(struct diag_msg *); /* same, but just the 1st bit */
 void diag_freemsg(struct diag_msg *);	/* Free a msg that we dup'ed */
-uint8_t diag_cks1(uint8_t *data, unsigned int len);	//calculate 8bit checksum on [len] bytes
+uint8_t diag_cks1(const uint8_t *data, unsigned int len);	//calculate 8bit checksum on [len] bytes
 
 /*
  * General functions

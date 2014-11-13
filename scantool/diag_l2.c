@@ -128,7 +128,7 @@ diag_l2_findlink(const char *dev_name)
 	{
 		if ( strcmp(dl2l->diag_l2_name , dev_name) == 0)
 			return dl2l;
-		dl2l = dl2l -> next;
+		dl2l = dl2l->next;
 	}
 	return NULL;
 }
@@ -162,7 +162,7 @@ void diag_l2_rmlink(struct diag_l2_link *dl2l) {
 			break;
 		}
 		d_l2_last = dltemp;
-		dltemp = dltemp -> next;
+		dltemp = dltemp->next;
 	}
 	return;
 }
@@ -220,7 +220,7 @@ diag_l2_timer(void)
 	now=diag_os_getms();	/* XXX probably Not async safe */
 
 	for (d_l2_conn = diag_l2_connections;
-		d_l2_conn; d_l2_conn = d_l2_conn -> next)
+		d_l2_conn; d_l2_conn = d_l2_conn->next)
 	{
 		int expired = 0;
 
@@ -438,7 +438,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 	if (dl0d->dl2_link != NULL) {
 		// Check if dl2_link is still referenced by someone in diag_l2_connections
 		for (d_l2_conn = diag_l2_connections;
-			d_l2_conn; d_l2_conn = d_l2_conn -> next) {
+			d_l2_conn; d_l2_conn = d_l2_conn->next) {
 			if (d_l2_conn->diag_link == dl0d->dl2_link) {
 				fprintf(stderr, FLFMT "Not closing dl0d: used by dl2conn %p!\n", FL,
 					(void *) d_l2_conn);
@@ -611,7 +611,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 	}
 	d_l2_conn->tlast=diag_os_getms();
-	d_l2_conn -> diag_l2_state = DIAG_L2_STATE_OPEN;
+	d_l2_conn->diag_l2_state = DIAG_L2_STATE_OPEN;
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,

@@ -406,12 +406,10 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 static void
 diag_l2_proto_mb1_timeout(struct diag_l2_conn *d_l2_conn)
 {
-	struct diag_msg msg;	//manually cleared
+	struct diag_msg msg={0};
 	uint8_t txbuf[8];
 	uint8_t rxbuf[1000];
 	int rv;
-
-	memset(&msg, 0, sizeof(msg));
 
 	/* XXX Not async-signal-safe */
 	if (diag_l2_debug & DIAG_DEBUG_TIMER)

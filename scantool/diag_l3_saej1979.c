@@ -683,7 +683,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 //Send a service 1, pid 0 request and check for a valid reply.
 //ret 0 if ok
 static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
-	struct diag_msg msg;	//manually cleared
+	struct diag_msg msg={0};
 	struct diag_msg *rxmsg;
 	uint8_t data[6];
 	int errval;
@@ -693,7 +693,6 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 	 * XXX Need to get the address bytes correct
 	 */
 
-	memset(&msg, 0, sizeof(msg));
 	msg.data = data;
 	msg.len = 2;
 	data[0] = 1 ;		/* Mode 1 */
