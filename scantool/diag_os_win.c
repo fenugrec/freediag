@@ -248,7 +248,10 @@ diag_os_sched(void)
 //
 const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 	//to make this re-entrant, we would need CreateMutex OpenMutex etc.
-	static char errbuf[100]="";	//this has to be big enough, or else FormatMessage chokes!
+	static char errbuf[160]="";	//this has to be big enough, or else FormatMessage chokes!
+	//TODO : use FormatMessage differently so it allocates a buffer large enough for the whole string,
+	// then copy up to {sizeof(errbuf)} bytes from that new buffer to errbuf[], then LocalFree() the
+	// new buffer. win-win.
 
 	if (os_errno == 0)
 		os_errno=GetLastError();

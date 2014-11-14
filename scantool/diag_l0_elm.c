@@ -351,7 +351,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 	buf=(uint8_t *)"ATZ\x0D";
 	rv=diag_l0_elm_sendcmd(dl0d, buf, 4, 2000, rxbuf);
-	if (!rv) {
+	if (rv) {
 		//failed @ 9600:
 		fprintf(stderr, FLFMT "sending ATZ @ 9600 failed; trying @ 38400...\n", FL);
 
@@ -369,7 +369,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 		rv=diag_l0_elm_sendcmd(dl0d, buf, 4, 2000, rxbuf);
 
-		if (!rv) {
+		if (rv) {
 			diag_l0_elm_close(&dl0d);
 			fprintf(stderr, FLFMT "sending ATZ @ 38400 failed.\n", FL);
 			return diag_pseterr(DIAG_ERR_BADIFADAPTER);
