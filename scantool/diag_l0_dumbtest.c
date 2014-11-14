@@ -477,7 +477,7 @@ unsigned int diag_l0_dt_getopts(void) {
 }
 
 
-static int
+static uint32_t
 diag_l0_dt_getflags(UNUSED(struct diag_l0_device *dl0d))
 {
 	return DIAG_L1_HALFDUPLEX;

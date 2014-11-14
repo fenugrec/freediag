@@ -291,6 +291,10 @@ void diag_l3_timer(void)
 		/* Call L3 timer routine for this connection */
 		const diag_l3_proto_t *dp = conn->d_l3_proto;
 
+		//skip connection if L1 does the keepalive stuff
+		if (conn->d_l3l1_flags & DIAG_L1_DOESKEEPALIVE)
+			continue;
+
 		if (dp->diag_l3_proto_timer) {
 			unsigned long diffms;
 

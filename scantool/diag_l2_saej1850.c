@@ -323,7 +323,7 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	struct diag_msg	*tmsg;
 
 	rv = diag_l2_proto_j1850_int_recv(d_l2_conn, timeout);
-	if (rv < 0)	/* Failed */
+	if (rv <= 0)	/* Failed */
 		return rv;
 
 	/*

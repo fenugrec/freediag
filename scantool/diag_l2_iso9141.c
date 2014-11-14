@@ -502,7 +502,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		}	//if diag_err_timeout
 
 		// Other reception errors.
-		if (rv < 0 || rv > 255)
+		if (rv <= 0 || rv > 255)
 			break;
 
 		// Data received OK.

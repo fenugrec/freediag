@@ -20,11 +20,11 @@
  * -327: AT SP (set protocol)
  * -327: PP 0C (custom baudrate)
  * -323: these have no EEPROM so "ATZ" should really reset all to default
-  *
- *These devices handle the periodic wake-up commands on the bus. This is the only l0
- *device with that feature; upper levels (esp L2) need to be modified to take this into account. See
- *diag_l3_saej1979.c : diag_l3_j1979_timer() etc.
  *
+ *
+ *Problems :
+ * * _recv() doesn't check if a good prompt '>' was received at the end
+ * * every time _open() is called it goes through the whole (long) init sequence
  */
 
 #include <assert.h>
@@ -786,13 +786,14 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 	UNUSED(const char *subinterface), void *data, size_t len, int timeout)
 {
 	int xferd;
-	uint8_t rxbuf[3*MAXRBUF];	//I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
+	uint8_t rxbuf[3*MAXRBUF +1];	//I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
+				//the +1 is to \0-terminate the buffer for elm_parse_errors() to work
 	char *rptr, *bp;
+	const char *errstr;
 	unsigned int rbyte;
 
 	if ((!len) || (len > MAXRBUF))
 		return diag_iseterr(DIAG_ERR_BADLEN);
-	//possibly not useful until ELM323 vs 327 distinction is made :
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "Expecting 3*%d bytes from ELM, %d ms timeout(+400)\n", FL, (int) len, timeout);
@@ -817,7 +818,17 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 		fprintf(stderr, "\n");
 	}
 
-	//Here, rxbuf contains the string received from ELM. Parse it to get hex digits
+	rxbuf[xferd]=0;		// \0-terminate "string"
+	//Here, rxbuf contains the string received from ELM. First check for errors:
+	errstr=elm_parse_errors(dl0d, rxbuf);
+	if (errstr != NULL) {
+		fprintf(stderr, "\tELM reply: %s\n", errstr);	//maybe make this conditional if it happens too often
+		//XXX also : we might check for "NO DATA" and return DIAG_ERR_TIMEOUT instead ?
+		return DIAG_ERR_ECUSAIDNO;
+	}
+
+
+	//no errors : parse to get hex digits
 	xferd=0;
 	rptr=(char *)(rxbuf + strspn((char *)rxbuf, " \n\r"));	//skip all leading spaces and linefeeds
 	while ((bp=strtok(rptr, " >\n\r")) !=NULL) {
@@ -830,7 +841,7 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 			break;
 		rptr=NULL;
 	}
-	return xferd;
+	return xferd? xferd:DIAG_ERR_BADDATA;
 }
 
 /*
@@ -846,17 +857,17 @@ diag_l0_elm_setspeed(UNUSED(struct diag_l0_device *dl0d),
 	return 0;
 }
 
-static int
+static uint32_t
 diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 {
 
 	struct diag_l0_elm_device *dev;
-	int flags=0;
+	uint32_t flags=0;
 
 	dev = (struct diag_l0_elm_device *)diag_l0_dl0_handle(dl0d);
 
-	flags = DIAG_L1_DATAONLY | DIAG_L1_AUTOSPEED | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_DOESP4WAIT;
-	flags |= DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM | DIAG_L1_DOESFULLINIT;
+	flags = DIAG_L1_DATAONLY | DIAG_L1_AUTOSPEED | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_DOESP4WAIT |
+		DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM | DIAG_L1_DOESFULLINIT | DIAG_L1_DOESKEEPALIVE;
 
 	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:

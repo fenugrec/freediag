@@ -42,7 +42,7 @@ struct diag_l3_conn
 {
 	struct diag_l2_conn	*d_l3l2_conn;
 	int d_l3l2_flags;		/* Flags from L2 */
-	int d_l3l1_flags;		/* Flags from L1 */
+	uint32_t d_l3l1_flags;		/* Flags from L1 */
 
 	int diag_l3_speed;		/* Speed */
 

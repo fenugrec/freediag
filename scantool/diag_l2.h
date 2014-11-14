@@ -51,7 +51,7 @@ struct diag_l2_link
 
 	char	diag_l2_name[DIAG_NAMELEN];	/* XXX this is set to the l0 driver shortname !? */
 
-	int	diag_l2_l1flags;		/* L1 flags, filled with diag_l1_getflags in diag_l2_open*/
+	uint32_t	diag_l2_l1flags;		/* L1 flags, filled with diag_l1_getflags in diag_l2_open*/
 	int	diag_l2_l1type;			/* L1 type (see diag_l1.h): filled with diag_l1_gettype*/
 
 	struct diag_l2_link *next;		/* linked list of all connections */

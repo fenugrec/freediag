@@ -329,7 +329,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 				break;
 		}	//if diag_err_timeout
 
-		if (rv<0)
+		if (rv<=0)
 			break;
 
 		/* Data received OK */

@@ -121,6 +121,10 @@ extern "C" {
 //indicates that L0 adds headers + checksums before sending to ECU (like ELMs).
 #define DIAG_L1_DATAONLY 0x8000
 
+//DOESKEEPALIVE
+//L0 handles any periodic message required by L2/L3.
+#define DIAG_L1_DOESKEEPALIVE 0x10000
+
 
 /*
  * Layer 0 device types
@@ -200,7 +204,7 @@ struct diag_l0
 		const char *subinterface, void *data, size_t len, int timeout);
 	int	(*diag_l0_setspeed)(struct diag_l0_device *,
 		const struct diag_serial_settings *pss);
-	int	(*diag_l0_getflags)(struct diag_l0_device *);
+	uint32_t	(*diag_l0_getflags)(struct diag_l0_device *);
 };
 
 
@@ -237,7 +241,7 @@ int diag_l1_setspeed(struct diag_l0_device *dl0d,
 	const struct diag_serial_settings *pset);
 
 //getflags, gettype: get flags and type as defined above
-int diag_l1_getflags(struct diag_l0_device *);
+uint32_t diag_l1_getflags(struct diag_l0_device *);
 int diag_l1_gettype(struct diag_l0_device *);
 //**********
 

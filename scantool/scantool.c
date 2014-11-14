@@ -229,14 +229,10 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		"Time between sensor transitions"
 		};
 
-	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
+	if (diag_cmd_debug & DIAG_DEBUG_DATA) {
 		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src %X, dest %X\n",
 			(void *)handle, len, msg->src, msg->dest);
-	}
-
-	/* Debug level for showing received data */
-	if (diag_cmd_debug & DIAG_DEBUG_DATA) {
-			print_msg(stdout, msg, 0);
+		print_msg(stdout, msg, 0);
 		data = msg->data;
 	}
 
@@ -300,14 +296,15 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 
 		/* Attach the fragment to the ecu_info */
 		rmsg = diag_dupsinglemsg(tmsg);
+		if (rmsg == NULL)
+			return;
 		if (ep->rxmsg) {
-			struct diag_msg *xmsg = ep->rxmsg;
-			while (xmsg) {
+			struct diag_msg *xmsg;
+			for (xmsg= ep->rxmsg; xmsg != NULL; xmsg = xmsg->next) {
 				if (xmsg->next == NULL) {
 					xmsg->next = rmsg;
 					break;
 				}
-				xmsg = xmsg->next;
 			}
 		} else {
 			ep->rxmsg = rmsg;

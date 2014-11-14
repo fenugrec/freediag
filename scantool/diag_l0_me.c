@@ -782,7 +782,7 @@ void *data, size_t len, int timeout)
 	return xferd;
 }
 
-static int
+static uint32_t
 diag_l0_muleng_getflags(struct diag_l0_device *dl0d)
 {
 	/*

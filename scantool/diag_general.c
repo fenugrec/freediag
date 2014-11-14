@@ -112,17 +112,16 @@ diag_allocmsg(size_t datalen)
 
 	newmsg->iflags |= DIAG_MSG_IFLAG_MALLOC;
 
-	if (datalen)
-	{
-		if (diag_calloc(&newmsg->data, datalen))
-		{
+	if (datalen) {
+		if (diag_calloc(&newmsg->data, datalen)) {
 			free(newmsg);
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
-	}
-	else
+	} else {
 		newmsg->data = NULL;
+	}
 
+	newmsg->len=datalen;
 	newmsg->next=NULL;
 	newmsg->idata = newmsg->data;	/* Keep tab as users change newmsg->data */
 	// i.e. some functions do (diagmsg->data += skiplen) which would prevent us
@@ -131,50 +130,32 @@ diag_allocmsg(size_t datalen)
 	return newmsg;
 }
 
-/* Duplicate a message, and its contents */
+/* Duplicate a message, and its contents including all chained messages. XXX nobody uses this !? */
 struct diag_msg *
 diag_dupmsg(struct diag_msg *msg)
 {
-	struct diag_msg	*newmsg = NULL, *tmsg, *cmsg;
+	struct diag_msg *newmsg, *tmsg, *cmsg;
 
+	assert(msg != NULL);
 	/*
 	 * Dup first msg
 	 * -- we don't copy "iflags" as that is about how this message
 	 * was created, and not about the message we are duplicating
 	 */
 
-	newmsg = diag_allocmsg(msg->len);
+	newmsg = diag_dupsinglemsg(msg);
 	if (newmsg == NULL)
 		return diag_pseterr(DIAG_ERR_NOMEM);
 
-	newmsg->fmt = msg->fmt;
-//	newmsg->type = msg->type;
-	newmsg->dest = msg->dest;
-	newmsg->src = msg->src;
-	newmsg->len = msg->len;
-	newmsg->rxtime = msg->rxtime;
-
-	/* Dup data */
-	memcpy(newmsg->data, msg->data, msg->len);
-
 	/* And any on chain */
-	cmsg = newmsg;
+	cmsg = newmsg;	//newmsg has to point to the first msg in the chain
 	msg = msg->next;
-	while (msg)
-	{
-		tmsg = diag_allocmsg(msg->len);
-		if (tmsg == NULL)
+	while (msg != NULL) {
+		tmsg = diag_dupsinglemsg(msg);	//copy
+		if (tmsg == NULL) {
+			diag_freemsg(newmsg);	//undo what we have so far
 			return diag_pseterr(DIAG_ERR_NOMEM);
-
-		tmsg->fmt = msg->fmt;
-//		tmsg->type = msg->type;
-		tmsg->dest = msg->dest;
-		tmsg->src = msg->src;
-		tmsg->len = msg->len;
-		tmsg->rxtime = msg->rxtime;
-		tmsg->next = NULL;	/* Except next message pointer */
-		/* Dup data */
-		memcpy(tmsg->data, msg->data, msg->len);
+		}
 
 		/* Attach tmsg, and update cmsg */
 		cmsg->next = tmsg;
@@ -188,11 +169,13 @@ diag_dupmsg(struct diag_msg *msg)
 }
 
 /* Duplicate a single message, don't follow the chain */
+// (leave ->next undefined)
 struct diag_msg *
 diag_dupsinglemsg(struct diag_msg *msg)
 {
-	struct diag_msg	*newmsg = NULL;
+	struct diag_msg *newmsg;
 
+	assert(msg != NULL);
 	/* Dup first msg */
 
 	newmsg = diag_allocmsg(msg->len);
@@ -205,18 +188,21 @@ diag_dupsinglemsg(struct diag_msg *msg)
 	newmsg->src = msg->src;
 	newmsg->len = msg->len;
 	newmsg->rxtime = msg->rxtime;
-	newmsg->iflags = msg->iflags;
-	/* Dup data */
-	memcpy(newmsg->data, msg->data, msg->len);
+	newmsg->next = NULL;
+	/* Dup data if len>0 */
+	if ((msg->len >0) && (msg->data != NULL))
+		memcpy(newmsg->data, msg->data, msg->len);
 
 	return newmsg;
 }
 
-/* Free a msg that we dup'd */
+/* Free a msg that we dup'd, following the whole chain */
 void
 diag_freemsg(struct diag_msg *msg)
 {
 	struct diag_msg *nextmsg;
+
+	assert(msg != NULL);
 
 	if ( (msg->iflags & DIAG_MSG_IFLAG_MALLOC) == 0 )
 	{
@@ -350,6 +336,7 @@ diag_geterr(void) {
 
 //diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
 // also checks for size !=0
+// ret 0 if ok
 int diag_flcalloc(const char *name, const int line,
 	void **pp, size_t n, size_t s)
 {

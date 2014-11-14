@@ -861,7 +861,7 @@ void *data, size_t len, int timeout)
 }
 
 
-static int
+static uint32_t
 diag_l0_br_getflags(struct diag_l0_device *dl0d)
 {
 	/*
@@ -869,7 +869,7 @@ diag_l0_br_getflags(struct diag_l0_device *dl0d)
 	 * raw, once initialised
 	 */
 	struct diag_l0_br_device *dev;
-	int flags;
+	uint32_t flags;
 
 	dev = (struct diag_l0_br_device *)diag_l0_dl0_handle(dl0d);
 

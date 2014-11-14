@@ -218,7 +218,7 @@ int
 diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *data, size_t len, unsigned int p4)
 {
 	int rv = DIAG_ERR_GENERAL;
-	int l0flags;
+	uint32_t l0flags;
 	const struct diag_l0 *dl0 = diag_l0_device_dl0(dl0d);
 	uint8_t duplexbuf[MAXRBUF];
 
@@ -305,16 +305,27 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 
 /*
  * Get data (blocking, unless timeout is 0)
- * returns
+ * returns # of bytes read, or <0 if error.
+ * XXX currently nothing handles the case of L0 returning 0 bytes read. Logically that could
+ * only happen when requesting n bytes with a timeout of 0; otherwise DIAG_ERR_TIMEOUT will
+ * generated.
  */
 int
 diag_l1_recv(struct diag_l0_device *dl0d,
 	const char *subinterface, void *data, size_t len, int timeout)
 {
+	int rv;
 	if (!len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
-	return diag_l0_device_dl0(dl0d)->diag_l0_recv(dl0d, subinterface, data, len, timeout);
+	if (timeout==0)
+		fprintf(stderr, FLFMT "Interesting : L1 read with timeout=0. Report this !\n", FL);
+
+	rv=diag_l0_device_dl0(dl0d)->diag_l0_recv(dl0d, subinterface, data, len, timeout);
+	if (rv==0)
+		fprintf(stderr, FLFMT "Interesting : L0 returns with 0 bytes... Report this !\n", FL);
+
+	return rv;
 }
 
 /*
@@ -328,7 +339,7 @@ const struct diag_serial_settings *pset)
 }
 
 //diag_l1_getflags: returns l0 flags
-int diag_l1_getflags(struct diag_l0_device *dl0d)
+uint32_t diag_l1_getflags(struct diag_l0_device *dl0d)
 {
 	return (diag_l0_device_dl0(dl0d)->diag_l0_getflags)(dl0d);
 }

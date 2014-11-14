@@ -672,7 +672,7 @@ unsigned int diag_l0_dumb_getopts(void) {
 }
 
 
-static int
+static uint32_t
 diag_l0_dumb_getflags(struct diag_l0_device *dl0d)
 {
 	struct diag_l0_dumb_device *dev;

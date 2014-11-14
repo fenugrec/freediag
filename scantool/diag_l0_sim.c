@@ -730,7 +730,7 @@ diag_l0_sim_setspeed(struct diag_l0_device *dl0d,
 // uncomment the SIM_NOL2CKSUM line in the file;
 // If you don't want to deal with header bytes, uncomment
 // the SIM_NOL2FRAME line in the file (required for SAEJ1850).
-static int
+static uint32_t
 diag_l0_sim_getflags(UNUSED(struct diag_l0_device *dl0d))
 {
 	int ret = 0;

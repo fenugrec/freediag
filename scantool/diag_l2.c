@@ -225,12 +225,12 @@ diag_l2_timer(void)
 		int expired = 0;
 
 		/*
-		 * If in monitor mode or the connection isn't open,
-		 * do nothing
+		 * If in monitor mode, or the connection isn't open,
+		 * or L1 does the keepalive, do nothing
 		 */
 		if (((d_l2_conn->diag_l2_type & DIAG_L2_TYPE_INITMASK) ==DIAG_L2_TYPE_MONINIT) ||
-				!(d_l2_conn->diag_l2_state & DIAG_L2_STATE_OPEN))
-		{
+				!(d_l2_conn->diag_l2_state & DIAG_L2_STATE_OPEN) ||
+				(d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESKEEPALIVE)) {
 			continue;
 		}
 
@@ -248,6 +248,7 @@ diag_l2_timer(void)
 
 /*
  * Add a message to the message list on the L2 connection
+ * (if msg was a chain of messages, they all get added so they don't get lost)
  */
 void
 diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
@@ -265,7 +266,6 @@ diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	{
 		if (tmsg->next == NULL)
 		{
-			msg->next = NULL;
 			tmsg->next = msg;
 //			d_l2_conn->diag_msg->mcnt ++;
 			break;
@@ -788,7 +788,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		*(int *)data = diag_l1_gettype(dl0d);
 		break;
 	case DIAG_IOCTL_GET_L1_FLAGS:
-		*(int *)data = diag_l1_getflags(dl0d);
+		*(uint32_t *)data = diag_l1_getflags(dl0d);
 		break;
 	case DIAG_IOCTL_GET_L2_FLAGS:
 		*(int *)data = d_l2_conn->l2proto->diag_l2_flags;

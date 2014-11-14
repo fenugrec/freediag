@@ -54,6 +54,12 @@ struct diag_l2_conn : these are alloc'ed + filled by diag_l2_startcommunications
  
 struct diag_l3_conn : these are alloc'ed / freed by diag_l3_start and diag_l3_stop, respectively;
  and added to the global diag_l3_list linked list. Associates a diag_l2_conn with a diag_l3_proto.
+ 
+struct diag_msg : this hold a message received from, or to be sent to, an ECU. Holds a bunch
+ of flags, and a data buffer. Only diag_allocmsg() and diag_freemsg() should be used for
+ dynamically allocating these structs, as they take care of cleaning up pointers as required.
+ Messages can be linked with the ->next member. The ->iflags member should probably not
+ be touched ever (used by _allocmsg() and _freemsg())
 
  
 *** functions

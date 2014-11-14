@@ -570,7 +570,7 @@ diag_l2_proto_vag_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	/* Call internal routine */
 	rv = diag_l2_proto_vag_int_recv(d_l2_conn, timeout, data, &datalen);
 
-	if (rv < 0)	/* Failure */
+	if (rv <= 0)	/* Failure */
 		return rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
