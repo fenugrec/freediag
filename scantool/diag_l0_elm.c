@@ -25,6 +25,7 @@
  *Problems :
  * * _recv() doesn't check if a good prompt '>' was received at the end
  * * every time _open() is called it goes through the whole (long) init sequence
+ * * responses from multiple ECUs probably won't work
  */
 
 #include <assert.h>
@@ -796,7 +797,7 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "Expecting 3*%d bytes from ELM, %d ms timeout(+400)\n", FL, (int) len, timeout);
+		fprintf(stderr, FLFMT "Expecting 3*%d bytes from ELM, %d ms timeout(+400)...", FL, (int) len, timeout);
 
 	while ( (xferd = diag_tty_read(dl0d, rxbuf, 3*len, timeout+400)) <= 0) {
 		if (xferd == DIAG_ERR_TIMEOUT) {
@@ -813,7 +814,7 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 	}
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug & DIAG_DEBUG_DATA) {
 		diag_data_dump(stderr, rxbuf, (size_t)xferd);
 		fprintf(stderr, "\n");
 	}
@@ -822,7 +823,7 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 	//Here, rxbuf contains the string received from ELM. First check for errors:
 	errstr=elm_parse_errors(dl0d, rxbuf);
 	if (errstr != NULL) {
-		fprintf(stderr, "\tELM reply: %s\n", errstr);	//maybe make this conditional if it happens too often
+		fprintf(stderr, "\tELM reply: %s\n", errstr);	//make this conditional if it happens too often
 		//XXX also : we might check for "NO DATA" and return DIAG_ERR_TIMEOUT instead ?
 		return DIAG_ERR_ECUSAIDNO;
 	}
@@ -838,9 +839,13 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 		((uint8_t *)data)[xferd]=(uint8_t) rbyte;
 		xferd++;
 		if ( (size_t)xferd==len)
-			break;
+			break;	//XXX should we read more bytes until we get a good '>' prompt ?
 		rptr=NULL;
 	}
+
+	if (diag_l0_debug & DIAG_DEBUG_READ)
+		fprintf(stderr, FLFMT "got %d bytes.\n", FL, xferd);
+
 	return xferd? xferd:DIAG_ERR_BADDATA;
 }
 

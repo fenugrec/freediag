@@ -223,9 +223,9 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	}
 
 	l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
-	if (l1flags & (DIAG_L1_DOESL2FRAME|DIAG_L1_DOESP4WAIT)) {
-		if (timeout < 100)	/* Extend timeouts */
-			timeout = 100;
+	if (l1flags & DIAG_L1_DOESL2FRAME) {
+		if (timeout < SMART_TIMEOUT)	/* Extend timeouts */
+			timeout += 100;
 	}
 	if (l1flags & DIAG_L1_DOESL2FRAME)
 		l1_doesl2frame = 1;
@@ -1120,10 +1120,9 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 	 * longer on "smart" L2 interfaces
 	 */
 	timeout = d_l2_conn->diag_l2_p2max;
-	if (d_l2_conn->diag_link->diag_l2_l1flags &
-			(DIAG_L1_DOESL2FRAME|DIAG_L1_DOESP4WAIT)) {
-		if (timeout < 100)
-			timeout = 100;
+	if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2FRAME) {
+		if (timeout < SMART_TIMEOUT)
+			timeout += SMART_TIMEOUT;
 	}
 	(void)diag_l2_recv(d_l2_conn, timeout, NULL, NULL);
 	diag_l2_debug=debug_l2_orig;	//restore debug flags

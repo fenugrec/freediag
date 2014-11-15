@@ -113,19 +113,21 @@ diag_allocmsg(size_t datalen)
 	newmsg->iflags |= DIAG_MSG_IFLAG_MALLOC;
 
 	if (datalen) {
-		if (diag_calloc(&newmsg->data, datalen)) {
+		if (diag_calloc(&newmsg->idata, datalen)) {
 			free(newmsg);
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
 	} else {
-		newmsg->data = NULL;
+		newmsg->idata = NULL;
 	}
 
 	newmsg->len=datalen;
 	newmsg->next=NULL;
-	newmsg->idata = newmsg->data;	/* Keep tab as users change newmsg->data */
+	newmsg->data = newmsg->idata;	/* Keep tab as users change newmsg->data */
 	// i.e. some functions do (diagmsg->data += skiplen) which would prevent us
 	// from doing free(diagmsg->data)  (the pointer was changed).
+	// so ->idata is the original alloc'ed pointer, that should never be modified
+	// except by diag_freemsg()
 
 	return newmsg;
 }

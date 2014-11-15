@@ -386,11 +386,10 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	// Check if L1 device does L2 framing:
 	l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
 	l1_doesl2frame = (l1flags & DIAG_L1_DOESL2FRAME);
-	if ( l1flags & ( DIAG_L1_DOESL2FRAME | DIAG_L1_DOESP4WAIT ) )
-	{
+	if (l1_doesl2frame) {
 		// Extend timeouts for the "smart" interfaces:
 		if (timeout < SMART_TIMEOUT)
-			timeout = SMART_TIMEOUT;
+			timeout += SMART_TIMEOUT;
 	}
 
 	// Message read cycle: byte-per-byte for passive interfaces,

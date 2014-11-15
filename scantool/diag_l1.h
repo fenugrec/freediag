@@ -90,6 +90,7 @@ extern "C" {
  * DOESP4WAIT
  *
  * interface is semi-intelligent and does the interbyte delay P4 for ISO
+ * (P4 : inter-byte delay for messages from tester (us) to ECU)
  */
 #define DIAG_L1_DOESP4WAIT		0x200
 
