@@ -219,8 +219,9 @@ diag_freemsg(struct diag_msg *msg)
 
 	if ( (msg->iflags & DIAG_MSG_IFLAG_MALLOC) == 0 ) {
 		fprintf(stderr,
-			FLFMT "diag_freemsg free-ing a non diag_allocmsg()'d message %p\n",
+			FLFMT "diag_freemsg free-ing a non diag_allocmsg()'d message %p!\n",
 			FL, (void *)msg);
+		free(msg);
 		return;
 	} else if (msg->idata != NULL) {
 		free(msg->idata);
