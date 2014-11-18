@@ -167,6 +167,8 @@ struct debugflags_descr {
  *
  * The receiver of the message *must* copy the data if it wants it !!!
  * The flags are arranged such as zeroing out the whole structure sets "safe" defaults.
+ * There's probably no application for 0-length messages, but currently the various functions
+ * don't complain when allocating/duplicating empty data.
  */
 struct diag_msg
 {

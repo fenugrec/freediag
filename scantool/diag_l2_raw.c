@@ -172,8 +172,9 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		 * Ok, alloc a message
 		 */
 		rmsg = diag_allocmsg((size_t)rv);
+		if (rmsg == NULL)
+			return diag_iseterr(DIAG_ERR_NOMEM);
 		memcpy(&rmsg->data, rxbuf, (size_t)rv);	/* Data */
-		rmsg->len = (uint8_t) rv;
 		rmsg->fmt = 0;
 		rmsg->rxtime = diag_os_chronoms(0);
 	}

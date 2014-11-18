@@ -463,7 +463,8 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 					// End of that message, maybe more to come;
 					// Copy data into a message.
 					tmsg = diag_allocmsg((size_t)dp->rxoffset);
-					tmsg->len = dp->rxoffset;
+					if (tmsg == NULL)
+						return diag_iseterr(DIAG_ERR_NOMEM);
 					memcpy(tmsg->data, dp->rxbuf,
 						(size_t)dp->rxoffset);
 					tmsg->rxtime = diag_os_chronoms(0);
@@ -549,6 +550,9 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 				if (rv > MAXLEN_ISO9141) {
 					struct diag_msg	*amsg;
 					amsg = diag_dupsinglemsg(tmsg);
+					if (amsg == NULL) {
+						return diag_iseterr(DIAG_ERR_NOMEM);
+					}
 					amsg->len = (uint8_t) MAXLEN_ISO9141;
 					tmsg->len -= (uint8_t) MAXLEN_ISO9141;
 					tmsg->data += MAXLEN_ISO9141;

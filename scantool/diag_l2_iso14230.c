@@ -298,7 +298,8 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 				 * Copy data into a message
 				 */
 				tmsg = diag_allocmsg((size_t)dp->rxoffset);
-				tmsg->len = (uint8_t) dp->rxoffset;
+				if (tmsg == NULL)
+					return diag_iseterr(DIAG_ERR_NOMEM);
 				memcpy(tmsg->data, dp->rxbuf, (size_t)dp->rxoffset);
 				tmsg->rxtime = diag_os_chronoms(0);
 				dp->rxoffset = 0;
@@ -406,6 +407,9 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 			 */
 			struct diag_msg	*amsg;
 			amsg = diag_dupsinglemsg(tmsg);
+			if (amsg == NULL) {
+				return diag_iseterr(DIAG_ERR_NOMEM);
+			}
 			amsg->len = (uint8_t) rv;
 			tmsg->len -= (uint8_t) rv;
 			tmsg->data += rv;

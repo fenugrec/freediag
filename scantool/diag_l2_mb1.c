@@ -276,10 +276,11 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 	 * Ok, alloc a message
 	 */
 	msg = diag_allocmsg((size_t)(rv - 4));
+	if (msg == NULL)
+		return diag_iseterr(DIAG_ERR_NOMEM);
 	msg->data[0] = rxbuf[1];		/* Command */
 	memcpy(&msg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
 	msg->rxtime = diag_os_chronoms(0);
-	msg->len = (uint8_t) rv - 4;
 	msg->fmt = DIAG_FMT_FRAMED ;
 
 	/*
@@ -390,10 +391,11 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		 * Ok, alloc a message
 		 */
 		rmsg = diag_allocmsg((size_t)(rv - 4));
+		if (rmsg == NULL)
+			return diag_pseterr(DIAG_ERR_NOMEM);
 		rmsg->data[0] = rxbuf[1];		/* Command */
 		memcpy(&rmsg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
 		rmsg->rxtime = diag_os_chronoms(0);
-		rmsg->len = (uint8_t) rv - 4;
 		rmsg->fmt = DIAG_FMT_FRAMED;
 	}
 	return rmsg;

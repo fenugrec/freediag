@@ -893,11 +893,21 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 		}
 		if (done)
 			break;
-	}
+	}	//while !done
 	if (input)
 			free(input);
 	if (rv == CMD_UP)
 		return CMD_OK;
+	if (rv == CMD_EXIT) {
+		char *disco="disconnect";
+		if (global_logfp != NULL)
+			cmd_stoplog(0, NULL);
+		do_cli(diag_cmd_table, "", 1, &disco);	//XXX should be called recursively in case there are >1 active L3 conns...
+		rv=diag_end();
+		if (rv)
+			fprintf(stderr, FLFMT "diag_end failed !?\n", FL);
+		rv = CMD_EXIT;
+	}
 	return rv;
 }
 

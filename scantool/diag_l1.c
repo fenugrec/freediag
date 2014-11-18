@@ -123,6 +123,7 @@ diag_l1_init(void)
 	/* Now call the init routines for the L0 devices */
 	//NOTE : the diag_l0_init functions should NOT play any mem tricks (*alloc etc) or open handles.
 	//That way we won't need to add a diag_l0_end function.
+	//Unfortunately they do : l0dev_list is a linked-list calloc'ed by diag_l1_add_l0dev !
 
 	for (node = l0dev_list; node; node = node->next) {
 		if (node->l0dev->diag_l0_init)

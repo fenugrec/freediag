@@ -890,7 +890,6 @@ do_l2_generic_start(void)
 		//if ((rv != DIAG_ERR_BADIFADAPTER) && (rv != DIAG_ERR_PROTO_NOTSUPP))
 		fprintf(stderr, "l2_generic_start: open failed for protocol %d with %s on %s\n",
 			set_L1protocol,l0_names[set_interface_idx].longname,set_subinterface);
-		diag_end();
 		return diag_iseterr(rv);
 	}
 
@@ -907,7 +906,6 @@ do_l2_generic_start(void)
 	if (d_conn == NULL) {
 	rv=diag_geterr();
 		diag_l2_close(dl0d);
-		diag_end();
 		return diag_iseterr(rv);
 	}
 

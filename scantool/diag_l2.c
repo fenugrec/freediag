@@ -58,6 +58,7 @@ struct diag_l2_node {
 } *l2proto_list;
 
 //diag_l2_add_protocol : fill in the l2proto_list linked list
+//XXX nobody free's what we calloc in here !
 int
 diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
 	int rv;
@@ -631,8 +632,6 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 int
 diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 {
-	struct diag_msg * tempmsg;
-
 	assert(d_l2_conn != NULL);
 
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSING;
@@ -659,9 +658,9 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 	//may have alloc'ed. inside the l2 connection struct.
 	// But we might still have some attached messages that
 	//were never freed, so we need to purge those:
-	for (tempmsg=d_l2_conn->diag_msg; tempmsg!=NULL; tempmsg = tempmsg->next) {
-		diag_freemsg(tempmsg);
-	}
+	if (d_l2_conn->diag_msg != NULL)
+		diag_freemsg(d_l2_conn->diag_msg);
+
 	//and free() the connection.
 	free(d_l2_conn);
 

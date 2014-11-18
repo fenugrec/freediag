@@ -40,6 +40,8 @@ CVSID("$Id$");
 
 static int diag_initialized=0;
 
+//diag_init : should be called once before doing anything.
+//and call diag_end before terminating.
 int diag_init(void)	//returns 0 if normal exit
 {
 	int rv;
@@ -106,6 +108,11 @@ struct diag_msg *
 diag_allocmsg(size_t datalen)
 {
 	struct diag_msg *newmsg;
+
+	if (datalen >= 256) {
+		fprintf(stderr, FLFMT "_allocmsg with >255 bytes !? report this !\n", FL);
+		return diag_pseterr(DIAG_ERR_BADLEN);
+	}
 
 	if (diag_calloc(&newmsg, 1))
 		return diag_pseterr(DIAG_ERR_NOMEM);
@@ -188,7 +195,6 @@ diag_dupsinglemsg(struct diag_msg *msg)
 //	newmsg->type = msg->type;
 	newmsg->dest = msg->dest;
 	newmsg->src = msg->src;
-	newmsg->len = msg->len;
 	newmsg->rxtime = msg->rxtime;
 	newmsg->next = NULL;
 	/* Dup data if len>0 */
@@ -198,31 +204,30 @@ diag_dupsinglemsg(struct diag_msg *msg)
 	return newmsg;
 }
 
-/* Free a msg that we dup'd, following the whole chain */
+/* Free a msg that we dup'd, recursively following the whole chain */
+// it doesn't absolutely need to be recursive but in case of trouble
+// it's easier to see the whole call stack leading to the failure.
+// Of course, not async safe.
 void
 diag_freemsg(struct diag_msg *msg)
 {
-	struct diag_msg *nextmsg;
-
 	assert(msg != NULL);
 
-	if ( (msg->iflags & DIAG_MSG_IFLAG_MALLOC) == 0 )
-	{
+	if (msg->next != NULL) {
+		diag_freemsg(msg->next);	//recurse
+	}
+
+	if ( (msg->iflags & DIAG_MSG_IFLAG_MALLOC) == 0 ) {
 		fprintf(stderr,
-			FLFMT "diag_freemsg called for non diag_allocmsg()'d message %p\n",
+			FLFMT "diag_freemsg free-ing a non diag_allocmsg()'d message %p\n",
 			FL, (void *)msg);
 		return;
+	} else if (msg->idata != NULL) {
+		free(msg->idata);
 	}
 
-	while (msg)
-	{
-		nextmsg = msg->next;
+	free(msg);
 
-		if (msg->idata)
-			free(msg->idata);
-		free(msg);
-		msg = nextmsg;
-	}
 	return;
 }
 

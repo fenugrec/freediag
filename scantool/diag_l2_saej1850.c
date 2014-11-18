@@ -265,7 +265,8 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	{
 		// There is data left to add to the message list ..
 		tmsg = diag_allocmsg((size_t)dp->rxoffset);
-		tmsg->len = dp->rxoffset;
+		if (tmsg == NULL)
+			return diag_iseterr(DIAG_ERR_NOMEM);
 		memcpy(tmsg->data, dp->rxbuf, (size_t)dp->rxoffset);
 
 		/*
