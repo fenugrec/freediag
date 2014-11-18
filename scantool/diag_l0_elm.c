@@ -846,7 +846,7 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "got %d bytes.\n", FL, xferd);
 
-	return xferd? xferd:DIAG_ERR_BADDATA;
+	return xferd? xferd:DIAG_ERR_TIMEOUT;
 }
 
 /*
