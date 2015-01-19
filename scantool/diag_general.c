@@ -36,7 +36,6 @@
 #include "diag_l2.h"
 
 #define ERR_STR_LEN 30	//length of "illegal error X" string
-CVSID("$Id$");
 
 static int diag_initialized=0;
 

@@ -4,7 +4,6 @@
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
- * CVSID $Id$
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
  *
@@ -29,8 +28,6 @@
 extern "C" {
 #endif
 
-/* CVSID macro that will avoid warnings. */
-#define CVSID(ID) UNUSED(static const char* const cvsid) = (ID)
 
 #ifdef WIN32
 	typedef DWORD OS_ERRTYPE;

@@ -46,7 +46,6 @@
 #include "diag_l2_iso9141.h" /* prototypes for this file */
 
 
-CVSID("$Id$");
 
 /*
  * This implements the message checksum as defined in the ISO9141-2 specs.

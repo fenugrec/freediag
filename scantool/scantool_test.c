@@ -32,7 +32,6 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
-CVSID("$Id$");
 
 static int cmd_test_help(int argc, char **argv);
 static int cmd_test_rvi(int argc, char **argv);

@@ -43,7 +43,6 @@
 #endif 	//WIN32
 #endif	//have_strcasecmp
 
-CVSID("$Id$");
 
 #define PROTO_NONE	"<not_used>"
 

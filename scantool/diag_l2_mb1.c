@@ -39,7 +39,6 @@
 
 #include "diag_l2_mb1.h"  /* prototypes for this file */
 
-CVSID("$Id$");
 
 static int
 diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,

@@ -45,7 +45,6 @@
 
 #include "diag_l2_vag.h" /* prototypes for this file */
 
-CVSID("$Id$");
 
 /*
  * ISO vag specific data

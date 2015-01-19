@@ -40,7 +40,6 @@
 #include "diag_tty.h"
 #include "diag_l1.h"
 
-CVSID("$Id$");
 
 static const struct diag_l0 diag_l0_br;
 

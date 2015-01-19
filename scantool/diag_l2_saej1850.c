@@ -41,7 +41,6 @@
 
 #include "diag_l2_saej1850.h" /* prototypes for this file */
 
-CVSID("$Id$");
 
 /*
  * SAEJ1850 specific data

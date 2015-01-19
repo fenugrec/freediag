@@ -40,7 +40,6 @@
 #include "diag_tty.h"
 #include "diag_l1.h"
 
-CVSID("$Id$");
 
 #define INTERFACE_ADDRESS 0x38
 

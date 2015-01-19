@@ -3,7 +3,6 @@
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
- * CVSID $Id$
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
  *

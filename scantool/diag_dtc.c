@@ -29,7 +29,6 @@
 #include "diag.h"
 #include "diag_dtc.h"
 
-CVSID("$Id$");
 
 
 //do not use *allocs or open handles in diag_dtc_init !

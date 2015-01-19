@@ -44,7 +44,6 @@
 #endif
 
 
-CVSID("$Id$");
 
 dyno_result * dyno_results;
 int dyno_nb_results;

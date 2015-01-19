@@ -34,7 +34,6 @@
 #include "diag_l3.h"
 #include "diag_l3_saej1979.h"
 
-CVSID("$Id$");
 
 /*
  * Return the expected J1979 packet length for a given mode byte

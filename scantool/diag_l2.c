@@ -44,7 +44,6 @@
 
 /* */
 
-CVSID("$Id$");
 
 int diag_l2_debug;
 

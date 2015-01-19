@@ -39,7 +39,6 @@
 #include "diag_tty.h"
 #include "diag_l1.h"
 
-CVSID("$Id$");
 
 #define ELM_BUFSIZE 40	//longest data to be received during init is the version string, ~ 15 bytes,
 		// plus possible command echo. OBD data is 7 bytes, received as a 23-char string. 32 should be enough...

@@ -43,7 +43,6 @@
 #include "diag_l3_vag.h"
 
 
-CVSID("$Id$");
 
 /*
  * Insert the L3 layer on top of the layer 2 connection

@@ -80,7 +80,6 @@
 #include "scantool_cli.h"
 #include "scantool_aif.h"
 
-CVSID("$Id$");
 
 /*
  * This is used to store the 1st message of a received set of messages

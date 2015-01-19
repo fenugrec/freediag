@@ -40,7 +40,6 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
-CVSID("$Id$");
 
 #define PROMPTBUFSIZE 80		//was 1024 !!
 const char progname[]=SCANTOOL_PROGNAME;

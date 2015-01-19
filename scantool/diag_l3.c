@@ -46,7 +46,6 @@
 #include "diag_l3_iso14230.h"
 
 
-CVSID("$Id$");
 
 int diag_l3_debug;
 

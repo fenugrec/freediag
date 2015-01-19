@@ -43,7 +43,6 @@
 #include "diag_tty.h"
 #include "diag_l1.h"
 
-CVSID("$Id$");
 
 int diag_l0_debug;	//debug flags for l0
 int diag_l1_debug;	//debug flags for l1

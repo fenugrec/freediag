@@ -49,7 +49,6 @@
 #define SLOWINIT
 #define DO_ISO
 
-CVSID("$Id$");
 
 #define TESTER_ID	0xF1
 

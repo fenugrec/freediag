@@ -34,7 +34,6 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
-CVSID("$Id$");
 
 static int cmd_vag_help(int argc, char **argv);
 const struct cmd_tbl_entry vag_cmd_table[] =

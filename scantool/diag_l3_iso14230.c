@@ -37,7 +37,6 @@
 #include "diag_l3.h"
 #include "diag_l3_iso14230.h"
 
-CVSID("$Id$");
 
 
 static const char *l3_iso14230_sidlookup(const int id);

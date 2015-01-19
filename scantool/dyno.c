@@ -27,11 +27,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "diag.h"	/* For CVSID */
-#include "diag_err.h"	/* For CVSID */
+#include "diag.h"
+#include "diag_err.h"
 #include "dyno.h"
 
-CVSID("$Id$");
 
 #define SQR(_x_) ((_x_)*(_x_))
 #define CUB(_x_) ((_x_)*(_x_)*(_x_))

@@ -38,7 +38,6 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
-CVSID("$Id$");
 
 static int cmd_diag_help(int argc, char **argv);
 

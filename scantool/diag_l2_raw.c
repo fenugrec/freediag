@@ -38,7 +38,6 @@
 
 #include "diag_l2_raw.h" /* prototypes for this file */
 
-CVSID("$Id$");
 
 
 
