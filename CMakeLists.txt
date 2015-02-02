@@ -154,7 +154,7 @@ if (BUILDGUI)
 	if (FLTK_FOUND)
 		add_subdirectory(scangui)
 	else ()
-		message(FATAL_ERROR "Cannot build scangui without FLTK !")
+		message(WARNING "Cannot build scangui without FLTK !")
 	endif()
 endif ()
 
