@@ -238,7 +238,7 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	 * 8 bit ecuaddr at 5 baud LSB first
 	 *
 	 */
-	int i, rv;
+	int i, rv=0;
 //	uint8_t cbuf[10];
 
 	// We also toggle DTR to disable RXD (blocking it at logical 1).

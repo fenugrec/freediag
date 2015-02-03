@@ -366,7 +366,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	lastmsg = NULL;
 
 	while (tmsg != NULL) {
-		int datalen;
+		int datalen=0;
 		uint8_t hdrlen=0, source=0, dest=0;
 
 

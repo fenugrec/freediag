@@ -795,7 +795,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	int i;
 
 	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
-	static char nullstr[2];
+	static char nullstr[2]={0,0};
 
 	rv = 0, done = 0;
 	snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
@@ -827,13 +827,11 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 			cmd_argc = 0;
 			while ( (s = strtok(inptr, " 	")) != NULL ) {
 				cmd_argv[cmd_argc] = s;
-				cmd_argc++;
 				inptr = NULL;
-				if (cmd_argc == ARRAY_SIZE(cmd_argv))
+				if (cmd_argc == (ARRAY_SIZE(cmd_argv)-1))
 					break;
+				cmd_argc++;
 			}
-			nullstr[0] = 0;
-			nullstr[1] = 0;
 			cmd_argv[cmd_argc] = nullstr;
 		} else {
 			/* Use supplied argc */

@@ -609,13 +609,14 @@ elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout)
 
 /*
  * Do manual wakeup on the bus, if supported
+ * ret 0 if ok
  */
 static int
 diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
 	const uint8_t *buf;
 	int rv = DIAG_ERR_INIT_NOTSUPP;
-	int timeout;	//for bogus init
+	int timeout=0;	//for bogus init
 
 	struct diag_l0_elm_device *dev;
 
@@ -655,14 +656,12 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 			rv=diag_l0_elm_sendcmd(dl0d, sethdr, 14, 500, NULL);
 
 			//explicit init is not supported by clones, they wait for the first OBD request...
-			if (dev->elmflags & ELM_32x_CLONE) {
-				timeout=1500;
-				rv=0;
-			} else {
+			if ((dev->elmflags & ELM_32x_CLONE)==0) {
 				rv = diag_l0_elm_fastinit(dl0d);
 				if (!rv)
 					dev->elmflags |= ELM_INITDONE;
-			}
+			}	//if explicit init failed we'll try a bogus init anyway
+			timeout=1500;
 			}	//case fastinit
 			break;	//case fastinit
 		case DIAG_L1_INITBUS_5BAUD:
@@ -672,19 +671,21 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 					buf=(uint8_t *) "ATTP3\x0D";
 				else if (dev->protocol & DIAG_L1_ISO14230)
 					buf=(uint8_t *) "ATTP4\x0D";
+				else	//illegal combination !
+					return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
 
 				rv=diag_l0_elm_sendcmd(dl0d, buf, 6, 500, NULL);
+				if (rv<0)
+					break;
 			}
 
 			//explicit init is not supported by clones
-			if (dev->elmflags & ELM_32x_CLONE) {
-				timeout=4200;	//slow init is slow !
-				rv=0;
-			} else {
+			if ((dev->elmflags & ELM_32x_CLONE)==0) {
 				rv = diag_l0_elm_slowinit(dl0d);
 				if (!rv)
 					dev->elmflags |= ELM_INITDONE;
 			}
+			timeout=4200;	//slow init is slow !
 			break;
 		default:
 			rv = DIAG_ERR_INIT_NOTSUPP;
