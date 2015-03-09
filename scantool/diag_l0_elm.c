@@ -473,7 +473,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 	//check if proto is really supported (323 supports only 9141 and 14230)
 	if ((dev->elmflags & ELM_323_BASIC) &&
-		((iProtocol != DIAG_L1_ISO9141) || (iProtocol != DIAG_L1_ISO14230)))
+		((iProtocol != DIAG_L1_ISO9141) && (iProtocol != DIAG_L1_ISO14230)))
 			return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
 
 	//if 327, set proto when possible; we won't if 14230, because init type (fast vs slow) isn't decided yet

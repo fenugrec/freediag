@@ -40,20 +40,20 @@ Each package contains a list of it's contributors.
 INSTALLATION:
 ~~~~~~~~~~~~~
 
-Refer to doc/build_system.txt for the most recent information.
+Refer to doc/build_system.txt for more information;
+contents of the "INSTALL" file should be ignored.
 
-1) On linux / unix platforms :
-freediag uses a standard GNU autotools installation process:
-./configure && make
+1) On linux / unix platforms : cmake is preferred, but the standard
+GNU autotools also work.
 
 For the moment, you should not run make install as it is
 100% untested.
 
-If you checked freediag out of CVS:
+If you cloned freediag from the git repo and are not using cmake,
 you may need to run automake+autoconf from the root source
-directory to create the ./configure script.
+directory to re-create the ./configure script.
 
-Make sure to try "./configure --help" to vew available
+Make sure to try "./configure --help" to view available
 options.
 
 ./configure options:

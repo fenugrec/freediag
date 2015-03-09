@@ -160,7 +160,6 @@ endif ()
 
 ###### misc files to include in bin packages
 install (DIRECTORY doc/ DESTINATION doc
-	PATTERN "CVS" EXCLUDE
 	PATTERN "*xcf" EXCLUDE)
 install (FILES "README_v${PKGVERSIONMAJOR}_${PKGVERSIONMINOR}.txt"
 		"CHANGES" "AUTHORS" "COPYING"
@@ -183,7 +182,6 @@ set (CPACK_SOURCE_IGNORE_FILES "xcf"
 	"~$"
 	"^${PROJECT_SOURCE_DIR}.*/autom4te.*"
 	"^${PROJECT_SOURCE_DIR}.*/\\\\.deps/"
-	"^${PROJECT_SOURCE_DIR}.*/CVS/" )
 
 
 set (CPACK_INCLUDE_TOPLEVEL_DIRECTORY 1)
