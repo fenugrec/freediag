@@ -24,7 +24,6 @@
  * Mostly ODBII Compliant Scan Tool (as defined in SAE J1978)
  *
  * Application Interface (AIF) routines
- * TODO : there's waaaay too much whitespace in here...
  *
  */
 
@@ -46,13 +45,13 @@
 static void do_aif_command (void) ;
 static int debugging = 0 ;
 
-static void toApp ( char command )
+static void toApp (char command)
 {
-	putc ( command, stdout ) ;
+	putc(command, stdout) ;
 }
 
-static void OkToApp  (void) { toApp ( FREEDIAG_AIF_OK_RETURN ) ; }
-static void BadToApp (void) { toApp ( FREEDIAG_AIF_ERROR_RETURN ) ; }
+static void OkToApp (void) { toApp(FREEDIAG_AIF_OK_RETURN) ; }
+static void BadToApp(void) { toApp(FREEDIAG_AIF_ERROR_RETURN) ; }
 
 
 /*
@@ -60,54 +59,54 @@ static void BadToApp (void) { toApp ( FREEDIAG_AIF_ERROR_RETURN ) ; }
 	working!
 */
 
-static void aif_watch( void *data ) { (void) data; BadToApp () ; }
-static void aif_clear_dtc( void *data) { (void) data; BadToApp () ; }
-static void aif_ecus( void *data) {(void) data; BadToApp () ; }
-static void aif_test( void *data) { (void) data; BadToApp () ; }
-static void aif_diag( void *data) { (void) data; BadToApp () ; }
-static void aif_vw( void *data) { (void) data; BadToApp () ; }
-static void aif_dyno( void *data) { (void) data; BadToApp () ; }
+static void aif_watch(void *data) { (void) data; BadToApp() ; }
+static void aif_clear_dtc(void *data) { (void) data; BadToApp() ; }
+static void aif_ecus(void *data) {(void) data; BadToApp() ; }
+static void aif_test(void *data) { (void) data; BadToApp() ; }
+static void aif_diag(void *data) { (void) data; BadToApp() ; }
+static void aif_vw(void *data) { (void) data; BadToApp() ; }
+static void aif_dyno(void *data) { (void) data; BadToApp() ; }
 
 
-static void aif_monitor ( void *data )
+static void aif_monitor (void *data)
 {
 	(void) data;	//note : this is the cleanest way I know to silence "unused parameter" warnings.
-	if ( global_state < STATE_CONNECTED )
+	if (global_state < STATE_CONNECTED)
 	{
-		fprintf ( stderr, "scantool: Can't monitor - car is not yet connected.\n");
-		BadToApp () ;
+		fprintf(stderr, "scantool: Can't monitor - car is not yet connected.\n");
+		BadToApp() ;
 		return ;
 	}
-	OkToApp () ;
+	OkToApp() ;
 
 	/*
 	* Now just receive data and send it to the application
 	* whenever it requests it.
 	*/
 
-	while ( 1 )
+	while (1)
 	{
 		unsigned int i ;
-		int rv = do_j1979_getdata ( 1 ) ;
+		int rv = do_j1979_getdata(1) ;
 		struct diag_l3_conn *d_conn ;
 		struct diag_msg *msg ;
 
 		/* New request arrived. */
 
-		if ( rv )
+		if (rv)
 		{
 			unsigned int j ;
 
-			for ( j = 0 ; get_pid ( j ) != NULL ; j++ )
+			for (j = 0 ; get_pid(j) != NULL ; j++)
 			{
-				const struct pid *p = get_pid ( j ) ;
+				const struct pid *p = get_pid(j) ;
 				ecu_data_t   *ep ;
 				char buf[24] ;
 
-				for ( i = 0, ep = ecu_info ; i < ecu_count ; i++, ep++ )
+				for (i = 0, ep = ecu_info ; i < ecu_count ; i++, ep++)
 				{
-					if ( DATA_VALID(p, ep->mode1_data) ||
-					DATA_VALID(p, ep->mode2_data) )
+					if (DATA_VALID(p, ep->mode1_data) ||
+					DATA_VALID(p, ep->mode2_data))
 					{
 						if (DATA_VALID(p, ep->mode1_data))
 							p->cust_sprintf(buf, set_display, p, ep->mode1_data, 2);
@@ -125,8 +124,8 @@ static void aif_monitor ( void *data )
 
 	d_conn = global_l3_conn ;
 
-	rv = l3_do_j1979_rqst ( d_conn, 0x07, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, (void *)&_RQST_HANDLE_NORMAL ) ;
+	rv = l3_do_j1979_rqst(d_conn, 0x07, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, (void *)&_RQST_HANDLE_NORMAL) ;
 
 	if (rv == DIAG_ERR_TIMEOUT)
 	{
@@ -134,30 +133,30 @@ static void aif_monitor ( void *data )
 	}
 	else if (rv != 0) {
 		fprintf(stderr, "Failed to get test results for"
-		" continuously monitored systems\n" ) ;
-		BadToApp () ;
+		" continuously monitored systems\n") ;
+		BadToApp() ;
 	}
 	else
 	{
 		/* Currently monitored DTCs: */
 
-		for ( i = 0 ; i < ecu_count ; i++ )
-			for ( msg = ecu_info[i].rxmsg ; msg ; msg = msg->next )
+		for (i = 0 ; i < ecu_count ; i++)
+			for (msg = ecu_info[i].rxmsg ; msg ; msg = msg->next)
 			{
 				int i, j ;
 
-				for ( i = 0, j = 1 ; i < 3 ; i++, j += 2 )
+				for (i = 0, j = 1 ; i < 3 ; i++, j += 2)
 				{
 					char buf[256];
 					uint8_t db[2];
 
-					if ( (msg->data[j]==0) && (msg->data[j+1]==0) )
+					if ((msg->data[j]==0) && (msg->data[j+1]==0))
 						continue ;
 
 					db[0] = msg->data[j];
 					db[1] = msg->data[j+1];
 
-					diag_dtc_decode ( db, 2, set_vehicle, set_ecu,
+					diag_dtc_decode(db, 2, set_vehicle, set_ecu,
 						dtc_proto_j2012, buf, sizeof(buf)) ;
 					//what do we do with the decoded DTC ?
 					//maybe just print it for now...
@@ -167,81 +166,81 @@ static void aif_monitor ( void *data )
 	}	//if DIAG_ERR_TIMEOUT
 	}	//while 1
 
-	OkToApp () ;
+	OkToApp() ;
 }
 
 
-static void aif_set ( void *data )
+static void aif_set (void *data)
 {
-	int sub_command = ((unsigned char *) data) [ 0 ] ;
+	int sub_command = ((unsigned char *) data)[0] ;
 
-	switch ( sub_command ) {
+	switch (sub_command) {
 		case FREEDIAG_AIF_SET_UNITS :
 		{
-			int units = ((unsigned char *) data) [ 1 ] ;
+			int units = ((unsigned char *) data)[1] ;
 
-			if ( debugging )
-				fprintf ( stderr, "Setting units to %d\n", units ) ;
+			if (debugging)
+				fprintf(stderr, "Setting units to %d\n", units) ;
 
-			switch ( units )
+			switch (units)
 			{
 				case FREEDIAG_AIF_SET_UNITS_US     : set_display = 1 ; break ;
 				case FREEDIAG_AIF_SET_UNITS_METRIC : set_display = 0 ; break ;
-				default        					: BadToApp () ; return ;
+				default        					: BadToApp() ; return ;
 			}
 			break ;
 		}
 		case FREEDIAG_AIF_SET_PORT :
 		{
-			int port = ((unsigned char *) data) [ 1 ] ;
+			int port = ((unsigned char *) data)[1] ;
 
-			if ( debugging )
-				fprintf ( stderr, "Setting port to %d\n", port ) ;
+			if (debugging)
+				fprintf(stderr, "Setting port to %d\n", port) ;
 
-			if ( port < 0 || port > 9 )
+			if (port < 0 || port > 9)
 			{
-				BadToApp () ;
+				BadToApp() ;
 				return ;
 			}
 
-			sprintf ( set_subinterface, "%d", port ) ;
+			sprintf(set_subinterface, "%d", port) ;
 			break ;
 		}
 		default :
-			if ( debugging )
-				fprintf ( stderr, "Illegal 'Set' command: %d\n", sub_command ) ;
+			if (debugging)
+				fprintf(stderr, "Illegal 'Set' command: %d\n", sub_command) ;
 
-			BadToApp () ;
+			BadToApp() ;
 			return ;
 	}
 
-	OkToApp () ;
+	OkToApp() ;
 }
 
 
-static void aif_noop ( void *data )
+static void aif_noop (void *data)
 {
 	(void) data;
-	OkToApp () ;
+	OkToApp() ;
 }
 
 
-static void aif_exit ( void *data )
+static void aif_exit (void *data)
 {
 	(void) data;
-	OkToApp () ;
-	fprintf ( stderr, "scantool: Exiting.\n" ) ;
+	OkToApp() ;
+	fprintf(stderr, "scantool: Exiting.\n") ;
 	set_close();
-	exit ( 0 ) ;
+	exit (0) ;
 }
 
 
-static void aif_disconnect ( void *data )
+static void aif_disconnect (void *data)
 {
 	(void) data;
-	if ( global_state < STATE_CONNECTED )
+	if (global_state < STATE_CONNECTED)
 	{
-		OkToApp () ;
+		OkToApp() ;
 		return ;
 	}
 
@@ -257,54 +256,54 @@ static void aif_disconnect ( void *data )
 	global_l2_conn = NULL;
 	global_state = STATE_IDLE;
 
-	OkToApp () ;
+	OkToApp() ;
 }
 
 
 
-static void aif_scan ( void *data)
+static void aif_scan (void *data)
 {
 	(void) data;
-	if ( global_state >= STATE_CONNECTED )
+	if (global_state >= STATE_CONNECTED)
 	{
-		OkToApp () ;
+		OkToApp() ;
 		return ;
 	}
 
-	if ( ecu_connect() == 0 )
+	if (ecu_connect() == 0)
 	{
 		do_j1979_basics () ; /* Ask basic info from ECU */
 		do_j1979_cms	() ; /* Get test results for monitored systems */
 		do_j1979_ncms  (0) ; /* And non-continuously monitored tests   */
 
-		OkToApp () ;
+		OkToApp() ;
 	}
 	else
 	{
-		fprintf ( stderr, "Connection to ECU failed\n" ) ;
-		fprintf ( stderr, "Please check :-\n" ) ;
-		fprintf ( stderr, "		Adapter is connected to PC\n" ) ;
-		fprintf ( stderr, "		Cable is connected to Vehicle\n" ) ;
-		fprintf ( stderr, "		Vehicle is switched on\n" ) ;
-		fprintf ( stderr, "		Vehicle is OBDII compliant\n" ) ;
+		fprintf(stderr, "Connection to ECU failed\n") ;
+		fprintf(stderr, "Please check :-\n") ;
+		fprintf(stderr, "		Adapter is connected to PC\n") ;
+		fprintf(stderr, "		Cable is connected to Vehicle\n") ;
+		fprintf(stderr, "		Vehicle is switched on\n") ;
+		fprintf(stderr, "		Vehicle is OBDII compliant\n") ;
 
-		BadToApp () ;
+		BadToApp() ;
 	}
 }
 
 
-static void aif_debug ( void *data )
+static void aif_debug (void *data)
 {
-	debugging = ((char *) data) [ 0 ] ;
+	debugging = ((char *) data)[0] ;
 
-	OkToApp () ;
+	OkToApp() ;
 
-	fprintf ( stderr, "AIF: Debugging is %sabled\n",
-	debugging ? "En" : "Dis" ) ;
+	fprintf(stderr, "AIF: Debugging is %sabled\n",
+	debugging ? "En" : "Dis") ;
 }
 
 
-typedef void (*aif_func) ( void * ) ;
+typedef void (*aif_func) (void *) ;
 
 struct AIFcommand
 {
@@ -315,7 +314,7 @@ struct AIFcommand
 } ;
 
 
-const struct AIFcommand aif_commands [] =
+const struct AIFcommand aif_commands[] =
 {
 	{ FREEDIAG_AIF_NO_OP	, 0, "Do Nothing"			, aif_noop	  },
 	{ FREEDIAG_AIF_EXIT	 , 0, "Exit ScanTool"		 , aif_exit	  },
@@ -337,58 +336,58 @@ const struct AIFcommand aif_commands [] =
 
 static void do_aif_command (void)
 {
-	char data_buffer [ FREEDIAG_AIF_INPUT_MAX ] ;
+	char data_buffer[FREEDIAG_AIF_INPUT_MAX] ;
 	int i, j ;
 
-	struct AIFcommand *command=NULL ;
-	int cmd = fgetc ( stdin ) ;
+	const struct AIFcommand *command=NULL ;
+	int cmd = fgetc(stdin) ;
 
-	if ( cmd == -1 )
+	if (cmd == -1)
 	{
-		fprintf ( stderr,
-		"scantool: Unexpected EOF from Application Interface\n" ) ;
-		BadToApp () ;
-		exit ( 1 ) ;
+		fprintf (stderr,
+		"scantool: Unexpected EOF from Application Interface\n") ;
+		BadToApp() ;
+		exit (1) ;
 	}
 
-	for ( i = 0 ; aif_commands [ i ] . name != NULL ; i++ )
+	for (i = 0 ; aif_commands[i] . name != NULL ; i++)
 	{
-		command = & ( aif_commands [ i ] ) ;
+		command = & (aif_commands[i]) ;
 
-		if ( command->code == cmd )
+		if (command->code == cmd)
 		{
-			if ( debugging )
-			fprintf ( stderr, "CMD: %d %s\n", cmd, command->name ) ;
+			if (debugging)
+			fprintf(stderr, "CMD: %d %s\n", cmd, command->name) ;
 
 			break ;
 		}
 	}
-	if ( command->name == NULL )
+	if (command->name == NULL)
 	{
-		fprintf ( stderr,
+		fprintf(stderr,
 		"scantool: Application sent AIF an illegal command '%d'\n",
-		cmd ) ;
-		BadToApp () ;
-		exit ( 1 ) ;
+		cmd) ;
+		BadToApp() ;
+		exit (1) ;
 	}
 
-	for ( j = 0 ; j < command->length &&
+	for (j = 0 ; j < command->length &&
 	j < FREEDIAG_AIF_INPUT_MAX &&
-	! feof ( stdin ) ; j++ )
-		data_buffer [ j ] = getc ( stdin ) ;
+	! feof (stdin) ; j++)
+		data_buffer[j] = getc(stdin) ;
 
-	command->func( data_buffer ) ;
+	command->func(data_buffer) ;
 
-	fflush ( stdout ) ;
+	fflush(stdout) ;
 }
 
 
-void enter_aif ( const char *name )
+void enter_aif (const char *name)
 {
-	fprintf ( stderr, "%s AIF: version %s\n", name, PACKAGE_VERSION ) ;
-	set_init () ;
+	fprintf(stderr, "%s AIF: version %s\n", name, PACKAGE_VERSION) ;
+	set_init() ;
 
-	while ( 1 )
+	while (1)
 	do_aif_command () ;
 }
 
