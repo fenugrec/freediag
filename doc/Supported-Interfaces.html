@@ -33,6 +33,7 @@
   <p>Table of contents:
   <ul>
     <li><a href="#interfaces">Electrical Interface Types</a>
+    <li><a href="#types">About Smart/Dumb classification</a>
     <li><a href="#supported">Freediag Supported Interfaces</a>
     <li><a href="#matrix">Compatibility Matrix</a>
   </ul>
@@ -75,6 +76,30 @@
   </ul>
   
   <br>
+  <a name="types"></a>
+  <div class="section">About Smart/Dumb classification</div>
+  <p>There are two general types of interfaces, referred to as "active" / "smart"
+  (with an onboard microcontroller) and "passive" / "dumb" (no mcu, only signal
+  level translation and possibly opto-isolation).<br>
+<ul><li>
+"Active" IFCs are very friendly for the programmers, because
+they take care of all the car protocol timing issues, and turn the
+very strange and demanding signals into a simple PC serial port flow
+of characters. This is like using the "AT"modem commands, so you can
+see how easy it is. So timing is not critical and can be left to the
+interface HW, and logical results are garanteed at the SW level. However,
+the protocol is interface-proprietary.<br>
+It may also set limits on what freediag can do outside of what the interface supports,
+such as custom protocols over standard layers etc.<br>
+<li>
+"Passive" IFCs have very little electronics on them, because they
+only try to protect the PC serial port and adapt the voltage levels (sometimes with
+optical isolation) . This means that the PC is dealing directly with the
+car's ECU signals, and therefore the timing must be VERY precise. But
+these IFCs have one advantage: they are open-source-friendly and low-level enough
+to allow any protocol to be used. In some cases they can also be faster than "smart" interfaces.<br>
+</ul>
+  <br>
   <a name="supported"></a>
   <div class="section">Freediag Supported Interfaces</div>
 
@@ -86,38 +111,41 @@
 
   <p><ol>
     <li>Generic dumb serial adaptors<br><br>
-    Freediag Driver: DUMB<br>
-    *** read <a href="dumb_interfaces.txt">doc/dumb_interfaces.txt !!! ***</a><br>
+    Freediag Driver: DUMB (diag_l0_dumb.c)<br>
+    *** read <a href="dumb_interfaces.txt">doc/dumb_interfaces.txt !!!</a> ***<br>
     <br>
-    These are generic serial to K-line interfaces, such as<br>
+    These are generic serial to K-line interfaces, typically very simple circuits *without* an onboard microcontroller.<br>
+    VAG409 / KKL409 interfaces fall in this category. Other examples include:<br>
     Andy Whittaker's OBD-II ISO9141 interface;<br>
-    <a href="http://www.andywhittaker.com/ecu/obdii_hardware.htm">http://www.andywhittaker.com/ecu/obdii_hardware.htm</a><br>
+    <a href="http://www.andywhittaker.com/ecu/obdii_hardware.htm">(website down)</a><br><br>
     Silicon Engines ISO 9141 interface:<br>
-    <a href="http://www.siliconengines-ltd.com/products/9141-232.html">http://www.siliconengines-ltd.com/products/9141-232.html</a><br>
-        This is a commercially available generic serial to ISO9141 interface. It is
-    supplied in a robust box with lots of lights. This interface was used to
+    <a href="http://www.siliconengines-ltd.com/products/9141-232.html">(website down)</a><br>
+        It is supplied in a robust box with lots of lights. This interface was used to
     develop the first bits of the freediag project. It is functionally the same
     as the above two interfaces (with the exception of all the lights and the
-    box).<br>
+    box).<br><br>
 
         Jeff's OBD-II ISO 9141 interface:<br>
   <a href="http://jeff.noxon.cc/2013/05/18/opendiag-obd-ii-schematics-pcb-layout/">
 		http://jeff.noxon.cc/2013/05/18/opendiag-obd-ii-schematics-pcb-layout/</a><br>
 This site shows you how to build a generic serial to ISO9141 interface.<br>
     <br>
+    Availability : various vendors, or DIY projects<br><br>
     <li>B.Roadman ISO9141/VPW/PWM interface:<br>
-    <a href="http://obddiagnostics.com/">http://obddiagnostics.com/</a><br>
-    Freediag Driver: BR1<br>
+    <a href="http://www.obddiagnostics.com/">(website down) </a><br>
+    Freediag Driver: BR1 (diag_l0_br.c)<br>
     <br>
-    Another commercially available interface, we haven’t yet tested the ISO9141
-    side of the interface, and it does not support ISO14230. Future versions
+    Another commercially available interface, we haven't yet tested the ISO9141
+    side of the interface (supports address 0x33 only), and it does not support ISO14230. Future versions
     will support ISO14230 and we used this interface to develop the
     J1850-VPW/PWM support in Freediag. Thanks to B. Roadman for the donation of
     hardware to the project.<br>
+    These qualify as "smart" interfaces.<br>
+    Availability: questionable<br>
     <br>
     <li>Multiplex Engineering VPW, PWM, and ISO 9141-2 interface:<br>
-    <a href="http://www.multiplex-engineering.com/products.htm">http://www.multiplex-engineering.com/products.htm</a><br>
-    Freediag Driver: MET16<br>
+    <a href="http://multiplex-engineering.com/obd2-interfaces/">http://multiplex-engineering.com/obd2-interfaces/</a><br>
+    Freediag Driver: MET16 (diag_l0_me.c)<br>
     <br>
     When ordering this interface you must order a T16 type interface.
     Multiplex Engineering produce two varieties of the T16 interface:<br>
@@ -143,16 +171,34 @@ This site shows you how to build a generic serial to ISO9141 interface.<br>
     <br>
     The T16-002 interface was used to develop support for smart interfaces in
     freediag, it worked on a modern Sony Laptop but not on various branded PCs
-    tested.
-    <br><br>
+    tested.<br>
+    Availability: See website<br>
+    <br>
      <li>ELM32* based interfaces:<br>
     <a href="http://elmelectronics.com/obdic.html">http://elmelectronics.com/obdic.html</a><br>
-    Freediag Driver: ELM<br>
+    Freediag Driver: ELM (diag_l0_elm.c)<br>
     <br>
     The ELM32x ICs are smart protocol translators that are frequently found in recent USB->OBD cables. Freediag partially
-    supports these devices. Be aware that many so-called ELM32x cables use a cloned but not completely compatible
-    IC. 
+    supports these devices. Be aware that many so-called ELM32x adapters use a cloned but not completely compatible
+    IC. Most cheap devices sold on eBay will be clones.<br>
+    These qualify as "smart" interfaces.<br>
+    Availabilty: IC by itself direct from vendor, or assembled interfaces from various third parties<br>
     <br>
+    <br>
+    <li>CARSIM interface:<br>
+    Freediag driver: CARSIM (diag_l0_sim.c)<br>
+    <br>
+    The CARSIM interface allows testing of higher levels (L2, L3) without
+   having an actual car connected. It reads requests and responses from a file.<br><br>
+
+This was coded by vnevoa ~2004. From his presentation: <br>
+Basically, it is a file reader and parser that searches for the byte
+sequence that is being sent to the car, and if it finds any number of
+answers for it, it simulates the responses from the car. I included a
+simple parsing mechanism to simulate whatever test values we want by
+placing a few text tokens inside the response sequences, which get
+translated into byte values through specific functions.<br>
+
   </ol>
   
   <br><br>
@@ -195,8 +241,8 @@ This site shows you how to build a generic serial to ISO9141 interface.<br>
       </tr>
       <tr>
         <th>ELM (4)</th>
-        <td>NO (1)</td>
-        <td>NO (1)</td>
+        <td>YES</td>
+        <td>YES</td>
         <td>NO (1)</td>
         <td>NO (1)</td>
         <td>NO</td>
