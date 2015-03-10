@@ -182,6 +182,7 @@ set (CPACK_SOURCE_IGNORE_FILES "xcf"
 	"~$"
 	"^${PROJECT_SOURCE_DIR}.*/autom4te.*"
 	"^${PROJECT_SOURCE_DIR}.*/\\\\.deps/"
+	)
 
 
 set (CPACK_INCLUDE_TOPLEVEL_DIRECTORY 1)
