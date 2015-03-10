@@ -315,7 +315,7 @@ struct AIFcommand
 } ;
 
 
-struct AIFcommand aif_commands [] =
+const struct AIFcommand aif_commands [] =
 {
 	{ FREEDIAG_AIF_NO_OP	, 0, "Do Nothing"			, aif_noop	  },
 	{ FREEDIAG_AIF_EXIT	 , 0, "Exit ScanTool"		 , aif_exit	  },
@@ -340,7 +340,7 @@ static void do_aif_command (void)
 	char data_buffer [ FREEDIAG_AIF_INPUT_MAX ] ;
 	int i, j ;
 
-	struct AIFcommand *command ;
+	struct AIFcommand *command=NULL ;
 	int cmd = fgetc ( stdin ) ;
 
 	if ( cmd == -1 )
@@ -363,7 +363,6 @@ static void do_aif_command (void)
 			break ;
 		}
 	}
-
 	if ( command->name == NULL )
 	{
 		fprintf ( stderr,
