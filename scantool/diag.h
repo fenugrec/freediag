@@ -84,8 +84,11 @@ extern "C" {
 	//#warning *** but not severe. See diag.h
 #endif
 
-//CURFILE will be defined by CMake on a per-file basis !
+//hacks for MS Visual studio / visual C
 #ifdef MSVC
+	typedef SSIZE_T ssize_t;	//XXX ssize_t is currently only needed because of diag_tty_unix.c:diag_tty_{read,write}.
+				//TODO : rework read/write types to use a combination of size_t and int ? 
+	//CURFILE will be defined by CMake on a per-file basis !
 	#warning MSVC may not work with the CURFILE macro. See diag.h
 	// apparently some (all ?) MSVC compilers don't support per-file defines, so CURFILE would be the
 	// same for all source files.

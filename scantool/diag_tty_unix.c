@@ -2,6 +2,7 @@
 #include <linux/serial.h>	/* For Linux-specific struct serial_struct */
 #endif
 
+#include <assert.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -600,6 +601,8 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	struct timeval tv;
 	int time,rv,fd,retval;
 	unsigned long data;
+	
+	assert(timeout < 10000);
 
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "Entered diag_tty_read with count=%u, timeout=%dms\n", FL,
@@ -612,9 +615,14 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 
-	timeout *= 4096/2000;
+	timeout = (int)((unsigned long) timeout * 4096/2000);		//watch for overflow !
 
 	fd = open ("/dev/rtc", O_RDONLY);
+	if (fd <=0) {
+		fprintf(stderr, FLFMT "diag_tty_read: error opening /dev/rtc !\n", FL);
+		perror("\t");
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	/* Read periodic IRQ rate */
 	retval = ioctl(fd, RTC_IRQP_READ, &data);
@@ -682,7 +690,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 			FL, dl0d->fd, strerror(errno));
 
 		/* Unspecific Error */
-		return (diag_iseterr(DIAG_ERR_GENERAL));
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 }	//diag_tty_read
 
@@ -833,17 +841,14 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
  * (ex.: after an iso9141 slow init)
  */
 	uint8_t buf[MAXRBUF];
-	int i, rv;
+	int rv;
 
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
-	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_OPEN))
-	{
-		fprintf(stderr, FLFMT "%d junk bytes discarded: ", FL,
-			rv);
-		for (i=0; i<rv; i++)
-			fprintf(stderr, "0x%x ", buf[i] & 0xff);
-		fprintf(stderr,"\n");
+	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
+		fprintf(stderr, FLFMT "%d junk bytes discarded: ", FL, rv);
+		diag_data_dump(stderr, buf, rv);
+		fprintf(stderr, "\n");
 	}
 
 	return 0;

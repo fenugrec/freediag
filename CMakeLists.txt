@@ -182,6 +182,7 @@ set (CPACK_SOURCE_IGNORE_FILES "xcf"
 	"~$"
 	"^${PROJECT_SOURCE_DIR}.*/autom4te.*"
 	"^${PROJECT_SOURCE_DIR}.*/\\\\.deps/"
+	"\\.git"
 	)
 
 
