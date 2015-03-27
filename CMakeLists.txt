@@ -72,7 +72,7 @@ if (NOT(CHARSIZE EQUAL UINT8SIZE))
 endif ()
 
 ###### Global function & library checks
-find_library (HAVE_LIBREADLINE libreadline)
+find_library (HAVE_LIBREADLINE readline)
 
 #check_function_exists (malloc HAVE_MALLOC)
 #no use in checking for malloc() since we don't have a fallback solution...
