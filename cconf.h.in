@@ -16,7 +16,6 @@
 
 #cmakedefine USE_RCFILE
 #cmakedefine USE_INIFILE
-#cmakedefine OLD_DEVNAME
 #cmakedefine TRY_POSIX
 
 #define PACKAGE_VERSION "@PKGVERSION@"

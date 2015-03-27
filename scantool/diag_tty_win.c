@@ -335,7 +335,6 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 
 
 // diag_tty_read
-//this is also scary.
 //attempt to read (count) bytes until (timeout) passes.
 //calling with timeout==0 makes ReadFile return immediately with or without any data.
 //This one returns # of bytes read (if any)
@@ -352,6 +351,8 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	OVERLAPPED *pOverlap;
 	pOverlap=NULL;
 	COMMTIMEOUTS devtimeouts;
+	
+	assert(count>0);
 
 	if (dl0d->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
@@ -385,7 +386,6 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 /*
  *  flush input buffer and display some of the discarded data
  * ret 0 if ok
- * a short timeout (30ms) is used in case the caller needs to receive a byte soon (like after a iso9141 slow init)
  *
  */
 int diag_tty_iflush(struct diag_l0_device *dl0d)
@@ -407,11 +407,9 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 
 
 
-//different tty_break implementations.
-//ret 0 if ok
-
 // diag_tty_break #1 : use Set / ClearCommBreak
 // and return as soon as break is cleared.
+// ret 0 if ok
 int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 	LARGE_INTEGER qpc1, qpc2;	//for timing verification
 	static long correction=0;	//running average offset (us) to add to the timeout
@@ -516,8 +514,6 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	/*
 	 * And read back the single byte echo, which shows TX completes
  	 */
-	//This assumes the interface is half-duplex. It's probably
-	//a safe bet.
 	xferd = diag_tty_read(dl0d, &cbuf, 1, ms + 20);
 
 	//we'll usually have a few ms left to wait; we'll use this
@@ -537,7 +533,6 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 		fprintf(stderr, FLFMT "Did not get fastbreak echo!\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-
 
 
 	QueryPerformanceCounter(&qpc2);		//get current time,
@@ -560,5 +555,4 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 	return 0;
 }	//diag_tty_fastbreak
-
 

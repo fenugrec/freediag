@@ -35,15 +35,6 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
-#ifndef HAVE_STRCASECMP	//no strcasecmp on win32 ! but kernel32 provides lstrcmpi which should be equivalent.
-#ifdef WIN32
-	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b)
-#else
-	#error Your system provides no strcasecmp ! This is a problem !
-#endif 	//WIN32
-#endif	//have_strcasecmp
-
-
 #define PROTO_NONE	"<not_used>"
 
 unsigned int set_speed;	/* Comms speed */

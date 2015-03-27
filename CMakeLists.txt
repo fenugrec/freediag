@@ -2,7 +2,7 @@
 #Note : this file is a work in progress,
 #some checks may still be missing
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.5)
 
 # don't go polluting c:\program files ; this has to go before project()
 set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Default install prefix")
@@ -127,7 +127,6 @@ endif()
 ###### Build Options
 
 option(BUILDGUI "Enable scangui (default=no)" OFF)
-option(OLDEV "Enable deprecated dev id (default=no)" OFF)
 option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
 option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
 option(TRY_POSIX "Try POSIX implementations. (default=disabled)" OFF)

@@ -59,7 +59,6 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -401,7 +400,7 @@ diag_os_sched(void)
 		r = -1;
 	}
 	rv=r;
-#else	//not POSIX_PRIO_SCHED and not WIN32
+#else	//not POSIX_PRIO_SCHED
 #warning No special scheduling support in diag_os.c for your OS!
 #warning Please report this !
 

@@ -220,7 +220,6 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, int ti
 
 	//next, receive ELM response, within {ms} delay.
 
-	//TODO : this depends on diag_tty_read to be blocking ?
 	rv=diag_tty_read(dl0d, buf, ELM_BUFSIZE-1, timeout);	//rv=# bytes read
 
 	if (rv<1) {
@@ -312,9 +311,8 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		return diag_pseterr(rv);
 	}
 
-	//set speed to 9600;8n1.
-	//TODO: try 38400 first instead (more common, faster)
-	sset.speed=9600;
+	//set speed to 38400;8n1.
+	sset.speed=38400;
 	sset.databits = diag_databits_8;
 	sset.stopbits = diag_stopbits_1;
 	sset.parflag = diag_par_n;
@@ -322,7 +320,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	dev->serial = sset;
 
 	if ((rv=diag_tty_setup(dl0d, &sset))) {
-		fprintf(stderr, FLFMT "Error setting 9600;8N1 on %s\n",
+		fprintf(stderr, FLFMT "Error setting 38400;8N1 on %s\n",
 			FL, subinterface);
 		diag_l0_elm_close(&dl0d);
 		return diag_pseterr(rv);
@@ -338,14 +336,16 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	
 	rv=elm_purge(dl0d);
 	//if rv=0, we got a prompt so we know speed is set properly.
-	if (rv !=0) {
-		fprintf(stderr, FLFMT "sending ATI @ 9600 failed; trying @ 38400...\n", FL);
+	if (rv==0) {
+		dev->elmflags |= ELM_38400;
+	} else {
+		fprintf(stderr, FLFMT "sending ATI @ 38400 failed; trying @ 9600...\n", FL);
 
-		sset.speed=38400;
+		sset.speed=9600;
 		dev->serial = sset;
 
 		if ((rv=diag_tty_setup(dl0d, &sset))) {
-			fprintf(stderr, FLFMT "Error setting 38400;8N1 on %s\n",
+			fprintf(stderr, FLFMT "Error setting 9600;8N1 on %s\n",
 				FL, subinterface);
 			diag_l0_elm_close(&dl0d);
 			return diag_pseterr(rv);
@@ -354,15 +354,11 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		diag_tty_iflush(dl0d);	/* Flush unread input */
 		rv = elm_purge(dl0d);	//try ATI\r again
 		if (rv !=0) {
-			fprintf(stderr, FLFMT "sending ATI @ 38400 failed. Verify connection to ELM\n", FL);
+			fprintf(stderr, FLFMT "sending ATI @ 9600 failed. Verify connection to ELM\n", FL);
 			diag_l0_elm_close(&dl0d);
 			return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 		}
-		
-		dev->elmflags |= ELM_38400;
-
-	}	//if 9600 failed
-
+	}
 	
 	if (diag_l0_debug&DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "elm_open : sending ATZ...\n", FL);

@@ -41,6 +41,7 @@ extern "C" {
  * is different and defined in OS specific
  * c files.
  */
+//init, close : ret 0 if ok
 int diag_os_init(void);
 int diag_os_close(void);
 

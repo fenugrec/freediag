@@ -67,6 +67,14 @@ extern "C" {
 	void timersub(struct timeval *a, struct timeval *b, struct timeval *res);
 #endif	//HAVE_TIMERSUB
 
+#ifndef HAVE_STRCASECMP	//strcasecmp is POSIX, but kernel32 provides lstrcmpi which should be equivalent.
+#ifdef WIN32
+	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b)
+#else
+	#error Your system provides no strcasecmp ! This is a problem !
+#endif 	//WIN32
+#endif	//have_strcasecmp
+
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
 #define DB_FILE "./freediag_carsim_all.db"	//default simfile for CARSIM interface
 #define DIAG_NAMELEN	256
@@ -87,17 +95,20 @@ extern "C" {
 //hacks for MS Visual studio / visual C
 #ifdef MSVC
 	typedef SSIZE_T ssize_t;	//XXX ssize_t is currently only needed because of diag_tty_unix.c:diag_tty_{read,write}.
-				//TODO : rework read/write types to use a combination of size_t and int ? 
+				//TODO : rework read/write types to use a combination of size_t and int ?
+	#define snprintf _snprintf	//danger : _snprintf doesn't guarantee zero-termination !?
+	#pragma message("Warning: MSVC _sprintf() may be dangerous !\
+					Please ask your compiler vendor to supply a C99-compliant snprintf()...")
 	//CURFILE will be defined by CMake on a per-file basis !
-	#warning MSVC may not work with the CURFILE macro. See diag.h
+	#pragma message("Warning: MSVC may not work with the CURFILE macro. See diag.h")
 	// apparently some (all ?) MSVC compilers don't support per-file defines, so CURFILE would be the
 	// same for all source files.
 	// The disadvantage of __FILE__ is that it often (always ?) holds the absolute path of the file,
 	// not just the filename. For our debugging messages we only care about the filename, hence CURFILE.
 	#define CURFILE __FILE__
+#else
+	#define FL CURFILE, __LINE__
 #endif
-#define FL CURFILE, __LINE__
-
 
 /*
  * Many receive buffers are set to this, which is voluntarily larger than

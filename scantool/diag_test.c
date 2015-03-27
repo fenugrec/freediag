@@ -23,15 +23,7 @@
  * Diag library test harness
  * This is a stand-alone program !
  * Hard-coded to use a DUMB interface on the current device with "DIAG_L1_RAW" proto...
- * TODO : make this more win32-friendly; maybe use some diag_os.c functions ?
- */
-
-#ifdef WIN32
-#include <process.h>
-//#include "pthread.h" 
-#else
-#include <unistd.h>
-#endif
+  */
 
 #include <signal.h>
 #include <stdlib.h>
@@ -39,6 +31,7 @@
 
 #include "diag.h"
 #include "diag_err.h"
+#include "diag_os.h"
 #include "diag_iso14230.h"
 #include "diag_tty.h"
 #include "diag_l1.h"
@@ -61,58 +54,35 @@ char *set_subinterface;
 
 uint8_t	global_pids[0x100];	/* Pids supported by ECU */
 
-static void
-alarm_handler(UNUSED(int sig))
-{
-	alarm(1);
-}
-
-
 int
 main(int argc,  char **argv)
 {
+
 	if (argc != 2) {
 		//must be called with one parameter
 		printf("Error : correct usage is : %s [dev]\nwhere [dev] looks like /dev/ttyS0 etc.\n",argv[0]);
 		return 0;
 	}
 	set_subinterface=argv[1];	//point to the device name string
-#ifdef WIN32
-	struct sigaction_t stNew;
-#else
-	struct sigaction stNew;
-#endif
-	//XXX these probably need to be expanded or changed to xyz_debug=-1; ?
-	diag_l0_debug = 0xff;
-	diag_l1_debug = 0xff;
-	diag_l2_debug = 0xff;
 
-	memset(&stNew, 0, sizeof(stNew));
-	stNew.sa_handler = alarm_handler;
-	stNew.sa_flags = 0;
-	sigaction(SIGALRM, &stNew, NULL);
-	alarm(1);
-
-#if 1
-	/* Code block */
-	{
-		target_type i;
-		for (i=33 ; i < 0xFF; i++)
-		{
-			if (do_l2_raw_test(0, i, DIAG_L2_TYPE_SLOWINIT)) {
-				printf("do_l2_raw_test error. Exiting.\n");
-				return 0;
-			}
-		}
-	}
-#else
-	if (do_l2_raw_test(0, (target_type)32, DIAG_L2_TYPE_SLOWINIT)) {
-		printf("do_l2_raw_test error. Exiting.\n");
+	diag_l0_debug = -1;
+	diag_l1_debug = -1;
+	diag_l2_debug = -1;
+	
+	if (diag_os_init()) {
+		printf("error with diag_os_init\n");
 		return 0;
 	}
-	
-#endif
-    
+
+	target_type i;
+	for (i=33 ; i < 0xFF; i++)
+	{
+		if (do_l2_raw_test(0, i, DIAG_L2_TYPE_SLOWINIT)) {
+			printf("do_l2_raw_test error. Exiting.\n");
+			return 0;
+		}
+	}
+
 	return 0;
 }
 
@@ -258,7 +228,7 @@ printf("For %d %d\n", funcaddr, destecu);
 #endif //ifdef SLOWINIT
 
 #endif /* ifndef DO_ISO */
-	sleep(5);
+	diag_os_millisleep(5000);
 
 	/* See what we got */
 	rv = diag_l2_recv(d_conn, 2000, l2_rcv, NULL);
@@ -302,7 +272,7 @@ do_l1_test(void)
 	printf("setspeed rv = 0x%x\n", rv);
 
 	printf("sleeping for 5\n");
-	sleep(5);
+	diag_os_millisleep(5000);
 
 	diag_l1_send(dl0d, 0, "hello", 6, 4);
 
@@ -310,9 +280,9 @@ do_l1_test(void)
 
 	/* Wait for transmit to finish */
 	if (BAUD < 500)
-		sleep(15);
+		diag_os_millisleep(15000);
 	else
-		sleep(5);
+		diag_os_millisleep(5000);
 
 	rcvd = diag_l1_recv(dl0d, 0, &buf[0], 100, 10);
 	buf[rcvd] = 0;
@@ -320,9 +290,10 @@ do_l1_test(void)
 	printf("got %d bytes %s\n", rcvd, buf);
 
 	printf("sleeping for 5\n");
-	sleep(5);
+	diag_os_millisleep(5000);
 
 	diag_l1_close(&dl0d);
+	(void) diag_os_close();
 
 	return 0;
 }

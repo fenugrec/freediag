@@ -11,6 +11,7 @@
 #include "diag.h"
 
 #define IFLUSH_TIMEOUT 30	//timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX buffer.
+		//must not be too long or diag_l0_dumb:slowinit() will not work
 
 /*
  * Parity settings
@@ -102,13 +103,11 @@ int diag_tty_iflush(struct diag_l0_device *dl0d);
 //	d) returning 0 is interpreted as "EOF"; I find this redundant with
 //		returning DIAG_ERR_TIMEOUT: What's the difference between reading EOF
 //		from a serial port and reading 0 bytes after having timed out ?
-//	e) diag_ttY_read should be blocking, i.e. return only when it "completes":
-//		either got [count] bytes or timed out. I see no reason to
-//		make this asynchronous (non-blocking).
-//	f) if (timeout) was 0, I'm not sure what should happen. I think
-//		it should attempt to read (count) bytes available but return
-//		immediately. To my knowledge nobody calls diag_ttY_read with timeout=0.
-//The windows implementation never returns 0: only DiAG_ERR_TIMEOUT or #bytesread.
+//	e) diag_tty_read should be blocking, i.e. return only when it "completes":
+//		either got [count] bytes or timed out.
+//	f) if (timeout) was 0, attempt to read (count) bytes available but return
+//		immediately. To my knowledge nobody calls diag_tty_read with timeout=0.
+//The windows implementation never returns 0: only DIAG_ERR_TIMEOUT or #bytesread.
 ssize_t diag_tty_read(struct diag_l0_device *dl0d,
 	void *buf, size_t count, int timeout);
 //diag_tty_write :

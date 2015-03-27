@@ -31,7 +31,6 @@
  * have a maximum payload of 7 bytes.
  */
 
-#include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 

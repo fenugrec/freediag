@@ -33,12 +33,6 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	struct diag_ttystate	*dt;
 	struct diag_l0_device *dl0d;
 
-#ifdef OLD_DEVNAME
-	char *endptr;
-	int iInterface;
-	const char *tty_template ="/dev/obdII%d";
-#endif
-
 	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
 
@@ -53,40 +47,13 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	*ppdl0d = dl0d;
 
-	/*
-	 * XXX this should probably be removed... "historical compatibility" with what ?? Who ?
+	size_t n = strlen(subinterface) + 1;
 
-	 * For historical compatibility, if the subinterface decodes cleanly
-	 * as an integer we will write it into a string to get the name.
-	 * You can create a symlink to "/dev/obdII<NUMBER>" if you want to,
-	 * or just set the subinterface to a valid device name.
-	 */
-#ifdef OLD_DEVNAME
-	iInterface = strtol(subinterface, &endptr, 10);
-	if (*endptr == 0) {
-		/* Entire string is a valid number: Provide compatibility.  */
-		size_t n = strlen(tty_template) + 32;
-		printf("Warning : using deprecated /dev/obdII<x> subinterface definition.\n");
-		printf("Support for this will be discontinued shortly...\n");
-
-		if ((rv=diag_malloc(&dl0d->name, n))) {
-			(void)diag_tty_close(ppdl0d);;
-			return diag_iseterr(rv);
-		}
-		(void)snprintf(dl0d->name, n, tty_template, iInterface);
-	} else {
-#else
-	if (1) {
-#endif	// OLD_DEVNAMEs
-		size_t n = strlen(subinterface) + 1;
-
-		if ((rv=diag_malloc(&dl0d->name, n))) {
-			(void)diag_tty_close(ppdl0d);;
-			return diag_iseterr(rv);
-		}
-		strncpy(dl0d->name, subinterface, n);
+	if ((rv=diag_malloc(&dl0d->name, n))) {
+		(void)diag_tty_close(ppdl0d);;
+		return diag_iseterr(rv);
 	}
-
+	strncpy(dl0d->name, subinterface, n);
 
 
 	errno = 0;
@@ -499,20 +466,59 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 	return 0;
 }
 
-/*
- * TTY handling routines
- */
+
 //different tty_write and tty_read versions according to TRY_POSIX
-#if defined(__linux__) && (TRY_POSIX == 0)
 
 ssize_t
 diag_tty_write(struct diag_l0_device *dl0d,
 const void *buf, const size_t count)
+#if defined(__linux__) && (TRY_POSIX == 0)
 {
 	return write(dl0d->fd, buf, count);
 }
 
+#else	//from linux && !posix
+{
+	ssize_t rv;
+	ssize_t n;
+	size_t c = count;
+	const uint8_t *p;
 
+	errno = 0;
+	p = (const uint8_t *)buf;	/* For easy pointer I/O */
+	n = 0;
+	rv = 0;
+
+	/* Loop until timeout or we've gotten something. */
+	errno = 0;
+
+	while (c > 0 &&
+	(((rv = write(dl0d->fd,  p + n, c)) >= 0) ||
+	(rv == -1 && errno == EINTR))) {
+		if (rv == -1) {
+			rv = 0;
+			errno = 0;
+		}
+		c -= rv;
+		n += rv;
+	}
+
+	if (n > 0 || rv >= 0) {
+		return n;
+	}
+
+	fprintf(stderr, FLFMT "write to fd %d returned %s.\n",
+		FL, dl0d->fd, strerror(errno));
+
+	/* Unspecific Error */
+	return diag_iseterr(DIAG_ERR_GENERAL);
+}
+#endif	//tty_write() implementations
+
+
+ssize_t
+diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
+#if defined(__linux__) && (TRY_POSIX == 0)
 #if 0
 //old tty_read
 
@@ -524,12 +530,12 @@ const void *buf, const size_t count)
  * check for available input.
  * returns either 0 on succes, <0 on error, or # of bytes read on success. pah.
 */
-ssize_t
-diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 {
 	struct timeval tv;
 	int rv;
 
+	assert(count>0) && timeout > 0;
+	
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
 			fprintf(stderr, FLFMT "Entered diag_tty_read with count=%d, timeout=%dms", FL, count, timeout);
 	}
@@ -594,9 +600,6 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
  * We have to be read to loop in write since we've cleared SA_RESTART.
  */
 
-
-ssize_t
-diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 {
 	struct timeval tv;
 	int time,rv,fd,retval;
@@ -698,50 +701,10 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 
 #else	// # if linux && posix==0
-ssize_t
-diag_tty_write(struct diag_l0_device *dl0d,
-const void *buf, const size_t count)
-{
-	ssize_t rv;
-	ssize_t n;
-	size_t c = count;
-	const uint8_t *p;
-
-	errno = 0;
-	p = (const uint8_t *)buf;	/* For easy pointer I/O */
-	n = 0;
-	rv = 0;
-
-	/* Loop until timeout or we've gotten something. */
-	errno = 0;
-
-	while (c > 0 &&
-	(((rv = write(dl0d->fd,  p + n, c)) >= 0) ||
-	(rv == -1 && errno == EINTR))) {
-		if (rv == -1) {
-			rv = 0;
-			errno = 0;
-		}
-		c -= rv;
-		n += rv;
-	}
-
-	if (n > 0 || rv >= 0) {
-		return n;
-	}
-
-	fprintf(stderr, FLFMT "write to fd %d returned %s.\n",
-		FL, dl0d->fd, strerror(errno));
-
-	/* Unspecific Error */
-	return diag_iseterr(DIAG_ERR_GENERAL);
-}
 
 /*
- * Use POSIX timers.
+ * _read() using POSIX timers.
  */
-ssize_t
-diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 {
 	ssize_t rv;
 	ssize_t n;
@@ -783,7 +746,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		incr.tv_sec, incr.tv_usec,
 		then.tv_sec, then.tv_usec);
 #endif
-#endif
+#endif	//POSIX_TIMERS
 
 	errno = 0;
 	p = (uint8_t *)buf;	/* For easy pointer I/O */
@@ -831,24 +794,18 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 #endif
 
 
-//different _iflush implementations (POSIX or not)
 // ret 0 if ok
 int diag_tty_iflush(struct diag_l0_device *dl0d) {
 #if defined(__linux__) && (TRY_POSIX == 0)
-/*
- * Original Linux input-flush implementation that uses the select timeout:
- * I shortened the timeout from 150ms in case the caller needs to receive a byte soon
- * (ex.: after an iso9141 slow init)
- */
 	uint8_t buf[MAXRBUF];
 	int rv;
 
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
-		fprintf(stderr, FLFMT "%d junk bytes discarded: ", FL, rv);
-		diag_data_dump(stderr, buf, rv);
-		fprintf(stderr, "\n");
+		fprintf(stderr, FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n", FL, rv, buf[0]);
+//		diag_data_dump(stderr, buf, rv);		//could flood the screen
+//		fprintf(stderr, "\n");
 	}
 
 	return 0;
@@ -872,9 +829,9 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA))
 	{
-		fprintf(stderr, FLFMT "at least %d junk bytes discarded: ", FL, rv);
-		diag_data_dump(stderr, (void *) buf, (size_t) rv);
-		fprintf(stderr,"\n");
+		fprintf(stderr, FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n", FL, rv, buf[0]);
+//		diag_data_dump(stderr, buf, rv);		//could flood the screen
+//		fprintf(stderr, "\n");
 	}
 	return 0;
 
@@ -883,7 +840,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 
 
 
-//different tty_break implementations depending on __linux__ ; TRY_POSIX; TIOCSBRK; __CYGWIN__
+// ideally use TIOCSBRK fs defined (probably in sys/ioctl.h)
 int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 {
 #ifdef TIOCSBRK
@@ -914,55 +871,15 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 
 	return 0;
 
-#elif defined(__linux__) && (TRY_POSIX == 0)
-
+//#elif defined(__linux__) && (TRY_POSIX == 0)
+#else
+#warning ******* Dont know how to implement diag_tty_break() on your OS !
 #warning ******* Compiling diag_tty_break with a fixed 25ms setbreak !
 #warning ******* DUMB interfaces may not work properly !!
 	if (ms<25)
 		return 0;
 
 	return diag_tty_fastbreak(dl0d, ms);
-
-#elif defined(__CYGWIN__)
-//This was needed before ~2004, but cygwin apparently supports TIOC*BRK now.
-// XXX:This implementation can probably be deleted if the native win32 port
-// proves to work reliably; would there be any other reason to use cygwin ?
-//This one also returns right after clearing the break, which is better.
-
-#include <io.h>
-#include <w32api/windows.h>
-
-#warning diag_tty_break on CYGWIN is untested but might work.
-#warning Please note freediag can be compiled as a native win32
-#warning application, cygwin is not required !
-	HANDLE hd;
-	long h;
-
-	/*
-	 * I'm going through this convoluted two-step conversion
-	 * to avoid compiler warnings:
-	 */
-
-	h = get_osfhandle(dl0d->fd);
-	hd = (HANDLE)h;
-
-	if (tcdrain(dl0d->fd)) {
-			fprintf(stderr, FLFMT "tcdrain returned %s.\n",
-				FL, strerror(errno));
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
-
-	SetCommBreak(hd);
-	diag_os_millisleep(ms);
-	ClearCommBreak(hd);
-
-	return 0;
-#else
-/* On some systems, at least on AIX, you can use "tcsendbreak" because the
- * duration flag just happens to be the count in ms.  There is no good
- * POSIX way to get the short breaks, unfortunately.
- */
-#error No known way to send short breaks on your system !
 #endif	//if .. for diag_tty_break
 }	//diag_tty_break
 
@@ -970,7 +887,8 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 
 /*
  * diag_tty_fastbreak
- * fixed 25ms (1 byte @ 360bps) break and returns [ms] after starting the break.
+ * fixed 25ms (1 byte 0x00 @ 360bps !) break and returns [ms] after starting the break.
+ * Assumes half-duplex interface of course;
  * it also sets 10.4kbps 8N1, hardcoded. XXX find a way to make this neater..
  * we'll probably have to add a ->pset member to diag_l0_device to store the
  * "desired" setting. And use that to call diag_tty_setup to restore settings...
@@ -984,16 +902,6 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 	if (ms<25)
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
-
-	/*
-	 *
-	 *	The trouble here is Linux doesn't let us be that accurate sending
-	 *	a break - so we do it by sending a '0x00' at a baud rate that means
-	 *	the output is low for 25ms, then we wait for 25ms, using busy
-	 *	waits (which we get from being in real-time mode and doing nanosleeps
-	 *	of less than 2ms each)
-	 *
-	 */
 
 	/* Set baud rate etc to 360 baud, 8, N, 1 */
 	set.speed = 360;

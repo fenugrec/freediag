@@ -32,9 +32,6 @@
 extern "C" {
 #endif
 
-//this used to be os-dependant : win32 had a typedef enum. I don't know why.
-//enums are supposed to be portable...
-//
 enum diag_dtc_protocol {
 	dtc_proto_j2012	=	1,	/* SAE J2012 */
 	dtc_proto_int8	=	2,	/* 8 bit integer */

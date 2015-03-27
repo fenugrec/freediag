@@ -40,7 +40,7 @@
 #include "diag_l2.h"
 #include "diag_l2_raw.h"
 #include "diag_l2_iso9141.h"
-#warning diag_l2_iso9141.h is exposing a function so diag_l2_vag.c can use it ! FIX ME !
+#pragma message("Warning: diag_l2_iso9141.h is exposing a function so diag_l2_vag.c can use it ! FIX ME !")
 #include "diag_vag.h"
 
 #include "diag_l2_vag.h" /* prototypes for this file */
