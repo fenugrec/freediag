@@ -18,8 +18,9 @@ extern "C" {
  */
 
 //diag_l0_device : some parts of this are the same for every OS.
-//TODO : move struct diag_l0_device to a new diag_l0.h; keep OS-dependant stuff hidden in here.
-// the platform-specific stuff should only be used in the associated diag_ttyXXX.c file !
+//TODO : move struct diag_l0_device to diag_tty.h ; keep OS-dependant stuff hidden in here.
+//diag_tty_win is OK but diag_tty_unix needs to be updated
+
 // A "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
 // and a given serial port.
 struct diag_l0_device
@@ -28,10 +29,7 @@ struct diag_l0_device
 	const struct diag_l0 *dl0;		/* The L0 driver's diag_l0 */
 	struct diag_l2_link *dl2_link;	/* The L2 link using this dl0d */
 	char *name;					/* device name, like /dev/ttyS0 or \\.\COM3*/
-//OS-dependant members:
-	HANDLE fd;						/* File handle */
-	DCB *ttystate;	/* Holds OS specific tty info; a DCB on windoze */
-
+	void *tty_int;			/* generic holder for internal tty stuff */
 };
 
 

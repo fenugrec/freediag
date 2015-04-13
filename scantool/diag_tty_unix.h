@@ -53,7 +53,9 @@ struct diag_l0_device
 	const struct diag_l0 *dl0;		/* The L0 driver's diag_l0 */
 	struct diag_l2_link *dl2_link;	/* The L2 link using this dl0d */
 	char *name;					/* device name, like /dev/ttyS0 or \\.\COM3*/
-//OS-dependant members :
+	void *tty_int;			/* generic holder for internal tty stuff */
+//OS-dependant members : TODO : move these to an internal struct,
+//like "struct tty_int" in diag_tty_win.c
 	int fd;						/* File descriptor */
 	struct diag_ttystate *ttystate;	/* Holds OS specific tty info */
 
