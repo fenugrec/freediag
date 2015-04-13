@@ -54,13 +54,6 @@ struct diag_serial_settings {
 // this returns dl0d->dl0_handle; I'm not sure why we need a function to do that ?
 void *diag_l0_dl0_handle(struct diag_l0_device *dl0d);
 
-//similar; this returns dl0d->dl2_link.
-struct diag_l2_link *
-diag_l0_dl2_link(struct diag_l0_device *dl0d);
-
-void
-diag_l0_set_dl2_link(struct diag_l0_device *dl0d,
-	struct diag_l2_link *dl2_link);
 
 extern int diag_l0_debug;
 

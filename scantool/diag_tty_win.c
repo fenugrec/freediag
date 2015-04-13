@@ -127,25 +127,11 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 } //diag_tty_close
 
 
-//XXX why do we need a function for these?
+//XXX why do we need a function for this?
 void *
 diag_l0_dl0_handle(struct diag_l0_device *dl0d) {
 	return dl0d->dl0_handle;
 }
-
-//unused now
-struct diag_l2_link *
-diag_l0_dl2_link(struct diag_l0_device *dl0d) {
-	return dl0d->dl2_link;
-}
-
-//unused now
-void
-diag_l0_set_dl2_link(struct diag_l0_device *dl0d,
-	struct diag_l2_link *dl2_link) {
-	dl0d->dl2_link = dl2_link;
-}
-
 
 /*
  * Set speed/parity etc of dl0d with settings in pset

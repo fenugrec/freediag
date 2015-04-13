@@ -390,8 +390,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 		return diag_pseterr(rv);	//forward error to next level
 	}
 
-//	diag_l0_set_dl2_link(dl0d, dl2l);	/* Associate ourselves with this */
-	dl0d->dl2_link=dl2l;
+	dl0d->dl2_link=dl2l;	/* Associate ourselves with this */
 
 	dl2l->diag_l2_dl0d = dl0d;
 	dl2l->diag_l2_l1flags = diag_l1_getflags(dl0d);
@@ -527,7 +526,6 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	}
 
 	dl2l = dl0d->dl2_link;
-	//dl2l = diag_l0_dl2_link(dl0d);
 	if (dl2l == NULL) {
 		free(d_l2_conn);
 		return diag_pseterr(DIAG_ERR_GENERAL);
