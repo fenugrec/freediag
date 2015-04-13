@@ -49,12 +49,6 @@ struct diag_serial_settings {
 	#include "diag_tty_unix.h"
 #endif //WIN32
 
-//TODO: move these 3 functions do diag_l2.c ? there is redundance in tty_win.c and tty_unix.c
-
-// this returns dl0d->dl0_handle; I'm not sure why we need a function to do that ?
-void *diag_l0_dl0_handle(struct diag_l0_device *dl0d);
-
-
 extern int diag_l0_debug;
 
 /* Open, close device */

@@ -497,7 +497,6 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 		return diag_pseterr(rv);
 	}
 
-	dl0d->fd = DL0D_INVALIDHANDLE;
 	dl0d->dl0_handle = dev;
 	dl0d->dl0 = &diag_l0_sim;
 
@@ -508,24 +507,16 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 	}
 	strcpy(dl0d->name, simfile);
 
-	if ((rv=diag_calloc(&dl0d->ttystate, 1))) {
-		free(dl0d->name);
-		free(dev);
-		free(dl0d);
-		return diag_pseterr(rv);
-	}
 	// Open the DB file:
 	if ((dev->fp = fopen(dl0d->name, "r")) == NULL) {
 		fprintf(stderr, FLFMT "Unable to open file \"%s\": ", FL, dl0d->name);
 		perror(NULL);
-		free(dl0d->ttystate);
 		free(dl0d->name);
 		free(dev);
 		free(dl0d);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
-	//dl0d->fd = (dl0d_handletype) 1; nobody checks for this
 	rewind(dev->fp);
 
 	// Read the configuration flags from the db file:
@@ -535,7 +526,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 }
 
 
-// Closes the simulator DB file.
+// Closes the simulator DB file; cleanup after _sim_open()
 static int
 diag_l0_sim_close(struct diag_l0_device **pdl0d)
 {
@@ -543,7 +534,7 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);
+		struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
 
 		// If debugging, print to strerr.
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
@@ -557,13 +548,8 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 		}
 		if (dl0d==NULL)
 			return 0;
-		// dl0d->name, ->ttystate and dl0d are usually free()d by diag_tty_close
-		// so we have to do it ourselves
 		if (dl0d->name)
 			free(dl0d->name);
-		if (dl0d->ttystate)
-			free(dl0d->ttystate);
-		dl0d->fd=DL0D_INVALIDHANDLE;
 		free(dl0d);
 		*pdl0d=NULL;
 	}
@@ -582,7 +568,7 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 
 	sim_free_ecu_responses(&sim_last_ecu_responses);
 
-	dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);
+	dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n", FL, (void *)dl0d, (void *)dev, in->type);
@@ -715,7 +701,7 @@ diag_l0_sim_setspeed(struct diag_l0_device *dl0d,
 	struct diag_l0_sim_device *dev;
 	int ret=0;
 
-	dev = (struct diag_l0_sim_device *)diag_l0_dl0_handle(dl0d);
+	dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
 
 	dev->serial = *pset;
 

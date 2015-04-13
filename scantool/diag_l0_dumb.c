@@ -141,7 +141,7 @@ diag_l0_dumb_close(struct diag_l0_device **pdl0d)
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
 		struct diag_l0_dumb_device *dev =
-			(struct diag_l0_dumb_device *)diag_l0_dl0_handle(dl0d);
+			(struct diag_l0_dumb_device *)dl0d->dl0_handle;
 
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, FLFMT "l0 link %p closing\n",
@@ -499,7 +499,7 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
 
 	struct diag_l0_dumb_device *dev;
 
-	dev = (struct diag_l0_dumb_device *)diag_l0_dl0_handle(dl0d);
+	dev = (struct diag_l0_dumb_device *)dl0d->dl0_handle;
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n",
@@ -647,7 +647,7 @@ const struct diag_serial_settings *pset)
 {
 	struct diag_l0_dumb_device *dev;
 
-	dev = (struct diag_l0_dumb_device *)diag_l0_dl0_handle(dl0d);
+	dev = (struct diag_l0_dumb_device *)dl0d->dl0_handle;
 
 	dev->serial = *pset;
 
@@ -678,7 +678,7 @@ diag_l0_dumb_getflags(struct diag_l0_device *dl0d)
 	struct diag_l0_dumb_device *dev;
 	int flags=0;
 
-	dev = (struct diag_l0_dumb_device *)diag_l0_dl0_handle(dl0d);
+	dev = (struct diag_l0_dumb_device *)dl0d->dl0_handle;
 
 	if (dumb_flags & BLOCKDUPLEX)
 		flags |= DIAG_L1_BLOCKDUPLEX;
