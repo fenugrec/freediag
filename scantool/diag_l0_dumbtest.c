@@ -241,6 +241,7 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 
 //dtest_9 : test accuracy of read timeouts.
 static void dtest_9(struct diag_l0_device *dl0d) {
+	#define DT9_ITERS	4
 	int i;
 	int iters;
 	uint8_t garbage[MAXRBUF];
@@ -251,10 +252,10 @@ static void dtest_9(struct diag_l0_device *dl0d) {
 	for (i=10; i<=200; i += 20) {
 		printf("Timeout=%d: ", i);
 		t0=diag_os_getms();
-		for (iters=0; iters <= 3; iters++) {
+		for (iters=0; iters < DT9_ITERS; iters++) {
 			diag_tty_read(dl0d, garbage, MAXRBUF, i);
 		}
-		tf = (diag_os_getms() - t0)/(iters-1);	//average measured timeout
+		tf = (diag_os_getms() - t0)/(DT9_ITERS);	//average measured timeout
 		printf("avg=%lums\n", tf);
 	}
 

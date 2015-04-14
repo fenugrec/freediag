@@ -47,9 +47,6 @@
 int diag_l0_debug;	//debug flags for l0
 int diag_l1_debug;	//debug flags for l1
 
-const struct diag_l0 *diag_l0_device_dl0(struct diag_l0_device *dl0d) {
-	return dl0d->dl0;
-}
 
 static int diag_l1_saferead(struct diag_l0_device *dl0d,
 uint8_t *buf, size_t bufsiz, int timeout);
@@ -186,7 +183,7 @@ diag_l1_close(struct diag_l0_device **ppdl0d)
 		fprintf(stderr, FLFMT "entering diag_l1_close: ppdl0d=%p\n", FL,
 			(void *) ppdl0d);
 	if (ppdl0d && *ppdl0d) {
-		diag_l0_device_dl0(*ppdl0d)->diag_l0_close(ppdl0d);
+		(*ppdl0d)->dl0->diag_l0_close(ppdl0d);
 		*ppdl0d=NULL;
 	}
 	return 0;
@@ -200,7 +197,7 @@ diag_l1_close(struct diag_l0_device **ppdl0d)
 int
 diag_l1_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
-	return (diag_l0_device_dl0(dl0d)->diag_l0_initbus)(dl0d, in);
+	return dl0d->dl0->diag_l0_initbus(dl0d, in);
 }
 
 /*
@@ -219,7 +216,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 {
 	int rv = DIAG_ERR_GENERAL;
 	uint32_t l0flags;
-	const struct diag_l0 *dl0 = diag_l0_device_dl0(dl0d);
+	const struct diag_l0 *dl0 = dl0d->dl0;
 	uint8_t duplexbuf[MAXRBUF];
 
 	if (len > MAXRBUF)
@@ -321,7 +318,7 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 	if (timeout==0)
 		fprintf(stderr, FLFMT "Interesting : L1 read with timeout=0. Report this !\n", FL);
 
-	rv=diag_l0_device_dl0(dl0d)->diag_l0_recv(dl0d, subinterface, data, len, timeout);
+	rv=dl0d->dl0->diag_l0_recv(dl0d, subinterface, data, len, timeout);
 	if (rv==0)
 		fprintf(stderr, FLFMT "Interesting : L0 returns with 0 bytes... Report this !\n", FL);
 
@@ -335,20 +332,20 @@ int
 diag_l1_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset)
 {
-	return (diag_l0_device_dl0(dl0d)->diag_l0_setspeed)(dl0d, pset);
+	return dl0d->dl0->diag_l0_setspeed(dl0d, pset);
 }
 
 //diag_l1_getflags: returns l0 flags
 uint32_t diag_l1_getflags(struct diag_l0_device *dl0d)
 {
-	return (diag_l0_device_dl0(dl0d)->diag_l0_getflags)(dl0d);
+	return dl0d->dl0->diag_l0_getflags(dl0d);
 }
 
 //diag_l1_gettype: returns diag_l0_type :supported L1 protos
 //of the l0 driver
 int diag_l1_gettype(struct diag_l0_device *dl0d)
 {
-	return diag_l0_device_dl0(dl0d)->diag_l0_type;
+	return dl0d->dl0->diag_l0_type;
 }
 
 
