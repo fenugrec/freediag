@@ -78,6 +78,12 @@ int diag_os_sched(void);
 //This does not need fine resolutions; 15-20ms is good enough.
 unsigned long diag_os_getms(void);
 
+//diag_os_getus : similar to _getms(), but in microseconds.
+//same requirement for monotonicity;
+//does not need to correspond to diag_os_getms(), i.e.
+// (diag_os_getus()/1000 == diag_os_getms()) can be false
+unsigned long long diag_os_getus(void);
+
 //diag_os_chronoms: used for logging purposes; it doesn't need
 //to be monotonic. if treset !=0, the internal offset is adjusted
 // (offset += treset); all subsequent calls to

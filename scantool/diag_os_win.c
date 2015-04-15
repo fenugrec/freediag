@@ -279,6 +279,8 @@ void diag_os_calibrate(void) {
 	int testval;	//timeout to test
 	LARGE_INTEGER qpc1, qpc2;
 	LONGLONG tsum;
+	#define RESOL_ITERS	5
+	unsigned long long resol, maxres, t1, t2;	//all for _getus() test
 
 	if (perfo_freq.QuadPart == 0) {
 		fprintf(stderr, FLFMT "_calibrate will not work without a performance counter.\n", FL);
@@ -286,6 +288,18 @@ void diag_os_calibrate(void) {
 	}
 	if (calibrate_done)
 		return;
+
+	resol=0;
+	maxres=0;
+	for (int i=0; i < RESOL_ITERS; i++) {
+		unsigned long long tr;
+		t1=diag_os_getus();
+		while ((t2=diag_os_getus()) == t1) {}
+		tr = (t2-t1);
+		if (tr > maxres) maxres = tr;
+		resol += tr;
+	}
+	printf("diag_os_getus() resolution <= %lluus, avg ~%lluus\n", maxres, resol / RESOL_ITERS);
 
 	printf("Calibrating timing, this will take a few seconds...\n");
 
@@ -364,4 +378,12 @@ unsigned long diag_os_chronoms(unsigned long treset) {
 	offset += treset;
 
 	return (unsigned long) (GetTickCount() - offset);
+}
+
+//like _getms() but in microseconds.
+unsigned long long diag_os_getus(void) {
+	LARGE_INTEGER qpc1;
+
+	QueryPerformanceCounter(&qpc1);
+	return (unsigned long long) (qpc1.QuadPart * pf_conv);
 }

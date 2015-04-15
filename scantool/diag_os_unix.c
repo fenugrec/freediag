@@ -64,6 +64,10 @@
 #include <signal.h>
 
 
+#ifdef _POSIX_MONOTONIC_CLOCK	//this should be true on a lot of linux/unix systems
+	//auto-select either CLOCK_MONOTONIC or CLOCK_MONOTONIC_RAW, see _calibrate()
+	static clockid_t monoton_src = CLOCK_MONOTONIC;	//probably-safe default
+#endif
 
 static int diag_os_init_done=0;
 
@@ -443,17 +447,65 @@ const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 void diag_os_calibrate(void) {
 	//TODO: implement linux/unix diag_os_calibrate !
 	//For the moment we only check the resolution of diag_os_getms(),
-	//and test diag_os_chronoms().
+	//diag_os_getus() and test diag_os_chronoms().
+	#define RESOL_ITERS	5
 	static int calibrate_done=0;
 	unsigned long t1, t2, t3;
+	unsigned long long tl1, tl2, resol, maxres;
 
 	if (calibrate_done)
 		return;
+		
+#ifdef _POSIX_MONOTONIC_CLOCK
+	struct timespec tmtest;
+	//use best clock truly available:
+	if (clock_gettime(CLOCK_MONOTONIC_RAW, &tmtest) == 0) {
+		printf("using CLOCK_MONOTONIC_RAW.\n");
+		monoton_src = CLOCK_MONOTONIC_RAW;
+	} else if (clock_gettime(CLOCK_MONOTONIC, &tmtest) == 0) {
+		printf("using CLOCK_MONOTONIC.\n");
+		monoton_src = CLOCK_MONOTONIC;
+	} else if (clock_gettime(CLOCK_BOOTTIME, &tmtest) == 0) {
+		printf("using unusual CLOCK_BOOTTIME.\n");
+		monoton_src = CLOCK_BOOTTIME;
+	} else if (clock_gettime(CLOCK_REALTIME, &tmtest) == 0) {
+		printf("using sub-optimal CLOCK_REALTIME.\n");
+		monoton_src = CLOCK_REALTIME;
+	} else {
+		printf("WARNING: your system lied about CLOCK_MONOTONIC !!!\nWARNING: you WILL have problems !\n");
+		monoton_src = CLOCK_MONOTONIC;	//won't work anyway...
+	}
+#endif // _POSIX_MONOTONIC_CLOCK
 
-	//test getms()
-	t1=diag_os_getms();
-	while ( ((t2=diag_os_getms())-t1) ==0) {}
-	printf("diag_os_getms() resolution: ~%lums\n", t2-t1);
+	//test _getus(). This measures usable resolution (clock_getres() gives raw clock res)
+	resol=0;
+	maxres=0;
+	for (int i=0; i < RESOL_ITERS; i++) {
+		unsigned long long tr;
+		tl1=diag_os_getus();
+		while ((tl2=diag_os_getus()) == tl1) {}
+		tr = (tl2-tl1);
+		if (tr > maxres) maxres = tr;
+		resol += tr;
+	}
+	printf("diag_os_getus() resolution <= %lluus, avg ~%lluus\n", maxres, resol / RESOL_ITERS);
+
+	//test _getms()
+	resol=0;
+	maxres=0;
+	for (int i=0; i < RESOL_ITERS; i++) {
+		unsigned long tr;
+		t1=diag_os_getms();
+		while ((t2=diag_os_getms()) == t1) {}
+		tr = (t2-t1);
+		if (tr > maxres) maxres = tr;
+		resol += tr;
+	}
+	printf("diag_os_getms() resolution <= ~%llums, avg ~%llums\n", maxres, resol / RESOL_ITERS);
+	if (t2 > ((unsigned long)(-1) - 1000*30*60)) {
+		//unlikely, since 32-bit milliseconds will wrap in 49.7 days
+		printf("warning : diag_os_getms() will wrap in <30 minutes ! Consider rebooting...\n");
+	}
 
 	//now test chronoms()
 	t3=diag_os_chronoms(0);	//get current relative time
@@ -469,24 +521,34 @@ void diag_os_calibrate(void) {
 }	//diag_os_calibrate
 
 
-// TODO: verify if this is portable. Linux and anything POSIX should definitely
-// have clock_gettime().
 unsigned long diag_os_getms(void) {
-#ifdef _POSIX_MONOTONIC_CLOCK	//this should be yes on a lot of linux/unix systems
-	struct timespec curtime;
-	unsigned long rv;
+	//just use diag_os_getus() backend
+	return diag_os_getus() / 1000;
+}
 
-	clock_gettime(CLOCK_MONOTONIC, &curtime);
-	rv= (curtime.tv_nsec / 1000000)+(curtime.tv_sec * 1000);
+//return microseconds, monotonic.
+//Assumes clock source will not wrap
+// TODO: increase portability... Linux and anything POSIX should definitely
+// have clock_gettime(), but what about _POSIX_MONOTONIC_CLOCK ?
+unsigned long long diag_os_getus(void) {
+#ifdef _POSIX_MONOTONIC_CLOCK
+	struct timespec curtime={0};
+	unsigned long long rv;
+
+	clock_gettime(monoton_src, &curtime);
+
+	rv= (curtime.tv_nsec / 1000)+(curtime.tv_sec * 1000000);
 	return rv;
+
 #else
 #warning ****** no POSIX monotonic clock on your system ! Report this!
 	//but we'll use gettimeofday anyway as a stopgap. This is evil
 	//because gettimeofday isn't guaranteed to be monotonic (always increasing)
+	//TODO : OSX has a mach_absolute_time() which could be used.
 	struct timeval tv;
-	unsigned long rv;
+	unsigned long long rv;
 	gettimeofday(&tv, NULL);
-	rv=(tv.tv_usec/1000) + (tv.tv_sec * 1000);
+	rv= tv.tv_usec + (tv.tv_sec * 1000000);
 	return rv;
 #endif
 }
