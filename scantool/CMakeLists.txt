@@ -97,14 +97,9 @@ add_library(dyno STATIC ${LIBDYNO_SRCS})
 
 # diag_test binary
 
-if (WIN32)
-	message(WARNING "Not building diag_test.exe on win32 because of alarm()")
-else ()
-	add_executable(diag_test ${DIAGTEST_SRCS})
-	target_link_libraries(diag_test diag)
-	install(TARGETS diag_test DESTINATION bin)
-endif ()
-
+add_executable(diag_test ${DIAGTEST_SRCS})
+target_link_libraries(diag_test diag)
+install(TARGETS diag_test DESTINATION bin)
 
 # scantool binary
 

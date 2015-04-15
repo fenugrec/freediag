@@ -279,8 +279,9 @@ void diag_os_calibrate(void) {
 	int testval;	//timeout to test
 	LARGE_INTEGER qpc1, qpc2;
 	LONGLONG tsum;
-	#define RESOL_ITERS	5
-	unsigned long long resol, maxres, t1, t2;	//all for _getus() test
+	#define RESOL_ITERS	10
+	unsigned long long resol, maxres, tl1, tl2;	//all for _getus() test
+		unsigned long t1, t2, t3;	//for _getms() test
 
 	if (perfo_freq.QuadPart == 0) {
 		fprintf(stderr, FLFMT "_calibrate will not work without a performance counter.\n", FL);
@@ -289,17 +290,35 @@ void diag_os_calibrate(void) {
 	if (calibrate_done)
 		return;
 
+	//test _getus()
 	resol=0;
 	maxres=0;
 	for (int i=0; i < RESOL_ITERS; i++) {
 		unsigned long long tr;
-		t1=diag_os_getus();
-		while ((t2=diag_os_getus()) == t1) {}
-		tr = (t2-t1);
+		tl1=diag_os_getus();
+		while ((tl2=diag_os_getus()) == tl1) {}
+		tr = (tl2-tl1);
 		if (tr > maxres) maxres = tr;
 		resol += tr;
 	}
-	printf("diag_os_getus() resolution <= %lluus, avg ~%lluus\n", maxres, resol / RESOL_ITERS);
+	printf("diag_os_getus() resolution <= %luus, avg ~%luus\n", (unsigned long) maxres, (unsigned long) resol / RESOL_ITERS);
+	
+	//now test diag_os_getms
+	t1=diag_os_getms();
+	while ( ((t2=diag_os_getms())-t1) ==0) {}
+	printf("diag_os_getms() resolution: ~%lums.\n", t2-t1);
+
+	//and diag_os_chronoms
+	t3=diag_os_chronoms(0);	//get time with current offset
+	t1=diag_os_chronoms(t3);	//reset stopwatch & get start time (~ 0)
+	while ( ((t2=diag_os_chronoms(0))-t1) ==0) {}
+	//here, t2-t1 is the finest resolution available. But we want to restore
+	//the previous offset in case some other function already called _chronoms()
+	//before us :
+	(void) diag_os_chronoms(-t3);	//this should do it
+
+	printf("diag_os_chronoms() : resolution: ~%lums\n", t2-t1);
+
 
 	printf("Calibrating timing, this will take a few seconds...\n");
 
@@ -339,24 +358,6 @@ void diag_os_calibrate(void) {
 		if (testval>=25)
 			testval -= 7;
 	}	//for testvals
-
-	//now test diag_os_getms
-	unsigned long t1, t2, t3;
-	t1=diag_os_getms();
-	while ( ((t2=diag_os_getms())-t1) ==0) {}
-	printf("diag_os_getms() resolution: ~%lums.\n", t2-t1);
-
-	//and diag_os_chronoms
-	t3=diag_os_chronoms(0);	//get time with current offset
-	t1=diag_os_chronoms(t3);	//reset stopwatch & get start time (~ 0)
-	while ( ((t2=diag_os_chronoms(0))-t1) ==0) {}
-	//here, t2-t1 is the finest resolution available. But we want to restore
-	//the previous offset in case some other function already called _chronoms()
-	//before us :
-	(void) diag_os_chronoms(-t3);	//this should do it
-
-	printf("diag_os_chronoms() : resolution: ~%lums\n", t2-t1);
-
 
 	printf("Calibration done.\n");
 	calibrate_done=1;

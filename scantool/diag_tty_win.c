@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "diag.h"
 #include "diag_l1.h"
@@ -33,7 +34,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
 	
-	if ((rv=diag_calloc(wti,1))) {
+	if ((rv=diag_calloc(&wti,1))) {
 		free(dl0d);
 		return diag_iseterr(rv);
 	}
@@ -113,7 +114,7 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 	if (ppdl0d) {
 		struct diag_l0_device *dl0d = *ppdl0d;
 		if (dl0d) {
-			wti = (struc tty_int *)dl0d->tty_int;
+			wti = (struct tty_int *)dl0d->tty_int;
 			if (wti) {
 				if (wti->fd != INVALID_HANDLE_VALUE) {
 					PurgeComm(wti->fd,PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
@@ -350,6 +351,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	COMMTIMEOUTS devtimeouts;
 	
 	assert(count>0);
+	if (count == 0) return DIAG_ERR_BADLEN;
 
 	if (wti->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
