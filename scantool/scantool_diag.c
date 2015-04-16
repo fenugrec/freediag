@@ -258,10 +258,10 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 		return CMD_FAILED;
 	}
 
-	printf("Scanning address : ");
+	printf("Scanning:\n");
 	for (i=start; i<=end; i++)
 	{
-		printf("0x%X ", i);
+		printf("\t0x%X ", i);
 		fflush(stdout) ;
 
 

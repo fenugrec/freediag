@@ -2,7 +2,7 @@
  *	freediag - Vehicle Diagnostic Utility
 
  *************************************************************************
- * dumbtest
+ * dumbtest (c) 2014-2015 fenugrec
  * Diag, Layer 0, interface tester. This should *NOT* be used while
  * a vehicle is connected; only for debugging the electrical interface itself.
 

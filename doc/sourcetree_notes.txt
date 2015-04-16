@@ -197,6 +197,10 @@ it tries Sleep() for larger requested delays. It burns off the remaining
 time in a NOP loop. This should work OK if the OS doesn't interrupt us again right after Sleep()
 returns or before we have time to finish our next critical operation.
 
+Notes regarding monotonic clocks on *nix:
+http://blog.habets.pp.se/2010/09/gettimeofday-should-never-be-used-to-measure-time
+https://github.com/ThomasHabets/monotonic_clock
+
 
 **** diag_l2_timer() & diag_l3_timer(), callbacks
 To handle keepalive messages of the various protocols, freediag sets up an OS-specific
