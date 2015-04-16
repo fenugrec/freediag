@@ -70,7 +70,14 @@ struct diag_msg;
  */
 struct diag_l2_conn
 {
-	uint8_t	diag_l2_state;		/* State of this; see DIAG_L2_STATE_* defines below */
+	enum {
+		DIAG_L2_STATE_CLOSED,	/* Not in use (but not free for anyones use !!) */
+		DIAG_L2_STATE_SENTCONREQ,	/* Sent connection request (waiting for response/reject) */
+		DIAG_L2_STATE_OPEN,	/* Up and running; only legal state for sending a keepalive request */
+		DIAG_L2_STATE_CLOSING	/* sending close request (possibly), waiting for response/timeout */
+	} diag_l2_state;		/* State: mainly used by the timer code for keepalive msgs.*/
+
+
 
 	struct diag_l2_link *diag_link;		/* info about L1 connection */
 
@@ -149,17 +156,6 @@ struct diag_l2_conn
 
 };
 
-/*
- * Values for diag_l2_state
- *
- * The state values are mainly used by the timer code to determine if
- * keepalive timers are needed.
- */
-#define DIAG_L2_STATE_CLOSED		0	/* Not in use (but not free for anyones use !!) */
-#define DIAG_L2_STATE_SENTCONREQ	1	/* Sent connection request (waiting for response/reject) */
-#define DIAG_L2_STATE_OPEN		2	/* Up and running */
-#define DIAG_L2_STATE_CLOSING		4	/* sending close request (possibly), waiting for response/timeout */
-	//STATE_CLOSING will prevent L2 keepalive messages from being sent
 
 /*
  * Default ISO 14230 timing values, ms, used as defaults for L2 timeouts

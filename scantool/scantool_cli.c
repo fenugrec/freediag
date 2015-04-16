@@ -425,7 +425,7 @@ cmd_play(int argc, char **argv)
 
 
 //cmd_watch : this creates a diag_l3_conn
-//TODO: clean up or l2_stopcomm after we're done?
+//TODO: "press any key to stop" ...
 static int
 cmd_watch(int argc, char **argv)
 {
@@ -457,7 +457,7 @@ cmd_watch(int argc, char **argv)
 		return CMD_FAILED;
 	}
 	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);
-	if (dl0d == 0) {
+	if (dl0d == NULL) {
 		rv = diag_geterr();
 		printf("Failed to open hardware interface, ");
 		if (rv == DIAG_ERR_PROTO_NOTSUPP)
@@ -468,20 +468,23 @@ cmd_watch(int argc, char **argv)
 			printf("%s\n",diag_errlookup(rv));
 		return CMD_FAILED;
 	}
-	if (rawmode)
+	if (rawmode) {
 		d_l2_conn = diag_l2_StartCommunications(dl0d, DIAG_L2_PROT_RAW,
 			0, set_speed,
 			set_destaddr,
 			set_testerid);
-	else
+	} else {
 		d_l2_conn = diag_l2_StartCommunications(dl0d, set_L2protocol,
 			DIAG_L2_TYPE_MONINIT, set_speed, set_destaddr, set_testerid);
-
-	if (d_l2_conn == 0) {
-		printf("Failed to connect to hardware in monitor mode\n");
-		return CMD_FAILED;
 	}
 
+	if (d_l2_conn == NULL) {
+		printf("Failed to connect to hardware in monitor mode\n");
+		diag_l2_close(dl0d);
+		return CMD_FAILED;
+	}
+	//here we have a valid d_l2_conn over dl0d.
+	
 	if (rawmode == 0) {
 		/* Put the SAE J1979 stack on top of the ISO device */
 
@@ -489,6 +492,8 @@ cmd_watch(int argc, char **argv)
 			d_l3_conn = diag_l3_start("SAEJ1979", d_l2_conn);
 			if (d_l3_conn == NULL) {
 				printf("Failed to enable SAEJ1979 mode\n");
+				diag_l2_StopCommunications(d_l2_conn);
+				diag_l2_close(dl0d);
 				return CMD_FAILED;
 			}
 		} else {
@@ -497,13 +502,14 @@ cmd_watch(int argc, char **argv)
 
 		printf("Waiting for data to be received\n");
 		while (1) {
-			if (d_l3_conn)
+			if (d_l3_conn != NULL) {
 				rv = diag_l3_recv(d_l3_conn, 10000,
 					j1979_watch_rcv,
 					(nodecode) ? NULL:(void *)d_l3_conn);
-			else
+			} else {
 				rv = diag_l2_recv(d_l2_conn, 10000,
 					j1979_watch_rcv, NULL);
+			}
 			if (rv == 0)
 				continue;
 			if (rv == DIAG_ERR_TIMEOUT)
@@ -526,7 +532,11 @@ cmd_watch(int argc, char **argv)
 			break;
 		}
 	}
-	diag_l3_stop(d_l3_conn);
+	if (d_l3_conn != NULL)
+		diag_l3_stop(d_l3_conn);
+
+	diag_l2_StopCommunications(d_l2_conn);
+	diag_l2_close(dl0d);
 
 	return CMD_OK;
 }

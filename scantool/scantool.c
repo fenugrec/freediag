@@ -84,7 +84,7 @@
 //ugly, global data. Could be struct-ed together eventually
 struct diag_l2_conn *global_l2_conn;
 struct diag_l3_conn *global_l3_conn;
-int	global_state;		/* See STATE_ definitions in .h file */
+enum globstate global_state = STATE_IDLE;
 uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
 struct diag_l0_device *global_l2_dl0d;		/* L2 dl0d */
 

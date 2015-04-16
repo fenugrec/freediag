@@ -39,7 +39,11 @@ struct diag_l2_14230
 	uint8_t dstaddr;	/* Dest address used (for connect) */
 	int modeflags;	/* 14230-specific Flags; see below */
 
-	uint8_t state;
+	enum {
+		STATE_CLOSED=0,		/* Established comms */
+		STATE_CONNECTING=1,		/* Connecting */
+		STATE_ESTABLISHED=2,	/* Established */
+	} state;
 
 	uint8_t first_frame;	/* First frame flag, used mainly for
 					monitor mode when we need to find
@@ -49,10 +53,6 @@ struct diag_l2_14230
 	uint8_t rxbuf[MAXRBUF];	/* Receive buffer, for building message in */
 	int rxoffset;		/* Offset to write into buffer */
 };
-
-#define STATE_CLOSED	  0	/* Established comms */
-#define STATE_CONNECTING  1	/* Connecting */
-#define STATE_ESTABLISHED 2	/* Established */
 
 //******* flags for ->modeflags :
 //(these are set in 14230_startcomms() according to init type and keybytes received)

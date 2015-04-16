@@ -175,15 +175,15 @@ void	j1979_data_rcv(void *handle, struct diag_msg *msg);
 void	j1979_watch_rcv(void *handle, struct diag_msg *msg);
 void	l2raw_data_rcv(void *handle, struct diag_msg *msg);
 
-extern int		global_state;
-//these defines are for global_state and must be of
-//increasing values ! (ex.: if (global_state>=STATE_CONNECTED) {...}
-#define STATE_IDLE	0	/* Idle */
-#define STATE_WATCH	1	/* Watch mode */
-#define	STATE_CONNECTED	2	/* Connected to ECU */
-#define	STATE_L3ADDED	3	/* Layer 3 protocol added on Layer 2 */
-#define	STATE_SCANDONE	4	/* J1978/9 Scan Done, so got J1979 PID list */
-
+enum globstate {
+	//specify numbers because some code checks (for global_state >= X) etc.
+	STATE_IDLE=0,		/* Idle */
+	STATE_WATCH=1,		/* Watch mode */
+	STATE_CONNECTED=2,	/* Connected to ECU */
+	STATE_L3ADDED=3,	/* Layer 3 protocol added on Layer 2 */
+	STATE_SCANDONE=4,	/* J1978/9 Scan Done, so got J1979 PID list */
+};	//only for global_state !
+extern enum globstate global_state;
 
 /* Parameters set by user interface (and their defaults) */
 extern unsigned int 	set_speed ;	/* Comms speed */

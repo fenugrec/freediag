@@ -229,7 +229,7 @@ diag_l2_timer(void)
 		 * or L1 does the keepalive, do nothing
 		 */
 		if (((d_l2_conn->diag_l2_type & DIAG_L2_TYPE_INITMASK) ==DIAG_L2_TYPE_MONINIT) ||
-				!(d_l2_conn->diag_l2_state & DIAG_L2_STATE_OPEN) ||
+				(d_l2_conn->diag_l2_state != DIAG_L2_STATE_OPEN) ||
 				(d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESKEEPALIVE)) {
 			continue;
 		}

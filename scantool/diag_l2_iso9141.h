@@ -76,10 +76,12 @@ struct diag_l2_iso9141
 	uint8_t rxbuf[MAXLEN_ISO9141]; // Receive buffer, for building message in.
 	uint8_t rxoffset;
 
-	uint8_t state;
-#define STATE_CLOSED	  0	// Closed connection.
-#define STATE_CONNECTING  1	// Connecting.
-#define STATE_ESTABLISHED 2	// Established.
+	enum {
+		STATE_CLOSED=0,
+		STATE_CONNECTING=1,
+		STATE_ESTABLISHED=2,
+	} state;
+
 };
 
 
