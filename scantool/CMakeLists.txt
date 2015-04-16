@@ -36,10 +36,7 @@ else()
 endif()
 
 if (NISPROG)
-	set (ST_DIAG "scantool_nisprog.c")
 	message (WARNING "*****Compiling with nisprog !!!!!!*****")
-else()
-	set (ST_DIAG "scantool_diag.c")
 endif()
 
 
@@ -53,7 +50,7 @@ set (LIBDIAG_SRCS diag_l0_me.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c
 	${OS_DIAGOS} diag_general.c diag_dtc.c )
 set (LIBDYNO_SRCS dyno.c)
 set (DIAGTEST_SRCS diag_test.c)
-set (SCANTOOL_SRCS scantool.c scantool_cli.c ${ST_DIAG} scantool_set.c
+set (SCANTOOL_SRCS scantool.c scantool_cli.c scantool_diag.c scantool_set.c
 	scantool_test.c scantool_debug.c scantool_vag.c scantool_dyno.c
 	scantool_aif.c)
 #and GLOB all the headers. This is *only* so that the headers end up in

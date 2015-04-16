@@ -1,3 +1,22 @@
+Listed in approximate chronological order of activity:
+
+Richard Almeida 2001-2003
+Bjorn Helgaas ~ 2001-2002 ?
+Andy Whittaker ? <2003
+Peter Dufault  ? <2003
+Guilhem Valentin ~2003
+Steve Baker ?-2004
+Colin J Helliwell ~2004
+Steve Meisner ~2004
+Vasco Nevoa ~2004
+fenugrec 2009-
+
+****
+The following notes were written by Steve Baker
+when he took over the project (~2003) :
+
+                               --ooOoo--
+
 Freediag was originally written by Richard Almeida - he looked after the
 package up to version 0.3a and provided sporadic CVS updates until August 2003.
 
@@ -6,8 +25,8 @@ Windows version.
 
 Bjorn Helgaas added logging and some other functionality.
  
-Guilhem Valentin is believed to have written the dynamometer package (I'm not
-certain of this).
+Guilhem Valentin is believed to have written the dynamometer package
+[EDIT : Yes, in 2003 according to the mailing list]
 
                                --ooOoo--
 
@@ -22,7 +41,3 @@ for a large fraction of the present code-base.
 Steve Baker.
 
                                --ooOoo--
-
-Since ~2011, fenugrec has loosely maintained the package on sourceforge and kept
-the mailing lists & forums clean. He also made a first native win32 port of
-freediag and added initial ELM32x support.

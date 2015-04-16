@@ -37,6 +37,7 @@
 
 #include "scantool.h"
 #include "scantool_cli.h"
+#include "diag_l2_iso14230.h" 	//needed to force header type (nisprog)
 
 
 static int cmd_diag_help(int argc, char **argv);
@@ -51,6 +52,7 @@ static int cmd_diag_reml3(UNUSED(int argc), UNUSED(char **argv));
 
 static int cmd_diag_probe(int argc, char **argv);
 static int cmd_diag_fastprobe(int argc, char **argv);
+static int cmd_diag_nisprog(int argc, char **argv);
 
 const struct cmd_tbl_entry diag_cmd_table[] =
 {
@@ -81,7 +83,7 @@ const struct cmd_tbl_entry diag_cmd_table[] =
 
 	{ "probe", "probe start_addr stop_addr", "Scan bus using ISO9141 5 baud init [slow!]", cmd_diag_probe, 0, NULL},
 	{ "fastprobe", "fastprobe start_addr stop_addr [func]", "Scan bus using ISO14230 fast init with physical or functional addressing", cmd_diag_fastprobe, 0, NULL},
-
+	{ "np", "np [testnum]", "nisprog experimental Nissan tests. Do not use.", cmd_diag_nisprog, 0, NULL},
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
 	{ "quit","quit", "Return to previous menu level",
@@ -469,4 +471,12 @@ cmd_diag_sendreq(int argc, char **argv)
 	return CMD_OK;
 }
 
-
+#ifdef NISPROG
+#include "nisprog.c"
+#else
+static int cmd_diag_nisprog(int argc, char **argv) {
+	argc;
+	argv;
+	return CMD_OK;
+}
+#endif // NISPROG

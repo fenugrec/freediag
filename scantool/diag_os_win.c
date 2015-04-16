@@ -281,7 +281,7 @@ void diag_os_calibrate(void) {
 	LONGLONG tsum;
 	#define RESOL_ITERS	10
 	unsigned long long resol, maxres, tl1, tl2;	//all for _getus() test
-		unsigned long t1, t2, t3;	//for _getms() test
+	unsigned long t1, t2, t3;	//for _getms() test
 
 	if (perfo_freq.QuadPart == 0) {
 		fprintf(stderr, FLFMT "_calibrate will not work without a performance counter.\n", FL);
