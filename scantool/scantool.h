@@ -104,15 +104,7 @@ extern uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
 
 /* XXX end of stuff to move */
 
-extern int		global_conmode;
-extern int		global_protocol;
-
 extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
-
-#define	PROTOCOL_NOTFOUND	0
-#define	PROTOCOL_ISO9141	1
-#define	PROTOCOL_ISO14230	2
-#define	PROTOCOL_SAEJ1850	3
 
 //XXX The following defs should probably go in an auto-generated l0_list.h file ... and they MUST match the list in scantool_set.c !
 enum l0_nameindex {MET16, BR1, ELM, CARSIM, DUMB, DUMBT, LAST};

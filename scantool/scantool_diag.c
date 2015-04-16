@@ -86,8 +86,8 @@ const struct cmd_tbl_entry diag_cmd_table[] =
 	{ "np", "np [testnum]", "nisprog experimental Nissan tests. Do not use.", cmd_diag_nisprog, 0, NULL},
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
-	{ "quit","quit", "Return to previous menu level",
-		cmd_up, FLAG_HIDDEN, NULL},
+	{ "quit","quit", "Exit program",
+		cmd_exit, FLAG_HIDDEN, NULL},
 	{ "exit", "exit", "Exit program",
 		cmd_exit, 0, NULL},
 
@@ -276,8 +276,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 				DIAG_L2_TYPE_SLOWINIT,
 				set_speed, (target_type) i, set_testerid);
 
-		if (d_conn != NULL)
-		{
+		if (d_conn != NULL) {
 			int gotsome;
 			struct diag_l2_data d;
 
@@ -286,6 +285,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 
 			global_state = STATE_CONNECTED;
 			global_l2_conn = d_conn;
+			global_l2_dl0d = dl0d;
 
 			/* Get the keybytes */
 			diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_DATA, &d);
@@ -299,7 +299,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			rv = 0; gotsome = 0;
 			while (rv >= 0)
 			{
-				rv = diag_l2_recv(d_conn, 2000, l2raw_data_rcv, NULL);
+				rv = diag_l2_recv(d_conn, 100, l2raw_data_rcv, NULL);
 				if (rv > 0)
 					gotsome = 1;
 			}
@@ -311,6 +311,8 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			return CMD_OK;
 		} // d_con !=null
 	}	//for addresses
+	//Failed => clean up
+	diag_l2_close(dl0d);
 	printf("\n");
 	return CMD_OK;
 }
@@ -375,11 +377,12 @@ cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
 
 	if (global_l3_conn == NULL) {
 		// no other l3 conns, so stop the global L2 conn
-	diag_l2_StopCommunications(global_l2_conn);
-	diag_l2_close(global_l2_dl0d);
+		diag_l2_StopCommunications(global_l2_conn);
+		diag_l2_close(global_l2_dl0d);
 
-	global_l2_conn = NULL;
-	global_state = STATE_IDLE;
+		global_l2_conn = NULL;
+		global_l2_dl0d = NULL;
+		global_state = STATE_IDLE;
 	} else {
 		printf("There is another active L3 connection : %p\n : %s",
 			(void *) global_l3_conn, global_l3_conn->d_l3_proto->proto_name);

@@ -71,4 +71,7 @@ use the diag_*alloc wrappers defined in diag.h and diag_general.c
  close() before returning; etc.
  
 12- A return statement is not a function call : "return 0;" , not
- "return(0);" 
+ "return(0);"
+
+13- End-of-line char is LF (0x0A).
+

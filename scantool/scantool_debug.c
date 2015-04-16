@@ -98,8 +98,8 @@ const struct cmd_tbl_entry debug_cmd_table[] =
 		cmd_debug_l0test, 0, NULL},
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
-	{ "quit","quit", "Return to previous menu level",
-		cmd_up, FLAG_HIDDEN, NULL},
+	{ "quit","quit", "Exit program",
+		cmd_exit, FLAG_HIDDEN, NULL},
 	{ "exit", "exit", "Exit program",
 		cmd_exit, 0, NULL},
 

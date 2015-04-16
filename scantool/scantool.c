@@ -81,17 +81,13 @@
 #include "scantool_aif.h"
 
 
-/*
- * This is used to store the 1st message of a received set of messages
- * It's only 24 bytes long as this is plenty to store a J1979 message
- */
-#if 0
-uint8_t global_data[MAXRBUF];
-int global_datalen;
-#endif
-
+//ugly, global data. Could be struct-ed together eventually
 struct diag_l2_conn *global_l2_conn;
 struct diag_l3_conn *global_l3_conn;
+int	global_state;		/* See STATE_ definitions in .h file */
+uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
+struct diag_l0_device *global_l2_dl0d;		/* L2 dl0d */
+
 
 /*
  * Data received from each ecu
@@ -104,14 +100,6 @@ unsigned int ecu_count;		/* How many ecus are active */
 uint8_t	merged_mode1_info[0x100];
 uint8_t	merged_mode5_info[0x100];
 
-uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
-
-int	global_conmode;
-int	global_protocol;
-
-int	global_state;		/* See STATE_ definitions in .h file */
-
-struct diag_l0_device *		global_l2_dl0d;		/* L2 dl0d */
 
 /* Prototypes */
 int print_single_dtc(databyte_type d0, databyte_type d1) ;
@@ -1565,16 +1553,14 @@ struct protocol {
 	const char	*desc;
 	start_fn *start;
 	int	flags;
-	int	protoID;
-	int	conmode;
 };
 
 const struct protocol protocols[] = {
-	{"SAEJ1850-VPW", do_l2_j1850_start, DIAG_L1_J1850_VPW, PROTOCOL_SAEJ1850, 0},
-	{"SAEJ1850-PWM", do_l2_j1850_start, DIAG_L1_J1850_PWM, PROTOCOL_SAEJ1850, 0},
-	{"ISO14230_FAST", do_l2_14230_start, DIAG_L2_TYPE_FASTINIT, PROTOCOL_ISO14230, DIAG_L2_TYPE_FASTINIT},
-	{"ISO9141", do_l2_9141_start, 0x33, PROTOCOL_ISO9141, DIAG_L2_TYPE_SLOWINIT},
-	{"ISO14230_SLOW", do_l2_14230_start, DIAG_L2_TYPE_SLOWINIT, PROTOCOL_ISO14230, DIAG_L2_TYPE_SLOWINIT},
+	{"SAEJ1850-VPW", do_l2_j1850_start, DIAG_L1_J1850_VPW},
+	{"SAEJ1850-PWM", do_l2_j1850_start, DIAG_L1_J1850_PWM},
+	{"ISO14230_FAST", do_l2_14230_start, DIAG_L2_TYPE_FASTINIT},
+	{"ISO9141", do_l2_9141_start, 0x33},
+	{"ISO14230_SLOW", do_l2_14230_start, DIAG_L2_TYPE_SLOWINIT},
 };
 
 /*
@@ -1619,8 +1605,6 @@ ecu_connect(void)
 				global_state = STATE_IDLE;
 				continue;
 			}
-			global_conmode = p->conmode;
-			global_protocol = p->protoID;
 			global_l3_conn = d_l3_conn;
 			global_state = STATE_L3ADDED;
 
