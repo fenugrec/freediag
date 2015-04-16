@@ -6,6 +6,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * (c) 2014-2015 fenugrec
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,11 +79,13 @@ int diag_os_sched(void);
 //This does not need fine resolutions; 15-20ms is good enough.
 unsigned long diag_os_getms(void);
 
-//diag_os_getus : similar to _getms(), but in microseconds.
-//same requirement for monotonicity;
-//does not need to correspond to diag_os_getms(), i.e.
-// (diag_os_getus()/1000 == diag_os_getms()) can be false
-unsigned long long diag_os_getus(void);
+//diag_os_gethrt : get highest-resolution monotonic timestamp available;
+//For use as a short duration stopwatch.
+//Use diag_os_hrtus() to convert delta values to microseconds.
+unsigned long long diag_os_gethrt(void);
+
+//convert a delta of diag_os_gethrt() timestamps to microseconds
+unsigned long long diag_os_hrtus(unsigned long long hrdelta);
 
 //diag_os_chronoms: used for logging purposes; it doesn't need
 //to be monotonic. if treset !=0, the internal offset is adjusted

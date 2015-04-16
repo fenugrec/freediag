@@ -1,3 +1,8 @@
+/* freediag
+ * windows-specific tty code
+ * (c) fenugrec 2014-2015
+ * GPL3
+ */
 
 #include <stdlib.h>
 #include <string.h>

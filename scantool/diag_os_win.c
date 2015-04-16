@@ -1,7 +1,7 @@
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
- *
+ * (c) 2014-2015 fenugrec
  *
  * OS specific stuff
 
@@ -15,10 +15,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>	//XXX do we need this here?
-
 
 #include "diag_tty.h"
+#include "diag_os.h"
 #include "diag.h"
 
 #include "diag_l1.h"
@@ -280,7 +279,7 @@ void diag_os_calibrate(void) {
 	LARGE_INTEGER qpc1, qpc2;
 	LONGLONG tsum;
 	#define RESOL_ITERS	10
-	unsigned long long resol, maxres, tl1, tl2;	//all for _getus() test
+	unsigned long long resol, maxres, tl1, tl2;	//all for _gethrt() test
 	unsigned long t1, t2, t3;	//for _getms() test
 
 	if (perfo_freq.QuadPart == 0) {
@@ -290,18 +289,19 @@ void diag_os_calibrate(void) {
 	if (calibrate_done)
 		return;
 
-	//test _getus()
+	//test _gethrt()
 	resol=0;
 	maxres=0;
 	for (int i=0; i < RESOL_ITERS; i++) {
 		unsigned long long tr;
-		tl1=diag_os_getus();
-		while ((tl2=diag_os_getus()) == tl1) {}
+		tl1=diag_os_gethrt();
+		while ((tl2=diag_os_gethrt()) == tl1) {}
 		tr = (tl2-tl1);
 		if (tr > maxres) maxres = tr;
 		resol += tr;
 	}
-	printf("diag_os_getus() resolution <= %luus, avg ~%luus\n", (unsigned long) maxres, (unsigned long) resol / RESOL_ITERS);
+	printf("diag_os_gethrt() resolution <= %luus, avg ~%luus\n",
+			(unsigned long) diag_os_hrtus(maxres), (unsigned long) diag_os_hrtus(resol / RESOL_ITERS));
 	
 	//now test diag_os_getms
 	t1=diag_os_getms();
@@ -381,10 +381,14 @@ unsigned long diag_os_chronoms(unsigned long treset) {
 	return (unsigned long) (GetTickCount() - offset);
 }
 
-//like _getms() but in microseconds.
-unsigned long long diag_os_getus(void) {
+//get high resolution timestamp
+unsigned long long diag_os_gethrt(void) {
 	LARGE_INTEGER qpc1;
-
 	QueryPerformanceCounter(&qpc1);
-	return (unsigned long long) (qpc1.QuadPart * pf_conv);
+	return (unsigned long long) qpc1.QuadPart;
+}
+
+//convert a delta of diag_os_gethrt() timestamps to microseconds
+unsigned long long diag_os_hrtus(unsigned long long hrdelta) {
+	return (unsigned long long) (hrdelta * (double) pf_conv);
 }

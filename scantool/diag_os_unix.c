@@ -46,6 +46,7 @@
 
 
 #include "diag_tty.h"
+#include "diag_os.h"
 #include "diag.h"
 
 #include "diag_l1.h"
@@ -447,11 +448,11 @@ const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 void diag_os_calibrate(void) {
 	//TODO: implement linux/unix diag_os_calibrate !
 	//For the moment we only check the resolution of diag_os_getms(),
-	//diag_os_getus() and test diag_os_chronoms().
+	//diag_os_gethrt() and test diag_os_chronoms().
 	#define RESOL_ITERS	5
 	static int calibrate_done=0;
 	unsigned long t1, t2, t3;
-	unsigned long long tl1, tl2, resol, maxres;
+	unsigned long long tl1, tl2, resol, maxres;	//for _gethrt()
 
 	if (calibrate_done)
 		return;
@@ -477,18 +478,19 @@ void diag_os_calibrate(void) {
 	}
 #endif // _POSIX_MONOTONIC_CLOCK
 
-	//test _getus(). This measures usable resolution (clock_getres() gives raw clock res)
+	//test _gethrt(). This measures usable resolution (clock_getres() gives raw clock res)
 	resol=0;
 	maxres=0;
 	for (int i=0; i < RESOL_ITERS; i++) {
 		unsigned long long tr;
-		tl1=diag_os_getus();
-		while ((tl2=diag_os_getus()) == tl1) {}
+		tl1=diag_os_gethrt();
+		while ((tl2=diag_os_gethrt()) == tl1) {}
 		tr = (tl2-tl1);
 		if (tr > maxres) maxres = tr;
 		resol += tr;
 	}
-	printf("diag_os_getus() resolution <= %lluus, avg ~%lluus\n", maxres, resol / RESOL_ITERS);
+	printf("diag_os_gethrt() resolution <= %lluus, avg ~%lluus\n",
+			diag_os_hrtus(maxres), diag_os_hrtus(resol / RESOL_ITERS));
 
 	//test _getms()
 	resol=0;
@@ -522,35 +524,43 @@ void diag_os_calibrate(void) {
 
 
 unsigned long diag_os_getms(void) {
-	//just use diag_os_getus() backend
-	return diag_os_getus() / 1000;
+	//just use diag_os_gethrt() backend
+	return diag_os_hrtus(diag_os_gethrt()) / 1000;
 }
 
-//return microseconds, monotonic.
-//Assumes clock source will not wrap
+//return high res timestamp, monotonic.
 // TODO: increase portability... Linux and anything POSIX should definitely
 // have clock_gettime(), but what about _POSIX_MONOTONIC_CLOCK ?
-unsigned long long diag_os_getus(void) {
+unsigned long long diag_os_gethrt(void) {
 #ifdef _POSIX_MONOTONIC_CLOCK
+	//units : ns
 	struct timespec curtime={0};
-	unsigned long long rv;
 
 	clock_gettime(monoton_src, &curtime);
 
-	rv= (curtime.tv_nsec / 1000)+(curtime.tv_sec * 1000000);
-	return rv;
+	return curtime.tv_nsec + (curtime.tv_sec * 1000*1000*1000);
 
 #else
 #warning ****** no POSIX monotonic clock on your system ! Report this!
 	//but we'll use gettimeofday anyway as a stopgap. This is evil
 	//because gettimeofday isn't guaranteed to be monotonic (always increasing)
 	//TODO : OSX has a mach_absolute_time() which could be used.
+	//units : us
 	struct timeval tv;
 	unsigned long long rv;
 	gettimeofday(&tv, NULL);
 	rv= tv.tv_usec + (tv.tv_sec * 1000000);
 	return rv;
 #endif
+}
+
+//convert a delta of diag_os_gethrt() timestamps to microseconds
+unsigned long long diag_os_hrtus(unsigned long long hrdelta) {
+#ifdef _POSIX_MONOTONIC_CLOCK	//must match diag_os_gethrt() implementation!
+	return hrdelta / 1000;
+#else
+	return hrdelta;
+#endif // _POSIX_MONOTONIC_CLOCK
 }
 
 //arbitrarily resettable stopwatch. See comments in diag_os.h

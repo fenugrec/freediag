@@ -1,9 +1,9 @@
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
- * (c) fenugrec / CSB 2011-2014
+ * (c) 2011-2015 fenugrec
  * Diag, Layer 0, interface for Scantool.net's ELM32x Interface
- * Work in progress, will not work yet.
+ * Work in progress.
  *
  *This is meant to support ELM323 & 327 devices; clones and originals.
  * COM speed is "autodetected" (it tries 9600 and 38400bps).
@@ -26,6 +26,8 @@
  * * _recv() doesn't check if a good prompt '>' was received at the end
  * * every time _open() is called it goes through the whole (long) init sequence
  * * responses from multiple ECUs probably won't work
+ *
+ * Incomplete list of commands not supported by clones : {FI, SI, BD, KW}
  */
 
 #include <assert.h>
@@ -42,6 +44,7 @@
 
 #define ELM_BUFSIZE 40	//longest data to be received during init is the version string, ~ 15 bytes,
 		// plus possible command echo. OBD data is 7 bytes, received as a 23-char string. 32 should be enough...
+		// XXX certain OBD commands (PID 06) return much more data !?
 
 struct diag_l0_elm_device {
 	int protocol;		//current L1 protocol
