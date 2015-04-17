@@ -125,7 +125,7 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 		struct diag_l0_elm_device *dev =
 			(struct diag_l0_elm_device *)dl0d->dl0_handle;
 
-		/* If debugging, print to strerr */
+		/* If debugging, print to stderr */
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, FLFMT "link %p closing\n",
 				FL, (void *) dl0d);

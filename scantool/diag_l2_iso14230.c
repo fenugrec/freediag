@@ -167,7 +167,7 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 /*
  * Internal receive function: does all the message building, but doesn't
  * do call back. Strips header and checksum; if address info was present
- * then msg->dest and msg->src are >0.
+ * then msg->dest and msg->src are !=0.
  *
  * Data from the first message is put into *data, and len into *datalen if
  * those pointers are non-null.
@@ -222,14 +222,17 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	}
 
 	l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
-	if (l1flags & DIAG_L1_DOESL2FRAME) {
-		if (timeout < SMART_TIMEOUT)	/* Extend timeouts */
-			timeout += 100;
-	}
+	
 	if (l1flags & DIAG_L1_DOESL2FRAME)
 		l1_doesl2frame = 1;
 	else
 		l1_doesl2frame = 0;
+
+	if (l1_doesl2frame) {
+		if (timeout < SMART_TIMEOUT)	/* Extend timeouts */
+			timeout += 100;
+	}
+
 
 	while (1) {
 		switch (state) {

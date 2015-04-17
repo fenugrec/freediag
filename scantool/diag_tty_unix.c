@@ -649,7 +649,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		if (time>=timeout){
-			fprintf(stderr, FLFMT "timed out: %dms\n",FL,timeout);
+			fprintf(stderr, FLFMT "timed out: %dms\n",FL,timeout*2000/4096);
 		}
 
 	switch (rv)
