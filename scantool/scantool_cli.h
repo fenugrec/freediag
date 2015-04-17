@@ -53,6 +53,7 @@ typedef struct cmd_tbl_entry
 #define CMD_UP		4	/* Go up one level in command tree */
 
 #define FLAG_HIDDEN	1	/* Hidden command */
+#define FLAG_FILE_ARG	2 /* Command accepts a filename as an argument*/
 
 int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
 void wait_enter(const char *message);

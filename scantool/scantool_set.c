@@ -136,7 +136,7 @@ const struct cmd_tbl_entry set_cmd_table[] =
 		cmd_set_dumbopts, 0, NULL},
 
 	{ "simfile", "simfile [filename]", "Select simulation file to use as data input. See freediag_carsim.db for an example",
-		cmd_set_simfile, 0, NULL},
+		cmd_set_simfile, FLAG_FILE_ARG, NULL},
 
 	{ "display", "display [english/metric]", "Sets english or metric display",
 		cmd_set_display, 0, NULL},

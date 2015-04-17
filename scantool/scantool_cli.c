@@ -4,6 +4,9 @@
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
  *
+ * Copyright (C) 2015 Tomasz Kaźmierczak (tomek-k@wp.eu)
+ *                    - added command completion
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -39,6 +42,11 @@
 
 #include "scantool.h"
 #include "scantool_cli.h"
+
+#ifdef HAVE_LIBREADLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
 
 
 #define PROMPTBUFSIZE 80		//was 1024 !!
@@ -78,11 +86,11 @@ static const struct cmd_tbl_entry root_cmd_table[]=
 		cmd_monitor, 0, NULL},
 
 	{ "log", "log <filename>", "Log monitor data to <filename>",
-		cmd_log, 0, NULL},
+		cmd_log, FLAG_FILE_ARG, NULL},
 	{ "stoplog", "stoplog", "Stop logging", cmd_stoplog, 0, NULL},
 
 	{ "play", "play filename", "Play back data from <filename>",
-		cmd_play, FLAG_HIDDEN, NULL},
+		cmd_play, FLAG_HIDDEN | FLAG_FILE_ARG, NULL},
 
 	{ "cleardtc", "cleardtc", "Clear DTCs from ECU", cmd_cleardtc, 0, NULL},
 	{ "ecus", "ecus", "Show ECU information", cmd_ecus, 0, NULL},
@@ -117,7 +125,7 @@ static const struct cmd_tbl_entry root_cmd_table[]=
 
 	{ "date", "date", "Prints date & time", cmd_date, FLAG_HIDDEN, NULL},
 	{ "#", "#", "Does nothing", cmd_rem, FLAG_HIDDEN, NULL},
-	{ "source", "source <file>", "Read commands from a file", cmd_source, 0, NULL},
+	{ "source", "source <file>", "Read commands from a file", cmd_source, FLAG_FILE_ARG, NULL},
 
 	{ "help", "help [command]", "Gives help for a command", cmd_help, 0, NULL },
 	{ "?", "? [command]", "Gives help for a command", cmd_help, FLAG_HIDDEN, NULL },
@@ -125,6 +133,13 @@ static const struct cmd_tbl_entry root_cmd_table[]=
 	{ "quit", "quit", "Exits program", cmd_exit, FLAG_HIDDEN, NULL},
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
+
+#ifdef HAVE_LIBREADLINE
+//current global command level for command completion
+struct cmd_tbl_entry const *current_cmd_level = root_cmd_table;
+//command level in the command line, also needed for command completion
+struct cmd_tbl_entry const *completion_cmd_level = root_cmd_table;
+#endif
 
 #define INPUT_MAX 1024
 
@@ -168,9 +183,6 @@ basic_get_input(const char *prompt)
 
 #ifdef HAVE_LIBREADLINE
 
-#include <readline/readline.h>
-#include <readline/history.h>
-
 /* Caller must free returned buffer */
 static char *
 get_input(const char *prompt)
@@ -186,14 +198,117 @@ get_input(const char *prompt)
 	return input;
 }
 
+char *
+command_generator(const char *text, int state)
+{
+	static int list_index, length;
+	const struct cmd_tbl_entry *cmd_entry;
+
+	//a new word to complete
+	if(state == 0) {
+		list_index = 0;
+		length = strlen(text);
+	}
+
+	//find the command
+	while(completion_cmd_level[list_index].command != NULL) {
+		cmd_entry = &completion_cmd_level[list_index];
+		list_index++;
+		if(strncmp(cmd_entry->command, text, length) == 0 && !(cmd_entry->flags & FLAG_HIDDEN)) {
+			char *ret_name;
+			//we must return a copy of the string; libreadline frees it for us
+			if(diag_malloc(&ret_name, strlen(cmd_entry->command)+1) != 0)
+				return (char *)NULL;
+			strcpy(ret_name, cmd_entry->command);
+			return ret_name;
+		}
+	}
+	return (char *)NULL;
+}
+
+char **
+scantool_completion(const char *text, int start, UNUSED(int end))
+{
+	char **matches;
+
+	//start == 0 is when the command line is either empty or contains only whitespaces
+	if(start == 0) {
+		//we are at the beginning of the command line, so the completion command level is equal to the current command level
+		completion_cmd_level = current_cmd_level;
+		rl_attempted_completion_over = 0;
+	}
+	//(start != end) means that we are trying to complete a command;
+	//(start > 0 and start == end) means that all commands are completed and we need to check for their sub-commands;
+	//we handle here both cases so that the completion_cmd_level is always up-to-date
+	else {
+		//parse the command line so that we know on what command level we should do the completion
+		struct cmd_tbl_entry const *parsed_level = current_cmd_level;
+
+		//we need to omit leading whitespaces
+		size_t begin_at = strspn(rl_line_buffer, " ");
+		const char *cmd = &rl_line_buffer[begin_at];
+		//now get the length of the first command
+		size_t cmd_length = strcspn(cmd, " ");
+
+		//check all completed commands
+		while(cmd_length > 0 && cmd[cmd_length] == ' ') {
+			//find out what it might be...
+			int found = 0;
+			for(int i = 0; parsed_level[i].command != NULL; i++) {
+				//if found the command on the current level
+				if(!(parsed_level[i].flags & FLAG_HIDDEN) &&
+				   strlen(parsed_level[i].command) == cmd_length &&
+				   strncmp(parsed_level[i].command, cmd, cmd_length) == 0) {
+					//does it have sub-commands?
+					if(parsed_level[i].sub_cmd_tbl != NULL) {
+						//go deeper
+						parsed_level = parsed_level[i].sub_cmd_tbl;
+						rl_attempted_completion_over = 0;
+						found = 1;
+					} else if(parsed_level[i].flags & FLAG_FILE_ARG) {
+						//the command accepts a filename as an argument, so use the libreadline's filename completion
+						rl_attempted_completion_over = 0;
+						return NULL;
+					} else {
+						//if no sub-commands, then no more completion
+						rl_attempted_completion_over = 1;
+						return NULL;
+					}
+					//stop searching on this level and go to another command in the command line (if any)
+					break;
+				}
+			}
+			//went through all commands and didn't find anything? then it is an unknown command
+			if(found == 0) {
+				rl_attempted_completion_over = 1;
+				return NULL;
+			}
+
+			//move past the just-parsed command
+			cmd = &cmd[cmd_length];
+			//again, omit whitespaces
+			begin_at = strspn(cmd, " ");
+			cmd = &cmd[begin_at];
+			//length of the next command
+			cmd_length = strcspn(cmd, " ");
+		}
+
+		//update the completion command level for the command_generator() function
+		completion_cmd_level = parsed_level;
+	}
+
+	matches = rl_completion_matches(text, command_generator);
+	if(matches == NULL)
+		//this will disable the default (filename and username) completion in case no command matches are found
+		rl_attempted_completion_over = 1;
+	return matches;
+}
+
 static void
 readline_init(void)
 {
-	/*
-	 * Could do fancy command completion someday, but for
-	 * now, at least disable the default filename completion.
-	 */
-	rl_bind_key('\t', rl_insert);
+	//our custom completion function
+	rl_attempted_completion_function = scantool_completion;
 }
 
 #else	// so no libreadline
@@ -807,6 +922,11 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
 	static char nullstr[2]={0,0};
 
+#ifdef HAVE_LIBREADLINE
+	//set the current command level for command completion
+	current_cmd_level = cmd_tbl;
+#endif
+
 	rv = 0, done = 0;
 	snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
 	while (!done) {
@@ -863,6 +983,10 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 							promptbuf,
 							cmd_argc-1,
 							&cmd_argv[1]);
+#ifdef HAVE_LIBREADLINE
+						//went out of the sub-menu, so update the command level for command completion
+						current_cmd_level = cmd_tbl;
+#endif
 						if (rv==CMD_EXIT)	//allow exiting prog. from a submenu
 							done=1;
 						snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
