@@ -35,7 +35,7 @@
  *			(i.e restartable system calls)
  *		SYSV does, so you see lots of code that copes with EINTR
  *	(4)	EINTR handling code belongs inside diag_os* and diag_tty* functions only,
- *		to provide a clean OS-independant API to upper levels. (TODO)
+ *		to provide a clean OS-independant API to upper levels. (WIP)
  *
   * Goals : if _POSIX_TIMERS is defined, we attempt to use:
  *		1- POSIX timer_create() mechanisms for the periodic callbacks
@@ -50,6 +50,10 @@
  *
  * more info on different OS high-resolution timers:
  *	http://nadeausoftware.com/articles/2012/04/c_c_tip_how_measure_elapsed_real_time_benchmarking
+ *
+ *
+ * TODO:
+		diag_os_sched non-root fallback ? (i.e. highest prio available to uid!=0)
  */
 
 
@@ -78,8 +82,11 @@
 	/* This should be defined on a lot of linux/unix systems.
 		Implications : timer_create(), clock_gettime(), clock_nanosleep() are available.
 	*/
-	//monoton_src : auto-selected best clockid in diag_os_discover()
-	static clockid_t monoton_src = CLOCK_MONOTONIC;	//probably-safe default
+	//Auto-selected best clockids in diag_os_discover() :
+	static clockid_t clkid_pt = CLOCK_MONOTONIC;	//clockid for periodic timer,
+	static clockid_t clkid_gt = CLOCK_MONOTONIC;	// for clock_gettime(),
+	static clockid_t clkid_ns = CLOCK_MONOTONIC;	// for clock_nanosleep()
+
 	static timer_t ptimer_id;	//periodic timer ID
 
 	static void diag_os_discover(void);
@@ -104,7 +111,6 @@ diag_os_periodic(UNUSED(union sigval sv))
 diag_os_periodic(UNUSED(int unused))
 #endif
 {
-	printf("os_periodic\n");
 	diag_l3_timer();	/* Call L3 Timer */
 	diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
 }
@@ -120,29 +126,20 @@ diag_os_init(void)
 	if (diag_os_init_done)
 		return 0;
 
+	diag_os_discover();	//auto-select clockids or other capabilities
 	diag_os_calibrate();	//before starting periodic callbacks
 	
 #ifdef _POSIX_TIMERS
 	struct itimerspec pti;
 	struct sigevent pt_sigev;
-#ifdef _POSIX_MONOTONIC_CLOCK
-	//for some reason we can't use CLOCK_MONOTONIC_RAW for periodic timers, but
-	//CLOCK_MONOTONIC will do just fine
-	const clockid_t pt_cid = CLOCK_MONOTONIC;
-#else
-	//CLOCK_REALTIME is mandatory, _MONOTONIC was optional
-	const clockid_t pt_cid = CLOCK_REALTIME;
-#endif // _POSIX_MONOTONIC_CLOCK
 
-	diag_os_discover();	//auto-select monoton_src
-	
 	pt_sigev.sigev_notify = SIGEV_THREAD;	//"Upon timer expiration, invoke sigev_notify_function "
 	pt_sigev.sigev_notify_function = diag_os_periodic;
 	pt_sigev.sigev_notify_attributes = NULL;	//not sure what we need here, if anything.
 //	pt_sigev.sigev_value.sival_int = 0;	//not used
 //	pt_sigev.siev_signo = 0;	//not used
 	
-	if (timer_create(pt_cid, &pt_sigev, &ptimer_id) != 0) {
+	if (timer_create(clkid_pt, &pt_sigev, &ptimer_id) != 0) {
 		fprintf(stderr, FLFMT "Could not create periodic timer... report this\n", FL);
 		diag_os_geterr(0);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -215,9 +212,12 @@ diag_os_init(void)
 }	//diag_os_init
 
 //diag_os_close: delete alarm handlers / periodic timers
-//return 0 if ok
+//return 0 if ok (in this case, always)
 int diag_os_close() {
-	//I know nothing about unix timers. Viewer discretion is advised.
+#ifdef _POSIX_TIMERS
+	//disarm + delete periodic timer
+	timer_delete(ptimer_id);
+#else
 	//stop the interval timer:
 	struct itimerval tv={{0,0},{0, 0}};
 	setitimer(ITIMER_REAL, &tv, 0);
@@ -227,23 +227,46 @@ int diag_os_close() {
 	memset(&disable_tmr, 0, sizeof(disable_tmr));
 	disable_tmr.sa_handler=SIG_DFL;
 	sigaction(SIGALRM, &disable_tmr, NULL);
+#endif // _POSIX_TIMERS
+	
+	diag_os_init_done = 0;
 	return 0;
 
 } 	//diag_os_close
 
 
-//different os_millisleep implementations
-//TODO : add timing verification for *unix
-
-int
+//return after (ms) milliseconds.
+void
 diag_os_millisleep(unsigned int ms)
 {
-#if defined(__linux__) && (TRY_POSIX == 0)
+	unsigned long long t1,t2;	//for verification
+	long int offsetus;
+	
+	t1=diag_os_gethrt();
 
+#ifdef _POSIX_TIMERS
+	struct timespec rqst, resp;
+	int rv;
+
+	rqst.tv_sec = ms / 1000;
+	rqst.tv_nsec = (ms % 1000) * 1000*1000;
+
+	errno = 0;
+	while ((rv=clock_nanosleep(clkid_ns, 0, &rqst, &resp)) != 0) {
+		if (rv == EINTR) {
+			rqst = resp;
+			errno = 0;
+		} else {
+			break;	//unlikely
+		}
+	}
+#elif defined(__linux__)
+#warning ****** WARNING ! Your system claims to be __linux__ but without _POSIX_TIMERS ??
+#warning ****** WARNING ! Good luck.
+/** ugly /dev/rtc implementation; requires uid=0 or appropriate permissions. **/
 	int fd, retval;
 	unsigned int i;
 	unsigned long tmp,data;
-	//struct rtc_time rtc_tm;	//not used ?
 
 	/* adjust time for 2048 rate */
 
@@ -305,94 +328,16 @@ diag_os_millisleep(unsigned int ms)
 
 	close(fd);
 
-	return 0;
+#endif // _POSIX_TIMERS
 
-//old millisleep
-#if 0
+	t2 = diag_os_gethrt();
+	offsetus = (long int) (diag_os_hrtus(t2-t1) - ms*1000);
+	if ((offsetus > 1500) || (offsetus < -1500))
+		printf("_millisleep off by %ld\n", offsetus);
+	//TODO : auto-adjust ?
+	
+	return;
 
-/*
-+* Original LINUX implementation for a millisecond sleep:
- *
- * Sleep for N milliseconds
- *
- * This is aimed at small waits as it does very accurate "busy wait"
- * sleeping 2ms at a time (nanosleep does busy wait sleeps for <=2ms requests)
- *
-+* XXX I'm not sure what the above comment means.  The POSIX definition
-+* of nanosleep is:
-+*
-+* "The nanosleep() function shall cause the current thread to be
-+* suspended from execution until the time interval specified by the
-+* rqtp argument has elapsed, a signal is delivered to the calling
-+* thread and the action of the signal is to invoke a signal-catching
-+* function, or to terminate the process [...] But,  except  for  the
-+* case of being interrupted by a signal, the suspension time shall
-+* not be less than the time specified by  rqtp,  as measured by the
-+* system clock CLOCK_REALTIME. "
-+*
-+* Note that this is thread specific, the process is suspended (it
-+* doesn't busy wait), and signals wake it up again.  I've provided what
-+* I think is the correct implementation below.  This one is much more overhead
-+* than it needs to be.
- */
-	struct timespec rqst, resp;
-
-	if (ms > 1)
-		ms /= 2;
-
-	while (ms)
-	{
-		if (ms > 2)
-		{
-			rqst.tv_nsec = 2000000;
-			ms -= 2;
-
-		}
-		else
-		{
-			rqst.tv_nsec = ms * 1000000;
-			ms = 0;
-		}
-		rqst.tv_sec = 0;
-
-		while (nanosleep(&rqst, &resp) != 0)
-		{
-			if (errno == EINTR)
-			{
-				/* Interrupted, continue */
-				memcpy(&rqst, &resp, sizeof(resp));
-			}
-			else
-				return -1;	/* Some other failure */
-
-		}
-	}
-
-	return 0;
-#endif //of #if 0 (old millisleep)
-
-#else	// from initial "if linux && !posix" :
-
-/*
- * I think this implementation works in all cases, with less overhead.
- */
-	struct timespec rqst, resp;
-
-	rqst.tv_sec = ms / 1000;
-	rqst.tv_nsec = (ms - (rqst.tv_sec * 1000)) * 1000000L;
-
-	errno = 0;
-	while (nanosleep(&rqst, &resp) == -1) {
-		if (errno == EINTR) {
-			rqst = resp;
-			errno = 0;
-		}
-		else
-			return -1;
-	}
-	return 0;
-
-#endif	//initial "if linux && !posix"
 }	//diag_os_millisleep
 
 /*
@@ -428,7 +373,6 @@ diag_os_ipending(void) {
 //this is called from most diag_l0_* devices; calling more than once
 //will harm nothing. There is no "opposite" function of this, to
 //reset normal priority.
-//we ifdef the body of the function according to the OS capabilities
 int
 diag_os_sched(void)
 {
@@ -436,7 +380,7 @@ diag_os_sched(void)
 	int rv=0;
 
 	if (os_sched_done)
-		return 0;	//don't do it more than once
+		return 0;
 
 #ifdef _POSIX_PRIORITY_SCHEDULING
 #include <sched.h>
@@ -490,13 +434,12 @@ diag_os_sched(void)
 	}
 	rv=r;
 #else	//not POSIX_PRIO_SCHED
-#warning No special scheduling support in diag_os.c for your OS!
-#warning Please report this !
+#warning No special scheduling support in diag_os.c for your OS! Please report this !
 
 	fprintf(stderr,
 		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
 	rv=-1;
-#endif
+#endif // _POSIX_PRIORITY_SCHEDULING
 	os_sched_done=1;
 	return rv;
 }	//of diag_os_sched
@@ -528,42 +471,86 @@ const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 }
 
 #ifdef _POSIX_TIMERS
-static void diag_os_discover(void) {
+//internal use. ret 0 if ok
+static int diag_os_testgt(clockid_t ckid, char * ckname) {
 	struct timespec tmtest;
-	//use best clock truly available:
-#ifdef CLOCK_MONOTONIC_RAW
-	if (clock_gettime(CLOCK_MONOTONIC_RAW, &tmtest) == 0) {
-		printf("using CLOCK_MONOTONIC_RAW.\n");
-		monoton_src = CLOCK_MONOTONIC_RAW;
-		return;
+	if (clock_gettime(ckid, &tmtest) == 0) {
+		printf("clock_gettime(): using %s\n", ckname);
+		clkid_gt = ckid;
+		return 0;
 	}
-#endif // CLOCK_MONOTONIC_RAW
-#ifdef CLOCK_MONOTONIC
-	if (clock_gettime(CLOCK_MONOTONIC, &tmtest) == 0) {
-		printf("using CLOCK_MONOTONIC.\n");
-		monoton_src = CLOCK_MONOTONIC;
-		return;
+	return -1;
+}
+//internal use. ret 0 if ok
+static int diag_os_testns(clockid_t ckid, char * ckname) {
+	struct timespec rqtp;
+	rqtp.tv_sec = 0;
+	rqtp.tv_nsec = 0;	//bogus interval for nanosleep test
+	if (clock_nanosleep(ckid, 0, &rqtp, NULL) != ENOTSUP) {
+		printf("clock_nanosleep(): using %s\n", ckname);
+		clkid_gt = ckid;
+		return 0;
 	}
-#endif // CLOCK_MONOTONIC
-#ifdef CLOCK_BOOTTIME
-	if (clock_gettime(CLOCK_BOOTTIME, &tmtest) == 0) {
-		printf("using unusual CLOCK_BOOTTIME.\n");
-		monoton_src = CLOCK_BOOTTIME;
-		return;
-	}
-#endif // CLOCK_BOOTTIME
-#ifdef CLOCK_REALTIME
-	if (clock_gettime(CLOCK_REALTIME, &tmtest) == 0) {
-		printf("using sub-optimal CLOCK_REALTIME.\n");
-		monoton_src = CLOCK_REALTIME;
-		return;
-	}
-#endif
-	printf("WARNING: your system lied about CLOCK_MONOTONIC !!!\nWARNING: you WILL have problems !\n");
-	monoton_src = CLOCK_MONOTONIC;	//won't work anyway...
-	return;
+	return -1;
 }
 #endif // _POSIX_TIMERS
+
+//use best clock truly available:
+//TODO : add weird clockids for other systems
+static void diag_os_discover(void) {
+#ifdef _POSIX_TIMERS
+	int gtdone=0, nsdone=0;
+
+//***** 1) set clockid for periodic timers
+#ifdef _POSIX_MONOTONIC_CLOCK
+	//for some reason we can't use CLOCK_MONOTONIC_RAW, but
+	//CLOCK_MONOTONIC will do just fine
+	clkid_pt= CLOCK_MONOTONIC;
+#else
+	//CLOCK_REALTIME is mandatory (_MONOTONIC was optional)
+	clkid_pt = CLOCK_REALTIME;
+#endif // _POSIX_MONOTONIC_CLOCK
+
+//***** 2) test clockids for clock_gettime and clock_nanosleep
+#define TESTCK(X)	if (!gtdone) if (diag_os_testgt(X, #X)==0) { gtdone=1;} \
+					if (!nsdone) if (diag_os_testns(X, #X)==0) { nsdone=1;}
+
+#ifdef CLOCK_MONOTONIC_RAW
+	TESTCK(CLOCK_MONOTONIC_RAW)
+#endif // CLOCK_MONOTONIC_RAW
+#ifdef CLOCK_MONOTONIC
+	TESTCK(CLOCK_MONOTONIC)
+#endif // CLOCK_MONOTONIC
+#ifdef CLOCK_BOOTTIME
+	TESTCK(CLOCK_BOOTTIME)
+	if (clkid_gt == CLOCK_BOOTTIME)
+		printf("CLOCK_BOOTTIME is unusual...\n");
+#endif // CLOCK_BOOTTIME
+#ifdef CLOCK_REALTIME
+	TESTCK(CLOCK_REALTIME)
+	if (clkid_gt == CLOCK_REALTIME)
+		printf("CLOCK_REALTIME is suboptimal !\n");
+#endif
+
+	if (!gtdone) {
+		clkid_gt = CLOCK_REALTIME;	//won't work anyway...
+		printf("WARNING: no clockid for clock_gettime()!!\n");
+	}
+	if (!nsdone) {
+		clkid_ns = CLOCK_REALTIME;
+		printf("WARNING: no clockid for clock_nanosleep()!!\n");
+	}
+	if (!gtdone || !nsdone) {
+		printf("WARNING: your system lied about its clocks;\nWARNING: you WILL have problems !\n");
+	}
+
+	return;
+#else
+	//nothing to do (yet) for non-posix
+	return;
+#endif // _POSIX_TIMERS
+}
+
 
 //diag_os_calibrate : run some timing tests to make sure we have
 //adequate performances.
@@ -580,7 +567,8 @@ void diag_os_calibrate(void) {
 	if (calibrate_done)
 		return;
 
-	//test _gethrt(). This measures usable resolution (clock_getres() gives raw clock res)
+	//test _gethrt(). clock_getres() would tell us the resolution, but measuring
+	//like this including overhead gives a better measure of "usable" res.
 	resol=0;
 	maxres=0;
 	for (int i=0; i < RESOL_ITERS; i++) {
@@ -593,6 +581,46 @@ void diag_os_calibrate(void) {
 	}
 	printf("diag_os_gethrt() resolution <= %lluus, avg ~%lluus\n",
 			diag_os_hrtus(maxres), diag_os_hrtus(resol / RESOL_ITERS));
+	if (diag_os_hrtus(maxres) >= 1200)
+		printf("WARNING : your system offers no clock >= 1kHz; this WILL be a problem!\n");
+	
+	//test _millisleep() VS _gethrt()
+	printf("testing diag_os_millisleep(), this will take a moment...\n");
+	for (int testval=50; testval > 0; testval -= 2) {
+		//Start with the highest timeout
+		int i;
+		const int iters = 5;
+		long long avgerr, max, min, tsum;	//in us
+
+		tsum=0;
+		max=0;
+		min=testval*1000;
+
+		for (i=0; i< iters; i++) {
+			long long timediff;
+			tl1=diag_os_gethrt();
+			diag_os_millisleep(testval);
+			tl2=diag_os_gethrt();
+			timediff= (long long) diag_os_hrtus(tl2 - tl1);
+			tsum += timediff;
+			//update extreme records if required:
+			if (timediff < min)
+				min = timediff;
+			if (timediff > max)
+				max = timediff;
+		}
+		avgerr= (tsum/iters) - (testval*1000);	//average error in us
+		//a high spread (max-min) indicates initbus with dumb interfaces will be
+		//fragile. We just print it out; there's not much we can do to fix this.
+		if ((min < (testval*1000)) || (avgerr > 900)) {
+			printf("diag_os_millisleep(%d) off by %lld%% (+%lldus)"
+			"; spread=%lld%%\n", testval, (avgerr*100/1000)/testval, avgerr, ((max-min)*100)/(testval*1000));
+		}
+
+
+		if (testval>=25)
+			testval -= 7;
+	}	//for testvals
 
 	//test _getms()
 	resol=0;
@@ -631,14 +659,12 @@ unsigned long diag_os_getms(void) {
 }
 
 //return high res timestamp, monotonic.
-// TODO: increase portability... Linux and anything POSIX should definitely
-// have clock_gettime(), but what about _POSIX_MONOTONIC_CLOCK ?
 unsigned long long diag_os_gethrt(void) {
 #ifdef _POSIX_TIMERS
 	//units : ns
 	struct timespec curtime={0};
 
-	clock_gettime(monoton_src, &curtime);
+	clock_gettime(clkid_gt, &curtime);
 
 	return curtime.tv_nsec + (curtime.tv_sec * 1000*1000*1000);
 

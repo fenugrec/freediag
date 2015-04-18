@@ -143,7 +143,7 @@ int diag_os_close() {
 
 
 //
-int
+void
 diag_os_millisleep(unsigned int ms)
 {
 	//This version self-corrects if Sleep() overshoots;
@@ -161,7 +161,7 @@ diag_os_millisleep(unsigned int ms)
 
 	if (perfo_freq.QuadPart ==0) {
 		Sleep(ms);
-		return 0;
+		return;
 	}
 	LONGLONG reqt= (ms * perfo_freq.QuadPart)/1000;	//required # of counts
 
@@ -175,7 +175,7 @@ diag_os_millisleep(unsigned int ms)
 			real_t = (long) (pf_conv * (tdiff-reqt));	//in us
 			if (real_t > 1000)
 				correction += real_t;
-			return 0;
+			return;
 		}
 	}
 

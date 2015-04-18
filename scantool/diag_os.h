@@ -49,7 +49,7 @@ int diag_os_close(void);
 //diag_os_millisleep: return after (ms) has elapsed.
 //millisleep makes or breaks freediag... Coding this function
 //is usually a nightmare on most OS'es. See doc/sourcetree_notes.txt
-int diag_os_millisleep(unsigned int ms);
+void diag_os_millisleep(unsigned int ms);
 
 /* diag_os_ipending:
  * currently (like 2014), it is only used in a few places to break long loops ?
