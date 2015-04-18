@@ -3,6 +3,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * 2014-2015 fenugrec
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,102 +22,181 @@
  *************************************************************************
  *
  *
- * OS specific stuff
- * Originally LINUX specific stuff, but it is now a little more generic.
- *
- *
- * This code tweaks things to behave how we want it to, and does
- * very OS specific stuff
+ * OS abstraction & wrappers for unix, linux & OSX as much as possible.
  *
  * We run the process in
  *	(1) Real time mode, as we need to do some very accurate sleeps
- *		for fast init purposes
+ *		in diag_l0_dumb ;
  *	(2) As root in order to establish (1)
- *	(3) The os specific and IO driver code allows "interruptible syscalls"
+ *
+ * Some notes on syscall interruption :
+ * 	(3) The os specific and IO driver code allows "interruptible syscalls"
  *		BSD and Linux defaults is that signals don't interrupt syscalls
  *			(i.e restartable system calls)
  *		SYSV does, so you see lots of code that copes with EINTR
+ *	(4)	EINTR handling code belongs inside diag_os* and diag_tty* functions only,
+ *		to provide a clean OS-independant API to upper levels. (TODO)
  *
+  * Goals : if _POSIX_TIMERS is defined, we attempt to use:
+ *		1- POSIX timer_create() mechanisms for the periodic callbacks
+ *		2- POSIX clock_gettime(), using best available clock, for _getms and _gethrt
+ *		2b- using clock_gettime() removes requirement for gettimeofday() and associated compile-time checks
+ *		3- clock_nanosleep() for diag_os_millisleep()
+ *
+ * Fallbacks for above:
+ *		1- SIGALRM signal handler (_POSIX_TIMERS means timer_create() is available)
+ *		2- gettimeofday(), yuck. TODO : OSX specific mach_absolute_time()
+ *		3- nanosleep() loop + checking (nanosleep is interruptible !)
+ *
+ * more info on different OS high-resolution timers:
+ *	http://nadeausoftware.com/articles/2012/04/c_c_tip_how_measure_elapsed_real_time_benchmarking
  */
 
 
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
-
-#include "diag_tty.h"
 #include "diag_os.h"
 #include "diag.h"
 
-#include "diag_l1.h"
 #include "diag_l2.h"
 #include "diag_l3.h"
 #include "diag_err.h"
 
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include <linux/rtc.h>
-#include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <linux/rtc.h>	//XXX todo : #ifdef
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <time.h>
 
 
-#ifdef _POSIX_MONOTONIC_CLOCK	//this should be true on a lot of linux/unix systems
-	//auto-select either CLOCK_MONOTONIC or CLOCK_MONOTONIC_RAW, see _calibrate()
+#ifdef _POSIX_TIMERS
+	/* This should be defined on a lot of linux/unix systems.
+		Implications : timer_create(), clock_gettime(), clock_nanosleep() are available.
+	*/
+	//monoton_src : auto-selected best clockid in diag_os_discover()
 	static clockid_t monoton_src = CLOCK_MONOTONIC;	//probably-safe default
+	static timer_t ptimer_id;	//periodic timer ID
+
+	static void diag_os_discover(void);
+#else
+#warning ****** no POSIX timers on your system !?!? Report this!
 #endif
 
 static int diag_os_init_done=0;
 
-/*
- * SIGALRM handler.
-+* XXX Should be replaced with Posix timers, where available.
-+* Those are much better behaved, you get one handler per installed
-+* handler.
-+* Also, the current implementation uses non-async-signal-safe functions
+
+
+/* Also, the current implementation uses non-async-signal-safe functions
 +* in the signal handlers.  Their behavior is undefined if they happen
 +* to occur during any other non-async-signal-safe function.
  */
 
-void
-diag_os_sigalrm(UNUSED(int unused))
+
+static void
+#ifdef _POSIX_TIMERS
+diag_os_periodic(UNUSED(union sigval sv))
+#else
+diag_os_periodic(UNUSED(int unused))
+#endif
 {
+	printf("os_periodic\n");
 	diag_l3_timer();	/* Call L3 Timer */
 	diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
 }
 
-//diag_os_init : a bit of a misnomer. This sets up a periodic callback
-//to call diag_l3_timer and diag_l2_timer; that would sound like a job
-//for "diag_os_sched". The WIN32 version of diag_os_init also
-//calls diag_os_sched to increase thread priority.
+//_os_init sets up a periodic callback (diag_os_periodic())
+//for diag_l3_timer and diag_l2_timer (keepalive messages).
 //return 0 if ok
 int
 diag_os_init(void)
 {
-	struct sigaction stNew;
-	struct itimerval tv;
-	long tmo = ALARM_TIMEOUT;
+	const long tmo = ALARM_TIMEOUT;
 
 	if (diag_os_init_done)
 		return 0;
+
+	diag_os_calibrate();	//before starting periodic callbacks
+	
+#ifdef _POSIX_TIMERS
+	struct itimerspec pti;
+	struct sigevent pt_sigev;
+#ifdef _POSIX_MONOTONIC_CLOCK
+	//for some reason we can't use CLOCK_MONOTONIC_RAW for periodic timers, but
+	//CLOCK_MONOTONIC will do just fine
+	const clockid_t pt_cid = CLOCK_MONOTONIC;
+#else
+	//CLOCK_REALTIME is mandatory, _MONOTONIC was optional
+	const clockid_t pt_cid = CLOCK_REALTIME;
+#endif // _POSIX_MONOTONIC_CLOCK
+
+	diag_os_discover();	//auto-select monoton_src
+	
+	pt_sigev.sigev_notify = SIGEV_THREAD;	//"Upon timer expiration, invoke sigev_notify_function "
+	pt_sigev.sigev_notify_function = diag_os_periodic;
+	pt_sigev.sigev_notify_attributes = NULL;	//not sure what we need here, if anything.
+//	pt_sigev.sigev_value.sival_int = 0;	//not used
+//	pt_sigev.siev_signo = 0;	//not used
+	
+	if (timer_create(pt_cid, &pt_sigev, &ptimer_id) != 0) {
+		fprintf(stderr, FLFMT "Could not create periodic timer... report this\n", FL);
+		diag_os_geterr(0);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	//timer was created in disarmed state
+	pti.it_interval.tv_sec = (tmo / 1000);
+	pti.it_interval.tv_nsec = (tmo % 1000) * 1000*1000;
+	pti.it_value.tv_sec = pti.it_interval.tv_sec;
+	pti.it_value.tv_nsec = pti.it_interval.tv_nsec;
+
+	if (timer_settime(ptimer_id, 0, &pti, NULL) != 0) {
+		fprintf(stderr, FLFMT "Could not set periodic timer... report this\n", FL);
+		diag_os_geterr(0);
+		timer_delete(ptimer_id);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+#else	//so, no _POSIX_TIMERS ... sucks
+	struct sigaction stNew;
+	struct itimerval tv;
+	
 	/*
 	 * Install alarm handler
 	 */
 	memset(&stNew, 0, sizeof(stNew));
-	stNew.sa_handler = diag_os_sigalrm;
+	stNew.sa_handler = diag_os_periodic;
 	stNew.sa_flags = 0;
-	/*
-	 * I want to use POSIX timers to interrupt the reads, but I can't
-	 * if SA_RESTART is in effect.  The best thing would be to use
-	 * POSIX threads since the behavior is well-defined.
-	 */
-#if defined(__linux__) && (TRY_POSIX == 0)
-	stNew.sa_flags = SA_RESTART;
-#endif
+	//stNew.sa_flags = SA_RESTART;
+
+/* Notes on SA_RESTART: (man 7 signal)
+	The following interfaces are never restarted after being interrupted by
+	a signal handler, regardless of the use of SA_RESTART; they always fail
+	with the error EINTR when interrupted by a signal handler:
+  select, clock_nanosleep, [some others].
+
+*** From POSIX docs:
+ SA_RESTART
+    This flag affects the behavior of interruptible functions; that is,
+    those specified to fail with errno set to [EINTR]. If set, and a
+    function specified as interruptible is interrupted by this signal,
+    the function shall restart and shall not fail with [EINTR] unless
+    otherwise specified. If an interruptible function which uses a
+    timeout is restarted, the duration of the timeout following the
+    restart is set to an unspecified value that does not exceed the
+    original timeout value. If the flag is not set, interruptible
+    functions interrupted by this signal shall fail with errno set to
+    [EINTR].
+   
+*** Interesting synthesis on
+  http://unix.stackexchange.com/questions/16455/interruption-of-system-calls-when-a-signal-is-caught
+ 
+*** Conclusion : since we need to handle EINTR for read(), write(), select()
+	and some *sleep() syscalls anyway, we don't specify SA_RESTART.
+
+*/
 
 	sigaction(SIGALRM, &stNew, NULL);	//install handler for SIGALRM
 	/*
@@ -128,7 +208,8 @@ diag_os_init(void)
 	tv.it_value = tv.it_interval;
 
 	setitimer(ITIMER_REAL, &tv, 0); /* Set timer : it will SIGALRM upon expiration */
-	diag_os_calibrate();
+#endif // _POSIX_TIMERS
+
 	diag_os_init_done = 1;
 	return 0;
 }	//diag_os_init
@@ -241,10 +322,13 @@ diag_os_millisleep(unsigned int ms)
 +* of nanosleep is:
 +*
 +* "The nanosleep() function shall cause the current thread to be
-+* suspended from execution until hte time interval specified by the
++* suspended from execution until the time interval specified by the
 +* rqtp argument has elapsed, a signal is delivered to the calling
 +* thread and the action of the signal is to invoke a signal-catching
-+* function, or the process is terminated"
++* function, or to terminate the process [...] But,  except  for  the
++* case of being interrupted by a signal, the suspension time shall
++* not be less than the time specified by  rqtp,  as measured by the
++* system clock CLOCK_REALTIME. "
 +*
 +* Note that this is thread specific, the process is suspended (it
 +* doesn't busy wait), and signals wake it up again.  I've provided what
@@ -419,6 +503,7 @@ diag_os_sched(void)
 
 
 #ifndef HAVE_GETTIMEOFDAY
+	//TODO : don't need gettimeofday if _POSIX_TIMERS ?
 	#error No implementation of gettimeofday() for your system!
 #endif	//HAVE_GETTIMEOFDAY
 
@@ -442,6 +527,44 @@ const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 
 }
 
+#ifdef _POSIX_TIMERS
+static void diag_os_discover(void) {
+	struct timespec tmtest;
+	//use best clock truly available:
+#ifdef CLOCK_MONOTONIC_RAW
+	if (clock_gettime(CLOCK_MONOTONIC_RAW, &tmtest) == 0) {
+		printf("using CLOCK_MONOTONIC_RAW.\n");
+		monoton_src = CLOCK_MONOTONIC_RAW;
+		return;
+	}
+#endif // CLOCK_MONOTONIC_RAW
+#ifdef CLOCK_MONOTONIC
+	if (clock_gettime(CLOCK_MONOTONIC, &tmtest) == 0) {
+		printf("using CLOCK_MONOTONIC.\n");
+		monoton_src = CLOCK_MONOTONIC;
+		return;
+	}
+#endif // CLOCK_MONOTONIC
+#ifdef CLOCK_BOOTTIME
+	if (clock_gettime(CLOCK_BOOTTIME, &tmtest) == 0) {
+		printf("using unusual CLOCK_BOOTTIME.\n");
+		monoton_src = CLOCK_BOOTTIME;
+		return;
+	}
+#endif // CLOCK_BOOTTIME
+#ifdef CLOCK_REALTIME
+	if (clock_gettime(CLOCK_REALTIME, &tmtest) == 0) {
+		printf("using sub-optimal CLOCK_REALTIME.\n");
+		monoton_src = CLOCK_REALTIME;
+		return;
+	}
+#endif
+	printf("WARNING: your system lied about CLOCK_MONOTONIC !!!\nWARNING: you WILL have problems !\n");
+	monoton_src = CLOCK_MONOTONIC;	//won't work anyway...
+	return;
+}
+#endif // _POSIX_TIMERS
+
 //diag_os_calibrate : run some timing tests to make sure we have
 //adequate performances.
 
@@ -456,27 +579,6 @@ void diag_os_calibrate(void) {
 
 	if (calibrate_done)
 		return;
-		
-#ifdef _POSIX_MONOTONIC_CLOCK
-	struct timespec tmtest;
-	//use best clock truly available:
-	if (clock_gettime(CLOCK_MONOTONIC_RAW, &tmtest) == 0) {
-		printf("using CLOCK_MONOTONIC_RAW.\n");
-		monoton_src = CLOCK_MONOTONIC_RAW;
-	} else if (clock_gettime(CLOCK_MONOTONIC, &tmtest) == 0) {
-		printf("using CLOCK_MONOTONIC.\n");
-		monoton_src = CLOCK_MONOTONIC;
-	} else if (clock_gettime(CLOCK_BOOTTIME, &tmtest) == 0) {
-		printf("using unusual CLOCK_BOOTTIME.\n");
-		monoton_src = CLOCK_BOOTTIME;
-	} else if (clock_gettime(CLOCK_REALTIME, &tmtest) == 0) {
-		printf("using sub-optimal CLOCK_REALTIME.\n");
-		monoton_src = CLOCK_REALTIME;
-	} else {
-		printf("WARNING: your system lied about CLOCK_MONOTONIC !!!\nWARNING: you WILL have problems !\n");
-		monoton_src = CLOCK_MONOTONIC;	//won't work anyway...
-	}
-#endif // _POSIX_MONOTONIC_CLOCK
 
 	//test _gethrt(). This measures usable resolution (clock_getres() gives raw clock res)
 	resol=0;
@@ -532,7 +634,7 @@ unsigned long diag_os_getms(void) {
 // TODO: increase portability... Linux and anything POSIX should definitely
 // have clock_gettime(), but what about _POSIX_MONOTONIC_CLOCK ?
 unsigned long long diag_os_gethrt(void) {
-#ifdef _POSIX_MONOTONIC_CLOCK
+#ifdef _POSIX_TIMERS
 	//units : ns
 	struct timespec curtime={0};
 
@@ -541,7 +643,6 @@ unsigned long long diag_os_gethrt(void) {
 	return curtime.tv_nsec + (curtime.tv_sec * 1000*1000*1000);
 
 #else
-#warning ****** no POSIX monotonic clock on your system ! Report this!
 	//but we'll use gettimeofday anyway as a stopgap. This is evil
 	//because gettimeofday isn't guaranteed to be monotonic (always increasing)
 	//TODO : OSX has a mach_absolute_time() which could be used.
@@ -556,7 +657,7 @@ unsigned long long diag_os_gethrt(void) {
 
 //convert a delta of diag_os_gethrt() timestamps to microseconds
 unsigned long long diag_os_hrtus(unsigned long long hrdelta) {
-#ifdef _POSIX_MONOTONIC_CLOCK	//must match diag_os_gethrt() implementation!
+#ifdef _POSIX_TIMERS	//must match diag_os_gethrt() implementation!
 	return hrdelta / 1000;
 #else
 	return hrdelta;
@@ -579,7 +680,6 @@ unsigned long diag_os_chronoms(unsigned long treset) {
 	rv -= (offset.tv_nsec / 1000000)+(offset.tv_sec * 1000);
 	return rv;
 #else
-#warning ****** no POSIX timers ! Please report this.
 	//as we did for diag_os_getms(), we'll use gettimeofday.
 	//But in this case it's not a big problem
 	static struct timeval offset={0,0};
@@ -595,5 +695,5 @@ unsigned long diag_os_chronoms(unsigned long treset) {
 	rv -= (offset.tv_usec/1000) + (offset.tv_sec * 1000);
 
 	return rv;
-#endif
+#endif // _POSIX_TIMERS
 }

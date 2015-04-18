@@ -103,17 +103,17 @@ else()
 	endif ()
 
 	
-	#diag_os needs clock_gettime if _POSIX_TIMERS is defined.
-	#for clock_gettime, we need to link with -lrt if glibc < 2.17. What a mess.
+	#diag_os_unix needs some _POSIX_TIMERS functions wich
+	#may require linking with -lrt
 	set (CMAKE_REQUIRED_INCLUDE_FILES time.h)
-	check_function_exists (clock_gettime HAVE_CLOCK_GETTIME)
-	if (HAVE_CLOCK_GETTIME)
+	check_function_exists (timer_create HAVE_TIMER_CREATE)
+	if (HAVE_TIMER_CREATE)
 		# all set, nothing to do. So glibc is recent enough
-		message (STATUS "Using glibc clock_gettime().")
+		message (STATUS "Using glibc timer_create().")
 	else ()
 		#else, we try finding clock_gettime in librt
-		check_library_exists (rt clock_gettime time.h HAVE_LIBRT)
-		message (STATUS "Using clock_gettime() from librt.")
+		check_library_exists (rt timer_create time.h HAVE_LIBRT)
+		message (STATUS "Using timer_create() from librt.")
 		if (HAVE_LIBRT)
 			#set extra linker flag
 			set (LIBRT rt)

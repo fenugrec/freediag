@@ -10,6 +10,8 @@
  * WIN32 will use CreateTimerQueueTimer instead of the SIGALRM handler of unix.
  * Right now there's no self-checking but it should be of OK accuracy for basic stuff ( keepalive messages )
  * NOTE : that means at least WinXP is required.
+ 
+ * additional timing info: http://www.windowstimestamp.com/description
  */
 
 
