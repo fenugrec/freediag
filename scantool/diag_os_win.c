@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "diag_tty.h"
 #include "diag_os.h"
@@ -37,6 +38,7 @@ static int diag_os_init_done=0;
 
 LARGE_INTEGER perfo_freq={{0,0}};	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
 float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds, i.e. [us]=[counts]*pf_conv
+static int pfconv_valid=0;	//flag after querying perfo_freq; nothing will not work without a performance counter
 int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_millisleep & diag_os_calibrate
 
 
@@ -99,10 +101,17 @@ diag_os_init(void)
 
 	if ( !QueryPerformanceFrequency(&perfo_freq) || (perfo_freq.QuadPart==0)) {
 		fprintf(stderr, FLFMT "Fatal: could not QPF. Please report this !\n", FL);
+		diag_os_close();
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
+	if (perfo_freq.QuadPart ==0) {
+		fprintf(stderr, FLFMT "Fatal: QPF reports 0Hz. Please report this !\n", FL);
+		diag_os_close();
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 	pf_conv=1.0E6 / perfo_freq.QuadPart;
+	pfconv_valid =1;
 
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "Performance counter frequency : %9"PRIu64"Hz\n", FL, perfo_freq.QuadPart);
@@ -157,6 +166,7 @@ diag_os_millisleep(unsigned int ms)
 	LONGLONG tdiff;	//measured (elapsed) time (in counts)
 
 	QueryPerformanceCounter(&qpc1);
+	assert(pfconv_valid);
 	tdiff=0;
 
 	if (perfo_freq.QuadPart ==0) {
@@ -187,7 +197,7 @@ diag_os_millisleep(unsigned int ms)
 		QueryPerformanceCounter(&qpc2);
 		tdiff= qpc2.QuadPart - qpc1.QuadPart;
 	}
-	return 0;
+	return;
 
 }	//diag_os_millisleep
 
@@ -284,10 +294,8 @@ void diag_os_calibrate(void) {
 	unsigned long long resol, maxres, tl1, tl2;	//all for _gethrt() test
 	unsigned long t1, t2, t3;	//for _getms() test
 
-	if (perfo_freq.QuadPart == 0) {
-		fprintf(stderr, FLFMT "_calibrate will not work without a performance counter.\n", FL);
-		calibrate_done=1;
-	}
+	assert(pfconv_valid);
+	
 	if (calibrate_done)
 		return;
 
@@ -386,11 +394,13 @@ unsigned long diag_os_chronoms(unsigned long treset) {
 //get high resolution timestamp
 unsigned long long diag_os_gethrt(void) {
 	LARGE_INTEGER qpc1;
+	assert(pfconv_valid);
 	QueryPerformanceCounter(&qpc1);
 	return (unsigned long long) qpc1.QuadPart;
 }
 
 //convert a delta of diag_os_gethrt() timestamps to microseconds
 unsigned long long diag_os_hrtus(unsigned long long hrdelta) {
+	assert(pfconv_valid);
 	return (unsigned long long) (hrdelta * (double) pf_conv);
 }

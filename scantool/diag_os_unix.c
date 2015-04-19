@@ -39,18 +39,18 @@
  *
   * Goals : if _POSIX_TIMERS is defined, we attempt to use:
  *		1- POSIX timer_create() mechanisms for the periodic callbacks
- *		2- POSIX clock_gettime(), using best available clock, for _getms and _gethrt
- *		2b- using clock_gettime() removes requirement for gettimeofday() and associated compile-time checks
- *		3- clock_nanosleep() for diag_os_millisleep()
+ *		2- POSIX clock_gettime(), using best available clockid, for _getms() and _gethrt()
+ *		(2b- using clock_gettime() removes requirement for gettimeofday() and associated compile-time checks)
+ *		3- clock_nanosleep(), using best available clockid, for _millisleep()
  *
  * Fallbacks for above:
- *		1- SIGALRM signal handler (_POSIX_TIMERS means timer_create() is available)
+ *		1- SIGALRM signal handler
  *		2- gettimeofday(), yuck. TODO : OSX specific mach_absolute_time()
- *		3- nanosleep() loop + checking (nanosleep is interruptible !)
+ *		3a- (linux): /dev/rtc trick
+ *		3b- (other): nanosleep()
  *
  * more info on different OS high-resolution timers:
  *	http://nadeausoftware.com/articles/2012/04/c_c_tip_how_measure_elapsed_real_time_benchmarking
- *
  *
  * TODO:
 		diag_os_sched non-root fallback ? (i.e. highest prio available to uid!=0)
@@ -59,6 +59,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "diag_os.h"
 #include "diag.h"
@@ -68,10 +69,9 @@
 #include "diag_err.h"
 
 #include <unistd.h>
-#include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <linux/rtc.h>	//XXX todo : #ifdef
+
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -82,27 +82,23 @@
 	/* This should be defined on a lot of linux/unix systems.
 		Implications : timer_create(), clock_gettime(), clock_nanosleep() are available.
 	*/
-	//Auto-selected best clockids in diag_os_discover() :
+	//Best clockids auto-selected by diag_os_discover() :
 	static clockid_t clkid_pt = CLOCK_MONOTONIC;	//clockid for periodic timer,
 	static clockid_t clkid_gt = CLOCK_MONOTONIC;	// for clock_gettime(),
 	static clockid_t clkid_ns = CLOCK_MONOTONIC;	// for clock_nanosleep()
 
 	static timer_t ptimer_id;	//periodic timer ID
 
-	static void diag_os_discover(void);
 #else
-#warning ****** no POSIX timers on your system !?!? Report this!
+	#warning ****** no POSIX timers on your system !?!? Report this!
+	#include <sys/ioctl.h>	//need these for
+	#include <linux/rtc.h>	//diag_os_millisleep fallback
 #endif
 
 static int diag_os_init_done=0;
+static int discover_done = 0;	//protect diag_os_millisleep() and _gethrt()
 
-
-
-/* Also, the current implementation uses non-async-signal-safe functions
-+* in the signal handlers.  Their behavior is undefined if they happen
-+* to occur during any other non-async-signal-safe function.
- */
-
+static void diag_os_discover(void);
 
 static void
 #ifdef _POSIX_TIMERS
@@ -111,12 +107,18 @@ diag_os_periodic(UNUSED(union sigval sv))
 diag_os_periodic(UNUSED(int unused))
 #endif
 {
+	/* Warning: these indirectly use non-async-signal-safe functions
+	* Their behavior is undefined if they happen
+	* to occur during any other non-async-signal-safe function.
+	* See doc/sourcetree_notes.txt
+	*/
+
 	diag_l3_timer();	/* Call L3 Timer */
 	diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
 }
 
-//_os_init sets up a periodic callback (diag_os_periodic())
-//for diag_l3_timer and diag_l2_timer (keepalive messages).
+//diag_os_init sets up a periodic callback (diag_os_periodic())
+//for keepalive messages, and selects + calibrates timer functions.
 //return 0 if ok
 int
 diag_os_init(void)
@@ -127,7 +129,7 @@ diag_os_init(void)
 		return 0;
 
 	diag_os_discover();	//auto-select clockids or other capabilities
-	diag_os_calibrate();	//before starting periodic callbacks
+	diag_os_calibrate();	//calibrate before starting periodic timer
 	
 #ifdef _POSIX_TIMERS
 	struct itimerspec pti;
@@ -243,7 +245,12 @@ diag_os_millisleep(unsigned int ms)
 	long int offsetus;
 	
 	t1=diag_os_gethrt();
+	
+	if (ms==0 || !discover_done)
+		return;
 
+//3 different compile-time implementations
+//TODO : select implem at runtime if possible?
 #ifdef _POSIX_TIMERS
 	struct timespec rqst, resp;
 	int rv;
@@ -252,6 +259,7 @@ diag_os_millisleep(unsigned int ms)
 	rqst.tv_nsec = (ms % 1000) * 1000*1000;
 
 	errno = 0;
+	//clock_nanosleep is interruptible, hence this loop
 	while ((rv=clock_nanosleep(clkid_ns, 0, &rqst, &resp)) != 0) {
 		if (rv == EINTR) {
 			rqst = resp;
@@ -270,9 +278,9 @@ diag_os_millisleep(unsigned int ms)
 
 	/* adjust time for 2048 rate */
 
-	ms = (unsigned int)((unsigned long) ms* 4096/2000);	//if we do it as uint the *4096 could overflow?
+	ms = (unsigned int)((unsigned long) ms* 4096/2000);	//avoid overflow
 
-	if (ms > 2)
+	if (ms > 2)	//Bias delay -1ms to avoid overshoot ?
 		ms-=2;
 
 	fd = open ("/dev/rtc", O_RDONLY);
@@ -327,7 +335,24 @@ diag_os_millisleep(unsigned int ms)
 	}
 
 	close(fd);
+#else
+#warning ****** WARNING ! Your system needs help. Trying nanosleep() third-string backup plan.
+	struct timespec rqst, resp;
+	int rv;
 
+	rqst.tv_sec = ms / 1000;
+	rqst.tv_nsec = (ms % 1000) * 1000*1000;
+
+	errno = 0;
+	//clock_nanosleep is interruptible, hence this loop
+	while ((rv=nanosleep(&rqst, &resp)) != 0) {
+		if (rv == EINTR) {
+			rqst = resp;
+			errno = 0;
+		} else {
+			break;	//unlikely
+		}
+	}
 #endif // _POSIX_TIMERS
 
 	t2 = diag_os_gethrt();
@@ -531,7 +556,7 @@ static void diag_os_discover(void) {
 	if (clkid_gt == CLOCK_REALTIME)
 		printf("CLOCK_REALTIME is suboptimal !\n");
 #endif
-
+//***** 3) report possible problems
 	if (!gtdone) {
 		clkid_gt = CLOCK_REALTIME;	//won't work anyway...
 		printf("WARNING: no clockid for clock_gettime()!!\n");
@@ -543,18 +568,17 @@ static void diag_os_discover(void) {
 	if (!gtdone || !nsdone) {
 		printf("WARNING: your system lied about its clocks;\nWARNING: you WILL have problems !\n");
 	}
-
-	return;
 #else
 	//nothing to do (yet) for non-posix
-	return;
 #endif // _POSIX_TIMERS
+	discover_done = 1;
+	return;
 }
 
 
 //diag_os_calibrate : run some timing tests to make sure we have
 //adequate performances.
-
+//call after diag_os_discover !
 void diag_os_calibrate(void) {
 	//TODO: implement linux/unix diag_os_calibrate !
 	//For the moment we only check the resolution of diag_os_getms(),
@@ -566,6 +590,8 @@ void diag_os_calibrate(void) {
 
 	if (calibrate_done)
 		return;
+	if (!discover_done)
+		diag_os_discover();
 
 	//test _gethrt(). clock_getres() would tell us the resolution, but measuring
 	//like this including overhead gives a better measure of "usable" res.
@@ -660,6 +686,7 @@ unsigned long diag_os_getms(void) {
 
 //return high res timestamp, monotonic.
 unsigned long long diag_os_gethrt(void) {
+	assert(discover_done);
 #ifdef _POSIX_TIMERS
 	//units : ns
 	struct timespec curtime={0};
