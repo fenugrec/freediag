@@ -39,7 +39,6 @@
  *
  */
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h> // str**()
 #include <math.h> // sin()
@@ -510,7 +509,6 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 	// Open the DB file:
 	if ((dev->fp = fopen(dl0d->name, "r")) == NULL) {
 		fprintf(stderr, FLFMT "Unable to open file \"%s\": ", FL, dl0d->name);
-		perror(NULL);
 		free(dl0d->name);
 		free(dev);
 		free(dl0d);

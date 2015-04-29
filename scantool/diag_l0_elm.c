@@ -32,7 +32,6 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -83,9 +82,6 @@ static int diag_l0_elm_send(struct diag_l0_device *dl0d,
 
 static int elm_sendcmd(struct diag_l0_device *dl0d,
 	const uint8_t *data, size_t len, int timeout, uint8_t *resp);
-
-static int elm_tmpsend(struct diag_l0_device *dl0d,
-	const uint8_t *data, size_t len);
 
 static int elm_purge(struct diag_l0_device *dl0d);
 
@@ -215,9 +211,9 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, int ti
 		fprintf(stderr, FLFMT "elm_sendcmd: %.*s\n", FL, (int) len-1, (char *)data);
 	}
 	
-	rv = elm_tmpsend(dl0d, data, len);
-	if ((rv<=0) || (rv != (int) len)) {	//XXX danger ! evil cast
-		fprintf(stderr, FLFMT "elm_sendcmd error\n", FL);
+	rv = diag_tty_write(dl0d, data, len);
+	if (rv != (int) len) {	//XXX danger ! evil cast
+		fprintf(stderr, FLFMT "elm_sendcmd: write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -710,33 +706,6 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 
 }
 
-//_tmpsend() : ridiculous loop also used in some form or another in every _l0_ device. This can be removed
-//when diag_tty_write() is fixed accross all platforms
-static int elm_tmpsend(struct diag_l0_device *dl0d, const uint8_t *data, size_t len) {
-	ssize_t xferd;
-	while ((xferd = diag_tty_write(dl0d, data, len)) != (ssize_t) len) {
-		/* Partial write */
-		if (xferd < 0) {	//write error
-			/* error */
-			if (errno != EINTR) {	//not an interruption
-				//warning : errno probably doesn't work on Win...
-				perror("write");
-				fprintf(stderr, FLFMT "tmpsend returned error %d\n", FL, errno);
-				return diag_iseterr(DIAG_ERR_GENERAL);
-			}
-			xferd = 0; /* Interrupted write, nothing transferred. */
-		}
-		/*
-		 * Successfully wrote xferd bytes (or 0 && EINTR),
-		 * so inc pointers and continue
-		 */
-		len -= xferd;
-		//data = (const void *)((const char *)data + xferd);
-		data += xferd;
-	}
-	return (int) xferd;
-}
-
 //elm_purge : sends ATI command and checks for a valid prompt. This is faster than ATZ.
 //use : if the ELM received garbage before ATI, ex.: "\xFF\xFFATI\r" it will just reject
 //the invalid command but still give a valid prompt. 
@@ -745,12 +714,12 @@ static int elm_purge(struct diag_l0_device *dl0d) {
 	uint8_t buf[ELM_BUFSIZE] = "ATI\x0D";
 	int rv;
 	
-	if (elm_tmpsend(dl0d, buf, 4) != 4) {
-		fprintf(stderr, FLFMT "elm_purge : trouble with elm_tmpsend\n", FL);
+	if (diag_tty_write(dl0d, buf, 4) != 4) {
+		fprintf(stderr, FLFMT "elm_purge : write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	rv = diag_tty_read(dl0d, buf, sizeof(buf), 500);
-	if (rv <= 0) {
+	if (rv < 1) {
 		return DIAG_ERR_GENERAL;
 	}
 	
@@ -808,9 +777,9 @@ diag_l0_elm_send(struct diag_l0_device *dl0d,
 		fprintf(stderr, FLFMT "ELM: (sending string %s)\n", FL, (char *) buf);
 	}
 
-	rv=elm_tmpsend(dl0d, buf, i+1);
-	if ((rv <= 0) || (rv != (int) (i+1))) {	//XXX danger ! evil cast !
-		fprintf(stderr, FLFMT "elm_send:tmpsend error\n",FL);
+	rv=diag_tty_write(dl0d, buf, i+1);
+	if (rv != (int) (i+1)) {	//XXX danger ! evil cast !
+		fprintf(stderr, FLFMT "elm_send:write error\n",FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	return 0;
@@ -822,12 +791,13 @@ diag_l0_elm_send(struct diag_l0_device *dl0d,
  * We convert this received ascii string to hex before returning.
  * note : "len" is the number of bytes read on the OBD bus, *NOT* the number of ASCII chars received on the serial link !
  * TODO: parse continuously while receiving data to count actual databytes received ?
+ * TODO: verify if caller sometimes requests too much data... timeouts are the wrong way to split messages on ELMs !
  */
 static int
 diag_l0_elm_recv(struct diag_l0_device *dl0d,
 	UNUSED(const char *subinterface), void *data, size_t len, int timeout)
 {
-	int xferd;
+	int rv, xferd;
 	uint8_t rxbuf[3*MAXRBUF +1];	//I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
 				//the +1 is to \0-terminate the buffer for elm_parse_errors() to work
 	char *rptr, *bp;
@@ -840,27 +810,22 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "Expecting 3*%d bytes from ELM, %d ms timeout(+400)...", FL, (int) len, timeout);
 
-	while ( (xferd = diag_tty_read(dl0d, rxbuf, 3*len, timeout+400)) <= 0) {
-		if (xferd == DIAG_ERR_TIMEOUT) {
-			return DIAG_ERR_TIMEOUT;
-		}
-		if (xferd == 0) {
-			/* Error, EOF */
-			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
-		if (errno != EINTR) {
-			/* Error, EOF */
-			fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
+	rv = diag_tty_read(dl0d, rxbuf, 3*len, timeout+400);
+	if (rv == DIAG_ERR_TIMEOUT) {
+		return DIAG_ERR_TIMEOUT;
 	}
+
+	if (rv != (int)(3*len)) {
+		fprintf(stderr, FLFMT "elm_recv error\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
 	if (diag_l0_debug & DIAG_DEBUG_DATA) {
-		diag_data_dump(stderr, rxbuf, (size_t)xferd);
+		diag_data_dump(stderr, rxbuf, (size_t)rv);
 		fprintf(stderr, "\n");
 	}
 
-	rxbuf[xferd]=0;		// \0-terminate "string"
+	rxbuf[rv]=0;		// \0-terminate "string"
 	//Here, rxbuf contains the string received from ELM. First check for errors:
 	errstr=elm_parse_errors(dl0d, rxbuf);
 	if (errstr != NULL) {
@@ -868,7 +833,6 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 		//XXX also : we might check for "NO DATA" and return DIAG_ERR_TIMEOUT instead ?
 		return DIAG_ERR_ECUSAIDNO;
 	}
-
 
 	//no errors : parse to get hex digits
 	xferd=0;

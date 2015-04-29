@@ -30,7 +30,6 @@
  */
 
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -106,8 +105,6 @@ struct diag_l0_muleng_device
 #define MULENG_STATE_FASTSTART		0x18	/* 1st recv() after fast init */
 #define MULENG_STATE_OPEN		0x20	/* Open and working */
 
-
-static int diag_l0_muleng_getmsg(struct diag_l0_device *dl0d, uint8_t *dp);
 
 /*
  * Init must be callable even if no physical interface is
@@ -220,9 +217,7 @@ diag_l0_muleng_close(struct diag_l0_device **pdl0d)
 static int
 diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 {
-	ssize_t xferd;
-
-	if (!txlen)
+	if (txlen <=0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
@@ -237,27 +232,11 @@ diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 	/*
 	 * And send it to the interface
 	 */
-	while ((size_t)(xferd = diag_tty_write(dl0d, dp, txlen)) != txlen)
-	{
-		/* Partial write */
-		if (xferd < 0)
-		{
-			/* error */
-			if (errno != EINTR)
-			{
-				perror("write");
-				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
-				return diag_iseterr(DIAG_ERR_GENERAL);
-			}
-			xferd = 0; /* Interrupted read, nothing transferred. */
-		}
-		/*
-		 * Successfully wrote xferd bytes (or 0 && EINTR),
-		 * so inc pointers and continue
-		 */
-		txlen -= (size_t) xferd;
-		dp = (const void *)((const char *)dp + xferd);
+	if (diag_tty_write(dl0d, dp, txlen) != (int) txlen) {
+		fprintf(stderr, FLFMT "muleng_write error!!\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+
 	return 0;
 }
 
@@ -316,7 +295,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		 * the 10 bit (1+8+1) address at 5 baud
 		 */
 		rv = diag_tty_read(dl0d, rxbuf, 1, 2350);
-		if (rv < 1)
+		if (rv != 1)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 
 		if (rxbuf[0] == 0x40) {
@@ -350,7 +329,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		/* XXX
 		 * Should get an ack back, rather than an error response
 		 */
-		if ((rv = diag_l0_muleng_getmsg(dl0d, rxbuf)) < 0)
+		if ((rv = diag_tty_read(dl0d, rxbuf, 14, 200)) < 0)
 			return diag_iseterr(rv);
 
 		if (rxbuf[1] == 0x80)
@@ -368,7 +347,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		if (rv < 0)
 			return diag_iseterr(rv);
 
-		if ((rv = diag_l0_muleng_getmsg(dl0d, rxbuf)) < 0)
+		if ((rv = diag_tty_read(dl0d, rxbuf, 14, 200)) < 0)
 			return diag_iseterr(rv);
 
 		if (rxbuf[1] == 0x80)	/* Error */
@@ -447,27 +426,6 @@ diag_l0_muleng_setspeed(struct diag_l0_device *dl0d,
 
 	return diag_tty_setup(dl0d, &set);
 }
-
-/*
- * Routine to read a whole ME message
- * which is 14 bytes
- */
-static int
-diag_l0_muleng_getmsg(struct diag_l0_device *dl0d, uint8_t *dp)
-{
-	size_t offset = 0;
-	ssize_t xferd;
-
-	while (offset != 14)
-	{
-		xferd = diag_tty_read(dl0d, &dp[offset], 14 - offset, 200);
-		if (xferd < 0)
-			return xferd;
-		offset += (size_t) xferd;
-	}
-	return (int) offset;
-}
-
 
 /*
  * Send a load of data
@@ -585,7 +543,7 @@ UNUSED(const char *subinterface),
 void *data, size_t len, int timeout)
 {
 	ssize_t xferd;
-	int i;
+	int i, rv;
 	uint8_t *pdata = (uint8_t *)data;
 
 	struct diag_l0_muleng_device *dev;
@@ -681,27 +639,19 @@ void *data, size_t len, int timeout)
 	 * buffer, read some more
 	 */
 
-	while (dev->dev_rxlen < 14)
-	{
-		while ( (xferd = diag_tty_read(dl0d, &dev->dev_rxbuf[dev->dev_rxlen],
-			(size_t)(14 - dev->dev_rxlen), timeout)) <= 0)
-		{
-			if (xferd == DIAG_ERR_TIMEOUT)
-				return DIAG_ERR_TIMEOUT;
-			if (xferd == 0)
-			{
-				/* Error, EOF */
-				fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-				return diag_iseterr(DIAG_ERR_GENERAL);
-			}
-			if (errno != EINTR)
-			{
-				/* Error, EOF */
-				fprintf(stderr, FLFMT "read returned error %d !!\n", FL, errno);
-				return diag_iseterr(DIAG_ERR_GENERAL);
-			}
+	if (dev->dev_rxlen < 14) {
+		rv = diag_tty_read(dl0d, &dev->dev_rxbuf[dev->dev_rxlen],
+			(size_t)(14 - dev->dev_rxlen), timeout);
+		if (rv == DIAG_ERR_TIMEOUT) {
+			return DIAG_ERR_TIMEOUT;
 		}
-		dev->dev_rxlen += xferd;
+		
+		if (rv <= 0) {
+			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
+
+		dev->dev_rxlen += rv;
 	}
 
 	/* OK, got whole message */

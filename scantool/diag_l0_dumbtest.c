@@ -15,7 +15,6 @@
  */
 
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>	//for memcmp
 
@@ -163,7 +162,7 @@ static void dtest_6(struct diag_l0_device *dl0d) {
 // of diag_tty directly, like l1_send().
 static void dtest_7(struct diag_l0_device *dl0d) {
 	uint8_t i, echo;
-	int rv, badechos=0;
+	int badechos=0;
 	unsigned long ti, tf;
 #define DT7_ITERS 100
 	printf("Starting test 7: half duplex single echo removal...\n");
@@ -171,21 +170,15 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 	ti=diag_os_getms();	//get starting time.
 	for (i=0; i<=DT7_ITERS; i++) {
 		echo=i-1;	//init to bad value
-		rv=diag_l0_dt_send(dl0d, NULL, &i, 1);
-		if (rv==0) {
-			while ( (rv = diag_tty_read(dl0d, &echo, 1, 100)) < 0) {
-				if (errno != EINTR)
-					break;
-				rv = 0; /* Interrupted read, nothing transferred. */
-			}
-			//check echo
-			if (echo != i)
-				badechos++;
-			else
-				rv=0;
-		} else {
-			break;	//dumb_send failed, this is bad
+		if (diag_l0_dt_send(dl0d, NULL, &i, 1))
+			break;
+
+		if (diag_tty_read(dl0d, &echo, 1, 100) != 1) {
+			break;
 		}
+		//check echo
+		if (echo != i)
+			badechos++;
 	}	//for
 	tf=diag_os_getms();	//stop time
 	tf = (tf-ti)/DT7_ITERS;	//average time per byte
@@ -210,22 +203,21 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 
 	ti=diag_os_getms();	//get starting time.
 	for (i=0; i<=DT8_ITERS; i++) {
+		rv=-1;
+		if (diag_l0_dt_send(dl0d, NULL, tx, DT8_MSIZE))
+			break;
+		
 
-		rv=diag_l0_dt_send(dl0d, NULL, tx, DT8_MSIZE);
-		if (rv==0) {
-			while ( (rv = diag_tty_read(dl0d, echo, DT8_MSIZE, 100)) < 0) {
-				if (errno != EINTR)
-					break;
-				rv = 0; /* Interrupted read, nothing transferred. */
-			}
-			//check echo
-			if ( (rv>0) && ( memcmp(tx, echo, DT8_MSIZE) == 0))
-				rv=0;	//all's well
-			else
-				badechos++;
-
+		if (diag_tty_read(dl0d, echo, DT8_MSIZE, 100) != DT8_MSIZE) {
+			printf("dt8: tty_read error.\n");
+			break;
+		}
+		//check echo
+		if ( memcmp(tx, echo, DT8_MSIZE) == 0) {
+			//ok
+			rv=0;
 		} else {
-			break;	//dumb_send failed, this is bad
+			badechos++;
 		}
 	}	//for
 	if (rv != 0) {
@@ -398,36 +390,22 @@ const void *data, size_t len)
 	 * as the L1 code that called this will be adding the P4 gap between
 	 * bytes
 	 */
-	ssize_t xferd;
-	if (!len)
+	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %ld bytes ",
+		fprintf(stderr, FLFMT "dt_send dl0d=%p , len=%ld",
 			FL, (void *)dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 			diag_data_dump(stderr, data, len);
 		fprintf(stderr, "\n");
 	}
-
-	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
-		/* Partial write */
-		if (xferd < 0) {
-			/* error */
-			if (errno != EINTR) {
-				perror("write");
-				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
-				return diag_iseterr(DIAG_ERR_GENERAL);
-			}
-			xferd = 0; /* Interrupted read, nothing transferred. */
-		}
-		/*
-		 * Successfully wrote xferd bytes (or 0 && EINTR),
-		 * so inc pointers and continue
-		 */
-		len -= (size_t) xferd;
-		data = (const void *)((const uint8_t *)data + xferd);
+	
+	if (diag_tty_write(dl0d, data, len) != (int) len) {
+		fprintf(stderr, FLFMT "dt_send: write error\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+
 	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
 		fprintf(stderr, "\n");

@@ -35,7 +35,6 @@
  */
 
 
-#include <errno.h>
 #include <string.h>
 
 #include "diag.h"
@@ -47,9 +46,6 @@
 int diag_l0_debug;	//debug flags for l0
 int diag_l1_debug;	//debug flags for l1
 
-
-static int diag_l1_saferead(struct diag_l0_device *dl0d,
-uint8_t *buf, size_t bufsiz, int timeout);
 
 /*
  * l0dev_list : Linked list of supported L0 devices.
@@ -222,11 +218,6 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 	if (len > MAXRBUF)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
-	/*
-	 * If p4 is zero and not in half duplex mode, or if
-	 * L1 is a "DOESL2" interface, or if L0 takes care of P4 waits:
-	 * send the whole message to L0 as one write
-	 */
 	l0flags = diag_l1_getflags(dl0d);
 
 	if (diag_l1_debug & DIAG_DEBUG_WRITE) {
@@ -234,6 +225,12 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 					(int) len, p4, l0flags);
 	}
 
+	/*
+	 * If p4 is zero and not in half duplex mode, or if
+	 * L1 is a "DOESL2" interface, or if L0 takes care of P4 waits,
+	 * or if P4==0 and we do per-message duplex removal:
+	 * send the whole message to L0 as one write
+	 */
 
 	if (   ((p4 == 0) && ((l0flags & DIAG_L1_HALFDUPLEX) == 0)) ||
 		(l0flags & DIAG_L1_DOESL2FRAME) || (l0flags & DIAG_L1_DOESP4WAIT) ||
@@ -242,14 +239,16 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 		 * Send the lot
 		 */
 		rv = (dl0->diag_l0_send)(dl0d, subinterface, data, len);
+
 		//optionally remove echos
 		if ((l0flags & DIAG_L1_BLOCKDUPLEX) && (rv==0)) {
 			//try to read the same number of sent bytes; timeout=300ms + 1ms/byte
 			//This is plenty OK for typical 10.4kbps but should be changed
 			//if ever slow speeds are used.
-			if (diag_l1_saferead(dl0d, duplexbuf, len, 300+len) != (int) len) {
+			if (diag_tty_read(dl0d, duplexbuf, len, 300+len) != (int) len) {
 				rv=DIAG_ERR_GENERAL;
 			}
+
 			//compare to sent bytes
 			if ( memcmp(duplexbuf, data, len) !=0) {
 				fprintf(stderr,FLFMT "Bus Error: bad half duplex echo!\n", FL);
@@ -257,9 +256,9 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 			}
 		}
 	} else {
+		/* else: send each byte */
 		const uint8_t *dp = (const uint8_t *)data;
 
-		/* Send each byte */
 		while (len--) {
 			rv = (dl0->diag_l0_send)(dl0d, subinterface, dp, 1);
 			if (rv != 0)
@@ -274,8 +273,8 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 			if (l0flags & DIAG_L1_HALFDUPLEX) {
 				uint8_t c;
 
-				c = *dp - 1; /* set it with wrong val. XXXX WHY 1000ms timeout !? */
-				if (diag_l1_saferead(dl0d, &c, 1, 1000) < 0) {
+				c = *dp - 1; /* set it with wrong val. */
+				if (diag_tty_read(dl0d, &c, 1, 200) != 1) {
 					rv=DIAG_ERR_GENERAL;
 					break;
 				}
@@ -348,19 +347,3 @@ int diag_l1_gettype(struct diag_l0_device *dl0d)
 	return dl0d->dl0->diag_l0_type;
 }
 
-
-//diag_l1_saferead : only used to remove half-duplex echos...
-//return <0 on error, number of bytes on success
-static int
-diag_l1_saferead(struct diag_l0_device *dl0d, uint8_t *buf, size_t bufsiz, int timeout)
-{
-	int xferd;
-
-	while ( (xferd = diag_tty_read(dl0d, buf, bufsiz, timeout)) < 0) {
-		if (errno != EINTR)
-			return diag_iseterr(DIAG_ERR_BUSERROR);
-		xferd = 0; /* Interrupted read, nothing transferred. */
-	}
-
-	return xferd;
-}

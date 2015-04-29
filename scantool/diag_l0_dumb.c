@@ -33,7 +33,6 @@
  */
 
 
-#include <errno.h>
 #include <stdlib.h>
 
 #include "diag.h"
@@ -304,7 +303,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	struct diag_l0_dumb_device *dev)
 {
 	uint8_t cbuf[10];
-	int xferd, rv;
+	int rv;
 	int tout;
 	struct diag_serial_settings set;
 
@@ -414,24 +413,11 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		 * echo
 		 */
 
-		while ( (xferd = diag_tty_read(dl0d, cbuf, 1, tout)) <= 0) {
-			if (xferd == DIAG_ERR_TIMEOUT) {
-				if (diag_l0_debug & DIAG_DEBUG_PROTO)
-					fprintf(stderr, FLFMT "\taddress echo read timeout!\n", FL);
-				return DIAG_ERR_TIMEOUT;
-			}
-			if (xferd == 0) {
-				/* Error, EOF */
-				fprintf(stderr, FLFMT "_slowinit: read returned EOF !!\n", FL);
-				return DIAG_ERR_GENERAL;
-			}
-			if (errno != EINTR) {
-				/* Error, EOF */
-				perror("read");
-				fprintf(stderr, FLFMT "_slowinit: read returned error %d !!\n", FL, errno);
-				return DIAG_ERR_GENERAL;
-			}
+		if (diag_tty_read(dl0d, cbuf, 1,tout) != 1) {
+			fprintf(stderr, FLFMT "_slowinit: address echo error\n", FL);
+			return DIAG_ERR_GENERAL;
 		}
+		
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "\tgot address echo 0x%X\n",
 					FL, cbuf[0]);
@@ -554,7 +540,7 @@ const void *data, size_t len)
 	 * as the L1 code that called this will be adding the P4 gap between
 	 * bytes
 	 */
-	ssize_t xferd;
+	int rv;
 
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -567,23 +553,9 @@ const void *data, size_t len)
 		fprintf(stderr, "\n");
 	}
 
-	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
-		/* Partial write */
-		if (xferd < 0) {
-			/* error */
-			if (errno != EINTR) {
-				perror("write");
-				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
-				return diag_iseterr(DIAG_ERR_GENERAL);
-			}
-			xferd = 0; /* Interrupted read, nothing transferred. */
-		}
-		/*
-		 * Successfully wrote xferd bytes (or 0 && EINTR),
-		 * so inc pointers and continue
-		 */
-		len -= (size_t) xferd;
-		data = (const void *)((const uint8_t *)data + xferd);
+	if ((rv = diag_tty_write(dl0d, data, len)) != (int) len) {
+		fprintf(stderr, FLFMT "dumb_send: write error\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	return 0;
@@ -600,9 +572,7 @@ diag_l0_dumb_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 void *data, size_t len, int timeout)
 {
-	int xferd;
-
-	errno = EINTR;
+	int rv;
 
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -612,29 +582,19 @@ void *data, size_t len, int timeout)
 			FLFMT "_recv dl0d=%p req=%ld bytes timeout=%d\n",
 			FL, (void *)dl0d, (long)len, timeout);
 
-	while ( (xferd = diag_tty_read(dl0d, data, len, timeout)) <= 0) {
-		if (xferd == DIAG_ERR_TIMEOUT)
+	if ((rv=diag_tty_read(dl0d, data, len, timeout)) != (int) len) {
+		if (rv == DIAG_ERR_TIMEOUT)
 			return DIAG_ERR_TIMEOUT;
-
-		if (xferd == 0 && len != 0) {
-			/* Error, EOF */
-			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
-
-		if (errno != EINTR) {
-			/* Error, EOF */
-			fprintf(stderr, FLFMT "read returned error %d, with xferd=%d!!\n", FL, errno, xferd);
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
+		fprintf(stderr, FLFMT "dumb_recv: error\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	// here, if we didn't timeout and didn't EINTR
+
 	if ((diag_l0_debug & DIAG_DEBUG_DATA) && (diag_l0_debug & DIAG_DEBUG_READ)) {
 		fprintf(stderr, FLFMT "Got ", FL);
-		diag_data_dump(stderr, data, (size_t)xferd);
+		diag_data_dump(stderr, data, (size_t)rv);
 		fprintf(stderr, "\n");
 	}
-	return xferd;
+	return rv;
 }
 
 /*

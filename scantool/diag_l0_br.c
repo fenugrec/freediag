@@ -31,7 +31,6 @@
  *
  */
 
-#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -134,26 +133,14 @@ diag_l0_br_close(struct diag_l0_device **pdl0d)
 static int
 diag_l0_br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 {
-	ssize_t xferd;
+	if (txlen <=0)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 
-	while ((size_t)(xferd = diag_tty_write(dl0d, dp, txlen)) != txlen) {
-		if (xferd < 0) {
-			/* error */
-			if (errno != EINTR) {
-				fprintf(stderr, FLFMT "write returned error %s.\n",
-					FL, strerror(errno));
-				return diag_iseterr(DIAG_ERR_GENERAL);
-			}
-			xferd = 0; /* Interrupted read, nothing transferred. */
-			errno = 0;
-		}
-		/*
-		 * Successfully wrote xferd bytes (or 0 bytes if EINTR),
-		 * so increment the pointers and continue
-		 */
-		txlen -= (size_t) xferd;
-		dp = (const void *)((const char *)dp + xferd);
+	if (diag_tty_write(dl0d, dp, txlen) != (int) txlen) {
+		fprintf(stderr, FLFMT "br_write error\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+	
 	return 0;
 }
 
@@ -220,7 +207,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	/* And expect 0xff as a response */
-	if (diag_tty_read(dl0d, buf, 1, 100) < 1) {
+	if (diag_tty_read(dl0d, buf, 1, 100) != 1) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "CHIP CONNECT read failed link %p\n",
 				FL, (void *)dl0d);
@@ -481,11 +468,9 @@ const struct diag_serial_settings *pset)
 static int
 diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, int timeout)
 {
-	ssize_t xferd;
-	size_t offset;
-	int ret;
 	uint8_t firstbyte;
 	size_t readlen;
+	int rv;
 
 	if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
@@ -496,37 +481,30 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, int timeout)
 	/*
 	 * First read the 1st byte, using the supplied timeout
 	 */
-	ret = diag_tty_read(dl0d, &firstbyte, 1, timeout);
-	if (ret < 0) {
+	rv = diag_tty_read(dl0d, &firstbyte, 1, timeout);
+	if (rv != 1) {
 		if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
 			fprintf(stderr, FLFMT "link %p getmsg 1st byte timed out\n",
 				FL, (void *)dl0d);
 		}
-		return diag_iseterr(ret);
+		return diag_iseterr(rv);
 	}
 
 	/*
 	 * Now read data. Maximum is 15 bytes.
 	 */
-	offset = 0;
+
 	readlen = firstbyte & 0x0f;
-	while (offset != readlen) {
-		/*
-		 * Reasonable timeout here as the interface told us how
-		 * much data to expect, so it should arrive
-		 */
-		xferd = diag_tty_read(dl0d, &dp[offset], (size_t)(readlen - offset), 100);
-		if (xferd < 0) {
-			if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA))
-				== (DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
-				fprintf(stderr,
-				FLFMT "link %p getmsg byte %ld of %ld timed out\n",
-				FL, (void *)dl0d, (long)offset, (long)readlen );
-			}
-			return diag_iseterr(DIAG_ERR_TIMEOUT);
-		}
-		offset += (size_t) xferd;
+
+	/*
+	 * Reasonable timeout here as the interface told us how
+	 * much data to expect, so it should arrive
+	 */
+	rv = diag_tty_read(dl0d, dp, readlen, 100);
+	if (rv != (int)readlen) {
+		fprintf(stderr, FLFMT "br_getmsg error\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
