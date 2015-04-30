@@ -11,9 +11,11 @@
 #include "diag.h"
 #include "diag_l1.h"
 #include "diag_err.h"
-#include "diag_tty.h"
+#include "diag_tty_win.h"
 
 #include <windows.h>
+#include <basetsd.h>
+#include <winbase.h> //maybe just <windows.h> ?
 
 extern LARGE_INTEGER perfo_freq;
 extern float pf_conv;	//these two are defined in diag_os
@@ -38,7 +40,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
-	
+
 	if ((rv=diag_calloc(&wti,1))) {
 		free(dl0d);
 		return diag_iseterr(rv);
@@ -155,7 +157,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	DCB *devstate;
 	COMMPROP supportedprops;
 	DCB verif_dcb;
-	
+
 	wti = (struct tty_int *)dl0d->tty_int;
 	devhandle = wti->fd;
 	devstate = &wti->dcb;
@@ -274,7 +276,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 {
 	unsigned int escapefunc;
 	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
-	
+
 
 	if (wti->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
@@ -354,7 +356,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
 	pOverlap=NULL;
 	COMMTIMEOUTS devtimeouts;
-	
+
 	assert(count>0);
 	if (count == 0) return DIAG_ERR_BADLEN;
 
@@ -479,7 +481,7 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	uint8_t cbuf;
 	int xferd;
 	DWORD byteswritten;
-	
+
 	dh = wti->fd;
 	if (ms<25)		//very funny
 		return diag_iseterr(DIAG_ERR_TIMEOUT);

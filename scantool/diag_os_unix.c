@@ -130,7 +130,7 @@ diag_os_init(void)
 
 	diag_os_discover();	//auto-select clockids or other capabilities
 	diag_os_calibrate();	//calibrate before starting periodic timer
-	
+
 #ifdef _POSIX_TIMERS
 	struct itimerspec pti;
 	struct sigevent pt_sigev;
@@ -140,7 +140,7 @@ diag_os_init(void)
 	pt_sigev.sigev_notify_attributes = NULL;	//not sure what we need here, if anything.
 //	pt_sigev.sigev_value.sival_int = 0;	//not used
 //	pt_sigev.siev_signo = 0;	//not used
-	
+
 	if (timer_create(clkid_pt, &pt_sigev, &ptimer_id) != 0) {
 		fprintf(stderr, FLFMT "Could not create periodic timer... report this\n", FL);
 		diag_os_geterr(0);
@@ -161,7 +161,7 @@ diag_os_init(void)
 #else	//so, no _POSIX_TIMERS ... sucks
 	struct sigaction stNew;
 	struct itimerval tv;
-	
+
 	/*
 	 * Install alarm handler
 	 */
@@ -188,10 +188,10 @@ diag_os_init(void)
     original timeout value. If the flag is not set, interruptible
     functions interrupted by this signal shall fail with errno set to
     [EINTR].
-   
+
 *** Interesting synthesis on
   http://unix.stackexchange.com/questions/16455/interruption-of-system-calls-when-a-signal-is-caught
- 
+
 *** Conclusion : since we need to handle EINTR for read(), write(), select()
 	and some *sleep() syscalls anyway, we don't specify SA_RESTART.
 
@@ -230,7 +230,7 @@ int diag_os_close() {
 	disable_tmr.sa_handler=SIG_DFL;
 	sigaction(SIGALRM, &disable_tmr, NULL);
 #endif // _POSIX_TIMERS
-	
+
 	diag_os_init_done = 0;
 	return 0;
 
@@ -243,9 +243,9 @@ diag_os_millisleep(unsigned int ms)
 {
 	unsigned long long t1,t2;	//for verification
 	long int offsetus;
-	
+
 	t1=diag_os_gethrt();
-	
+
 	if (ms==0 || !discover_done)
 		return;
 
@@ -360,7 +360,7 @@ diag_os_millisleep(unsigned int ms)
 	if ((offsetus > 1500) || (offsetus < -1500))
 		printf("_millisleep off by %ld\n", offsetus);
 	//TODO : auto-adjust ?
-	
+
 	return;
 
 }	//diag_os_millisleep
@@ -513,7 +513,7 @@ static int diag_os_testns(clockid_t ckid, char * ckname) {
 	rqtp.tv_nsec = 0;	//bogus interval for nanosleep test
 	if (clock_nanosleep(ckid, 0, &rqtp, NULL) != ENOTSUP) {
 		printf("clock_nanosleep(): using %s\n", ckname);
-		clkid_gt = ckid;
+		clkid_ns = ckid;
 		return 0;
 	}
 	return -1;
@@ -609,7 +609,7 @@ void diag_os_calibrate(void) {
 			diag_os_hrtus(maxres), diag_os_hrtus(resol / RESOL_ITERS));
 	if (diag_os_hrtus(maxres) >= 1200)
 		printf("WARNING : your system offers no clock >= 1kHz; this WILL be a problem!\n");
-	
+
 	//test _millisleep() VS _gethrt()
 	printf("testing diag_os_millisleep(), this will take a moment...\n");
 	for (int testval=50; testval > 0; testval -= 2) {

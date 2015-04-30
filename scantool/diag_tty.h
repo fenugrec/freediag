@@ -41,13 +41,19 @@ struct diag_serial_settings {
 	enum diag_parity parflag;
 };
 
-
-// Included the correct os-specific diag_tty.h file
-#ifdef WIN32
-	#include "diag_tty_win.h"
-#else
-	#include "diag_tty_unix.h"
-#endif //WIN32
+/*
+ * L0 device structure
+ * This is the structure to interface between the L1 code
+ * and the interface-manufacturer dependent code (which is in diag_l0_if.c)
+ */
+struct diag_l0_device
+{
+	void *dl0_handle;					/* Handle for the L0 switch */
+	const struct diag_l0 *dl0;		/* The L0 driver's diag_l0 */
+	struct diag_l2_link *dl2_link;	/* The L2 link using this dl0d */
+	char *name;					/* device name, like /dev/ttyS0 or \\.\COM3*/
+	void *tty_int;			/* generic holder for internal tty stuff */
+};
 
 extern int diag_l0_debug;
 
