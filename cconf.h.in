@@ -12,12 +12,10 @@
 #cmakedefine HAVE_STRCASECMP
 #cmakedefine HAVE_ALARM
 #cmakedefine HAVE_SELECT
-#cmakedefine HAVE_TIMERSUB
 
 #cmakedefine USE_RCFILE
 #cmakedefine USE_INIFILE
 #cmakedefine NISPROG
-#cmakedefine TRY_POSIX
 
 #define PACKAGE_VERSION "@PKGVERSION@"
 #define SCANTOOL_PROGNAME "@SCANTOOL_PROGNAME@"

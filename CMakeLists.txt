@@ -90,19 +90,7 @@ else()
 	check_function_exists (alarm HAVE_ALARM)
 	check_function_exists (select HAVE_SELECT)
 	check_function_exists (gettimeofday HAVE_GETTIMEOFDAY)
-	
-	set (CMAKE_REQUIRED_INCLUDES "sys/time.h")
-	#we could use CMakePushCheckState to push / pop CMAKE_REQUIRED_INCLUDES
-	#but I think it has no influence on the rest of the build...
-	check_function_exists (timersub HAVE_TIMERSUB)
-	#timersub isn't detected properly on some systems. We'll assume it's common enough to be available
-	#on all non-windows OSes...
-	if (NOT HAVE_TIMERSUB)
-		message(WARNING "timersub() not detected, but it may be available anyway. Forcing HAVE_TIMERSUB !")
-		set(HAVE_TIMERSUB 1)
-	endif ()
 
-	
 	#diag_os_unix needs some _POSIX_TIMERS functions wich
 	#may require linking with -lrt
 	set (CMAKE_REQUIRED_INCLUDE_FILES time.h)
@@ -129,8 +117,40 @@ endif()
 option(BUILDGUI "Enable scangui (default=no)" OFF)
 option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
 option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
-option(TRY_POSIX "Try POSIX implementations. (default=disabled)" OFF)
 option(NISPROG "Enable experimental Nissan Consult-II functions. (default=disabled)" OFF)
+
+## Map of time-related features with more than one implementation related to POSIX:
+# 1: Periodic timer callback (for keepalive, etc;)iag_os_* : 
+#	A) needs _POSIX_TIMERS, uses timer_create()
+#	B) (available everywhere?) setitimer+sigaction to install a SIGALRM handler
+# 2: diag_os_millisleep()
+#	A) needs _POSIX_TIMERS, uses clock_nanosleep()
+#	B) needs __linux__ && (uid==root), uses /dev/rtc
+#	C) (available everywhere?) nanosleep() loop
+# 3: diag_os_gethrt(), diag_os_chronoms()
+#	A) needs _POSIX_TIMERS, uses clock_gettime()
+#	B) (available everywhere?) gettimeofday()
+
+## Map of tty-related features with more than one implementation related to POSIX:
+# 1: diag_tty_{read,write}() timeouts
+#	A) needs _POSIX_TIMERS, uses timer_create + sigaction for a SIGUSR1 handler
+#	B) needs __linux__ && /dev/rtc
+#	C) (not implemented) could try setitimer + SIGUSR1 handler, similar to A)
+# 2: diag_tty_open() : open() flags:
+#	A) needs O_NONBLOCK; open non-blocking then clear flag
+#	B) don't set O_NONBLOCK.
+# 3: diag_tty_{open,close}() : tty settings
+#	A) needs __linux__ : tries TIOCGSERIAL (known to fail on some cheap hw)
+#	B) TODO
+# 4: diag_tty_setup() : tty settings (bps, parity etc)
+#	A) needs __linux__ : uses TIOCSSERIAL, ASYNC_SPD_CUST, CBAUD.
+#	B) cfset{i,o}speed : tries setting bps directly (non-portable)
+
+## Map of misc features with more than one implementation related to POSIX:
+# 1: diag_os_sched() : increasing priority ; check uid
+#	A) _POSIX_PRIORITY_SCHEDULING && __linux__ : set scheduling to realtime.
+#	B) _POSIX_PRIORITY_SCHEDULING : check uid; #warn; change nothing.
+#	C) All others : #warn; change nothing.
 
 ###### Includes
 #proj_bin_dir = needed to find cconf.h (not in src_dir)

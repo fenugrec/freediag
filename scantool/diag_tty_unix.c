@@ -3,7 +3,7 @@
  *
  * This file is part of freediag - Vehicle Diagnostic Utility
  *
- * Copyright (C) 2001-2004 ?
+ * Copyright (C) 2001-2004 Richard Almeida & others
  * Copyright (C) 2004 Steve Baker <sjbaker@users.sourceforge.net>
  * Copyright (C) 2004 Steve Meisner <meisner@users.sourceforge.net>
  * Copyright (C) 2004 Vasco Nevoa <vnevoa@users.sourceforge.net>
@@ -111,27 +111,28 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		free(dl0d);
 		return diag_iseterr(rv);
 	}
+	//past this point, we can call diag_tty_close(dl0d) to abort in case of errors
 
 	*ppdl0d = dl0d;
 
 	size_t n = strlen(subinterface) + 1;
 
 	if ((rv=diag_malloc(&dl0d->name, n))) {
-		(void)diag_tty_close(ppdl0d);;
+		(void)diag_tty_close(ppdl0d);
 		return diag_iseterr(rv);
 	}
 	strncpy(dl0d->name, subinterface, n);
 
 
 	errno = 0;
-#if defined(__linux__) && (TRY_POSIX == 0)
+#ifndef O_NONBLOCK
+	#warning No O_NONBLOCK on your system ?! Please report this
 	uti->fd = open(dl0d->name, O_RDWR);
 #else
 	/*
-	+* For POSIX behavior:  Open serial device non-blocking to avoid
-	+* modem control issues, then set to blocking.
+	 * For POSIX behavior:  Open serial device non-blocking to avoid
+	 * modem control issues, then set to blocking.
 	 */
-	/* CODE BLOCK */
 	{
 		int fl;
 		uti->fd = open(dl0d->name, O_RDWR | O_NONBLOCK);
@@ -142,7 +143,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 				fprintf(stderr,
 					FLFMT "Can't get flags with fcntl on fd %d: %s.\n",
 					FL, uti->fd, strerror(errno));
-				(void)diag_tty_close(ppdl0d);;
+				(void)diag_tty_close(ppdl0d);
 				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 			fl &= ~O_NONBLOCK;
@@ -182,7 +183,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	 * those we just read aswell
 	 */
 
-#if defined(__linux__) && (TRY_POSIX == 0)
+#if defined(__linux__)
 	if (ioctl(uti->fd, TIOCGSERIAL, &dt->dt_osinfo) < 0)
 	{
 		fprintf(stderr,
@@ -232,7 +233,7 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 #endif
 				if (uti->ttystate) {
 					if (uti->fd != DL0D_INVALIDHANDLE) {
-				#if defined(__linux__) && (TRY_POSIX == 0)
+				#if defined(__linux__)
 						(void)ioctl(uti->fd,
 							TIOCSSERIAL, &uti->ttystate->dt_osinfo);
 				#endif
@@ -247,7 +248,6 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 
 				if (uti->fd != DL0D_INVALIDHANDLE) {
 					(void)close(uti->fd);
-					uti->fd = DL0D_INVALIDHANDLE;
 				}
 
 				free(uti);
@@ -274,9 +274,8 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	int iflag;
 	int fd;
 	struct diag_ttystate	*dt;
-	struct unix_tty_int *uti;
+	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 
-	uti = (struct unix_tty_int *)dl0d->tty_int;
 	fd = uti->fd;
 	dt = uti->ttystate;
 	if (fd == DL0D_INVALIDHANDLE || dt == 0) {
@@ -297,7 +296,10 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 		fprintf(stderr, "speed %d databits %d stopbits %d parity %d\n",
 			pset->speed, pset->databits, pset->stopbits, pset->parflag);
 	}
-
+//TODO : try 3 techniques:
+//	1) check if standard baud rate => set it (easy)
+//	2) try hacks for non-standard speeds (hard)
+//	3) warn user; pick nearest std baud rate (error if out of range)
 #if defined(__linux__)
 	/*
 	 * Linux iX86 method of setting non-standard baud rates:
@@ -506,7 +508,6 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 {
 	int flags;	/* Current flag values. */
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
-	struct timeval tv;	//for getting timestamps
 	int setflags = 0, clearflags = 0;
 
 	if (dtr)
@@ -533,9 +534,10 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 			FLFMT "open: Ioctl TIOCMSET failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	gettimeofday(&tv, NULL);
+
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "%04ld.%03ld : DTR/RTS changed\n", FL, tv.tv_sec, tv.tv_usec);
+		unsigned long tc=diag_os_chronoms(0);
+		fprintf(stderr, FLFMT "%lu : DTR/RTS changed\n", FL, tc);
 	}
 
 	return 0;
@@ -546,12 +548,11 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 #if defined(_POSIX_TIMERS)
 {
 	ssize_t rv;
-	struct unix_tty_int *uti;
+	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 	const uint8_t *p;
 	struct itimerspec it;
 
 	errno = 0;
-	uti = (struct unix_tty_int *)dl0d->tty_int;
 	p = (const uint8_t *)buf;
 	rv = 0;
 
@@ -604,11 +605,10 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 	ssize_t rv;
 	ssize_t n;
 	size_t c = count;
-	struct unix_tty_int *uti;
+	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 	const uint8_t *p;
 
 	errno = 0;
-	uti = (struct unix_tty_int *)dl0d->tty_int;
 	p = (const uint8_t *)buf;	/* For easy pointer I/O */
 	n = 0;
 	rv = 0;
@@ -690,17 +690,16 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		}
 	}
 
-	//disarm the timer if there was no timeout
-	if(expired == 0) {
-		it.it_value.tv_sec = it.it_value.tv_nsec = 0;
-		timer_settime(uti->timerid, 0, &it, NULL);
-	}
+	//always disarm the timer
+	it.it_value.tv_sec = it.it_value.tv_nsec = 0;
+	timer_settime(uti->timerid, 0, &it, NULL);
+
 	//if anything has been read, then return the number of read bytes; return timeout error otherwise
 	if(rv >= 0) {
 		if(n > 0)
 			return n;
 		else if(expired)
-			return diag_iseterr(DIAG_ERR_TIMEOUT);
+			return DIAG_ERR_TIMEOUT;
 	}
 
 	//errors other than EINTR
@@ -711,94 +710,23 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 }
 
 #elif defined(__linux__) //fallback code for linux
-#if 0
-//old tty_read
-
-/*
- * Non interruptible, sleeping posix like read() with a timeout
- * timeout is in ms. If timeout is 0, this acts as a non-blocking read,
- * and is used both to read from a TTY and to check for input available
- * at stdin.  I've split things out to separate the TTY reads from the
- * check for available input.
- * returns either 0 on succes, <0 on error, or # of bytes read on success. pah.
-*/
-{
-	struct timeval tv;
-	int rv;
-	struct unix_tty_int *uti;
-
-	assert(count>0 && timeout > 0);
-
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-			fprintf(stderr, FLFMT "Entered diag_tty_read with count=%zd, timeout=%dms", FL, count, timeout);
-	}
-
-
-	/*
-	 * Do a select() with a timeout
-	 */
-
-	errno = 0;
-	uti = (struct unix_tty_int *)dl0d->tty_int;
-
-	/*
-	 * Portability :- select on linux updates the timeout when
-	 * it is interrupted.
-	 */
-
-	tv.tv_sec = timeout / 1000;
-	tv.tv_usec = (timeout % 1000) * 1000;
-
-	while ( 1 ) {
-		fd_set set;
-
-	 	FD_ZERO(&set);
-		FD_SET(uti->fd, &set);
-
-	        rv = select ( uti->fd + 1,  &set, NULL, NULL, &tv );
-
-		if ( rv >= 0 ) break;
-
-		if (errno != EINTR) break;
-
-		errno = 0;
-	}
-
-	switch (rv) {
-		case 0:
-			/* Timeout */
-			if (count)
-				return diag_iseterr(DIAG_ERR_TIMEOUT);	//XXX who would sent count=0 ??
-			return rv;
-		case 1:
-			/* Ready for read */
-			rv = 0;
-			/*
-			 * XXX Won't you hang here if "count" bytes don't arrive?
-			 * We've enabled SA_RESTART in the alarm handler, so this could
-			 * never return.
-			 */
-			if (count)
-				rv = read(uti->fd, buf, count);
-			return rv;
-		default:
-			fprintf(stderr, FLFMT "select on fd %d returned %s.\n",
-				FL, uti->fd, strerror(errno));
-			/* Unspecific Error */
-			return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-}
-#else	// previous #if 0 (replacing old tty_read)
 
 /*
  * We have to be read to loop in write since we've cleared SA_RESTART.
+ *
+ * Note : an old implementation used select() with a timeout. The flaw with that
+ * is that select() "blocks the program until input or output is ready [...]
+ * or until a timer expires, whichever comes first [...]. A file descriptor 
+ * is considered ready for reading if a 'read' call will not block."
+ * (source : manpages)
+ * Problem: select() doesn't guarantee that (count) bytes are available !
  */
 
 {
 	struct timeval tv;
 	int time,rv,fd,retval;
 	unsigned long data;
-	struct unix_tty_int *uti;
+	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;;
 
 	assert(timeout < 10000);
 
@@ -809,7 +737,6 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 	errno = 0;
 	time = 0;
-	uti = (struct unix_tty_int *)dl0d->tty_int;
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
@@ -871,7 +798,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		/* Timeout */
 	//this doesn't require a diag_iseterr() call, as is the case when diag_tty_read
 	//is called to flush
-		return (DIAG_ERR_TIMEOUT);
+		return DIAG_ERR_TIMEOUT;
 	case 1:
 		/* Ready for read */
 		rv = 0;
@@ -893,28 +820,26 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	}
 }	//diag_tty_read
 
-#endif	//if 0
-
 #else //no posix timers and it's not linux
+	//TODO : add another signal handler, similar to POSIX timeouts.
+	//This, in its current form, cannot work reliably.
+	//Plan B : make a ghetto implementation looping with { select() with a timeout;
+	// read() 1 byte at a time ; manually check timeout}
 {
 	ssize_t rv;
 	ssize_t n;
 	uint8_t *p;
-	struct timeval now, incr, then;
+	unsigned long long tstart, incr, tdone, tdone_us;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 
 	volatile int expired = 0;
-	(void)gettimeofday(&now, NULL);
-	incr.tv_sec = timeout / 1000;
-	incr.tv_usec = (timeout % 1000) * 1000;		/* us */
-	timeradd(&now, &incr, &then);				/* Expiration time */
-#if 0
-	fprintf(stderr, "timeout %d now %d:%d incr %d:%d then %d:%d\n",
-		timeout,
-		now.tv_sec, now.tv_usec,
-		incr.tv_sec, incr.tv_usec,
-		then.tv_sec, then.tv_usec);
-#endif
+	tstart=diag_os_gethrt();
+	incr = timeout * 1000;	//us
+
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, "timeout=%d, start=%llu, delta=%llu\n",
+			timeout, tstart, incr);
+	}
 
 	errno = 0;
 	p = (uint8_t *)buf;	/* For easy pointer I/O */
@@ -924,47 +849,65 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	/* Loop until timeout or we've gotten something. */
 	errno = 0;
 
-	while (count > 0 &&
-	expired == 0 &&
-	((rv = read(uti->fd,  &p[n], count)) >= 0 ||
-	(rv == -1 && errno == EINTR))) {
-		if (rv == -1) {
+	while (count > 0 && expired == 0) {
+
+		rv = read(uti->fd,  &p[n], count);
+		
+		if ((rv == -1) && (errno == EINTR)) {
 			rv = 0;
-			errno = 0;
+			errno=0;
 		}
+		if (rv < 0) {
+			//real error
+			break;
+		}
+
 		count -= rv;
 		n += rv;
-		(void)gettimeofday(&now, NULL);
-		expired = timercmp(&now, &then, >);
-		fprintf(stderr, "now %ld:%ld\n", now.tv_sec, now.tv_usec);
+
+		tdone = diag_os_gethrt() - tstart;
+		tdone_us = diag_os_hrtus(tdone);
+		if (tdone_us >= incr) {
+			expired = 1;
+			rv=0;
+		}
+		if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+			fprintf(stderr, "%lluus elapsed\n", tdone_us);
+		}
 	}
 
-	/*
-	 * XXX I'm not exactly sure what we want here.  If we timeout and have
-	 * read some characters, do we want to return that?  That's what
-	 * I'm doing now.
-	 */
 	if (rv >= 0) {
 		if (n > 0)
 			return n;
 		else if (expired)
-			return diag_iseterr(DIAG_ERR_TIMEOUT);
+			return DIAG_ERR_TIMEOUT;
 	}
 
-	fprintf(stderr, FLFMT "read on fd %d returned %s.\n",
-		FL, uti->fd, strerror(errno));
+	fprintf(stderr, FLFMT "read() returned %s.\n",
+		FL, strerror(errno));
 
-	/* Unspecific Error */
+	/* Unspecified Error */
 	return diag_iseterr(DIAG_ERR_GENERAL);
 }
 #endif //_tty_read() implementations
 
 
-// ret 0 if ok
+/*
+ * POSIX serial I/O input flush +
+ * diag_tty_read with IFLUSH_TIMEOUT.
+ * Ret 0 if ok
+ */
 int diag_tty_iflush(struct diag_l0_device *dl0d) {
-#if defined(__linux__) && (TRY_POSIX == 0)
 	uint8_t buf[MAXRBUF];
 	int rv;
+	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
+	
+	errno = 0;
+
+	if (tcflush(uti->fd, TCIFLUSH) < 0) {
+		fprintf(stderr, FLFMT "TCIFLUSH on fd %d returned %s.\n",
+			FL, uti->fd, strerror(errno));
+	}
 
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
@@ -975,35 +918,6 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 	}
 
 	return 0;
-#else
-/*
- * POSIX serial I/O input flush:
- * it also calls diag_tty_read with IFLUSH_TIMEOUT.
- */
- 	uint8_t buf[MAXRBUF];
-	int rv;
-	struct unix_tty_int *uti;
-
-	errno = 0;
-	uti = (struct unix_tty_int *)dl0d->tty_int;
-	if (tcflush(uti->fd, TCIFLUSH) < 0) {
-		fprintf(stderr, FLFMT "TCIFLUSH on fd %d returned %s.\n",
-			FL, uti->fd, strerror(errno));
-
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-
-	/* Read any old data hanging about on the port */
-	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
-	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA))
-	{
-		fprintf(stderr, FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n", FL, rv, buf[0]);
-//		diag_data_dump(stderr, buf, rv);		//could flood the screen
-//		fprintf(stderr, "\n");
-	}
-	return 0;
-
-#endif
 } //diag_tty_iflush
 
 
@@ -1040,7 +954,6 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
 
 	return 0;
 
-//#elif defined(__linux__) && (TRY_POSIX == 0)
 #else
 #warning ******* Dont know how to implement diag_tty_break() on your OS !
 #warning ******* Compiling diag_tty_break with a fixed 25ms setbreak !
@@ -1064,8 +977,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms)
  */
 int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	uint8_t cbuf;
-	struct timeval tv1,tv2,tvdiff;
-	int xferd;
+	unsigned long long tv1,tv2,tvdiff;
 	struct diag_serial_settings set;
 	unsigned int msremain;
 
@@ -1083,38 +995,20 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	gettimeofday(&tv1,NULL);
+	tv1 = diag_os_gethrt();
 	/* Send a 0x00 byte message */
 	diag_tty_write(dl0d, "", 1);
 	//Alternate method ; we can write() ourselves and then tcdrain() to make
 	//sure data is sent ?
 
-	//XXX this message may need to be removed if timing is impaired
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "%04ld.%03ld : break start\n", FL, tv1.tv_sec, tv1.tv_usec);
-	}
-
 	/*
 	 * And read back the single byte echo, which shows TX completes
  	 */
-	while ( (xferd = diag_tty_read(dl0d, &cbuf, 1, 1000)) <= 0)
-	{
-		if (xferd == DIAG_ERR_TIMEOUT)
-			return diag_iseterr(DIAG_ERR_TIMEOUT);
-		if (xferd == 0)
-		{
-			/* Error, EOF */
-			fprintf(stderr, FLFMT "read returned EOF.\n", FL);
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
-		if (errno != EINTR)
-		{
-			/* Error, EOF */
-			fprintf(stderr, FLFMT "read returned error %s.\n", FL,
-				strerror(errno));
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
+	if (diag_tty_read(dl0d, &cbuf, 1, 1000) != 1) {
+		fprintf(stderr, FLFMT "tty_fastbreak: echo read error\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+
 	//we probably have a few ms left;
 	//restore 10400bps:
 	set.speed = 10400;
@@ -1124,21 +1018,22 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	}
 
 	/* Now wait the requested number of ms */
-	gettimeofday(&tv2,NULL);
+	tv2=diag_os_gethrt();
+	tvdiff = diag_os_hrtus(tv2 - tv1);	//us
 
-	timersub(&tv2, &tv1, &tvdiff);	//tvdiff=elapsed time since start of break
-	if (tvdiff.tv_usec > (int)(ms*1000))
+	if (tvdiff >= (ms*1000))
 		return 0;	//already finished
 
-	msremain = ms - (tvdiff.tv_usec / 1000);
+	msremain = ms - (tvdiff / 1000);
 
 	diag_os_millisleep(msremain);
 
-	gettimeofday(&tv2, NULL);
-	timersub(&tv2, &tv1, &tvdiff);
+	tv2=diag_os_gethrt();
+	tvdiff = diag_os_hrtus(tv2 - tv1);	//us
 
+	//XXX this message may need to be removed if timing is impaired
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "Fast break finished : tWUP=%ld\n", FL, tvdiff.tv_usec);
+		fprintf(stderr, FLFMT "Fast break finished : tWUP=%llu\n", FL, tvdiff);
 	}
 
 	return 0;

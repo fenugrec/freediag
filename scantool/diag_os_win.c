@@ -284,7 +284,6 @@ const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 //auto-adjust to a certain degree.
 
 void diag_os_calibrate(void) {
-	//TODO : adjust dynamic offsets as well, now we just evaluate the situation
 	static int calibrate_done=0;	//do it only once
 	const int iters=8;
 	int testval;	//timeout to test

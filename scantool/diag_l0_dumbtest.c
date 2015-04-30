@@ -79,7 +79,7 @@ static void dtest_1(struct diag_l0_device *dl0d) {
 	fprintf(stderr, FLFMT "Starting test 1: pulsing TXD=1, 1s, TXD=0, 500ms\n", FL);
 	for (i=0; i<=4; i++) {
 		diag_os_millisleep(1000);
-		diag_tty_break(dl0d, 500);
+		if (diag_tty_break(dl0d, 500)) break;
 	}
 
 	return;
@@ -91,7 +91,10 @@ static void dtest_2(struct diag_l0_device *dl0d) {
 	uint8_t patternbyte=0x55;
 	fprintf(stderr, FLFMT "Starting test 2: sending 0x55 with P4=5ms\n", FL);
 	for (i=0; i<=300; i++) {
-		diag_tty_write(dl0d, &patternbyte, 1);
+		if (diag_tty_write(dl0d, &patternbyte, 1) != 1) {
+			printf("write error\n");
+			break;
+		}
 		diag_os_millisleep(5);
 	}
 
@@ -104,9 +107,9 @@ static void dtest_3(struct diag_l0_device *dl0d) {
 	fprintf(stderr, FLFMT "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms\n", FL);
 
 	for (i=0; i<=4; i++) {
-		diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1);
+		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1)) break;
 		diag_os_millisleep(1000);
-		diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0);
+		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0)) break;
 		diag_os_millisleep(500);
 	}
 	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
@@ -120,9 +123,9 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 	fprintf(stderr, FLFMT "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms\n", FL);
 
 	for (i=0; i<=4; i++) {
-		diag_tty_control(dl0d, 1, (dumb_flags & SET_RTS));
+		if (diag_tty_control(dl0d, 1, (dumb_flags & SET_RTS))) break;
 		diag_os_millisleep(1000);
-		diag_tty_control(dl0d, 0, (dumb_flags & SET_RTS));
+		if (diag_tty_control(dl0d, 0, (dumb_flags & SET_RTS))) break;
 		diag_os_millisleep(500);
 	}
 	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
@@ -138,7 +141,10 @@ static void dtest_5(struct diag_l0_device *dl0d) {
 	fprintf(stderr, FLFMT "Starting test 5: pulsing TXD=1, 50, TXD=0, 25ms\n", FL);
 	for (i=0; i<=40; i++) {
 		diag_os_millisleep(50);
-		diag_tty_break(dl0d, 25);
+		if (diag_tty_break(dl0d, 25)) {
+			printf("break error\n");
+			break;
+		}
 	}
 
 	return;
@@ -151,7 +157,10 @@ static void dtest_6(struct diag_l0_device *dl0d) {
 	fprintf(stderr, FLFMT "Starting test 6: pulsing TXD=1, 50ms, TXD=0, 25ms\n", FL);
 	for (i=0; i<=50; i++) {
 		diag_os_millisleep(25);
-		diag_tty_fastbreak(dl0d, 50);
+		if (diag_tty_fastbreak(dl0d, 50)) {
+			printf("fastbreak error\n");
+			break;
+		}
 	}
 
 	return;

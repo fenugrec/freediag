@@ -1,12 +1,12 @@
 /*
  * diag_tty_unix.h
  *
- * This is totally unix-exclusive and should not be included directly;
- * other files should include diag_tty.h
+ * This is totally unix-exclusive and should only be included by diag_tty_unix.c !
+ * Public functions are in diag_tty.h
  *
  * This file is part of freediag - Vehicle Diagnostic Utility
  *
- * Copyright (C) 2001-2004 ?
+ * Copyright (C) 2001-2004 Richard Almeida & others
  * Copyright (C) 2004 Steve Baker <sjbaker@users.sourceforge.net>
  * Copyright (C) 2004 Steve Meisner <meisner@users.sourceforge.net>
  * Copyright (C) 2004 Vasco Nevoa <vnevoa@users.sourceforge.net>
@@ -43,8 +43,8 @@ extern "C" {
 #elif defined(__linux__)
 	#include <linux/rtc.h>
 #endif
-#if defined(__linux__) && (TRY_POSIX == 0)
-	#include <linux/serial.h>	/* For Linux-specific struct serial_struct */
+#if defined(__linux__)
+	#include <linux/serial.h>	/* For Linux-specific struct serixal_struct */
 #endif
 #include "diag_tty.h"
 
@@ -55,14 +55,14 @@ struct diag_ttystate
 	/*
 	 * For recording state before we mess with the interface:
 	 */
-#if defined(__linux__) && (TRY_POSIX == 0)
+#if defined(__linux__)
 	struct serial_struct dt_osinfo;
 #endif
 	struct termios dt_otinfo;
 	int dt_modemflags;
 
 	/* For recording state after/as we mess with the interface */
-#if defined(__linux__) && (TRY_POSIX == 0)
+#if defined(__linux__)
 	struct serial_struct dt_sinfo;
 #endif
 	struct termios dt_tinfo;
@@ -75,11 +75,11 @@ struct unix_tty_int {
 	struct diag_ttystate *ttystate;	/* Holds OS specific tty info */
 
 #if defined(_POSIX_TIMERS)
-	timer_t timerid;
+	timer_t timerid;		//Used for read() and write() timeouts
 #endif
 
 #if defined(_POSIX_TIMERS) || defined(__linux__)
-	unsigned long int byte_write_timeout_us; //single byte write timeuot in microseconds
+	unsigned long int byte_write_timeout_us; //single byte write timeout in microseconds
 #endif
 };
 

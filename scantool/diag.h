@@ -61,12 +61,6 @@ extern "C" {
 	#include <sys/time.h>	//probably the right place where gettimeofday(), timeval etc would be defined ?
 #endif //HAVE_GETTIMEOFDAY
 
-#ifndef HAVE_TIMERSUB
-	//win32 code doesn't use timersub, but declaring this should do no harm.
-	//bare implementation, in diag_os_??.c
-	void timersub(struct timeval *a, struct timeval *b, struct timeval *res);
-#endif	//HAVE_TIMERSUB
-
 #ifndef HAVE_STRCASECMP	//strcasecmp is POSIX, but kernel32 provides lstrcmpi which should be equivalent.
 #ifdef WIN32
 	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b)

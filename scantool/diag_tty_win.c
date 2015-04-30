@@ -15,7 +15,6 @@
 
 #include <windows.h>
 #include <basetsd.h>
-#include <winbase.h> //maybe just <windows.h> ?
 
 extern LARGE_INTEGER perfo_freq;
 extern float pf_conv;	//these two are defined in diag_os
@@ -325,6 +324,9 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+	
+	if (count <= 0)
+		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (! WriteFile(wti->fd, buf, count, &byteswritten, pOverlap)) {
 		fprintf(stderr, FLFMT "WriteFile error:%s. %u bytes written, %u requested\n", FL, diag_os_geterr(0), (unsigned int) byteswritten, count);
@@ -357,8 +359,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	pOverlap=NULL;
 	COMMTIMEOUTS devtimeouts;
 
-	assert(count>0);
-	if (count == 0) return DIAG_ERR_BADLEN;
+	if ((count <= 0) || (timeout <= 0)) return DIAG_ERR_BADLEN;
 
 	if (wti->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
@@ -468,6 +469,7 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
  * diag_tty_fastbreak: send 0x00 at 360bps => fixed 25ms break; return [ms] after starting break.
  * This is for ISO14230 fast init : typically diag_tty_fastbreak(dl0d, 50)
  * It assumes the interface is half-duplex.
+ * Ret 0 if ok
  */
 int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	HANDLE dh;	//just to clarify code

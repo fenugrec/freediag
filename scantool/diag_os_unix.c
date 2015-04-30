@@ -7,7 +7,7 @@
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -89,10 +89,16 @@
 
 	static timer_t ptimer_id;	//periodic timer ID
 
-#else
-	#warning ****** no POSIX timers on your system !?!? Report this!
+#elif defined(__linux)
+	#warning ****** WARNING ! Your system claims to be __linux__ but without _POSIX_TIMERS ??
+	#warning ****** WARNING ! Good luck.
 	#include <sys/ioctl.h>	//need these for
 	#include <linux/rtc.h>	//diag_os_millisleep fallback
+#else
+	#warning ****** no POSIX timers on your system !? Report this!
+	#ifndef HAVE_GETTIMEOFDAY
+		#error No implementation of gettimeofday() for your system!
+	#endif	//HAVE_GETTIMEOFDAY
 #endif
 
 static int diag_os_init_done=0;
@@ -269,8 +275,6 @@ diag_os_millisleep(unsigned int ms)
 		}
 	}
 #elif defined(__linux__)
-#warning ****** WARNING ! Your system claims to be __linux__ but without _POSIX_TIMERS ??
-#warning ****** WARNING ! Good luck.
 /** ugly /dev/rtc implementation; requires uid=0 or appropriate permissions. **/
 	int fd, retval;
 	unsigned int i;
@@ -409,29 +413,6 @@ diag_os_sched(void)
 
 #ifdef _POSIX_PRIORITY_SCHEDULING
 #include <sched.h>
-	int r = 0;
-	struct sched_param p;
-
-#ifndef __linux__		//&& _POSIX_PRIO SCHED
-	/*
-	+* If we're not running on Linux, we're not sure if what is
-	+* being done is remotely applicable for our flavor of POSIX
-	+* priority scheduling.
-	+* For example, you set the scheduling priority to 1.  Ouch.
-	 */
-#warning Scheduling setup should be examined on your particular platform !
-#warning Please report this !
-
-	/* Code block */
-	{
-		static int setup_warned;
-		if (setup_warned == 0) {
-			setup_warned = 1;
-			fprintf(stderr,
-				FLFMT "Scheduling setup should be examined.\n", FL);
-		}
-	}
-#else		//so it's __linux__
 	/*
 	 * Check privileges
 	 */
@@ -447,44 +428,52 @@ diag_os_sched(void)
 				"Things will not work correctly\n", FL);
 		}
 	}
-#endif	//ndef linux (inside _POSIX_PRIO_SCHED)
-
-	/* Set real time UNIX scheduling */
-	p.sched_priority = 1;
-  	if ( sched_setscheduler(getpid(), SCHED_FIFO, &p) < 0)
+#ifdef __linux__
 	{
-		fprintf(stderr, FLFMT "sched_setscheduler failed: %s.\n",
-			FL, strerror(errno));
-		r = -1;
+		int r=0;
+		struct sched_param p;
+
+		/* Set real time UNIX scheduling */
+		p.sched_priority = 1;
+		if ( sched_setscheduler(getpid(), SCHED_FIFO, &p) < 0)
+		{
+			fprintf(stderr, FLFMT "sched_setscheduler failed: %s.\n",
+				FL, strerror(errno));
+			r = -1;
+		}
+		rv=r;
 	}
-	rv=r;
+#else
+	/*
+	+* If we're not running on Linux, we're not sure if what is
+	+* being done is remotely applicable for our flavor of POSIX
+	+* priority scheduling.
+	+* For example, you set the scheduling priority to 1.  Ouch.
+	 */
+#warning Scheduling setup should be examined on your particular platform !
+#warning Please report this !
+
+	fprintf(stderr, FLFMT "Scheduling setup should be examined.\n", FL);
+	rv = 0;
+
+#endif // __linux__
+
 #else	//not POSIX_PRIO_SCHED
 #warning No special scheduling support in diag_os.c for your OS! Please report this !
 
 	fprintf(stderr,
 		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
-	rv=-1;
+	rv=0;
 #endif // _POSIX_PRIORITY_SCHEDULING
 	os_sched_done=1;
 	return rv;
 }	//of diag_os_sched
 
 
-#ifndef HAVE_GETTIMEOFDAY
-	//TODO : don't need gettimeofday if _POSIX_TIMERS ?
-	#error No implementation of gettimeofday() for your system!
-#endif	//HAVE_GETTIMEOFDAY
-
-#ifndef HAVE_TIMERSUB
-	#error No implementation of timersub() for your system !
-#endif //HAVE_TIMERSUB
-
-
 //diag_os_geterr : get OS-specific error string.
 //Either gets the last error if os_errno==0, or print the
 //message associated with the specified os_errno
 // XXX this is not async-safe / re-entrant !
-//
 const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 	//we'll suppose strerr is satisfactory.
 	return (const char *) strerror(os_errno? os_errno : errno);
@@ -580,9 +569,6 @@ static void diag_os_discover(void) {
 //adequate performances.
 //call after diag_os_discover !
 void diag_os_calibrate(void) {
-	//TODO: implement linux/unix diag_os_calibrate !
-	//For the moment we only check the resolution of diag_os_getms(),
-	//diag_os_gethrt() and test diag_os_chronoms().
 	#define RESOL_ITERS	5
 	static int calibrate_done=0;
 	unsigned long t1, t2, t3;
@@ -698,7 +684,6 @@ unsigned long long diag_os_gethrt(void) {
 #else
 	//but we'll use gettimeofday anyway as a stopgap. This is evil
 	//because gettimeofday isn't guaranteed to be monotonic (always increasing)
-	//TODO : OSX has a mach_absolute_time() which could be used.
 	//units : us
 	struct timeval tv;
 	unsigned long long rv;
@@ -710,11 +695,11 @@ unsigned long long diag_os_gethrt(void) {
 
 //convert a delta of diag_os_gethrt() timestamps to microseconds
 unsigned long long diag_os_hrtus(unsigned long long hrdelta) {
-#ifdef _POSIX_TIMERS	//must match diag_os_gethrt() implementation!
+#ifdef _POSIX_TIMERS	//must match diag_os_gethrt() implementations!
 	return hrdelta / 1000;
 #else
 	return hrdelta;
-#endif // _POSIX_MONOTONIC_CLOCK
+#endif // _POSIX_TIMERS
 }
 
 //arbitrarily resettable stopwatch. See comments in diag_os.h
