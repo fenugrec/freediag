@@ -6,6 +6,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * 2014-2015 fenugrec
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +27,10 @@
  * Library user header file
  */
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #ifdef CMAKE_ENABLED
 	#include "cconf.h"
 #else
@@ -44,22 +49,11 @@
 #include <stdint.h>		/* For uint8_t, etc. This is a C99 header */
 #include <stdio.h>		/* For FILE */
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 // Nice to have anywhere...
 #define MIN(_a_, _b_) (((_a_) < (_b_) ? (_a_) : (_b_)))
-#ifdef __GNUC__
-	#define UNUSED(X) 	X __attribute__((unused))	//magic !
-#else
-	#define UNUSED(X)	X	//how can we suppress "unused parameter" warnings on other compilers?
-#endif // __GNUC__
+#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+#define FLFMT "%s:%d:  "		//for debug messages
 
-
-#ifdef HAVE_GETTIMEOFDAY
-	#include <sys/time.h>	//probably the right place where gettimeofday(), timeval etc would be defined ?
-#endif //HAVE_GETTIMEOFDAY
 
 #ifndef HAVE_STRCASECMP	//strcasecmp is POSIX, but kernel32 provides lstrcmpi which should be equivalent.
 #ifdef WIN32
@@ -69,13 +63,17 @@ extern "C" {
 #endif 	//WIN32
 #endif	//have_strcasecmp
 
-#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+
 #define DB_FILE "./freediag_carsim_all.db"	//default simfile for CARSIM interface
 #define DIAG_NAMELEN	256
 
-/* For diagnostics */
 
-#define FLFMT "%s:%d:  "
+/****** compiler-specific tweaks ******/
+#ifdef __GNUC__
+	#define UNUSED(X) 	X __attribute__((unused))	//magic !
+#else
+	#define UNUSED(X)	X	//how can we suppress "unused parameter" warnings on other compilers?
+#endif // __GNUC__
 
 #ifndef CMAKE_ENABLED
 	#define CURFILE __FILE__
@@ -103,6 +101,91 @@ extern "C" {
 #else
 	#define FL CURFILE, __LINE__
 #endif
+/****** ******/
+
+/****** OS-specific implementation selectors ******/
+/*	These are for testing/debugging only, to force compilation of certain implementations
+	for diag_tty* and diag_os* functions.
+	
+	### Map of features with more than one implementation related to POSIX ###
+
+	## time-related features ##
+	SEL_PERIODIC: Periodic timer callback (for L2+L3 keepalives)
+		A) needs _POSIX_TIMERS, uses timer_create()
+		B) (available everywhere?) setitimer+sigaction to install a SIGALRM handler
+	SEL_SLEEP: diag_os_millisleep()
+		A) needs _POSIX_TIMERS, uses clock_nanosleep()
+		B) needs __linux__ && (uid==root), uses /dev/rtc
+		C) (available everywhere?) nanosleep() loop
+	SEL_HRT: diag_os_gethrt(), diag_os_chronoms()
+		A) needs _POSIX_TIMERS, uses clock_gettime()
+		B) (available everywhere?) gettimeofday()
+
+	## tty-related features ##
+	SEL_TIMEOUT: diag_tty_{read,write}() timeouts
+		A) needs _POSIX_TIMERS, uses timer_create + sigaction for a SIGUSR1 handler
+		B) needs __linux__ && /dev/rtc
+		C) (not implemented) could try setitimer + SIGUSR1 handler, similar to A)
+	SEL_TTYOPEN: diag_tty_open() : open() flags:
+		ALT1) needs O_NONBLOCK; open non-blocking then clear flag
+		ALT2) don't set O_NONBLOCK.
+	SEL_TTYCTL: diag_tty_{open,close}() : tty settings
+		A) needs __linux__ : tries TIOCGSERIAL (known to fail on some cheap hw)
+		B) TODO
+	SEL_TTYBAUD: diag_tty_setup() : tty settings (bps, parity etc)
+		A) needs __linux__ : uses TIOCSSERIAL, ASYNC_SPD_CUST, CBAUD.
+		B) cfset{i,o}speed : tries setting bps directly (non-portable)
+
+	## misc features ##
+	SEL_SCHED: diag_os_sched() : increasing priority ; check uid
+		A) _POSIX_PRIORITY_SCHEDULING && __linux__ : set scheduling to realtime.
+		B) _POSIX_PRIORITY_SCHEDULING : check uid; #warn; change nothing.
+		C) All others : #warn; change nothing.
+	######
+	For every feature listed above, it's possible to force compilation of
+	a specific implementation using the #defines below.
+	TODO: add compile tests to cmake?
+*/
+#define S_AUTO	0
+/* First set, for obviously OS-dependant features: */
+#define	S_POSIX 1
+#define	S_LINUX 2
+#define S_OTHER 3
+/* Second set, not necessarily OS-dependant */
+#define S_ALT1	1
+#define S_ALT2	2
+/** Insert desired selectors here **/
+//example:
+//#define	SEL_PERIODIC S_LINUX
+
+/* Default selectors: anything still undefined is set to S_AUTO which
+	means "force nothing", i.e. "use most appropriate implementation". */
+#ifndef SEL_PERIODIC
+#define SEL_PERIODIC	S_AUTO
+#endif
+#ifndef SEL_SLEEP
+#define SEL_SLEEP	S_AUTO
+#endif
+#ifndef SEL_HRT
+#define SEL_HRT	S_AUTO
+#endif
+#ifndef SEL_TIMEOUT
+#define SEL_TIMEOUT	S_AUTO
+#endif
+#ifndef SEL_TTYOPEN
+#define SEL_TTYOPEN	S_AUTO
+#endif
+#ifndef SEL_TTYCTL
+#define SEL_TTYCTL	S_AUTO
+#endif
+#ifndef SEL_TTYBAUD
+#define SEL_TTYBAUD	S_AUTO
+#endif
+#ifndef SEL_SCHED
+#define SEL_SCHED	S_AUTO
+#endif
+/****** ******/
+
 
 /*
  * Many receive buffers are set to this, which is voluntarily larger than
@@ -135,7 +218,7 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
 #define DIAG_IOCTL_INITBUS	0x2201	/* Initialise the ecu bus, data is diag_l1_init */
 #define DIAG_IOCTL_IFLUSH 0x2202	//flush input buffers
 
-/* debug control */
+/****** debug control ******/
 // flag containers : diag_l0_debug, diag_l1_debug diag_l2_debug, diag_l3_debug, diag_cmd_debug
 
 #define DIAG_DEBUG_OPEN		0x01	/* Open events */
@@ -165,6 +248,7 @@ struct debugflags_descr {
 	const char * descr;		//associate short description for each flag.
 	const char * shortdescr;
 };
+
 
 /*
  * Message handling.
@@ -211,9 +295,13 @@ void diag_freemsg(struct diag_msg *);	/* Free a msg that we dup'ed */
 uint8_t diag_cks1(const uint8_t *data, unsigned int len);	//calculate 8bit checksum on [len] bytes
 
 /*
+ *
  * General functions
+ *
  */
+//diag_init : ret 0 if ok;
 int diag_init(void);
+//diag_end : must be called before exiting. Ret 0 if ok
 int diag_end(void);
 
 //diag_data_dump : print (len) uin8_t bytes from data[], to FILE (i.e. stderr, etc.)
@@ -277,10 +365,10 @@ int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 int diag_l0_config(void);
 int diag_l2_config(void);
 
+#include "diag_os.h"	/* OS wrappers specific definitions. */
+
 #if defined(__cplusplus)
 }
 #endif
-
-#include "diag_os.h"	/* OS specific definitions. */
 
 #endif /* _DIAG_H_ */

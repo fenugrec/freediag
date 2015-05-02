@@ -38,12 +38,13 @@
 #include "diag_err.h"
 #include "diag_tty_unix.h"
 
-#ifdef _POSIX_TIMERS
+#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
+volatile sig_atomic_t pt_expired;	//flag timeout expiry
 static void
 diag_tty_rw_timeout_handler(UNUSED(int sig))
 {
-	//no need to do anything here, but the handler needs to be defined,
-	//otherwise the signal would interrupt the process
+	pt_expired = 1;
+	return;
 }
 #endif
 
@@ -56,7 +57,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	struct diag_ttystate	*dt;
 	struct diag_l0_device *dl0d;
 	struct unix_tty_int *uti;
-#if defined(_POSIX_TIMERS)
+#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 	struct sigevent to_sigev;
 	struct sigaction sa;
 	clockid_t timeout_clkid;
@@ -70,7 +71,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		return diag_iseterr(rv);
 	}
 
-#if defined(_POSIX_TIMERS)
+#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 	//set-up the r/w timeouts clock - here we just create it; it will be armed when needed
 #ifdef _POSIX_MONOTONIC_CLOCK
 	timeout_clkid = CLOCK_MONOTONIC;
@@ -104,7 +105,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	dl0d->dl0 = dl0;
 
 	if ((rv=diag_calloc(&uti->ttystate, 1))) {
-#if defined(_POSIX_TIMERS)
+#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 		timer_delete(uti->timerid);
 #endif
 		free(uti);
@@ -125,10 +126,8 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 
 	errno = 0;
-#ifndef O_NONBLOCK
-	#warning No O_NONBLOCK on your system ?! Please report this
-	uti->fd = open(dl0d->name, O_RDWR);
-#else
+
+#if defined(O_NONBLOCK) && (SEL_TTYOPEN==S_ALT1 || SEL_TTYOPEN==S_AUTO)
 	/*
 	 * For POSIX behavior:  Open serial device non-blocking to avoid
 	 * modem control issues, then set to blocking.
@@ -157,7 +156,13 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 			}
 		}
 	}
-#endif
+#else
+	#ifndef O_NONBLOCK
+	#warning No O_NONBLOCK on your system ?! Please report this
+	#endif
+	uti->fd = open(dl0d->name, O_RDWR);
+
+#endif // O_NONBLOCK
 
 	if (uti->fd >= 0) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN)
@@ -228,7 +233,7 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 		if (dl0d) {
 			uti = (struct unix_tty_int *)dl0d->tty_int;
 			if(uti) {
-#if defined(_POSIX_TIMERS)
+#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 				timer_delete(uti->timerid);
 #endif
 				if (uti->ttystate) {
@@ -296,11 +301,19 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 		fprintf(stderr, "speed %d databits %d stopbits %d parity %d\n",
 			pset->speed, pset->databits, pset->stopbits, pset->parflag);
 	}
-//TODO : try 3 techniques:
-//	1) check if standard baud rate => set it (easy)
-//	2) try hacks for non-standard speeds (hard)
-//	3) warn user; pick nearest std baud rate (error if out of range)
-#if defined(__linux__)
+/* Here starts baud rate hell. Status in 2015 seems to be :
+	- ASYNC_SPD_CUST + B38400 + custom divisor trick is "deprecated",
+	 and needs the TIOCSSERIAL ioctl (not ubiquitous)
+	- take a chance with cfsetispeed & co with an integer argument ?
+	 (non standard, shot in the dark except maybe on BSD??)
+	- termios2 struct + BOTHER flag + TCSETS2 ioctl; questionable availability
+
+ * TODO : try up to 3 techniques:
+	1) check if standard baud rate => set it (easy)
+	2) try hacks for non-standard speeds (hard)
+	3) warn user; pick nearest std baud rate (error if out of range)
+*/
+#if defined(__linux__) && (SEL_TTYBAUD==S_ALT1 || SEL_TTYBAUD==S_AUTO)
 	/*
 	 * Linux iX86 method of setting non-standard baud rates:
 	 *
@@ -374,7 +387,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 			FLFMT "cfsetospeed failed: %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-#endif
+#endif // set baud rate
 	errno = 0;
 	if (tcsetattr(fd, TCSAFLUSH, &dt->dt_tinfo) < 0)
 	{
@@ -545,7 +558,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 
 ssize_t
 diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
-#if defined(_POSIX_TIMERS)
+#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 {
 	ssize_t rv;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
@@ -591,15 +604,16 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 	//unspecified error
 	return diag_iseterr(DIAG_ERR_GENERAL);
 }
-//TODO: timeout using /dev/rtc
-#elif defined(__linux__) //fallback code for linux
+
+#elif defined(__linux__) && (SEL_TIMEOUT==S_LINUX || SEL_TIMEOUT==S_AUTO)
+//fallback code for linux. TODO: timeout using /dev/rtc
 
 {
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 	return write(uti->fd, buf, count);
 }
 
-#else	 //no posix timers and it's not linux
+#else	 //no posix timers and it's not linux. TODO : regular signal handler?
 
 {
 	ssize_t rv;
@@ -644,7 +658,7 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 
 ssize_t
 diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
-#if defined(_POSIX_TIMERS)
+#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 {
 	ssize_t rv;
 	size_t n;
@@ -709,7 +723,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	return diag_iseterr(DIAG_ERR_GENERAL);
 }
 
-#elif defined(__linux__) //fallback code for linux
+#elif defined(__linux__) && (SEL_TIMEOUT==S_LINUX || SEL_TIMEOUT==S_AUTO)//fallback code for linux
 
 /*
  * We have to be read to loop in write since we've cleared SA_RESTART.

@@ -38,14 +38,16 @@ extern "C" {
 
 #include <unistd.h>
 #include <termios.h>
+
 #if defined(_POSIX_TIMERS)
 	#include <time.h>
-#elif defined(__linux__)
-	#include <linux/rtc.h>
 #endif
+
 #if defined(__linux__)
-	#include <linux/serial.h>	/* For Linux-specific struct serixal_struct */
+	#include <linux/rtc.h>
+	#include <linux/serial.h>	/* For Linux-specific struct serial_struct */
 #endif
+
 #include "diag_tty.h"
 
 #define DL0D_INVALIDHANDLE -1

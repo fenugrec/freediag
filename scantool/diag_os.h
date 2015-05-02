@@ -23,6 +23,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  *************************************************************************
+ *
+ * Public functions; wrappers for OS-specific functions
+ *
  */
 
 #if defined(__cplusplus)
