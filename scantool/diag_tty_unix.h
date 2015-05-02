@@ -86,6 +86,58 @@ struct unix_tty_int {
 #endif
 };
 
+/****** OS-specific implementation selectors ******/
+/*	These are for testing/debugging only, to force compilation of certain implementations
+	for diag_tty* and diag_os* functions.
+
+	### Map of features with more than one implementation related to POSIX ###
+
+	## tty-related features ##
+	SEL_TIMEOUT: diag_tty_{read,write}() timeouts
+		A) needs _POSIX_TIMERS, uses timer_create + sigaction for a SIGUSR1 handler
+		B) needs __linux__ && /dev/rtc
+		C) (not implemented) could try setitimer + SIGUSR1 handler, similar to A)
+	SEL_TTYOPEN: diag_tty_open() : open() flags:
+		ALT1) needs O_NONBLOCK; open non-blocking then clear flag
+		ALT2) don't set O_NONBLOCK.
+	SEL_TTYCTL: diag_tty_{open,close}() : tty settings
+		A) needs __linux__ : tries TIOCGSERIAL (known to fail on some cheap hw)
+		B) TODO
+	SEL_TTYBAUD: diag_tty_setup() : tty settings (bps, parity etc)
+		A) needs __linux__ : uses TIOCSSERIAL, ASYNC_SPD_CUST, CBAUD.
+		B) cfset{i,o}speed : tries setting bps directly (non-portable)
+	######
+	For every feature listed above, it's possible to force compilation of
+	a specific implementation using the #defines below.
+	TODO: add compile tests to cmake?
+*/
+#define S_AUTO	0
+/* First set, for obviously OS-dependant features: */
+#define	S_POSIX 1
+#define	S_LINUX 2
+#define S_OTHER 3
+/* Second set, not necessarily OS-dependant */
+#define S_ALT1	1
+#define S_ALT2	2
+/** Insert desired selectors here **/
+//example:
+//#define SEL_TIMEOUT S_LINUX
+
+/* Default selectors: anything still undefined is set to S_AUTO which
+	means "force nothing", i.e. "use most appropriate implementation". */
+#ifndef SEL_TIMEOUT
+#define SEL_TIMEOUT	S_AUTO
+#endif
+#ifndef SEL_TTYOPEN
+#define SEL_TTYOPEN	S_AUTO
+#endif
+#ifndef SEL_TTYCTL
+#define SEL_TTYCTL	S_AUTO
+#endif
+#ifndef SEL_TTYBAUD
+#define SEL_TTYBAUD	S_AUTO
+#endif
+/****** ******/
 
 #if defined(__cplusplus)
 }

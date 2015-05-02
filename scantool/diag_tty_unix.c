@@ -80,7 +80,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	timeout_clkid = CLOCK_REALTIME;
 #endif // _POSIX_MONOTONIC_CLOCK
 	sa.sa_flags = SA_SIGINFO;
-	sa.sa_handler = diag_tty_rw_timeout_handler;
+	sa.sa_sigaction = diag_tty_rw_timeout_handler;
 	sigemptyset(&sa.sa_mask);
 	if(sigaction(SIGUSR1, &sa, NULL) != 0) {
 		fprintf(stderr, FLFMT "Could not set-up action for timeout timer... report this\n", FL);
@@ -759,7 +759,8 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 
 {
 	struct timeval tv;
-	int time,rv,fd,retval;
+	unsigned int time;
+	int rv,fd,retval;
 	unsigned long data;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;;
 
@@ -796,7 +797,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 
 	read(fd, &data, sizeof(unsigned long));
 	data >>= 8;
-	time+=(int)data;
+	time+=data;
 
 	while ( 1 ) {
 		fd_set set;
@@ -813,7 +814,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 
 		read(fd, &data, sizeof(unsigned long));
 		data >>= 8;
-		time+=(int)data;
+		time+=data;
 		if (time>=timeout)
 			break;
 	}

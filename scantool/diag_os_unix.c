@@ -61,6 +61,7 @@
 #include <assert.h>
 
 #include "diag_os.h"
+#include "diag_os_unix.h"
 #include "diag.h"
 
 #include "diag_l2.h"
