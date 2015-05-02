@@ -78,6 +78,7 @@ struct unix_tty_int {
 
 #if defined(_POSIX_TIMERS)
 	timer_t timerid;		//Used for read() and write() timeouts
+	volatile sig_atomic_t pt_expired;	//flag timeout expiry
 #endif
 
 #if defined(_POSIX_TIMERS) || defined(__linux__)

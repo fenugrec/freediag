@@ -39,12 +39,12 @@
 #include "diag_tty_unix.h"
 
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
-static volatile sig_atomic_t pt_expired;	//flag timeout expiry
 #define PT_REPEAT	1000	//after the nominal timeout period the timer will expire every PT_REPEAT us.
 static void
-diag_tty_rw_timeout_handler(UNUSED(int sig))
+diag_tty_rw_timeout_handler(UNUSED(int sig), siginfo_t *si, UNUSED(void *uc))
 {
-	pt_expired = 1;
+	assert(si->si_value.sival_ptr != NULL);
+	((struct unix_tty_int *)(si->si_value.sival_ptr))->pt_expired = 1;
 	return;
 }
 #endif
@@ -79,7 +79,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 #else
 	timeout_clkid = CLOCK_REALTIME;
 #endif // _POSIX_MONOTONIC_CLOCK
-	sa.sa_flags = 0;
+	sa.sa_flags = SA_SIGINFO;
 	sa.sa_handler = diag_tty_rw_timeout_handler;
 	sigemptyset(&sa.sa_mask);
 	if(sigaction(SIGUSR1, &sa, NULL) != 0) {
@@ -91,7 +91,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	to_sigev.sigev_notify = SIGEV_SIGNAL;
 	to_sigev.sigev_signo = SIGUSR1;
-	to_sigev.sigev_value.sival_ptr = &uti->timerid;
+	to_sigev.sigev_value.sival_ptr = uti;
 	if(timer_create(timeout_clkid, &to_sigev, &uti->timerid) != 0) {
 		fprintf(stderr, FLFMT "Could not create timeout timer... report this\n", FL);
 		free(uti);
@@ -582,14 +582,14 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 	it.it_interval.tv_sec=0;
 	it.it_interval.tv_nsec = PT_REPEAT * 1000;
 
-	pt_expired=0;
+	uti->pt_expired=0;
 	//arm the timer
 	timer_settime(uti->timerid, 0, &it, NULL);
 
 	n=0;
 
 	while(n < count) {
-		if (pt_expired)
+		if (uti->pt_expired)
 			break;
 
 		rv = write(uti->fd, &p[n], count-n);
@@ -683,7 +683,6 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 	ssize_t rv;
 	size_t n;
 	uint8_t *p;
-	volatile int expired;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 
 	struct itimerspec it;
@@ -696,20 +695,18 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 	it.it_interval.tv_sec=0;
 	it.it_interval.tv_nsec = PT_REPEAT * 1000;
 
-	pt_expired=0;
+	uti->pt_expired=0;
 	//arm the timer
 	timer_settime(uti->timerid, 0, &it, NULL);
 
 	n = 0;
 	p = (uint8_t *)buf;
-	expired = 0;
 	errno = 0;
 
 	while(n < count) {
-		if (pt_expired) {
-			expired = 1;
+		if (uti->pt_expired)
 			break;
-		}
+
 		rv = read(uti->fd, &p[n], count-n);
 		if (rv < 0) {
 			if (errno == EINTR) {
@@ -733,7 +730,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 	if(rv >= 0) {
 		if(n > 0)
 			return n;
-		else if(expired)
+		else if(uti->pt_expired)
 			return DIAG_ERR_TIMEOUT;	//without diag_iseterr() !
 	}
 
@@ -890,7 +887,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 	while (count > 0 && expired == 0) {
 
 		rv = read(uti->fd,  &p[n], count);
-		
+
 		if ((rv == -1) && (errno == EINTR)) {
 			rv = 0;
 			errno=0;
@@ -939,7 +936,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d) {
 	uint8_t buf[MAXRBUF];
 	int rv;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
-	
+
 	errno = 0;
 
 	if (tcflush(uti->fd, TCIFLUSH) < 0) {
