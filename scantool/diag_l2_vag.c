@@ -194,7 +194,7 @@ diag_l2_proto_vag_decode(uint8_t *data, int len,
 
 static int
 diag_l2_proto_vag_int_recv(struct diag_l2_conn *d_l2_conn,
-UNUSED(int timeout),
+UNUSED(unsigned int timeout),
 UNUSED(uint8_t *data),
 UNUSED(int *datalen))
 {
@@ -558,7 +558,7 @@ diag_l2_proto_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  * for extra messages
  */
 static int
-diag_l2_proto_vag_recv(struct diag_l2_conn *d_l2_conn, int timeout,
+diag_l2_proto_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
 	void *handle)
 {

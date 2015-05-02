@@ -540,7 +540,7 @@ const void *data, size_t len)
 static int
 diag_l0_muleng_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-void *data, size_t len, int timeout)
+void *data, size_t len, unsigned int timeout)
 {
 	ssize_t xferd;
 	int i, rv;
@@ -554,7 +554,7 @@ void *data, size_t len, int timeout)
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "link %p recv upto %ld bytes timeout %d, rxlen %d offset %d\n",
+			FLFMT "link %p recv upto %ld bytes timeout %u, rxlen %d offset %d\n",
 			FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen, dev->dev_rdoffset);
 
 	/*

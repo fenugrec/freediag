@@ -84,7 +84,7 @@ typedef struct diag_l3_proto
 	//proto_recv: ret 0 if ok?
 	int (*diag_l3_proto_send)(struct diag_l3_conn *, struct diag_msg *);
 	//proto_recv: ret 0 if ok?
-	int (*diag_l3_proto_recv)(struct diag_l3_conn *, int,
+	int (*diag_l3_proto_recv)(struct diag_l3_conn *, unsigned int,
 		void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *);
 	int (*diag_l3_proto_ioctl)(struct diag_l3_conn *, int cmd, void *data);
 	//proto_request : send request and return a new message with the reply.
@@ -112,7 +112,7 @@ struct diag_l3_conn * diag_l3_start(const char *protocol, struct diag_l2_conn *d
 //diag_l3_stop must free() everything diag_l3_start alloc()ed
 int	diag_l3_stop(struct diag_l3_conn *d_l3_conn);
 int	diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg);
-int	diag_l3_recv(struct diag_l3_conn *d_l3_conn, int timeout,
+int	diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle);
 char * diag_l3_decode(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg,
 	char *buf, const size_t bufsize);
@@ -127,7 +127,7 @@ struct diag_msg *diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txm
 int diag_l3_base_start(struct diag_l3_conn *);
 int diag_l3_base_stop(struct diag_l3_conn *);
 int diag_l3_base_send(struct diag_l3_conn *, struct diag_msg *);
-int diag_l3_base_recv(struct diag_l3_conn *, int,
+int diag_l3_base_recv(struct diag_l3_conn *, unsigned int,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *);
 //XXX diag_l3_base_ioctl : there's no code for this one ?
 //int diag_l3_base_ioctl(struct diag_l3_conn *, int cmd, void *data);

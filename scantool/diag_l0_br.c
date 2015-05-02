@@ -77,7 +77,7 @@ struct diag_l0_br_device
 
 
 static int diag_l0_br_getmsg(struct diag_l0_device *dl0d,
-	uint8_t *dp, int timeout);
+	uint8_t *dp, unsigned int timeout);
 
 static int diag_l0_br_initialise(struct diag_l0_device *dl0d,
 	uint8_t type, uint8_t addr);
@@ -267,7 +267,7 @@ diag_l0_br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr)
 	uint8_t txbuf[3];
 	uint8_t rxbuf[MAXRBUF];
 	int rv;
-	int timeout;
+	unsigned int timeout;
 
 
 	/*
@@ -466,7 +466,7 @@ const struct diag_serial_settings *pset)
  * if the BR interface tells us theres a congested bus
  */
 static int
-diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, int timeout)
+diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout)
 {
 	uint8_t firstbyte;
 	size_t readlen;
@@ -474,7 +474,7 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, int timeout)
 
 	if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, FLFMT "link %p getmsg timeout %d\n",
+		fprintf(stderr, FLFMT "link %p getmsg timeout %u\n",
 			FL, (void *)dl0d, timeout);
 	}
 
@@ -700,7 +700,7 @@ const void *data, size_t len)
 static int
 diag_l0_br_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-void *data, size_t len, int timeout)
+void *data, size_t len, unsigned int timeout)
 {
 	int xferd, rv, retrycnt;
 	uint8_t *pdata = (uint8_t *)data;
@@ -713,7 +713,7 @@ void *data, size_t len, int timeout)
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "link %p recv upto %ld bytes timeout %d, rxlen %d offset %d framenr %d protocol %d state %d\n",
+			FLFMT "link %p recv upto %ld bytes timeout %u, rxlen %d offset %d framenr %d protocol %d state %d\n",
 			FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
 			dev->dev_rdoffset, dev->dev_framenr, dev->protocol,
 			dev->dev_state);

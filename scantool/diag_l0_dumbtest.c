@@ -76,60 +76,69 @@ diag_l0_dt_init(void)
 
 static void dtest_1(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 1: pulsing TXD=1, 1s, TXD=0, 500ms\n", FL);
+	fprintf(stderr, "Starting test 1: pulsing TXD=1, 1s, TXD=0, 500ms:");
 	for (i=0; i<=4; i++) {
 		diag_os_millisleep(1000);
 		if (diag_tty_break(dl0d, 500)) break;
+		fprintf(stderr, ".");
 	}
-
+	fprintf(stderr, "\n");
 	return;
 }
 
 //dtest_2 : fast pulse TXD by sending 0x55 @ 10.4kps with 5ms interbyte
 static void dtest_2(struct diag_l0_device *dl0d) {
-	int i;
+	int i, pc=0;
+	const int iters=300;
 	uint8_t patternbyte=0x55;
-	fprintf(stderr, FLFMT "Starting test 2: sending 0x55 with P4=5ms\n", FL);
-	for (i=0; i<=300; i++) {
+
+	fprintf(stderr, "Starting test 2: sending 0x55 with P4=5ms:");
+	for (i=0; i<=iters; i++) {
 		if (diag_tty_write(dl0d, &patternbyte, 1) != 1) {
 			printf("write error\n");
 			break;
 		}
+		if ((10*i/iters) != pc) {
+			pc +=1;
+			fprintf(stderr, ".");
+		}
 		diag_os_millisleep(5);
 	}
-
+	fprintf(stderr, "\n");
 	return;
 }
 
 //dtest_3: slow pulse RTS
 static void dtest_3(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms\n", FL);
+	fprintf(stderr, "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
 		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1)) break;
 		diag_os_millisleep(1000);
 		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0)) break;
 		diag_os_millisleep(500);
+		fprintf(stderr, ".");
 	}
 	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
-
+	fprintf(stderr, "\n");
 	return;
 }
 
 //dtest_4: slow pulse DTR
 static void dtest_4(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms\n", FL);
+	fprintf(stderr, "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
 		if (diag_tty_control(dl0d, 1, (dumb_flags & SET_RTS))) break;
 		diag_os_millisleep(1000);
 		if (diag_tty_control(dl0d, 0, (dumb_flags & SET_RTS))) break;
 		diag_os_millisleep(500);
+		fprintf(stderr, ".");
 	}
 	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
-
+	fprintf(stderr, "\n");
 	return;
 }
 
@@ -137,32 +146,42 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 //dtest_5 : fast pulse TXD with diag_tty_break;
 
 static void dtest_5(struct diag_l0_device *dl0d) {
-	int i;
-	fprintf(stderr, FLFMT "Starting test 5: pulsing TXD=1, 50, TXD=0, 25ms\n", FL);
-	for (i=0; i<=40; i++) {
+	int i, pc=0;
+	const int iters=40;
+	fprintf(stderr, "Starting test 5: pulsing TXD=1, 50, TXD=0, 25ms:");
+	for (i=0; i<=iters; i++) {
 		diag_os_millisleep(50);
 		if (diag_tty_break(dl0d, 25)) {
 			printf("break error\n");
 			break;
 		}
+		if ((10*i/iters) != pc) {
+			pc +=1;
+			fprintf(stderr, ".");
+		}
 	}
-
+	fprintf(stderr, "\n");
 	return;
 }
 
 //dtest_6 : fast pulse TXD with diag_tty_fastbreak;
 
 static void dtest_6(struct diag_l0_device *dl0d) {
-	int i;
-	fprintf(stderr, FLFMT "Starting test 6: pulsing TXD=1, 50ms, TXD=0, 25ms\n", FL);
-	for (i=0; i<=50; i++) {
+	int i, pc=0;
+	const int iters=50;
+	fprintf(stderr, "Starting test 6: pulsing TXD=1, 50ms, TXD=0, 25ms:");
+	for (i=0; i<=iters; i++) {
 		diag_os_millisleep(25);
 		if (diag_tty_fastbreak(dl0d, 50)) {
 			printf("fastbreak error\n");
 			break;
 		}
+		if ((10*i/iters) != pc) {
+			pc +=1;
+			fprintf(stderr, ".");
+		}
 	}
-
+	fprintf(stderr, "\n");
 	return;
 }
 
@@ -170,11 +189,11 @@ static void dtest_6(struct diag_l0_device *dl0d) {
 //one by one; P4=0. Print per-byte time to do this; use _dumb_send() instead
 // of diag_tty directly, like l1_send().
 static void dtest_7(struct diag_l0_device *dl0d) {
-	uint8_t i, echo;
+	uint8_t i, pc=0, echo;
 	int badechos=0;
 	unsigned long ti, tf;
 #define DT7_ITERS 100
-	printf("Starting test 7: half duplex single echo removal...\n");
+	fprintf(stderr, "Starting test 7: half duplex single echo removal:");
 
 	ti=diag_os_getms();	//get starting time.
 	for (i=0; i<=DT7_ITERS; i++) {
@@ -188,10 +207,16 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 		//check echo
 		if (echo != i)
 			badechos++;
+
+		if ((10*i/DT7_ITERS) != pc) {
+			pc +=1;
+			fprintf(stderr, ".");
+		}
 	}	//for
+	fprintf(stderr, "\n");
 	tf=diag_os_getms();	//stop time
 	tf = (tf-ti)/DT7_ITERS;	//average time per byte
-	printf("Average speed : %lu ms/byte. %d bad echos received.\n", tf, badechos);
+	printf("Average speed : %lu ms/byte. %d good; %d bad echos received.\n", tf, i, badechos);
 
 
 	return;
@@ -204,7 +229,7 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 	int i, rv, badechos=0;
 	unsigned long ti, tf;
 #define DT8_ITERS 10
-	printf("Starting test 8: half duplex block echo removal...\n");
+	fprintf(stderr, "Starting test 8: half duplex block echo removal:");
 	//fill i[] first
 	for (i=0; i<DT8_MSIZE; i++)
 		tx[i]=(uint8_t) i;
@@ -228,7 +253,9 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 		} else {
 			badechos++;
 		}
+		fprintf(stderr, ".");
 	}	//for
+	fprintf(stderr, "\n");
 	if (rv != 0) {
 		printf("Error, test did not complete.\n");
 	} else {
@@ -243,11 +270,11 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 //dtest_9 : test accuracy of read timeouts.
 static void dtest_9(struct diag_l0_device *dl0d) {
 	#define DT9_ITERS	4
-	int i;
+	unsigned int i;
 	int iters;
 	uint8_t garbage[MAXRBUF];
 	unsigned long t0, tf;
-	printf("Starting test 9: checking accuracy of read timeouts.\n");
+	fprintf(stderr, "Starting test 9: checking accuracy of read timeouts:\n");
 	diag_tty_iflush(dl0d);	//purge before starting
 
 	for (i=10; i<=200; i += 20) {
@@ -429,10 +456,10 @@ const void *data, size_t len)
 static int
 diag_l0_dt_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-UNUSED(void *data), size_t len, int timeout)
+UNUSED(void *data), size_t len, unsigned int timeout)
 {
 	fprintf(stderr,
-		FLFMT "link %p recv upto %ld bytes timeout %d; doing nothing.\n",
+		FLFMT "link %p recv upto %ld bytes timeout %u; doing nothing.\n",
 		FL, (void *)dl0d, (long)len, timeout);
 
 	return diag_iseterr(DIAG_ERR_TIMEOUT);

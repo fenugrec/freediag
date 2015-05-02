@@ -304,7 +304,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 {
 	uint8_t cbuf[10];
 	int rv;
-	int tout;
+	unsigned int tout;
 	struct diag_serial_settings set;
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
@@ -570,7 +570,7 @@ const void *data, size_t len)
 static int
 diag_l0_dumb_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-void *data, size_t len, int timeout)
+void *data, size_t len, unsigned int timeout)
 {
 	int rv;
 
@@ -579,7 +579,7 @@ void *data, size_t len, int timeout)
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "_recv dl0d=%p req=%ld bytes timeout=%d\n",
+			FLFMT "_recv dl0d=%p req=%ld bytes timeout=%u\n",
 			FL, (void *)dl0d, (long)len, timeout);
 
 	if ((rv=diag_tty_read(dl0d, data, len, timeout)) != (int) len) {

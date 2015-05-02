@@ -193,11 +193,11 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 
  */
 static int
-diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
+diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 {
 	struct diag_l2_14230 *dp;
 	int rv, l1_doesl2frame, l1flags;
-	int tout;
+	unsigned int tout;
 	int state;
 	struct diag_msg	*tmsg, *lastmsg;
 
@@ -209,7 +209,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "_int_recv dl2conn=%p offset %X, tout=%d\n",
+			FLFMT "_int_recv dl2conn=%p offset %X, tout=%u\n",
 				FL, (void *) d_l2_conn, dp->rxoffset, timeout);
 
 	state = ST_STATE1;
@@ -257,7 +257,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		/* Receive data into the buffer */
 
 		if (diag_l2_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "before recv, state=%d timeout=%d, rxoffset %d\n",
+			fprintf(stderr, FLFMT "before recv, state=%d timeout=%u, rxoffset %d\n",
 				FL, state, tout, dp->rxoffset);
 
 
@@ -492,9 +492,10 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	struct diag_l2_14230 *dp;
 	struct diag_msg msg={0};
 	uint8_t data[MAXRBUF];
-	int rv, wait_time;
+	int rv;
+	unsigned int wait_time;
 	uint8_t cbuf[MAXRBUF];
-	int timeout;
+	unsigned int timeout;
 	struct diag_serial_settings set;
 
 	struct diag_l1_initbus_args in;
@@ -948,7 +949,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  * for extra messages
  */
 static int
-diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
+diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
 	void *handle)
 {
@@ -961,7 +962,7 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, int timeout,
 		return rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "_int_recv : handle=%p timeout=%d\n", FL,
+		fprintf(stderr, FLFMT "_int_recv : handle=%p timeout=%u\n", FL,
 			(void *)handle, timeout);	//%pcallback! we won't try to printf the callback pointer.
 
 	/*
@@ -1078,7 +1079,7 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 	struct diag_l2_14230 *dp;
 	struct diag_msg msg={0};
 	uint8_t data[256];
-	int timeout;
+	unsigned int timeout;
 	int debug_l2_orig=diag_l2_debug;	//save debug flags; disable them for this procedure
 	int debug_l1_orig=diag_l1_debug;
 	int debug_l0_orig=diag_l0_debug;

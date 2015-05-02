@@ -392,7 +392,7 @@ int diag_l2_StopCommunications(struct diag_l2_conn *);
 
 int diag_l2_send(struct diag_l2_conn *connection, struct diag_msg *msg);
 
-int diag_l2_recv(struct diag_l2_conn *connection, int timeout,
+int diag_l2_recv(struct diag_l2_conn *connection, unsigned int timeout,
 	void (* rcv_call_back)(void *, struct diag_msg *), void *handle );
 
 struct diag_msg *diag_l2_request(struct diag_l2_conn *connection, struct diag_msg *msg,
@@ -423,7 +423,7 @@ struct diag_l2_proto {
 	int (*diag_l2_proto_send)(struct diag_l2_conn*, struct diag_msg*);
 	//diag_l2_proto_recv: ret 0 if ok
 	int (*diag_l2_proto_recv)(struct diag_l2_conn *d_l2_conn,
-		int timeout, void (*callback)(void *handle, struct diag_msg *msg),
+		unsigned int timeout, void (*callback)(void *handle, struct diag_msg *msg),
 		void *handle);
 	//diag_l2_proto_request : return a new diag_msg if succesful.
 	struct diag_msg * (*diag_l2_proto_request)(struct diag_l2_conn*,

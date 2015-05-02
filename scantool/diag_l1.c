@@ -308,7 +308,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
  */
 int
 diag_l1_recv(struct diag_l0_device *dl0d,
-	const char *subinterface, void *data, size_t len, int timeout)
+	const char *subinterface, void *data, size_t len, unsigned int timeout)
 {
 	int rv;
 	if (!len)

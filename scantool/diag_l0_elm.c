@@ -81,7 +81,7 @@ static int diag_l0_elm_send(struct diag_l0_device *dl0d,
 	UNUSED(const char *subinterface), const void *data, size_t len);
 
 static int elm_sendcmd(struct diag_l0_device *dl0d,
-	const uint8_t *data, size_t len, int timeout, uint8_t *resp);
+	const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp);
 
 static int elm_purge(struct diag_l0_device *dl0d);
 
@@ -173,7 +173,7 @@ const char * elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) {
 //		(prompt_good && ATZ command was sent) , since response doesn't contain "OK" for ATZ.
 //elm_sendcmd should not be called from outside diag_l0_elm.c.
 static int
-elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, int timeout, uint8_t *resp)
+elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp)
 {
 	//note : we better not request (len == (size_t) -1) bytes ! The casts between ssize_t and size_t are
 	// "muddy" in here
@@ -613,7 +613,7 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 {
 	const uint8_t *buf;
 	int rv = DIAG_ERR_INIT_NOTSUPP;
-	int timeout=0;	//for bogus init
+	unsigned int timeout=0;	//for bogus init
 
 	struct diag_l0_elm_device *dev;
 
@@ -795,7 +795,7 @@ diag_l0_elm_send(struct diag_l0_device *dl0d,
  */
 static int
 diag_l0_elm_recv(struct diag_l0_device *dl0d,
-	UNUSED(const char *subinterface), void *data, size_t len, int timeout)
+	UNUSED(const char *subinterface), void *data, size_t len, unsigned int timeout)
 {
 	int rv, xferd;
 	uint8_t rxbuf[3*MAXRBUF +1];	//I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
@@ -808,7 +808,7 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "Expecting 3*%d bytes from ELM, %d ms timeout(+400)...", FL, (int) len, timeout);
+		fprintf(stderr, FLFMT "Expecting 3*%d bytes from ELM, %u ms timeout(+400)...", FL, (int) len, timeout);
 
 	rv = diag_tty_read(dl0d, rxbuf, 3*len, timeout+400);
 	if (rv == DIAG_ERR_TIMEOUT) {

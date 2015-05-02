@@ -39,7 +39,8 @@
 #include "diag_tty_unix.h"
 
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
-volatile sig_atomic_t pt_expired;	//flag timeout expiry
+static volatile sig_atomic_t pt_expired;	//flag timeout expiry
+#define PT_REPEAT	1000	//after the nominal timeout period the timer will expire every PT_REPEAT us.
 static void
 diag_tty_rw_timeout_handler(UNUSED(int sig))
 {
@@ -562,6 +563,7 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 {
 	ssize_t rv;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
+	size_t n;
 	const uint8_t *p;
 	struct itimerspec it;
 
@@ -569,22 +571,40 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 	p = (const uint8_t *)buf;
 	rv = 0;
 
+	assert(count > 0);
+
 	//the timeout (the port is opened in blocking mode, and we don't want it to block indefinitely);
 	//the single byte timeout * count of bytes + 10ms (10 thousand microseconds; an arbitrary value)
 	long unsigned int timeout = uti->byte_write_timeout_us * count + 10000ul;
 	it.it_value.tv_sec = (time_t)(timeout / 1000000ul);
 	it.it_value.tv_nsec = (long)(timeout % 1000000ul)*1000l; //multiply by 1000 to get number of nanoseconds
-	//set interval to 0 so that the timer expires just once
-	it.it_interval.tv_sec = it.it_interval.tv_nsec = 0;
+	//set interval to PT_REPEAT to make sure we don't block inside read()
+	it.it_interval.tv_sec=0;
+	it.it_interval.tv_nsec = PT_REPEAT * 1000;
 
+	pt_expired=0;
 	//arm the timer
 	timer_settime(uti->timerid, 0, &it, NULL);
 
-	rv = write(uti->fd, p, count);
-	if(rv < 0 && errno == EINTR) {
-		//the timer has expired before any data were written
-		errno = 0;
-		return diag_iseterr(DIAG_ERR_TIMEOUT);
+	n=0;
+
+	while(n < count) {
+		if (pt_expired)
+			break;
+
+		rv = write(uti->fd, &p[n], count-n);
+		if (rv < 0) {
+			if (errno == EINTR) {
+				//not an error, just interrupted (probably a signal handler)
+				rv = 0;
+				errno = 0;
+			} else {
+				//real error:
+				break;
+			}
+		} else {
+			n += rv;
+		}
 	}
 
 	//disarm the timer in case it hasn't expired yet
@@ -657,7 +677,7 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 
 
 ssize_t
-diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
+diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int timeout)
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 {
 	ssize_t rv;
@@ -667,12 +687,16 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 
 	struct itimerspec it;
+
+	assert((count > 0) && ( timeout > 0) && (timeout < MAXTIMEOUT));
 	//the timeout
 	it.it_value.tv_sec = timeout / 1000;
 	it.it_value.tv_nsec = (timeout % 1000) * 1000000;
-	//set interval to 0 so that the timer expires just once
-	it.it_interval.tv_sec = it.it_interval.tv_nsec = 0;
+	//set interval to PT_REPEAT to make sure we don't block inside read()
+	it.it_interval.tv_sec=0;
+	it.it_interval.tv_nsec = PT_REPEAT * 1000;
 
+	pt_expired=0;
 	//arm the timer
 	timer_settime(uti->timerid, 0, &it, NULL);
 
@@ -682,25 +706,22 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	errno = 0;
 
 	while(n < count) {
-		struct itimerspec curr_value;
+		if (pt_expired) {
+			expired = 1;
+			break;
+		}
 		rv = read(uti->fd, &p[n], count-n);
-		if(rv < 0) {
-			//interrupted?
-			if(errno == EINTR) {
-				//not an error - just a timeout
+		if (rv < 0) {
+			if (errno == EINTR) {
+				//not an error, just an interrupted syscall
 				rv = 0;
 				errno = 0;
-				expired = 1;
+			} else {
+				//real error:
+				break;
 			}
-			break;
-		} else
+		} else {
 			n += rv;
-		//check whether the time has finished
-		timer_gettime(uti->timerid, &curr_value);
-		if(curr_value.it_value.tv_sec == 0 && curr_value.it_value.tv_nsec == 0) {
-			//if in the last call to read() we got all we wanted, then no timeout
-			expired = n < count;
-			break;
 		}
 	}
 
@@ -713,7 +734,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		if(n > 0)
 			return n;
 		else if(expired)
-			return DIAG_ERR_TIMEOUT;
+			return DIAG_ERR_TIMEOUT;	//without diag_iseterr() !
 	}
 
 	//errors other than EINTR
@@ -734,6 +755,9 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
  * is considered ready for reading if a 'read' call will not block."
  * (source : manpages)
  * Problem: select() doesn't guarantee that (count) bytes are available !
+ *
+ * This implementation uses /dev/rtc to time out, but seems flawed : it
+ * also relies on select() to guarantee that (count) bytes are available ?
  */
 
 {
@@ -742,10 +766,10 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	unsigned long data;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;;
 
-	assert(timeout < 10000);
+	assert((timeout < MAXTIMEOUT) && (count > 0));
 
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "Entered diag_tty_read with count=%u, timeout=%dms\n", FL,
+		fprintf(stderr, FLFMT "Entered diag_tty_read with count=%u, timeout=%ums\n", FL,
 			(unsigned int) count, timeout);
 	}
 
@@ -755,7 +779,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 
-	timeout = (int)((unsigned long) timeout * 4096/2000);		//watch for overflow !
+	timeout = (int)((unsigned long) timeout * 2048/1000);		//watch for overflow !
 
 	fd = open ("/dev/rtc", O_RDONLY);
 	if (fd <=0) {
@@ -803,7 +827,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		if (time>=timeout){
-			fprintf(stderr, FLFMT "timed out: %dms\n",FL,timeout*2000/4096);
+			fprintf(stderr, FLFMT "timed out: %ums\n",FL,timeout*1000/2048);
 		}
 
 	switch (rv)
@@ -818,12 +842,12 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 		rv = 0;
 		/*
 		 * XXX Won't you hang here if "count" bytes don't arrive?
-		 * We've enabled SA_RESTART in the alarm handler, so this could
-		 * never return.
+		 * XXX Yes, possibly !
 		 */
-		if (count)
-			rv = read(uti->fd, buf, count);
-		return (rv);
+		rv = read(uti->fd, buf, count);
+		if ((diag_l0_debug & DIAG_DEBUG_READ) && (rv<=0))
+			fprintf(stderr, "read() returned %d?", rv);
+		return rv;
 
 	default:
 		fprintf(stderr, FLFMT "select on fd %d returned %s.\n",
@@ -851,7 +875,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	incr = timeout * 1000;	//us
 
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, "timeout=%d, start=%llu, delta=%llu\n",
+		fprintf(stderr, "timeout=%u, start=%llu, delta=%llu\n",
 			timeout, tstart, incr);
 	}
 

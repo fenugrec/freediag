@@ -190,7 +190,7 @@ int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 	return rv? diag_iseterr(rv):0;
 }
 
-int diag_l3_recv(struct diag_l3_conn *d_l3_conn, int timeout,
+int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle)
 {
 	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
@@ -337,7 +337,7 @@ int diag_l3_base_send(struct diag_l3_conn *d_l3_conn,
 
 int
 diag_l3_base_recv(struct diag_l3_conn *d_l3_conn,
-	UNUSED(int timeout),
+	UNUSED(unsigned int timeout),
 	UNUSED(void (* rcv_call_back)(void *handle ,struct diag_msg *)),
 	UNUSED(void *handle))
 {

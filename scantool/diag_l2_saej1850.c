@@ -220,11 +220,11 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  * with a timeout error
  */
 static int
-diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
+diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 {
 	int rv;
 	struct diag_l2_j1850 *dp;
-	int tout;
+	unsigned int tout;
 	struct diag_msg	*tmsg;
 	int l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
 
@@ -315,7 +315,7 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 
 static int
-diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, int timeout,
+diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
 	void *handle)
 {

@@ -201,7 +201,7 @@ struct diag_l0
 		const char *subinterface, const void *data, size_t len);
 	//diag_l0_recv: ret # of bytes read
 	int	(*diag_l0_recv)(struct diag_l0_device *,
-		const char *subinterface, void *data, size_t len, int timeout);
+		const char *subinterface, void *data, size_t len, unsigned int timeout);
 	int	(*diag_l0_setspeed)(struct diag_l0_device *,
 		const struct diag_serial_settings *pss);
 	uint32_t	(*diag_l0_getflags)(struct diag_l0_device *);
@@ -233,7 +233,7 @@ int diag_l1_close(struct diag_l0_device **);
 int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, unsigned int p4);
 //diag_l1_recv : return # of bytes read, DIAG_ERR_TIMEOUT or error if failed. DIAG_ERR_TIMEOUT is not a hard failure
 //since a lot of L2 code uses this to detect end of responses
-int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, int timeout);
+int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, unsigned int timeout);
 
 //diag_l1_setspeed: returns 0 on success,  speed = speed, bits = data bits (5,6,7,8)
  //	 stopbits (1, 2), parflag as above

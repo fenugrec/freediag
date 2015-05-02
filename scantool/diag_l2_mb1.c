@@ -41,7 +41,7 @@
 
 
 static int
-diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
+diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	uint8_t *data, int len);
 
 
@@ -196,11 +196,11 @@ diag_l2_proto_mb1_decode(uint8_t *data, int len, int *msglen)
  * returns the data length of the packet received
  */
 static int
-diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
+diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	uint8_t *data, int len)
 {
-	int rxoffset;
-	int tout, rv;
+	int rxoffset, rv;
+	unsigned int tout;
 	int msglen;
 	size_t readlen;
 
@@ -248,7 +248,7 @@ diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, int timeout,
  *
  */
 static int
-diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, int timeout,
+diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
 {
 	uint8_t	rxbuf[MAXRBUF];

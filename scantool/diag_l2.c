@@ -735,14 +735,14 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
  * Timeout is in ms
  */
 int
-diag_l2_recv(struct diag_l2_conn *d_l2_conn, int timeout,
+diag_l2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
 {
 	int rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "diag_l2_recv %p timeout %d called\n",
+			FLFMT "diag_l2_recv %p timeout %u called\n",
 				FL, (void *)d_l2_conn, timeout);
 
 	/* Call protocol specific recv routine */

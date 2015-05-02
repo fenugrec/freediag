@@ -354,10 +354,10 @@ diag_l2_proto_iso9141_decode(uint8_t *data, int len,
  * Do we let L3_saej1979 try and DJ the framing through L2 ?
  */
 int
-diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
+diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 {
 	int rv, l1_doesl2frame, l1flags;
-	int tout = 0;
+	unsigned int tout = 0;
 	int state;
 	struct diag_l2_iso9141 *dp;
 	struct diag_msg *tmsg, *lastmsg;
@@ -614,7 +614,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 //to guarantee we receive at least one byte. (P2Max should do the trick)
 //ret 0 if ok
 static int
-diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, int timeout,
+diag_l2_proto_iso9141_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 			void (*callback)(void *handle, struct diag_msg *msg), void *handle)
 {
 	int rv;

@@ -351,7 +351,7 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 
 
 ssize_t
-diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout) {
+diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int timeout) {
 	DWORD bytesread;
 	ssize_t rv=DIAG_ERR_TIMEOUT;
 	OVERLAPPED *pOverlap;

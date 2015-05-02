@@ -12,6 +12,7 @@
 
 #define IFLUSH_TIMEOUT 30	//timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX buffer.
 		//must not be too long or diag_l0_dumb:slowinit() will not work
+#define MAXTIMEOUT	10000	//ms; for diag_tty_read()
 
 /*
  * Parity settings
@@ -91,7 +92,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d);
 //	d) never return 0
 //	TODO : clarify if calling with timeout==0 is useful (probably not, nobody does).
 ssize_t diag_tty_read(struct diag_l0_device *dl0d,
-	void *buf, size_t count, int timeout);
+	void *buf, size_t count, unsigned int timeout);
 
 //diag_tty_write: (count >0)
 //	a) attempt to write <count> bytes, block (== do not return) until write has completed.
