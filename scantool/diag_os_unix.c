@@ -262,7 +262,7 @@ diag_os_millisleep(unsigned int ms)
 		return;
 
 //3 different compile-time implementations
-//TODO : select implem at runtime if possible?
+//TODO : select implem at runtime if possible? + internal feedback loop
 #if defined(_POSIX_TIMERS) && (SEL_SLEEP==S_POSIX || SEL_SLEEP==S_AUTO)
 	struct timespec rqst, resp;
 	int rv;
@@ -277,7 +277,9 @@ diag_os_millisleep(unsigned int ms)
 			rqst = resp;
 			errno = 0;
 		} else {
-			break;	//unlikely
+			//unlikely
+			fprintf(stderr, "diag_os_millisleep : error %d\n",rv);
+			break;
 		}
 	}
 #elif defined(__linux__) && (SEL_SLEEP==S_LINUX || SEL_SLEEP==S_AUTO)
@@ -367,10 +369,9 @@ diag_os_millisleep(unsigned int ms)
 #endif // SEL_SLEEP
 
 	t2 = diag_os_gethrt();
-	offsetus = (long int) (diag_os_hrtus(t2-t1) - ms*1000);
+	offsetus = ((long int) diag_os_hrtus(t2-t1)) - ms*1000;
 	if ((offsetus > 1500) || (offsetus < -1500))
 		printf("_millisleep off by %ld\n", offsetus);
-	//TODO : auto-adjust ?
 
 	return;
 

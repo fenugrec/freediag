@@ -37,7 +37,14 @@ extern "C" {
 
 
 #include <unistd.h>
-#include <termios.h>
+
+/*
+ XXX there are two possible definitions for "struct termios". One is found
+  in <termios.h> provided by glibc; the other is in <asm/termios.h> provided
+  by linux kernel headers ! They differ, of course.
+  Bonus : there is also a linux-only "struct termios2" ...
+*/
+#include <termios.h>	//has speed_t, tcsetattr, struct termios, cfset*speed, etc
 
 #if defined(_POSIX_TIMERS)
 	#include <time.h>
@@ -52,29 +59,29 @@ extern "C" {
 
 #define DL0D_INVALIDHANDLE -1
 
-struct diag_ttystate
-{
-	/*
-	 * For recording state before we mess with the interface:
-	 */
-#if defined(__linux__)
-	struct serial_struct dt_osinfo;
-#endif
-	struct termios dt_otinfo;
-	int dt_modemflags;
-
-	/* For recording state after/as we mess with the interface */
-#if defined(__linux__)
-	struct serial_struct dt_sinfo;
-#endif
-	struct termios dt_tinfo;
-
-};
 
 //struct tty_int : internal data, one per L0 struct
 struct unix_tty_int {
 	int fd;						/* File descriptor */
-	struct diag_ttystate *ttystate;	/* Holds OS specific tty info */
+
+#if defined(__linux__)
+	//struct serial_struct : only used with TIOCGSERIAL + TIOCSSERIAL ioctls,
+	// which are not always available. Hence this flag:
+	int tioc_works;		//indicate if TIOCGSERIAL + TIOCSSERIAL will work
+	//TODO : expand to a more general "detected tty capabilities" set of flags.
+
+	/* For recording state before we mess with the interface: */
+	struct serial_struct dt_osinfo;
+	/* For recording state after/as we mess with the interface: */
+	struct serial_struct dt_sinfo;
+
+#endif
+	//dt_otinfo: backup termios from tcgetattr()
+	struct termios dt_otinfo;
+	//dt_tinfo: working copy to update flags & speed
+	struct termios dt_tinfo;
+
+	int dt_modemflags;
 
 #if defined(_POSIX_TIMERS)
 	timer_t timerid;		//Used for read() and write() timeouts
@@ -104,8 +111,10 @@ struct unix_tty_int {
 		A) needs __linux__ : tries TIOCGSERIAL (known to fail on some cheap hw)
 		B) TODO
 	SEL_TTYBAUD: diag_tty_setup() : tty settings (bps, parity etc)
-		A) needs __linux__ : uses TIOCSSERIAL, ASYNC_SPD_CUST, CBAUD.
-		B) cfset{i,o}speed : tries setting bps directly (non-portable)
+		ALTx) needs __linux__ : uses TIOCSSERIAL, ASYNC_SPD_CUST, CBAUD.
+		ALTx) needs "B9600 == 9600" etc. Calls cfset{i,o}speed with speed in bps (non-portable)
+		ALTx) needs __linux__ : termios2 + BOTHER (TODO)
+		ALTx) picks nearest standard Bxxxx; calls cfset{i,o}speed
 	######
 	For every feature listed above, it's possible to force compilation of
 	a specific implementation using the #defines below.

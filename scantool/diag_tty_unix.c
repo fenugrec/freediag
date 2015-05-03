@@ -55,7 +55,6 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	void *dl0_handle)
 {
 	int rv;
-	struct diag_ttystate	*dt;
 	struct diag_l0_device *dl0d;
 	struct unix_tty_int *uti;
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
@@ -105,14 +104,6 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	dl0d->dl0_handle = dl0_handle;
 	dl0d->dl0 = dl0;
 
-	if ((rv=diag_calloc(&uti->ttystate, 1))) {
-#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
-		timer_delete(uti->timerid);
-#endif
-		free(uti);
-		free(dl0d);
-		return diag_iseterr(rv);
-	}
 	//past this point, we can call diag_tty_close(dl0d) to abort in case of errors
 
 	*ppdl0d = dl0d;
@@ -181,7 +172,6 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		(void)diag_tty_close(ppdl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	dt = uti->ttystate;
 
 	/*
 	 * Save original settings so can reset
@@ -190,17 +180,17 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	 */
 
 #if defined(__linux__)
-	if (ioctl(uti->fd, TIOCGSERIAL, &dt->dt_osinfo) < 0)
-	{
+	if (ioctl(uti->fd, TIOCGSERIAL, &uti->dt_osinfo) < 0) {
 		fprintf(stderr,
-			FLFMT "open: Ioctl TIOCGSERIAL failed %d\n", FL, errno);
-		(void)diag_tty_close(ppdl0d);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+			FLFMT "open: Ioctl TIOCGSERIAL failed: %s\n", FL, strerror(errno));
+		uti->tioc_works = 0;
+	} else {
+		uti->dt_sinfo = uti->dt_osinfo;
+		uti->tioc_works = 1;
 	}
-	dt->dt_sinfo = dt->dt_osinfo;
 #endif
 
-	if (ioctl(uti->fd, TIOCMGET, &dt->dt_modemflags) < 0)
+	if (ioctl(uti->fd, TIOCMGET, &uti->dt_modemflags) < 0)
 	{
 		fprintf(stderr,
 			FLFMT "open: Ioctl TIOCMGET failed: %s\n", FL, strerror(errno));
@@ -208,14 +198,14 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (tcgetattr(uti->fd, &dt->dt_otinfo) < 0)
+	if (tcgetattr(uti->fd, &uti->dt_otinfo) < 0)
 	{
 		fprintf(stderr, FLFMT "open: tcgetattr failed %s\n",
 			FL, strerror(errno));
 		(void)diag_tty_close(ppdl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	dt->dt_tinfo = dt->dt_otinfo;
+	uti->dt_tinfo = uti->dt_otinfo;
 
 #if defined(_POSIX_TIMERS) || defined(__linux__)
 	//arbitrarily set the single byte write timeout to 1ms (1000us)
@@ -237,22 +227,13 @@ void diag_tty_close(struct diag_l0_device **ppdl0d)
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 				timer_delete(uti->timerid);
 #endif
-				if (uti->ttystate) {
-					if (uti->fd != DL0D_INVALIDHANDLE) {
-				#if defined(__linux__)
-						(void)ioctl(uti->fd,
-							TIOCSSERIAL, &uti->ttystate->dt_osinfo);
-				#endif
-
-						(void)tcsetattr(uti->fd,
-							TCSADRAIN, &uti->ttystate->dt_otinfo);
-						(void)ioctl(uti->fd,
-							TIOCMSET, &uti->ttystate->dt_modemflags);
-					}
-					free(uti->ttystate);
-				}
-
 				if (uti->fd != DL0D_INVALIDHANDLE) {
+			#if defined(__linux__)
+					if (uti->tioc_works)
+						(void)ioctl(uti->fd, TIOCSSERIAL, &uti->dt_osinfo);
+			#endif
+					(void)tcsetattr(uti->fd, TCSADRAIN, &uti->dt_otinfo);
+					(void)ioctl(uti->fd, TIOCMSET, &uti->dt_modemflags);
 					(void)close(uti->fd);
 				}
 
@@ -279,84 +260,108 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 {
 	int iflag;
 	int fd;
-	struct diag_ttystate	*dt;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
+	unsigned int	spd_real;	//validate baud rate precision
+	int spd_done=0;	//flag success
+
+	const unsigned int std_table[]= {
+		0, 50, 75, 110,
+		134, 150, 200, 300,
+		600, 1200, 1800, 2400,
+		4800, 9600, 19200, 38400,
+	#ifdef B57600
+		57600,
+	#endif
+	#ifdef B115200
+		115200
+	#endif
+	};
+	const speed_t std_names[]= {
+		B0, B50, B75, B110,
+		B134, B150, B200, B300,
+		B600, B1200, B1800, B2400,
+		B4800, B9600, B19200, B38400,
+		#ifdef B57600
+			B57600,
+		#endif
+		#ifdef B115200
+			B115200
+		#endif
+	};
 
 	fd = uti->fd;
-	dt = uti->ttystate;
-	if (fd == DL0D_INVALIDHANDLE || dt == 0) {
+
+	if (fd == DL0D_INVALIDHANDLE) {
 		fprintf(stderr, FLFMT "setup: something is not right\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* Copy original settings to "current" settings */
-	dt->dt_tinfo = dt->dt_otinfo;
+	uti->dt_tinfo = uti->dt_otinfo;
 
 	/*
 	 * This sets the interface to the speed closest to that requested.
 	 */
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-	{
-		fprintf(stderr, FLFMT "setup: device fd %d dt %p ",
-			FL, fd, (void *)dt);
-		fprintf(stderr, "speed %d databits %d stopbits %d parity %d\n",
-			pset->speed, pset->databits, pset->stopbits, pset->parflag);
+	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+		fprintf(stderr, FLFMT "setup: fd=%d, %ubps, %d bits, %d stop, parity %d\n",
+			FL, fd, pset->speed, pset->databits, pset->stopbits, pset->parflag);
 	}
 /* Here starts baud rate hell. Status in 2015 seems to be :
 	- ASYNC_SPD_CUST + B38400 + custom divisor trick is "deprecated",
-	 and needs the TIOCSSERIAL ioctl (not ubiquitous)
-	- take a chance with cfsetispeed & co with an integer argument ?
-	 (non standard, shot in the dark except maybe on BSD??)
+	 and needs the linux TIOCSSERIAL ioctl (far from ubiquitous)
+	- take a chance with cfsetispeed etc. with an integer argument, if
+	 B9600 == 9600 (non standard, shot in the dark except maybe on BSD??)
+	- use nearest standard speed + cfsetispeed
 	- termios2 struct + BOTHER flag + TCSETS2 ioctl; questionable availability
 
- * TODO : try up to 3 techniques:
-	1) check if standard baud rate => set it (easy)
-	2) try hacks for non-standard speeds (hard)
-	3) warn user; pick nearest std baud rate (error if out of range)
+	Haxolution: try all supported methods.
 */
+
 #if defined(__linux__) && (SEL_TTYBAUD==S_ALT1 || SEL_TTYBAUD==S_AUTO)
 	/*
-	 * Linux iX86 method of setting non-standard baud rates:
+	 * Linux iX86 method of setting non-standard baud rates.
+	 * This method is probably deprecated, or at the very least not recommended
+	 * and definitely not supported by all hardware (because of TIOCSSERIAL).
 	 *
-	 * As it happens, all speeds on a Linux tty are calculated as a divisor
-	 * of the base speed - for instance, base speed is normally 115200
-	 * on a 16550 standard serial port
-	 * this allows us to get
-	 *	10472 baud  (115200 / 11)
-	 *	       - NB, this is not +/- 0.5% as defined in ISO 14230 for
-	 *		a tester, but it is if it was an ECU ... but that's a
-	 *		limitation of the PC serial port ...
-	 *	9600 baud  (115200 / 12)
-	 *	5 baud	    (115200 / 23040 )
+	 * Works by manually setting the baud rate divisor and special flags.
+	 *
 	 */
-	/* Copy original settings to "current" settings */
-	dt->dt_sinfo = dt->dt_osinfo;
+	if (uti->tioc_works && !spd_done) {
+		/* Copy original settings to "current" settings */
+		uti->dt_sinfo = uti->dt_osinfo;
 
-	/* Now, mod the "current" settings */
-	dt->dt_sinfo.custom_divisor = dt->dt_sinfo.baud_base  / pset->speed;
+		/* Now, mod the "current" settings */
+		uti->dt_sinfo.custom_divisor = uti->dt_sinfo.baud_base  / pset->speed;
+		spd_real = uti->dt_sinfo.baud_base / uti->dt_sinfo.custom_divisor;
 
-	/* Turn of other speed flags */
-	dt->dt_sinfo.flags &= ~ASYNC_SPD_MASK;
-	/*
-	 * Turn on custom speed flags and low latency mode
-	 */
-	dt->dt_sinfo.flags |= ASYNC_SPD_CUST | ASYNC_LOW_LATENCY;
+		/* Turn of other speed flags */
+		uti->dt_sinfo.flags &= ~ASYNC_SPD_MASK;
+		/*
+		 * Turn on custom speed flags and low latency mode
+		 */
+		uti->dt_sinfo.flags |= ASYNC_SPD_CUST | ASYNC_LOW_LATENCY;
 
-	/* And tell the kernel the new settings */
-	if (ioctl(fd, TIOCSSERIAL, &dt->dt_sinfo) < 0)
-	{
-		fprintf(stderr,
-			FLFMT "Ioctl TIOCSSERIAL failed %s\n", FL, strerror(errno));
-		return diag_iseterr(DIAG_ERR_GENERAL);
+		/* And tell the kernel the new settings */
+		if (ioctl(fd, TIOCSSERIAL, &uti->dt_sinfo) < 0)
+		{
+			fprintf(stderr,
+				FLFMT "Ioctl TIOCSSERIAL failed: %s\n", FL, strerror(errno));
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
+
+		/*
+		 * Set the baud rate and force speed to 38400 so that the
+		 * custom baud rate stuff set above works
+		 */
+		uti->dt_tinfo.c_cflag &= ~CBAUD;
+		uti->dt_tinfo.c_cflag |= B38400;	//see termios.h
+		spd_done = 1;
+		if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+			fprintf(stderr, FLFMT "Speed set using TIOCSSERIAL + ASYNC_SPD_CUST.\n", FL);
+		}
 	}
+#endif
 
-	/*
-	 * Set the baud rate and force speed to 38400 so that the
-	 * custom baud rate stuff set above works
-	 */
-	dt->dt_tinfo.c_cflag &= ~CBAUD;
-	dt->dt_tinfo.c_cflag |= B38400;	//see termios.h
-#else
 	/* "POSIXY" version of setting non-standard baud rates.
 	 * This works at least for FreeBSD.
 	 *
@@ -374,46 +379,82 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	 * I don't have the source code for the driver for the Keyspan device
 	 * I can't tell if it would work if I modified the iokit serial class.
 	 *
- 	 * Since some interfaces (i.e., the BR1) work with standard buad rates,
-	 * this is the fallback baud rate method.
+	 * use either spd_nearest (currently == nearest Bxxx value) as-is,
+	 * or use pset->speed (only if B9600 == 9600, etc.)
 	 */
-	errno = 0;
-	if (cfsetispeed(&dt->dt_tinfo, (speed_t)pset->speed) < 0) {
-		fprintf(stderr,
-			FLFMT "cfsetispeed failed: %s\n", FL, strerror(errno));
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-	if (cfsetospeed(&dt->dt_tinfo, (speed_t)pset->speed) < 0) {
-		fprintf(stderr,
-			FLFMT "cfsetospeed failed: %s\n", FL, strerror(errno));
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-#endif // set baud rate
-	errno = 0;
-	if (tcsetattr(fd, TCSAFLUSH, &dt->dt_tinfo) < 0)
-	{
-		/* Its not clear to me why this call sometimes fails (clue:
-			the error is usually "interrupted system call) but
-			simply retrying is usually enough to sort it....    */
-		int retries=9, result;
-		do
-		{
-			fprintf(stderr, FLFMT "Couldn't set baud rate....retry %d\n", FL, retries);
-			result = tcsetattr(fd, TCSAFLUSH, &dt->dt_tinfo);
+
+	while (!spd_done) {
+		errno = 0;
+		int spd_nearest;	//index of nearest std value
+
+		for (size_t i=0; i< ARRAY_SIZE(std_table); i++) {
+			static int32_t besterror=1000, test;
+			test = 1000 * (pset->speed - std_table[i]) / pset->speed;
+			test = (test >= 0)? test : -test;
+			if (test < besterror) {
+				besterror = test;
+				spd_nearest = i;
+				spd_real = std_table[i];
+			}
 		}
-		while ((result < 0) && (--retries));
-		if (result < 0)
-		{
-			// It just isn't working; give it up
-			fprintf(stderr,
-				FLFMT "Can't set baud rate to %d.\n"
-				"tcsetattr returned \"%s\".\n", FL, pset->speed, strerror(errno));
-			return diag_iseterr(DIAG_ERR_GENERAL);
+
+	#if (B9600 == 9600) && (SEL_TTYBAUD==S_ALT2 || SEL_TTYBAUD==S_AUTO)
+		//try feeding the speed directly
+		if ( !cfsetispeed(&uti->dt_tinfo, pset->speed) &&
+				!cfsetospeed(&uti->dt_tinfo, pset->speed)) {
+			spd_real = pset->speed;
+			spd_done = 1;
+			if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+				fprintf(stderr, FLFMT "Speed set with cfset*speed(uint).\n", FL);
+			}
+			break;
 		}
+		fprintf(stderr,
+				"cfset*speed with direct speed failed: %s\n", strerror(errno));
+	#endif
+		if ( !cfsetispeed(&uti->dt_tinfo, std_names[spd_nearest]) &&
+				!cfsetospeed(&uti->dt_tinfo, std_names[spd_nearest])) {
+			//spd_real already ok
+			spd_done = 1;
+			if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+				fprintf(stderr, FLFMT "Speed set with cfset*speed(B%u).\n", FL, std_table[spd_nearest]);
+			}
+			break;
+		}
+		fprintf(stderr,
+				"cfset*speed with Bxxxx failed: %s\n", strerror(errno));
+		break;
+	}	//while !spd_done for cfset*speed attempts
+
+	if (!spd_done) {
+		//TODO : warn / fail for large speed errors also
+		fprintf(stderr, "Error : all attempts at changing speed failed !\n");
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
+	errno = 0;
+	while (1) {
+		/* Its not clear to me why this call sometimes fails (clue:
+		the error is usually "interrupted system call) but
+		simply retrying is usually enough to sort it....    */
+
+		int retries=1;
+		if (tcsetattr(fd, TCSAFLUSH, &uti->dt_tinfo) < 0) {
+			fprintf(stderr, FLFMT "Couldn't set baud rate....retry %d\n", FL, retries);
+			retries++;
+			if (retries==10) {
+				fprintf(stderr, FLFMT "Can't set baud rate to %u.\n"
+					"tcsetattr returned \"%s\".\n", FL, spd_real, strerror(errno));
+				return diag_iseterr(DIAG_ERR_GENERAL);
+			}
+		} else {
+			//success
+			break;
+		}
+	}
+	//TODO : do this flag-setting only once in diag_tty_open !?
 	/* "stty raw"-like iflag settings: */
-	iflag = dt->dt_tinfo.c_iflag;
+	iflag = uti->dt_tinfo.c_iflag;
 
 	/* Clear a bunch of un-needed flags */
 
@@ -424,39 +465,39 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	iflag  &= ~(IUCLC);   /* Not in Posix */
 #endif
 
-	dt->dt_tinfo.c_iflag  = iflag;
+	uti->dt_tinfo.c_iflag  = iflag;
 
-	dt->dt_tinfo.c_oflag &= ~(OPOST);
+	uti->dt_tinfo.c_oflag &= ~(OPOST);
 
 	/* Clear canonical input and disable keyboard signals.
 	+* There is no need to also clear the many ECHOXX flags, both because
 	+* many systems have non-POSIX flags and also because the ECHO
 	+* flags don't don't matter when ICANON is clear.
 	 */
-	dt->dt_tinfo.c_lflag &= ~( ICANON | ISIG );
+	uti->dt_tinfo.c_lflag &= ~( ICANON | ISIG );
 
 	/* CJH: However, taking 'man termios' at its word, the ECHO flag is
 	     *not* affected by ICANON, and it seems we do need to clear it  */
-	dt->dt_tinfo.c_lflag &= ~ECHO;
+	uti->dt_tinfo.c_lflag &= ~ECHO;
 
 	/* Turn off RTS/CTS, and loads of others, similar to "stty raw" */
-	dt->dt_tinfo.c_cflag &= ~( CRTSCTS );
+	uti->dt_tinfo.c_cflag &= ~( CRTSCTS );
 	/* Turn on ... */
-	dt->dt_tinfo.c_cflag |= (CLOCAL);
+	uti->dt_tinfo.c_cflag |= (CLOCAL);
 
-	dt->dt_tinfo.c_cflag &= ~CSIZE;
+	uti->dt_tinfo.c_cflag &= ~CSIZE;
 	switch (pset->databits) {
 		case diag_databits_8:
-			dt->dt_tinfo.c_cflag |= CS8;
+			uti->dt_tinfo.c_cflag |= CS8;
 			break;
 		case diag_databits_7:
-			dt->dt_tinfo.c_cflag |= CS7;
+			uti->dt_tinfo.c_cflag |= CS7;
 			break;
 		case diag_databits_6:
-			dt->dt_tinfo.c_cflag |= CS6;
+			uti->dt_tinfo.c_cflag |= CS6;
 			break;
 		case diag_databits_5:
-			dt->dt_tinfo.c_cflag |= CS5;
+			uti->dt_tinfo.c_cflag |= CS5;
 			break;
 		default:
 			fprintf(stderr, FLFMT "bad bit setting used (%d)\n", FL, pset->databits);
@@ -464,10 +505,10 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	}
 	switch (pset->stopbits) {
 		case diag_stopbits_2:
-			dt->dt_tinfo.c_cflag |= CSTOPB;
+			uti->dt_tinfo.c_cflag |= CSTOPB;
 			break;
 		case diag_stopbits_1:
-			dt->dt_tinfo.c_cflag &= ~CSTOPB;
+			uti->dt_tinfo.c_cflag &= ~CSTOPB;
 			break;
 		default:
 			fprintf(stderr, FLFMT "bad stopbit setting used (%d)\n",
@@ -477,14 +518,14 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 
 	switch (pset->parflag) {
 		case diag_par_e:
-			dt->dt_tinfo.c_cflag |= PARENB;
-			dt->dt_tinfo.c_cflag &= ~PARODD;
+			uti->dt_tinfo.c_cflag |= PARENB;
+			uti->dt_tinfo.c_cflag &= ~PARODD;
 			break;
 		case diag_par_o:
-			dt->dt_tinfo.c_cflag |= (PARENB | PARODD);
+			uti->dt_tinfo.c_cflag |= (PARENB | PARODD);
 			break;
 		case diag_par_n:
-			dt->dt_tinfo.c_cflag &= ~PARENB;
+			uti->dt_tinfo.c_cflag &= ~PARENB;
 			break;
 		default:
 			fprintf(stderr,
@@ -493,7 +534,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	}
 
 	errno = 0;
-	if (tcsetattr(fd, TCSAFLUSH, &dt->dt_tinfo) < 0) {
+	if (tcsetattr(fd, TCSAFLUSH, &uti->dt_tinfo) < 0) {
 		fprintf(stderr,
 			FLFMT
 			"Can't set input flags (databits %d, stop bits %d, parity %d).\n"
@@ -511,6 +552,12 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	uti->byte_write_timeout_us = (gross_bits_per_byte * 1000000ul / pset->speed);
 #endif
 
+	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+		int abserr = pset->speed - spd_real;
+		abserr = abserr >= 0? abserr : -abserr;
+		fprintf(stderr, FLFMT "Speed set to %u, error~%u%%\n", FL,
+				spd_real, 100*abserr / pset->speed);
+	}
 	return 0;
 }
 

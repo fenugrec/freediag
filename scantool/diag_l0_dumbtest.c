@@ -196,7 +196,7 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 	fprintf(stderr, "Starting test 7: half duplex single echo removal:");
 
 	ti=diag_os_getms();	//get starting time.
-	for (i=0; i<=DT7_ITERS; i++) {
+	for (i=0; i<DT7_ITERS; i++) {
 		echo=i-1;	//init to bad value
 		if (diag_l0_dt_send(dl0d, NULL, &i, 1))
 			break;

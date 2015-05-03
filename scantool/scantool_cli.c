@@ -1164,7 +1164,7 @@ enter_cli(const char *name)
 	printf("%s: Type HELP for a list of commands\n", name);
 	printf("%s: Type SCAN to start ODBII Scan\n", name);
 	printf("%s: Then use MONITOR to monitor real-time data\n", name);
-	printf("%s: **** IMPORTANT : this is alpha software !!! Use at your own risk.\n", name);
+	printf("%s: **** IMPORTANT : this is beta software !!! Use at your own risk.\n", name);
 	printf("%s: **** Remember to \"debug all -1\" to display debugging info !\n", name);
 
 	readline_init();
