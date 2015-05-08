@@ -317,7 +317,11 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		return diag_pseterr(rv);
 	}
 
-	pset.speed=10400;
+	if (testnum == 10) {
+		pset.speed = 15000;
+	} else {
+		pset.speed=10400;
+	}
 	pset.databits = diag_databits_8;
 	pset.stopbits = diag_stopbits_1;
 	pset.parflag = diag_par_n;
@@ -364,6 +368,9 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		break;
 	case 9:
 		dtest_9(dl0d);
+		break;
+	case 10:
+		dtest_2(dl0d);	//same test, different speed
 		break;
 	default:
 		break;
@@ -430,7 +437,7 @@ const void *data, size_t len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "dt_send dl0d=%p , len=%ld",
+		fprintf(stderr, FLFMT "dt_send dl0d=%p , len=%ld. ",
 			FL, (void *)dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 			diag_data_dump(stderr, data, len);

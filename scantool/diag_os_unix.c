@@ -430,10 +430,8 @@ diag_os_sched(void)
 		if (suser_warned == 0) {
 			suser_warned = 1;
 			fprintf(stderr,
-				FLFMT "WARNING: Not running as superuser\n", FL);
-			fprintf(stderr,
-				FLFMT "WARNING: Could not set real-time mode. "
-				"Things may not work correctly\n", FL);
+				FLFMT "WARNING: Not running as superuser; "
+				"things may not work correctly\n", FL);
 		}
 	}
 #if defined(__linux__) && (SEL_SCHED==S_LINUX || SEL_SCHED==S_AUTO)
@@ -588,7 +586,7 @@ void diag_os_calibrate(void) {
 		diag_os_discover();
 
 	//test _gethrt(). clock_getres() would tell us the resolution, but measuring
-	//like this including overhead gives a better measure of "usable" res.
+	//like this gives a better measure of "usable" res.
 	resol=0;
 	maxres=0;
 	for (int i=0; i < RESOL_ITERS; i++) {
@@ -603,6 +601,23 @@ void diag_os_calibrate(void) {
 			diag_os_hrtus(maxres), diag_os_hrtus(resol / RESOL_ITERS));
 	if (diag_os_hrtus(maxres) >= 1200)
 		printf("WARNING : your system offers no clock >= 1kHz; this WILL be a problem!\n");
+
+	//test _getms()
+	resol=0;
+	maxres=0;
+	for (int i=0; i < RESOL_ITERS; i++) {
+		unsigned long tr;
+		t1=diag_os_getms();
+		while ((t2=diag_os_getms()) == t1) {}
+		tr = (t2-t1);
+		if (tr > maxres) maxres = tr;
+		resol += tr;
+	}
+	printf("diag_os_getms() resolution <= ~%llums, avg ~%llums\n", maxres, resol / RESOL_ITERS);
+	if (t2 > ((unsigned long)(-1) - 1000*30*60)) {
+		//unlikely, since 32-bit milliseconds will wrap in 49.7 days
+		printf("warning : diag_os_getms() will wrap in <30 minutes ! Consider rebooting...\n");
+	}
 
 	//test _millisleep() VS _gethrt()
 	printf("testing diag_os_millisleep(), this will take a moment...\n");
@@ -642,23 +657,6 @@ void diag_os_calibrate(void) {
 			testval -= 7;
 	}	//for testvals
 
-	//test _getms()
-	resol=0;
-	maxres=0;
-	for (int i=0; i < RESOL_ITERS; i++) {
-		unsigned long tr;
-		t1=diag_os_getms();
-		while ((t2=diag_os_getms()) == t1) {}
-		tr = (t2-t1);
-		if (tr > maxres) maxres = tr;
-		resol += tr;
-	}
-	printf("diag_os_getms() resolution <= ~%llums, avg ~%llums\n", maxres, resol / RESOL_ITERS);
-	if (t2 > ((unsigned long)(-1) - 1000*30*60)) {
-		//unlikely, since 32-bit milliseconds will wrap in 49.7 days
-		printf("warning : diag_os_getms() will wrap in <30 minutes ! Consider rebooting...\n");
-	}
-
 	//now test chronoms()
 	t3=diag_os_chronoms(0);	//get current relative time
 	t1=diag_os_chronoms(t3);	//reset stopwatch & get current time (~0)
@@ -687,7 +685,7 @@ unsigned long long diag_os_gethrt(void) {
 
 	clock_gettime(clkid_gt, &curtime);
 
-	return curtime.tv_nsec + (curtime.tv_sec * 1000*1000*1000);
+	return curtime.tv_nsec + (curtime.tv_sec * 1000*1000*1000ULL);
 
 #else
 	#warning Using gettimeofday() ! This is evil !
@@ -702,7 +700,7 @@ unsigned long long diag_os_gethrt(void) {
 	struct timeval tv;
 	unsigned long long rv;
 	gettimeofday(&tv, NULL);
-	rv= tv.tv_usec + (tv.tv_sec * 1000000);
+	rv= tv.tv_usec + (tv.tv_sec * 1000000ULL);
 	return rv;
 #endif
 }
