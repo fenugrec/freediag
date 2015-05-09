@@ -46,9 +46,10 @@ extern "C" {
 
 	## tty-related features ##
 	SEL_TIMEOUT: diag_tty_{read,write}() timeouts
-		A) needs _POSIX_TIMERS, uses timer_create + sigaction for a SIGUSR1 handler
-		B) needs __linux__ && /dev/rtc
-		C) (not implemented) could try setitimer + SIGUSR1 handler, similar to A)
+		S_POSIX) needs _POSIX_TIMERS, uses timer_create + sigaction for a SIGUSR1 handler
+		S_LINUX) needs __linux__ && /dev/rtc
+		X) (TODO) use select(timeout) + read(len=1) loop
+		X) (TODO, but ugly) : increase OS periodic callback frequency, control timeout manually
 	SEL_TTYOPEN: diag_tty_open() : open() flags:
 		ALT1) needs O_NONBLOCK; open non-blocking then clear flag
 		ALT2) don't set O_NONBLOCK.
@@ -74,6 +75,9 @@ extern "C" {
 /** Insert desired selectors here **/
 //example:
 //#define SEL_TIMEOUT S_LINUX
+//#define SEL_TIMEOUT S_OTHER
+//#define SEL_TTYBAUD S_ALT2
+//#define SEL_TTYBAUD S_ALT3
 
 /* Default selectors: anything still undefined is set to S_AUTO which
 	means "force nothing", i.e. "use most appropriate implementation". */
