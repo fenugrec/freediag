@@ -47,9 +47,9 @@ extern "C" {
 	## tty-related features ##
 	SEL_TIMEOUT: diag_tty_{read,write}() timeouts
 		S_POSIX) needs _POSIX_TIMERS, uses timer_create + sigaction for a SIGUSR1 handler
+		S_OTHER) use select(timeout) + read + manual timeout check loop
 		S_LINUX) needs __linux__ && /dev/rtc
-		X) (TODO) use select(timeout) + read(len=1) loop
-		X) (TODO, but ugly) : increase OS periodic callback frequency, control timeout manually
+		X) (ugly, not implemented) : increase OS periodic callback frequency, control timeout manually
 	SEL_TTYOPEN: diag_tty_open() : open() flags:
 		ALT1) needs O_NONBLOCK; open non-blocking then clear flag
 		ALT2) don't set O_NONBLOCK.
@@ -74,8 +74,8 @@ extern "C" {
 #define S_ALT3	3
 /** Insert desired selectors here **/
 //example:
-//#define SEL_TIMEOUT S_LINUX
 //#define SEL_TIMEOUT S_OTHER
+//#define SEL_TIMEOUT S_LINUX
 //#define SEL_TTYBAUD S_ALT2
 //#define SEL_TTYBAUD S_ALT3
 
@@ -168,9 +168,7 @@ struct unix_tty_int {
 	volatile sig_atomic_t pt_expired;	//flag timeout expiry
 #endif
 
-#if defined(_POSIX_TIMERS) || defined(__linux__)
 	unsigned long int byte_write_timeout_us; //single byte write timeout in microseconds
-#endif
 };
 
 #if defined(__cplusplus)

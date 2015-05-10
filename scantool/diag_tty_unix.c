@@ -233,12 +233,13 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	uti->st_cur.c_cflag &= ~( CRTSCTS );	//non-posix; disables hardware flow ctl
 	uti->st_cur.c_cflag |= (CLOCAL);	//ignore modem control lines
+	
+	uti->st_cur.c_cc[VMIN] = 1;		//Minimum # of bytes before read() returns (default: 0!!!)
 
 	//and update termios with new flags.
 #ifdef USE_TERMIOS2
 	rv = ioctl(uti->fd, TCSETS, &uti->st_cur);
-	rv |= ioctl(uti->fd, TCGETS2, &uti->st2_orig);
-	uti->st2_cur = uti->st2_orig;
+	rv |= ioctl(uti->fd, TCGETS2, &uti->st2_cur);
 #else
 	rv=tcsetattr(uti->fd, TCSAFLUSH, &uti->st_cur);
 #endif
@@ -249,10 +250,8 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-#if defined(_POSIX_TIMERS) || defined(__linux__)
-	//arbitrarily set the single byte write timeout to 1ms (1000us)
+	//arbitrarily set the single byte write timeout to 1ms
 	uti->byte_write_timeout_us = 1000ul;
-#endif
 
 	return 0;
 }
@@ -684,6 +683,9 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 	return 0;
 }
 
+// diag_tty_write: return # of bytes written; <0 if error.
+// In addition, this calculates + enforces a write timeout based on the number of bytes.
+// But write timeouts should be very rare, and are considered an error
 ssize_t
 diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
@@ -759,38 +761,44 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 #endif
 
 	return rv;
-}
+}	//_POSIX_TIMERS tty_write()
 
-#elif defined(__linux__) && (SEL_TIMEOUT==S_LINUX || SEL_TIMEOUT==S_AUTO)
-//fallback code for linux. TODO: timeout using /dev/rtc
-
-{
-	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
-	return write(uti->fd, buf, count);
-}
-
-#else	 //no posix timers and it's not linux. TODO : convert to select() + timeout?
-
+#elif (SEL_TIMEOUT==S_LINUX || SEL_TIMEOUT==S_OTHER || SEL_TIMEOUT==S_AUTO)
+	/* No POSIX timers, this should be OK for everything else
+	 * Technique: write loop, manually check timeout
+	 */
 {
 	ssize_t rv;
 	ssize_t n;
 	size_t c = count;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 	const uint8_t *p;
+	unsigned long long t1, t2;
+	int expired;
+	long unsigned int timeout = uti->byte_write_timeout_us * count + 10000ul;
 
-	errno = 0;
+	t1 = diag_os_gethrt();
 	p = (const uint8_t *)buf;	/* For easy pointer I/O */
 	n = 0;
-	rv = 0;
-
+	expired = 0;
 	errno = 0;
 
-	while (c > 0 &&
-	(((rv = write(uti->fd,  &p[n], c)) >= 0) ||
-	(rv == -1 && errno == EINTR))) {
-		if (rv == -1) {
+	while ((c > 0) && !expired) {
+		t2 = diag_os_hrtus(diag_os_gethrt() - t1);
+		if (t2 >= timeout) {
+			expired=1;
+			break;
+		}
+
+		rv = write(uti->fd,  &p[n], c);
+		if (rv == -1 && errno == EINTR) {
 			rv = 0;
 			errno = 0;
+			continue;
+		}
+		if (rv < 0) {
+			fprintf(stderr, FLFMT "write error: %s.\n", FL, strerror(errno));
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		c -= rv;
 		n += rv;
@@ -814,7 +822,9 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 
 	/* Unspecific Error */
 	return diag_iseterr(DIAG_ERR_GENERAL);
-}
+}	//S_OTHER || S_LINUX write implem
+#else
+	#error Fell in the cracks of implementation selectors !
 #endif	//tty_write() implementations
 
 
@@ -881,22 +891,116 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 
 	//Unspecified error
 	return diag_iseterr(DIAG_ERR_GENERAL);
-}
+}	//POSIX read implem
+
+#elif (SEL_TIMEOUT==S_OTHER || SEL_TIMEOUT == S_AUTO)
+ //no posix timers and it's not linux
+	//Loop with { select() with a timeout;
+	// read() ; manually check timeout}
+{
+	ssize_t rv;
+	ssize_t n;
+	uint8_t *p;
+	unsigned long long tstart, incr, tdone, tdone_us;
+	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
+
+	int expired = 0;
+	tstart=diag_os_gethrt();
+	incr = timeout * 1000;	//us
+
+	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, "timeout=%u, start=%llu, delta=%llu\n",
+			timeout, tstart, incr);
+	}
+
+	errno = 0;
+	p = (uint8_t *)buf;	/* For easy pointer I/O */
+	n = 0;
+
+	while (count > 0 && expired == 0) {
+		//select() loop to ensure read() won't block:
+		while ( !expired ) {
+			fd_set set;
+			struct timeval tv;
+			unsigned long long rmn;
+
+			tdone = diag_os_gethrt() - tstart;
+			tdone_us = diag_os_hrtus(tdone);
+			
+			if (tdone_us >= incr) {
+				expired = 1;
+				rv=0;
+				goto finished;
+			}
+			rmn = timeout*1000 - tdone_us;	//remaining before timeout
+
+			FD_ZERO(&set);
+			FD_SET(uti->fd, &set);
+
+			tv.tv_sec = rmn / (1000*1000);
+			tv.tv_usec = rmn % (1000*1000);
+
+			rv = select( uti->fd + 1,  &set, NULL, NULL, &tv );
+			// 4 possibilities here:
+			//	EINTR => retry
+			//	FD ready => break
+			//	timed out => retry (will DIAG_ERR_TIMEOUT)
+			//	other errors => diag_iseterr
+			if ((rv < 0) && (errno == EINTR)) {
+				rv=0;
+				errno=0;
+				continue;
+			}
+			if (FD_ISSET(uti->fd, &set)) {
+				//fd is ready:
+				break;
+			}
+			if (rv < 0) {
+				fprintf(stderr, FLFMT "select() error: %s.\n", FL, strerror(errno));
+				return diag_iseterr(DIAG_ERR_GENERAL);
+			}
+		}	//select loop
+
+		rv = read(uti->fd,  &p[n], count);
+		
+		if ((rv < 0) && (rv == EINTR)) {
+			rv=0;
+			errno=0;
+			continue;
+		}
+
+		if (rv<=0) {
+			fprintf(stderr, FLFMT "read() says %zu: %s.\n", FL, rv, strerror(errno));
+			break;
+		}
+
+		count -= rv;
+		n += rv;
+	}	//total read loop
+finished:
+	if (rv >= 0) {
+		if (n > 0)
+			return n;
+		else if (expired)
+			return DIAG_ERR_TIMEOUT;
+	}
+
+	fprintf(stderr, FLFMT "read() returned %s.\n",
+		FL, strerror(errno));
+
+	/* Unspecified Error */
+	return diag_iseterr(DIAG_ERR_GENERAL);
+}	//S_OTHER read implem
 
 #elif defined(__linux__) && (SEL_TIMEOUT==S_LINUX || SEL_TIMEOUT==S_AUTO)
 
 /*
- * We have to be read to loop in write since we've cleared SA_RESTART.
- *
- * Note : an old implementation used select() with a timeout. The flaw with that
- * is that select() "blocks the program until input or output is ready [...]
- * or until a timer expires, whichever comes first [...]. A file descriptor 
- * is considered ready for reading if a 'read' call will not block."
- * (source : manpages)
- * Problem: select() doesn't guarantee that (count) bytes are available !
+ * We have to read to loop since we've cleared SA_RESTART.
  *
  * This implementation uses /dev/rtc to time out, but seems flawed : it
- * also relies on select() to guarantee that (count) bytes are available ?
+ * also relies on select() to guarantee that (count) bytes are available.
+ *
+ * Also, it calls select() very very often (why is tv={0} ?)
  */
 
 {
@@ -996,76 +1100,10 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 		/* Unspecific Error */
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-}	//diag_tty_read
+}	//S_LINUX read implem
 
-#else //no posix timers and it's not linux
-	//This, in its current form, cannot work reliably.
-	//Plan B : make a ghetto implementation looping with { select() with a timeout;
-	// read() 1 byte at a time ; manually check timeout}
-{
-	ssize_t rv;
-	ssize_t n;
-	uint8_t *p;
-	unsigned long long tstart, incr, tdone, tdone_us;
-	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
-
-	volatile int expired = 0;
-	tstart=diag_os_gethrt();
-	incr = timeout * 1000;	//us
-
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, "timeout=%u, start=%llu, delta=%llu\n",
-			timeout, tstart, incr);
-	}
-
-	errno = 0;
-	p = (uint8_t *)buf;	/* For easy pointer I/O */
-	n = 0;
-	rv = 0;
-
-	/* Loop until timeout or we've gotten something. */
-	errno = 0;
-
-	while (count > 0 && expired == 0) {
-
-		rv = read(uti->fd,  &p[n], count);
-
-		if ((rv == -1) && (errno == EINTR)) {
-			rv = 0;
-			errno=0;
-		}
-		if (rv < 0) {
-			//real error
-			break;
-		}
-
-		count -= rv;
-		n += rv;
-
-		tdone = diag_os_gethrt() - tstart;
-		tdone_us = diag_os_hrtus(tdone);
-		if (tdone_us >= incr) {
-			expired = 1;
-			rv=0;
-		}
-		if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-			fprintf(stderr, "%lluus elapsed\n", tdone_us);
-		}
-	}
-
-	if (rv >= 0) {
-		if (n > 0)
-			return n;
-		else if (expired)
-			return DIAG_ERR_TIMEOUT;
-	}
-
-	fprintf(stderr, FLFMT "read() returned %s.\n",
-		FL, strerror(errno));
-
-	/* Unspecified Error */
-	return diag_iseterr(DIAG_ERR_GENERAL);
-}
+#else
+	#error Fell in the cracks of implementation selectors !
 #endif //_tty_read() implementations
 
 

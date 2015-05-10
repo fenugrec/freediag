@@ -103,7 +103,7 @@
 
 #ifdef HAVE_GETTIMEOFDAY
 	#include <sys/time.h>	//only for gettimeofday(), timeval etc?
-#endif	//HAVE_GETTIMEOFDAY
+#endif
 /***/
 
 
