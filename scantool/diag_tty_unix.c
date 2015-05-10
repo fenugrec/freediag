@@ -798,7 +798,14 @@ diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count)
 
 	if (n > 0 || rv >= 0) {
 		//wait until the data is transmitted
+#ifdef USE_TERMIOS2
+		/* no exact equivalent ioctl for tcdrain, but
+		 "TCSBRK : [...] treat tcsendbreak(fd,arg) with nonzero arg like tcdrain(fd)."
+		 */
+		ioctl(uti->fd, TCSBRK, 1);
+#else
 		tcdrain(uti->fd);
+#endif
 		return n;
 	}
 
