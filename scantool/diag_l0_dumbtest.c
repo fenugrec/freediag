@@ -190,7 +190,7 @@ static void dtest_6(struct diag_l0_device *dl0d) {
 // of diag_tty directly, like l1_send().
 static void dtest_7(struct diag_l0_device *dl0d) {
 	uint8_t i, pc=0, echo;
-	int badechos=0;
+	int rv, badechos=0;
 	unsigned long long ti, tf=0; //measure inner time
 #define DT7_ITERS 100
 	fprintf(stderr, "Starting test 7: half duplex single echo removal:");
@@ -201,7 +201,9 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 		if (diag_l0_dt_send(dl0d, NULL, &i, 1))
 			break;
 
-		if (diag_tty_read(dl0d, &echo, 1, 100) != 1) {
+		rv = diag_tty_read(dl0d, &echo, 1, 1000);
+		if (rv != 1) {
+			fprintf(stderr, "\ndt7: tty_read rets %d.\n", rv);
 			break;
 		}
 		tf = tf + diag_os_gethrt() - ti;
@@ -226,7 +228,7 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 static void dtest_8(struct diag_l0_device *dl0d) {
 #define DT8_MSIZE 10
 	uint8_t tx[DT8_MSIZE], echo[DT8_MSIZE];
-	int i, rv, badechos=0;
+	int i, rv = -1, badechos=0;
 	unsigned long long ti, tf=0;
 #define DT8_ITERS 10
 	fprintf(stderr, "Starting test 8: half duplex block echo removal:");
@@ -236,14 +238,13 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 
 
 	for (i=0; i<=DT8_ITERS; i++) {
-		rv=-1;
 		ti=diag_os_gethrt();	//get starting time.
 		if (diag_l0_dt_send(dl0d, NULL, tx, DT8_MSIZE))
 			break;
-		
 
-		if (diag_tty_read(dl0d, echo, DT8_MSIZE, 100) != DT8_MSIZE) {
-			printf("\ndt8: tty_read error.\n");
+		rv = diag_tty_read(dl0d, echo, DT8_MSIZE, 100 + 5*DT8_MSIZE);
+		if (rv != DT8_MSIZE) {
+			fprintf(stderr, "\ndt8: tty_read rets %d.\n", rv);
 			break;
 		}
 		tf = tf + diag_os_gethrt() - ti;
@@ -256,6 +257,7 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 		}
 		fprintf(stderr, ".");
 	}	//for
+
 	tf = tf / (DT8_ITERS * DT8_MSIZE);	//average time per byte
 	fprintf(stderr, "\n");
 	if (rv != 0) {
@@ -304,7 +306,8 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 	for (i=10; i<=180; i += 20) {
 		tf=0;
 		for (iters=0; iters < DT9_ITERS; iters++) {
-			if (diag_l0_dt_send(dl0d, NULL, &i, 1)) goto failed;
+			uint8_t tc = i;
+			if (diag_l0_dt_send(dl0d, NULL, &tc, 1)) goto failed;
 			t0=diag_os_gethrt();
 			if (diag_tty_read(dl0d, garbage, MAXRBUF, i) != 1) goto failed;
 			tf = tf + diag_os_gethrt() - t0;

@@ -834,6 +834,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 {
 	ssize_t rv;
 	size_t n;
+	int expired;
 	uint8_t *p;
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 
@@ -848,6 +849,8 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 	it.it_interval.tv_nsec = PT_REPEAT * 1000;
 
 	uti->pt_expired=0;
+	expired=0;
+
 	//arm the timer
 	timer_settime(uti->timerid, 0, &it, NULL);
 
@@ -856,8 +859,10 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 	errno = 0;
 
 	while(n < count) {
-		if (uti->pt_expired)
+		if (uti->pt_expired) {
+			expired=1;
 			break;
+		}
 
 		rv = read(uti->fd, &p[n], count-n);
 		if (rv < 0) {
@@ -882,7 +887,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 	if(rv >= 0) {
 		if(n > 0)
 			return n;
-		else if(uti->pt_expired)
+		else if (expired)
 			return DIAG_ERR_TIMEOUT;	//without diag_iseterr() !
 	}
 

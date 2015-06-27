@@ -57,7 +57,7 @@ extern "C" {
 		ALT2) needs __linux__ : uses TIOCSSERIAL, ASYNC_SPD_CUST, CBAUD.
 		ALT3) needs "B9600 == 9600" etc. Calls cfset{i,o}speed with speed in bps (non-portable)
 		ALT1) needs __linux__ : termios2 + BOTHER
-		ALTx) picks nearest standard Bxxxx; calls cfset{i,o}speed
+		ALTx) picks nearest standard Bxxxx; calls cfset{i,o}speed (universal fallback)
 	######
 	For every feature listed above, it's possible to force compilation of
 	a specific implementation using the #defines below.
@@ -76,7 +76,6 @@ extern "C" {
 //example:
 //#define SEL_TIMEOUT S_OTHER
 //#define SEL_TIMEOUT S_LINUX
-//#define SEL_TTYBAUD S_ALT2
 //#define SEL_TTYBAUD S_ALT3
 
 /* Default selectors: anything still undefined is set to S_AUTO which
