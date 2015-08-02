@@ -478,8 +478,8 @@ cmd_diag_sendreq(int argc, char **argv)
 #include "nisprog.c"
 #else
 static int cmd_diag_nisprog(int argc, char **argv) {
-	argc;
-	argv;
+	(void) argc;
+	(void) argv;
 	return CMD_OK;
 }
 #endif // NISPROG

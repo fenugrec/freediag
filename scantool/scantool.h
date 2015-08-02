@@ -102,8 +102,6 @@ extern unsigned int ecu_count;
 
 extern uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
 
-/* XXX end of stuff to move */
-
 extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
 
 //XXX The following defs should probably go in an auto-generated l0_list.h file ... and they MUST match the list in scantool_set.c !
