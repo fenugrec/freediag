@@ -51,6 +51,7 @@
 
 #define PROMPTBUFSIZE 80		//was 1024 !!
 const char progname[]=SCANTOOL_PROGNAME;
+const char projname[]=PROJECT_NAME;
 
 FILE		*global_logfp;		/* Monitor log output file pointer */
 #define LOG_FORMAT	"FREEDIAG log format 0.2"
@@ -599,7 +600,7 @@ cmd_watch(int argc, char **argv)
 		return CMD_FAILED;
 	}
 	//here we have a valid d_l2_conn over dl0d.
-	
+
 	if (rawmode == 0) {
 		/* Put the SAE J1979 stack on top of the ISO device */
 
@@ -1095,41 +1096,40 @@ rc_file(void)
 	char *rchomeinit;
 	char *homedir;
 	homedir = getenv("HOME");
+	FILE *newrcfile;
 
 	if (homedir) {
 		/* we add "/." and "rc" ... 4 characters */
 		if (diag_malloc(&rchomeinit, strlen(homedir) + strlen(progname) + 5)) {
-			return diag_iseterr(DIAG_ERR_RCFILE);
+			return diag_iseterr(DIAG_ERR_NOMEM);
 		}
 		strcpy(rchomeinit, homedir);
 		strcat(rchomeinit, "/.");
-		strcat(rchomeinit, progname);
+		strcat(rchomeinit, projname);
 		strcat(rchomeinit, "rc");
-		if (command_file(rchomeinit)) {
-			//should return 0 with a success
-/* 			if (newrcfile=fopen(rchomeinit,"a"))	//create the file if it didn't exist
- * 			{
- * 				fprintf(newrcfile, "\n#empty rcfile auto created by %s\n",progname);
- * 				fclose(newrcfile);
- * 				printf("%s not found, empty file created\n",rchomeinit);
- * 			}
- * 			else	//could not create empty rcfile
- * 			{
- * 				fprintf(stderr, FLFMT "%s not found, could not create empty file", FL, rchomeinit);
- * 				free(rchomeinit);
- * 				return diag_iseterr(DIAG_ERR_GENERAL);
- * 			}
- */
-		} else {
+		if (command_file(rchomeinit) == 0) {
 			//command_file was at least partly successful (rc file exists)
 			printf("%s: Settings loaded from %s\n",progname,rchomeinit);
 			free(rchomeinit);
 			return 0;
 		}
-		//fall here if command_file failed
-		fprintf(stderr, FLFMT "Could not load rc file %s\n", FL, rchomeinit);
-		free(rchomeinit);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+
+		fprintf(stderr, FLFMT "Could not load rc file %s; ", FL, rchomeinit);
+		newrcfile=fopen(rchomeinit,"a");
+		if (newrcfile) {
+			//create the file if it didn't exist
+			fprintf(newrcfile, "\n#empty rcfile auto created by %s\n",progname);
+			fclose(newrcfile);
+			fprintf(stderr, "empty file created.\n");
+			free(rchomeinit);
+			return 0;
+		} else {
+			//could not create empty rcfile
+			fprintf(stderr, "could not create empty file %s.", rchomeinit);
+			free(rchomeinit);
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
+
 	}	//if (homedir)
 #endif
 
@@ -1137,7 +1137,7 @@ rc_file(void)
 #ifdef USE_INIFILE
 	char * inihomeinit;
 	if (diag_malloc(&inihomeinit, strlen(progname) + strlen(".ini") + 1)) {
-		return diag_iseterr(DIAG_ERR_RCFILE);
+		return diag_iseterr(DIAG_ERR_NOMEM);
 	}
 
 	strcpy(inihomeinit, progname);
@@ -1160,7 +1160,7 @@ enter_cli(const char *name)
 	global_logfp = NULL;
 	//progname = name;	//we use the supplied *name instead.
 
-	printf("%s: version %s\n", name, PACKAGE_VERSION);
+	printf("%s: %s version %s\n", name, projname, PACKAGE_VERSION);
 	printf("%s: Type HELP for a list of commands\n", name);
 	printf("%s: Type SCAN to start ODBII Scan\n", name);
 	printf("%s: Then use MONITOR to monitor real-time data\n", name);

@@ -21,5 +21,6 @@
 
 #define PACKAGE_VERSION "@PKGVERSION@"
 #define SCANTOOL_PROGNAME "@SCANTOOL_PROGNAME@"
+#define PROJECT_NAME "@PROJECT_NAME@"
 
 #endif //ifndef _cconf_h
