@@ -67,6 +67,14 @@ struct diag_l0_sim_device
 {
 	int protocol;
 	FILE* fp; // DB file pointer.
+	// Configuration variables.
+	// These affect the kind of flags we should return.
+	// This makes the simulator configurable towards using
+	// or not the L2 framing and CRC/Checksums.
+	// These boolean flags are to be programmed with values
+	// from the DB file in use.
+	int sim_skip_frame;
+	int sim_skip_crc;
 };
 
 // ECU responses linked list:
@@ -81,14 +89,6 @@ struct sim_ecu_response
 // For keeping all the responses to the last request.
 struct sim_ecu_response* sim_last_ecu_responses = NULL;
 
-// Configuration variables.
-// These affect the kind of flags we should return.
-// This makes the simulator configurable towards using
-// or not the L2 framing and CRC/Checksums.
-// These boolean flags are to be programmed with values
-// from the DB file in use.
-int sim_skip_frame = 0;
-int sim_skip_crc = 0;
 
 
 /**************************************************/
@@ -404,8 +404,9 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 
 // Reads the configuration options from the file.
 // Stores them in globals.
-void sim_read_cfg(FILE *fp)
+void sim_read_cfg(struct diag_l0_sim_device *dev)
 {
+	FILE *fp = dev->fp;
 	char *p; // temp string pointer.
 	char line_buf[21]; // 20 chars generally enough for a config token.
 
@@ -413,8 +414,8 @@ void sim_read_cfg(FILE *fp)
 #define CFG_NOL2FRAME "SIM_NOL2FRAME"
 #define CFG_NOL2CKSUM "SIM_NOL2CKSUM"
 
-	sim_skip_crc = 0;
-	sim_skip_frame = 0;
+	dev->sim_skip_crc = 0;
+	dev->sim_skip_frame = 0;
 
 	// search for all config lines.
 	while (1) {
@@ -432,12 +433,12 @@ void sim_read_cfg(FILE *fp)
 		if (strncmp(p, CFG_NOL2FRAME, strlen(CFG_NOL2FRAME)) == 0) {
 			// "no l2 frame":
 			p += strlen(CFG_NOL2FRAME) + 1;
-			sscanf(p, "%d", &sim_skip_frame);
+			sscanf(p, "%d", &dev->sim_skip_frame);
 			continue;
 		} else if (strncmp(p, CFG_NOL2CKSUM, strlen(CFG_NOL2CKSUM)) == 0) {
 			// "no l2 checksum":
 			p += strlen(CFG_NOL2CKSUM) + 1;
-			sscanf(p, "%d", &sim_skip_crc);
+			sscanf(p, "%d", &dev->sim_skip_crc);
 			continue;
 		}
 	}
@@ -519,7 +520,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 	rewind(dev->fp);
 
 	// Read the configuration flags from the db file:
-	sim_read_cfg(dev->fp);
+	sim_read_cfg(dev);
 
 	return dl0d;
 }
@@ -709,8 +710,9 @@ diag_l0_sim_setspeed(UNUSED(struct diag_l0_device *dl0d),
 // If you don't want to deal with header bytes, uncomment
 // the SIM_NOL2FRAME line in the file (required for SAEJ1850).
 static uint32_t
-diag_l0_sim_getflags(UNUSED(struct diag_l0_device *dl0d))
+diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 {
+	struct diag_l0_sim_device * dev = dl0d->dl0_handle;
 	int ret = 0;
 
 	ret = DIAG_L1_SLOW |
@@ -720,10 +722,10 @@ diag_l0_sim_getflags(UNUSED(struct diag_l0_device *dl0d))
 	DIAG_L1_AUTOSPEED |
 	DIAG_L1_NOTTY;
 
-	if (sim_skip_crc)
+	if (dev->sim_skip_crc)
 		ret |= DIAG_L1_DOESL2CKSUM | DIAG_L1_STRIPSL2CKSUM;
 
-	if (sim_skip_frame)
+	if (dev->sim_skip_frame)
 		ret |= 	DIAG_L1_DOESL2FRAME;
 
 	return ret;
