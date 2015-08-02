@@ -66,7 +66,6 @@ const char *simfile_default=DB_FILE;	//default filename
 struct diag_l0_sim_device
 {
 	int protocol;
-	struct diag_serial_settings serial; //for compatibility;
 	FILE* fp; // DB file pointer.
 };
 
@@ -695,17 +694,10 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 // Simulates setting speed/parity etc.
 // Just accepts whatever is specified.
 static int
-diag_l0_sim_setspeed(struct diag_l0_device *dl0d,
-			 const struct diag_serial_settings *pset)
+diag_l0_sim_setspeed(UNUSED(struct diag_l0_device *dl0d),
+			 UNUSED(const struct diag_serial_settings *pset))
 {
-	struct diag_l0_sim_device *dev;
-	int ret=0;
-
-	dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
-
-	dev->serial = *pset;
-
-	return ret;
+	return 0;
 }
 
 
