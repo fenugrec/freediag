@@ -187,7 +187,7 @@ struct diag_msg
 {
 	uint8_t	fmt;			/* Message format (doesn't absolutely need to be uint8_t) : */
 	#define DIAG_FMT_ISO_FUNCADDR	0x01	/* ISO Functional addressing (default : phys) */
-	#define DIAG_FMT_FRAMED		0x02	/* Rcvd data is framed, ie not raw */
+	#define DIAG_FMT_FRAMED		0x02	/* Rcvd data is framed, ie not raw. XXX DEPRECATED ! L0..L2 all do this.*/
 //	#define	DIAG_FMT_DATAONLY	0x04	/* Rcvd data had L2/L3 headers removed XXX ALWAYS ! */
 	#define DIAG_FMT_CKSUMMED	0x08	/* Someone (L1/L2) checked the checksum */
 	#define DIAG_FMT_BADCS	0x10		// message has bad checksum
