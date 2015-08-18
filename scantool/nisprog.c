@@ -124,6 +124,161 @@ void genkey1(const uint8_t *seed8, uint32_t m, uint8_t *key) {
 	return;
 }
 
+//np 7 <scode>: same as np 6 but with the NPT_DDL algo.
+
+//np 1 :
+static int np_1(UNUSED(int argc), UNUSED(char **argv)) {
+	//try start diagsession, Nissan Repro style +
+	// accesstimingparams (get limits + setvals)
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+
+	txdata[0]=0x10;
+	txdata[1]=0x85;
+	txdata[2]=0x14;
+	nisreq.len=3;
+	nisreq.data=txdata;
+
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return CMD_FAILED;
+	if (rxmsg->data[0] != 0x50) {
+		printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
+				rxmsg->len);
+		diag_freemsg(rxmsg);
+		return CMD_OK;
+	}
+	printf("StartDiagsess: got ");
+	diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+	diag_freemsg(rxmsg);
+
+	//try accesstimingparam : read limits
+	txdata[0]=0x83;
+	txdata[1]=0x0;	//read limits
+	nisreq.len=2;
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return CMD_FAILED;
+	printf("\nAccesTiming : read limits got ");
+	diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+	diag_freemsg(rxmsg);
+
+	//try ATP : read settings
+	txdata[0]=0x83;
+	txdata[1]=0x02;
+	nisreq.len=2;
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return CMD_FAILED;
+	printf("\nAccesTiming : read settings got ");
+	diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+	diag_freemsg(rxmsg);
+	printf("\n");
+	return CMD_OK;
+}
+//np 2 :
+static int np_2(int argc, char **argv) {
+	//np 2 <addr> : read 1 byte @ addr, with SID A4
+	//printf("Attempting to read 1 byte @ 000000:\n");
+	uint8_t txdata[64];	//data for nisreq
+	uint32_t addr;
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+
+	if (argc != 3) {
+		printf("usage: np 2 <addr>: read 1 byte @ <addr>\n");
+		return CMD_USAGE;
+	}
+	if (sscanf(argv[2], "%x", &addr) != 1) {
+		printf("Did not understand %s\n", argv[2]);
+		return CMD_USAGE;
+	}
+	txdata[0]=0xA4;
+	txdata[4]= (uint8_t) (addr & 0xFF);
+	txdata[3]= (uint8_t) ((addr & 0xFF<<8) >>8);
+	txdata[2]= (uint8_t) ((addr & 0xFF<<16) >>16);
+	txdata[1]= (uint8_t) ((addr & 0xFF<<24) >>24);
+	txdata[5]=0x04;	//TXM
+	txdata[6]=0x01;	//NumResps
+	nisreq.len=7;
+	nisreq.data=txdata;
+
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return CMD_FAILED;
+	if ((rxmsg->data[0] != 0xE4) || (rxmsg->len != 6)) {
+		printf("got bad response: %02X, len=%u\n", rxmsg->data[0],
+			rxmsg->len);
+		diag_freemsg(rxmsg);
+		return CMD_OK;
+	}
+	printf("Got: 0x%02X\n", rxmsg->data[5]);
+	diag_freemsg(rxmsg);
+	return CMD_OK;
+}
+
+static int np_6_7(UNUSED(int argc), UNUSED(char **argv), int keyalg, uint32_t scode) {
+	//np 6 & 7 : attempt a SecurityAccess (SID 27), using selected algo.
+	//np 6: genkey2 (KLINE_AT)
+	//np 7: genkey1 (NPT_DDL2) + scode
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+
+	txdata[0]=0x27;
+	txdata[1]=0x01;	//RequestSeed
+	nisreq.len=2;
+	nisreq.data=txdata;
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return CMD_FAILED;
+	if ((rxmsg->len < 6) || (rxmsg->data[0] != 0x67)) {
+		printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
+				rxmsg->len);
+		diag_freemsg(rxmsg);
+		return CMD_OK;
+	}
+	printf("Trying SID 27, got seed: ");
+	diag_data_dump(stdout, &rxmsg->data[2], 4);
+
+	txdata[0]=0x27;
+	txdata[1]=0x02;	//SendKey
+	switch (keyalg) {
+	case 1:
+		genkey1(&rxmsg->data[2], scode, &txdata[2]);	//write key to txdata buffer
+		printf("; using NPT_DDL algo (scode=0x%0X), ", scode);
+		break;
+	case 2:
+	default:
+		genkey2(&rxmsg->data[2], &txdata[2]);	//write key to txdata buffer
+		printf("; using KLINE_AT algo, ");
+		break;
+	}
+	diag_freemsg(rxmsg);
+
+	printf("to send key ");
+	diag_data_dump(stdout, &txdata[2], 4);
+	printf("\n");
+
+	nisreq.len=6; //27 02 K K K K
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return CMD_FAILED;
+	if (rxmsg->data[0] != 0x67) {
+		printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
+				rxmsg->len);
+		diag_freemsg(rxmsg);
+		return CMD_OK;
+	}
+	printf("SUXXESS !!\n");
+
+	diag_freemsg(rxmsg);
+	return CMD_OK;
+}
 
 static int cmd_diag_nisprog(int argc, char **argv) {
 	unsigned testnum;
@@ -135,7 +290,6 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 	int errval;
 	int retryscore;
 	int hackmode=0;	//to modify test #4's behavior
-	int keyalg=2;	//default : alg 1 (nptddl)
 	uint32_t scode;	//for SID27
 
 	if ((argc <=1) || (sscanf(argv[1],"%u", &testnum) != 1)) {
@@ -176,80 +330,11 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		diag_freemsg(rxmsg);
 		break;
 	case 1:
-		//test 2: try start diagsession, Nissan Repro style +
-		// accesstimingparams (get limits + setvals)
-		txdata[0]=0x10;
-		txdata[1]=0x85;
-		txdata[2]=0x14;
-		nisreq.len=3;
-		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
-		if (rxmsg==NULL)
-			return CMD_FAILED;
-		if (rxmsg->data[0] != 0x50) {
-			printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
-					rxmsg->len);
-			diag_freemsg(rxmsg);
-			return CMD_OK;
-		}
-		printf("StartDiagsess: got ");
-		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
-		diag_freemsg(rxmsg);
-
-		//try accesstimingparam : read limits
-		txdata[0]=0x83;
-		txdata[1]=0x0;	//read limits
-		nisreq.len=2;
-		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
-		if (rxmsg==NULL)
-			return CMD_FAILED;
-		printf("\nAccesTiming : read limits got ");
-		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
-		diag_freemsg(rxmsg);
-
-		//try ATP : read settings
-		txdata[0]=0x83;
-		txdata[1]=0x02;
-		nisreq.len=2;
-		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
-		if (rxmsg==NULL)
-			return CMD_FAILED;
-		printf("\nAccesTiming : read settings got ");
-		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
-		diag_freemsg(rxmsg);
-		printf("\n");
+		return np_1(argc, argv);
 		break;
 	case 2:
-		//np 2 <addr> : read 1 byte @ addr, with SID A4
-		//printf("Attempting to read 1 byte @ 000000:\n");
-		if (argc != 3) {
-			printf("usage: np 2 <addr>: read 1 byte @ <addr>\n");
-			return CMD_USAGE;
-		}
-		if (sscanf(argv[2], "%x", &addr) != 1) {
-			printf("Did not understand %s\n", argv[2]);
-			return CMD_USAGE;
-		}
-		txdata[0]=0xA4;
-		txdata[4]= (uint8_t) (addr & 0xFF);
-		txdata[3]= (uint8_t) ((addr & 0xFF<<8) >>8);
-		txdata[2]= (uint8_t) ((addr & 0xFF<<16) >>16);
-		txdata[1]= (uint8_t) ((addr & 0xFF<<24) >>24);
-		txdata[5]=0x04;	//TXM
-		txdata[6]=0x01;	//NumResps
-		nisreq.len=7;
-
-		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
-		if (rxmsg==NULL)
-			return CMD_FAILED;
-		if ((rxmsg->data[0] != 0xE4) || (rxmsg->len != 6)) {
-			printf("got bad response: %02X, len=%u\n", rxmsg->data[0],
-				rxmsg->len);
-			diag_freemsg(rxmsg);
-			return CMD_OK;
-		}
-		printf("Got: 0x%02X\n", rxmsg->data[5]);
-		diag_freemsg(rxmsg);
-		break;	//case 2 : dump 1 byte
+        return np_2(argc, argv);
+		break;
 	case 3:
 		//SID A4: dump the first 256-byte page,
 		printf("This test has been removed.\n");
@@ -284,7 +369,7 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		}
 
 		maxaddr = (uint32_t) htoi(argv[3]);
-		nextaddr = (uint32_t) htoi(argv[3]);
+		nextaddr = (uint32_t) htoi(argv[2]);
 
 		//~ if ( (sscanf(argv[3], "%u", &maxaddr) != 1) ||
 				//~ (sscanf(argv[2], "%u", &nextaddr) !=1)) {
@@ -534,8 +619,6 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		}
 		break;	//case 4 : dump with AC
 	case 7:
-		//np 7 <scode>: same as np 6 but with the NPT_DDL algo.
-		keyalg=1;
 		if (argc != 3) {
 			printf("SID27 test. usage: np 7 <scode>\n");
 			return CMD_USAGE;
@@ -544,56 +627,9 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 			printf("Did not understand %s\n", argv[2]);
 			return CMD_USAGE;
 		}
-		//fall through ! cheat !
+		return np_6_7(argc, argv, 1, scode);
 	case 6:
-		//np 6 & 7 : attempt a SecurityAccess (SID 27), using selected algo.
-		txdata[0]=0x27;
-		txdata[1]=0x01;	//RequestSeed
-		nisreq.len=2;
-		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
-		if (rxmsg==NULL)
-			return CMD_FAILED;
-		if ((rxmsg->len < 6) || (rxmsg->data[0] != 0x67)) {
-			printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
-					rxmsg->len);
-			diag_freemsg(rxmsg);
-			return CMD_OK;
-		}
-		printf("Trying SID 27, got seed: ");
-		diag_data_dump(stdout, &rxmsg->data[2], 4);
-
-		txdata[0]=0x27;
-		txdata[1]=0x02;	//SendKey
-		switch (keyalg) {
-		case 1:
-			genkey1(&rxmsg->data[2], scode, &txdata[2]);	//write key to txdata buffer
-			printf("; using NPT_DDL algo (scode=0x%0X), ", scode);
-			break;
-		case 2:
-		default:
-			genkey2(&rxmsg->data[2], &txdata[2]);	//write key to txdata buffer
-			printf("; using KLINE_AT algo, ");
-			break;
-		}
-		diag_freemsg(rxmsg);
-
-		printf("to send key ");
-		diag_data_dump(stdout, &txdata[2], 4);
-		printf("\n");
-
-		nisreq.len=6; //27 02 K K K K
-		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
-		if (rxmsg==NULL)
-			return CMD_FAILED;
-		if (rxmsg->data[0] != 0x67) {
-			printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
-					rxmsg->len);
-			diag_freemsg(rxmsg);
-			return CMD_OK;
-		}
-		printf("SUXXESS !!\n");
-
-		diag_freemsg(rxmsg);
+		return np_6_7(argc, argv, 2, 0);
 		break;	//case 6,7 (sid27)
 	default:
 		return CMD_USAGE;
