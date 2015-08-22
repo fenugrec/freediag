@@ -646,7 +646,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 
 // Gets present ECU response from the prepared list.
 // Returns ECU response with parsed data (if applicable).
-// Returns number of chars read.
+// Returns number of bytes read.
 static int
 diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),

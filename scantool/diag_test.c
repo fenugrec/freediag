@@ -68,7 +68,7 @@ main(int argc,  char **argv)
 	diag_l0_debug = -1;
 	diag_l1_debug = -1;
 	diag_l2_debug = -1;
-	
+
 	if (diag_os_init()) {
 		printf("error with diag_os_init\n");
 		return 0;
@@ -107,7 +107,7 @@ l2_rcv(UNUSED(void *handle), struct diag_msg *msg)
 	}
 
 	printf("\n");
-	
+
 }
 
 /*
@@ -250,7 +250,7 @@ do_l1_test(void)
 {
 	struct diag_l0_device *dl0d;
 	int rv;
-	char buf[MAXRBUF];
+	uint8_t buf[MAXRBUF];
 	int rcvd;
 	struct diag_serial_settings set;
 

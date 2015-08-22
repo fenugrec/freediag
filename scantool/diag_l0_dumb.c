@@ -3,6 +3,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * (c) fenugrec 2014
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -446,7 +447,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 	//Now the ECU is about to, or already, sending the sync byte 0x55.
 	/*
 	 * Ideally we would now measure the length of the received
-	 * 0x55 sync character to work out the baud rate.
+	 * 0x55 sync byte to work out the baud rate.
 	 * not implemented, we'll just suppose the current serial settings
 	 * are OK and read the 0x55.
 	 * This is ok for iso9141, but in 14230 (5.2.4.2.2.2) we must detect
@@ -590,7 +591,7 @@ const void *data, size_t len)
 }
 
 /*
- * Get data (blocking), returns number of chars read, between 1 and len
+ * Get data (blocking), returns number of bytes read, between 1 and len
  * If timeout is set to 0, this becomes non-blocking
  * returns # of bytes read if succesful
  */

@@ -152,7 +152,7 @@ diag_l0_br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 		 * so increment the pointers and continue
 		 */
 		txlen -= (size_t) xferd;
-		dp = (const void *)((const char *)dp + xferd);
+		dp = (const void *)((const uint8_t *)dp + xferd);
 	}
 	return 0;
 }
@@ -709,7 +709,7 @@ const void *data, size_t len)
 }
 
 /*
- * Get data (blocking), returns number of chars read, between 1 and len
+ * Get data (blocking), returns number of bytes read, between 1 and len
  * If timeout is set to 0, this becomes non-blocking
  *
  * This attempts to read whole message, so if we receive any data, timeout
