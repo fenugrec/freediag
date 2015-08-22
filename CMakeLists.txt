@@ -60,16 +60,10 @@ endif ()
 message(STATUS "Generating make/project files for: ${CMAKE_GENERATOR}")
 
 ###### Type checks
-check_type_size (char CHARSIZE)
 check_type_size (uint8_t UINT8SIZE)
 check_type_size (uint16_t UINT16SIZE)
 check_type_size (uint32_t UINT32SIZE)
 # these should look in stdint.h (C99) so we wont verify UINT8SIZE==8 etc.
-# but char should be the same as uint8; the codebase isn't quite
-# ready to deal with chars != 8bits.
-if (NOT(CHARSIZE EQUAL UINT8SIZE))
-	message (SEND_ERROR "Warning : your platform has  CHARSIZE=${CHARSIZE}, UINT8SIZE=${UINT8SIZE} !")
-endif ()
 
 ###### Global function & library checks
 find_library (HAVE_LIBREADLINE readline)
@@ -90,7 +84,7 @@ else()
 	check_function_exists (alarm HAVE_ALARM)
 	check_function_exists (select HAVE_SELECT)
 	check_function_exists (gettimeofday HAVE_GETTIMEOFDAY)
-	
+
 	set (CMAKE_REQUIRED_INCLUDES "sys/time.h")
 	#we could use CMakePushCheckState to push / pop CMAKE_REQUIRED_INCLUDES
 	#but I think it has no influence on the rest of the build...
@@ -102,7 +96,7 @@ else()
 		set(HAVE_TIMERSUB 1)
 	endif ()
 
-	
+
 	#diag_os_unix needs some _POSIX_TIMERS functions wich
 	#may require linking with -lrt
 	set (CMAKE_REQUIRED_INCLUDE_FILES time.h)
