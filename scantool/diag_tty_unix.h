@@ -54,9 +54,9 @@ extern "C" {
 		ALT1) needs O_NONBLOCK; open non-blocking then clear flag
 		ALT2) don't set O_NONBLOCK.
 	SEL_TTYBAUD: diag_tty_setup() : tty settings (bps, parity etc)
-		ALT2) needs __linux__ : uses TIOCSSERIAL, ASYNC_SPD_CUST, CBAUD.
-		ALT3) needs "B9600 == 9600" etc. Calls cfset{i,o}speed with speed in bps (non-portable)
 		ALT1) needs __linux__ : termios2 + BOTHER
+		ALT2) needs __linux__ : uses TIOCSSERIAL, ASYNC_SPD_CUST, CBAUD.
+		ALT3) needs "B9600 == 9600" etc. Calls cfset{i,o}speed with speed in bps (very non-portable)
 		ALTx) picks nearest standard Bxxxx; calls cfset{i,o}speed (universal fallback)
 	######
 	For every feature listed above, it's possible to force compilation of
@@ -97,29 +97,32 @@ extern "C" {
  in <termios.h> provided by glibc; the other is in <asm/termios.h> provided
  by linux kernel headers ! They differ and are mutually exclusive, of course.
 */
+
 /** FUGLY HACKS BELOW **/
 #if defined(__linux__) && (SEL_TTYBAUD==S_ALT1 || SEL_TTYBAUD==S_AUTO)
-	#include <asm/termios.h>
-	#include <asm/ioctls.h>
-
 	#define USE_TERMIOS2
-	#define DT_TERMIOS termios2
+#endif
+
+#ifdef USE_TERMIOS2
+	#include <asm/termbits.h>	//including <asm/termios.h> causes duplicate def errors
+
 	/* Ugliness necessary because :
-	 0- <asm/termios.h> is needed for BOTHER and struct termios2
+	 0- <asm/termios.h>, or at least <asm/termbits.h> is needed for BOTHER and struct termios2
 	 1- ioctl() is provided by glibc, and defined in <sys/ioctl.h>
-	 2- <asm/ioctls.h> is needed for TCSETS2
-	 3- <asm/ioctls.h> and <sys/ioctl.h> duplicate some definitions
+	 2- <asm/ioctls.h> (included through sys/ioctl.h -> bits/ioctls.h -> asm/ioctls.h) is needed for TCSETS2
+	 3- <asm/termios.h> defines winsize and some other junk covered by bits/ioctl-types;
+	 3b- <bits/ioctl-types.h> is included by <sys/ioctl.h> !
+
 	Could we someday have a sane way of setting integer baud rates ? pfah.
 	 */
-	int ioctl(int __fd, unsigned long int __request, ...);
-	int cfsetispeed(struct termios* __termios_p, speed_t __speed);
-	int cfsetospeed(struct termios* __termios_p, speed_t __speed);
+	extern int cfsetispeed(struct termios* __termios_p, speed_t __speed);
+	extern int cfsetospeed(struct termios* __termios_p, speed_t __speed);
 #else
 	#include <termios.h>	//has speed_t, tcsetattr, struct termios, cfset*speed, etc
-	#include <sys/ioctl.h>
-	#define DT_TERMIOS termios
-#endif
+#endif // USE_TERMIOS2
 /** END OF FUGLINESS **/
+
+#include <sys/ioctl.h>
 
 #if defined(_POSIX_TIMERS)
 	#include <time.h>

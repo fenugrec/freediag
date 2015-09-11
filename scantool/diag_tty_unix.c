@@ -233,7 +233,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	uti->st_cur.c_cflag &= ~( CRTSCTS );	//non-posix; disables hardware flow ctl
 	uti->st_cur.c_cflag |= (CLOCAL);	//ignore modem control lines
-	
+
 	uti->st_cur.c_cc[VMIN] = 1;		//Minimum # of bytes before read() returns (default: 0!!!)
 
 	//and update termios with new flags.
@@ -375,6 +375,8 @@ int _tty_setspeed(struct diag_l0_device *dl0d, unsigned int spd) {
 #endif // BOTHER flag trick
 
 #if defined(__linux__) && (SEL_TTYBAUD==S_ALT2 || SEL_TTYBAUD==S_AUTO)
+//#pragma message("Warning : using deprecated ASYNC_SPD_CUST method as a fallback.")
+
 	/*
 	 * Linux iX86 method of setting non-standard baud rates.
 	 * This method is apparently deprecated, or at the very least not recommended
@@ -931,7 +933,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 
 			tdone = diag_os_gethrt() - tstart;
 			tdone_us = diag_os_hrtus(tdone);
-			
+
 			if (tdone_us >= incr) {
 				expired = 1;
 				rv=0;
@@ -967,7 +969,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 		}	//select loop
 
 		rv = read(uti->fd,  &p[n], count);
-		
+
 		if ((rv < 0) && (rv == EINTR)) {
 			rv=0;
 			errno=0;
