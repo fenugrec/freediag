@@ -55,6 +55,8 @@ extern "C" {
 #define DIAG_ERR_RCFILE -40 /*trouble with rc/ini file*/
 #define DIAG_ERR_CMDFILE -41 /*trouble with sourcing commands*/
 
+#define DIAG_ERR_BADCFG	-44	/*Bad config param */
+
 #if defined(__cplusplus)
 }
 #endif

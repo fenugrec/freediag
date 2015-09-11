@@ -47,7 +47,7 @@ set (LIBDIAG_SRCS diag_l0_me.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c
 		diag_l2_iso9141.c diag_l2_iso9141.c diag_l2_iso14230.c
 	diag_l2_saej1850.c diag_l2_vag.c diag_l2_mb1.c
 	diag_l3.c diag_l3_saej1979.c diag_l3_iso14230.c diag_l3_vag.c
-	${OS_DIAGOS} diag_general.c diag_dtc.c )
+	${OS_DIAGOS} diag_general.c diag_dtc.c diag_cfg.c)
 set (LIBDYNO_SRCS dyno.c)
 set (DIAGTEST_SRCS diag_test.c)
 set (SCANTOOL_SRCS scantool.c scantool_cli.c scantool_diag.c scantool_set.c
