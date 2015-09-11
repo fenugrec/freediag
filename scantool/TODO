@@ -1,6 +1,4 @@
-Stuff to do in freediag
-
-$Id$
+Stuff to do in freediag (historical list, but updated)
 
 ------------------------
 
@@ -8,6 +6,3 @@ Complete file logging/playback functionality
 Window based version !
 Ability to do other protocols - need to write other (such as VW) protocols
 Add O2 test results to monitor command
-More things to add to set menu
-Disconnect command
-

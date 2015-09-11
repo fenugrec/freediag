@@ -25,6 +25,7 @@
  *
  * Application Interface (AIF) routines
  *
+ * NOTE : a lot of the code in here duplicates functionality of some cmd_* functions...
  */
 
 #include <time.h>

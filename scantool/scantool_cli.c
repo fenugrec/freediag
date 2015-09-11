@@ -1045,10 +1045,11 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	return rv;
 }
 
+/* execute commands read from *filename */
 static int
 command_file(char *filename)
 {
-		FILE *prev_instream = instream;	//assume it was already initted...
+		FILE *prev_instream = instream;
 
 	if ( (instream=fopen(filename, "r"))) {
 		do_cli(root_cmd_table, progname, 0, NULL);
