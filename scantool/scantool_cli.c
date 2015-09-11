@@ -1084,12 +1084,11 @@ static int
 rc_file(void)
 {
 	//this loads either a $home/.<progname>.rc or ./<progname>.ini (in order of preference)
-	//to load general settings. For now, only set_interface and set_subinterface can be specified
+	//to load general settings.
 
 	/*
 	 * "." files don't play that well on some systems.
-	 * USE_RCFILE is not defined by default
-	* (see configure.ac)
+	 * USE_RCFILE is not defined by default.
 	 */
 
 #ifdef USE_RCFILE
@@ -1164,8 +1163,8 @@ enter_cli(const char *name)
 	printf("%s: Type HELP for a list of commands\n", name);
 	printf("%s: Type SCAN to start ODBII Scan\n", name);
 	printf("%s: Then use MONITOR to monitor real-time data\n", name);
-	printf("%s: **** IMPORTANT : this is alpha software !!! Use at your own risk.\n", name);
-	printf("%s: **** Remember to \"debug all -1\" to display debugging info !\n", name);
+	printf("%s: **** IMPORTANT : this is beta software ! Use at your own risk.\n", name);
+	printf("%s: **** Remember, \"debug all -1\" displays all debugging info.\n", name);
 
 	readline_init();
 	set_init();
