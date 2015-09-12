@@ -381,12 +381,14 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 			synth_resp[pos] = diag_cks1(synth_resp, pos);
 		else {
 			// failed. try scanning element as an Hex byte.
-			ret = sscanf(parse_offset, "%X", ((unsigned int *)(&synth_resp[pos])));
+			unsigned int tempbyte;
+			ret = sscanf(parse_offset, "%X", &tempbyte);	//can't scan direct to uint8 !
 			if (ret != 1) {
 				// failed. something's wrong.
 				fprintf(stderr, FLFMT "Error parsing line: %s at position %d.\n", FL, resp_p->text, pos*5);
 				break;
 			}
+			synth_resp[pos] = (uint8_t) tempbyte;
 		}
 		// next byte.
 		pos++;

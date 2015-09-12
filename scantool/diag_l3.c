@@ -118,7 +118,6 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		rv = dp->diag_l3_proto_start(d_l3_conn);
 		if (rv < 0) {
 			free(d_l3_conn);
-			d_l3_conn = NULL;
 			return diag_pseterr(rv);
 		} else {
 			/*

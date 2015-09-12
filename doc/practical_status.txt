@@ -1,9 +1,24 @@
 #############################
+"jeronimo san" @ sf
+-interface : DUMB K-line only with transistors
+-serial port : USB ?, dumbopts=?
+-system: WinXP
+-freediag 1.05
+
+-car: 2006 Kia Carens
+-proto : OBD 9141 standard (scan command?)
+-result: success except SID06 TID 01 ? (clarify)
+
+-car: 2005 Citroen Berlingo
+-proto : OBD 14230 + slowinit (scan command?)
+-result: success except SID07 ? (clarify)
+
+#############################
 fenugrec
 -interface: DUMB K-line only with optocouplers
 -serial port : FTDI USB->serial converter; dumbopts=0x48
 -system: WinXP 1.4GHz
--freediag version: 1.03, 1.04, CVS@2014/08/30
+-freediag version: 1.03, 1.04, CVS@2014/08/30, 1.05, etc
 ----------
 -car: 2004 Nissan Sentra Spec-V
 -protocol : L2 iso14230 fastinit, phys. destaddr=0x10, testerid=0xfc;
