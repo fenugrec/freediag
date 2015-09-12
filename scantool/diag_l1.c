@@ -318,8 +318,10 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 		fprintf(stderr, FLFMT "Interesting : L1 read with timeout=0. Report this !\n", FL);
 
 	rv=dl0d->dl0->diag_l0_recv(dl0d, subinterface, data, len, timeout);
-	if (rv==0)
-		fprintf(stderr, FLFMT "Interesting : L0 returns with 0 bytes... Report this !\n", FL);
+	if (!rv) {
+		fprintf(stderr, FLFMT "L0 returns with 0 bytes; returning TIMEOUT instead. Report this !\n", FL);
+		return DIAG_ERR_TIMEOUT;
+	}
 
 	return rv;
 }
