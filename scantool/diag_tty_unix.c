@@ -225,14 +225,12 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	+* many systems have non-POSIX flags and also because the ECHO
 	+* flags don't don't matter when ICANON is clear.
 	 */
-	uti->st_cur.c_lflag &= ~( ICANON | ISIG );
-
 	/* CJH: However, taking 'man termios' at its word, the ECHO flag is
-	     *not* affected by ICANON, and it seems we do need to clear it  */
-	uti->st_cur.c_lflag &= ~ECHO;
+	 *not* affected by ICANON, and it seems we do need to clear it  */
+	uti->st_cur.c_lflag &= ~( ICANON | ISIG | ECHO | IEXTEN);
 
 	uti->st_cur.c_cflag &= ~( CRTSCTS );	//non-posix; disables hardware flow ctl
-	uti->st_cur.c_cflag |= (CLOCAL);	//ignore modem control lines
+	uti->st_cur.c_cflag |= (CLOCAL | CREAD);	//ignore modem control lines; enable read
 
 	uti->st_cur.c_cc[VMIN] = 1;		//Minimum # of bytes before read() returns (default: 0!!!)
 
