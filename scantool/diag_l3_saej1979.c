@@ -255,7 +255,7 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
 	} else {
 		/* Add data to the receive buffer on the L3 connection */
 		memcpy(&d_l3_conn->rxbuf[d_l3_conn->rxoffset],
-			msg->data, msg->len);
+			msg->data, msg->len);		//XXX possible buffer overflow !
 		d_l3_conn->rxoffset += msg->len;
 	}
 }

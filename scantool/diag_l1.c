@@ -230,7 +230,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 	l0flags = diag_l1_getflags(dl0d);
 
 	if (diag_l1_debug & DIAG_DEBUG_WRITE) {
-			fprintf(stderr, FLFMT "diag_l1_send: len=%d P4=%u l0flags=%X\n", FL,
+			fprintf(stderr, FLFMT "diag_l1_send: len=%d P4=%u l0flags=0x%X\n", FL,
 					(int) len, p4, l0flags);
 	}
 

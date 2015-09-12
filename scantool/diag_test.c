@@ -97,12 +97,12 @@ l2_rcv(UNUSED(void *handle), struct diag_msg *msg)
 	memcpy(global_data, data, len);
 	global_datalen = len;
 
-	printf("Got %ld bytes of data, src %x, dest %x !! - ", (long)len,
+	printf("Got %ld bytes of data, src=0x%X, dest 0x%X !! - ", (long)len,
 		msg->src, msg->dest);
 
 	while (len)
 	{
-		printf("0x%x ", *data);
+		printf("0x%X ", *data);
 		len--; data++;
 	}
 
@@ -126,7 +126,7 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 	diag_l2_config();
 
 	rv = diag_l2_init();
-	printf("init rv = 0x%x\n", rv);
+	printf("init rv = 0x%X\n", rv);
 
 	dl0d = diag_l2_open("DUMB", set_subinterface, DIAG_L1_RAW);
 	if (! dl0d) {
@@ -255,7 +255,7 @@ do_l1_test(void)
 	struct diag_serial_settings set;
 
 	rv = diag_l1_init();
-	printf("init rv = 0x%x\n", rv);
+	printf("init rv = 0x%X\n", rv);
 
 	dl0d = diag_l1_open("DUMB", set_subinterface, DIAG_L1_RAW);
 	if (dl0d==0)
@@ -269,7 +269,7 @@ do_l1_test(void)
 
 	rv = diag_l1_setspeed(dl0d, &set);
 
-	printf("setspeed rv = 0x%x\n", rv);
+	printf("setspeed rv = 0x%X\n", rv);
 
 	printf("sleeping for 5\n");
 	diag_os_millisleep(5000);

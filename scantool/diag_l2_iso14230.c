@@ -209,7 +209,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "_int_recv dl2conn=%p offset %X, tout=%d\n",
+			FLFMT "_int_recv dl2conn=%p offset=0x%X, tout=%d\n",
 				FL, (void *) d_l2_conn, dp->rxoffset, timeout);
 
 	state = ST_STATE1;
@@ -222,7 +222,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	}
 
 	l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
-	
+
 	if (l1flags & DIAG_L1_DOESL2FRAME)
 		l1_doesl2frame = 1;
 	else
@@ -515,7 +515,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 	dp->first_frame = 1;
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
-		fprintf(stderr, FLFMT "_startcomms flags=%u tgt=%X src=%X\n",
+		fprintf(stderr, FLFMT "_startcomms flags=0x%X tgt=0x%X src=0x%X\n",
 			FL, flags, target, source);
 
 	memset(data, 0, sizeof(data));

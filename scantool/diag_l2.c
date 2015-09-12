@@ -493,7 +493,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "_startCommunications dl0d=%p L2proto %d flags %X %ubps target=0x%X src=0x%X\n",
+			FLFMT "_startCommunications dl0d=%p L2proto %d flags=0x%X %ubps target=0x%X src=0x%X\n",
 			FL, (void *)dl0d, L2protocol, flags ,
 			bitrate, target&0xff, source&0xff);
 
@@ -648,7 +648,7 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 		if (diag_l2_conbyid[i] == d_l2_conn) {
 			diag_l2_conbyid[i]=NULL;
 			if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-				fprintf(stderr, FLFMT "l2_stopcomm: removing dl2 for ID=%X\n", FL, i);
+				fprintf(stderr, FLFMT "l2_stopcomm: removing dl2 for ID=0x%X\n", FL, i);
 		}
 	}
 	//We assume the protocol-specific _stopcomms() cleared out anything it
@@ -772,7 +772,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 
 	if (diag_l2_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr,
-			FLFMT "diag_l2_ioctl %p cmd %X\n",
+			FLFMT "diag_l2_ioctl %p cmd 0x%X\n",
 				FL, (void *)d_l2_conn, cmd);
 
 

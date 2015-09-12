@@ -172,7 +172,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 		}
 
 		// Check the received inverted address:
-		if ( inv_address != (uint8_t) ~address )	//even though they're both uint8_t, gcc complains !
+		if ( inv_address != ((~address) & 0xff))
 		{
 			fprintf(stderr,
 					FLFMT "wakeupECU(dl2conn %p) addr mismatch: 0x%02X != 0x%02X\n",
@@ -207,7 +207,7 @@ diag_l2_proto_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "_startcomms conn %p %ubps tgt=%x src=%x\n",
+			FLFMT "_startcomms conn %p %ubps tgt=0x%X src=0x%X\n",
 			FL, (void *)d_l2_conn, bitrate, target, source);
 
 	if (diag_calloc(&dp, 1))
@@ -368,7 +368,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "_int_recv offset %X\n",
+			FLFMT "_int_recv offset 0x%X\n",
 			FL, d_l2_conn->rxoffset);
 
 	state = ST_STATE1;
