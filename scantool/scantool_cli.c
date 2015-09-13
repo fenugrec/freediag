@@ -178,7 +178,7 @@ basic_get_input(const char *prompt)
 			}
 		}
 	}
-	input[strlen(input)-1] = '\0';	/* Remove trailing CR */
+	input[strcspn(input, "\r\n")] = '\0'; /* Remove trailing CR/LF */
 	return input;
 }
 
