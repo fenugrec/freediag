@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-extern int diag_cmd_debug;
+extern int diag_cli_debug;
 
 extern const char progname[];
 
@@ -70,7 +70,7 @@ typedef struct ecu_data
 	uint8_t 	valid;		/* Valid flag */
 	uint8_t	ecu_addr;	/* Address */
 
-	uint8_t	supress;	/* Supress output of data from ECU */
+	uint8_t	supress;	/* Supress output of data from ECU in monitor mode; not implemented*/
 
 	uint8_t	pids[0x100];	/* Pids supported by ECU */
 	uint8_t	mode2_info[0x100];	/* Freeze frame version */

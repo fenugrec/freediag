@@ -142,7 +142,7 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
 #define DIAG_IOCTL_IFLUSH 0x2202	//flush input buffers
 
 /* debug control */
-// flag containers : diag_l0_debug, diag_l1_debug diag_l2_debug, diag_l3_debug, diag_cmd_debug
+// flag containers : diag_l0_debug, diag_l1_debug diag_l2_debug, diag_l3_debug, diag_cli_debug
 
 #define DIAG_DEBUG_OPEN		0x01	/* Open events */
 #define DIAG_DEBUG_CLOSE	0x02	/* Close events */

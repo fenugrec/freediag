@@ -216,7 +216,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		"Time between sensor transitions"
 		};
 
-	if (diag_cmd_debug & DIAG_DEBUG_DATA) {
+	if (diag_cli_debug & DIAG_DEBUG_DATA) {
 		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src=0x%X, dest=0x%X\n",
 			(void *)handle, len, msg->src, msg->dest);
 		print_msg(stdout, msg, 0);
@@ -228,7 +228,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	/* There is no difference between watch and decode ... */
 		case RQST_HANDLE_WATCH:
 		case RQST_HANDLE_DECODE:
-			if (!(diag_cmd_debug & DIAG_DEBUG_DATA)) {
+			if (!(diag_cli_debug & DIAG_DEBUG_DATA)) {
 				/* Print data (unless done already) */
 					print_msg(stdout, msg, 0);
 			}
@@ -547,7 +547,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	uint8_t mode_lengths[] = { 0, 2, 3, 1, 1, 3, 2, 1, 7, 2 };
 #define J1979_MODE_MAX 9
 
-	if (diag_cmd_debug > DIAG_DEBUG_DATA) {
+	if (diag_cli_debug > DIAG_DEBUG_DATA) {
 		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %#02X\n",
 			(void *)handle, (void *)d_conn, mode);
 
@@ -1310,11 +1310,8 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset)
 void
 do_j1979_getpids()
 {
-//	struct diag_l3_conn *d_conn;
 	ecu_data_t *ep;
 	unsigned int i, j;
-
-//	d_conn = global_l3_conn;		//not used ?
 
 	do_j1979_getmodeinfo(1, 2);
 	do_j1979_getmodeinfo(2, 2);
@@ -1596,6 +1593,7 @@ ecu_connect(void)
 
 			d_l3_conn = diag_l3_start("SAEJ1979", global_l2_conn);
 			if (d_l3_conn == NULL) {
+				rv=DIAG_ERR_ECUSAIDNO;
 				fprintf(stderr, "Failed to enable SAEJ1979 mode\n");
 				//So we'll try another protocol. But close that L2 first:
 				diag_l2_StopCommunications(global_l2_conn);
@@ -1616,11 +1614,11 @@ ecu_connect(void)
 		}
 	}
 
-	if (diag_cmd_debug)
+	if (diag_cli_debug)
 		fprintf(stderr, "debug: L2 connection ID %p, L3 ID %p\n",
 			(void *)global_l2_conn, (void *)global_l3_conn);
 
-	return rv;
+	return rv? diag_iseterr(rv):0;
 }
 
 /*

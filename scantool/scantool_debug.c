@@ -36,7 +36,7 @@
 #include "scantool_cli.h"
 
 
-int diag_cmd_debug;
+int diag_cli_debug;
 
 //declare an array of structs to associate debug flag masks with short description.
 //See diag.h
@@ -223,7 +223,7 @@ cmd_debug_l3(int argc, char **argv)
 static int
 cmd_debug_cli(int argc, char **argv)
 {
-	return cmd_debug_common("CLI", &diag_cmd_debug, argc, argv);
+	return cmd_debug_common("CLI", &diag_cli_debug, argc, argv);
 	//for now, value > 0x80 will enable all debugging info.
 }
 
@@ -238,7 +238,7 @@ cmd_debug_all(int argc, char **argv)
 		diag_l1_debug = val;
 		diag_l2_debug = val;
 		diag_l3_debug = val;
-		diag_cmd_debug = val;
+		diag_cli_debug = val;
 	}
 	return cmd_debug_show(1, NULL);
 
@@ -253,7 +253,7 @@ cmd_debug_show(UNUSED(int argc), UNUSED(char **argv))
 
 	printf("Debug values: L0 0x%X, L1 0x%X, L2 0x%X L3 0x%X CLI 0x%X\n",
 		diag_l0_debug, diag_l1_debug, diag_l2_debug, diag_l3_debug,
-		diag_cmd_debug);
+		diag_cli_debug);
 	return CMD_OK;
 }
 
