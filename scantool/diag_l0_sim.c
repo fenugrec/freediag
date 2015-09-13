@@ -29,8 +29,8 @@
  * This is implemented as L0 and not L1, 2, or 3, because this way it allows
  * us to test the protocol stack as well, not just the applications.
  *
- * In this L0 "pseudo-driver", the serial port is not used, and in it's
- * place is a simple file, called "freediag_carsim.db". This file holds
+ * In this L0 "pseudo-driver", the serial port is not used, and in its
+ * place is a simple file, such as "freediag_carsim.db". This file holds
  * one or more responses for each OBDII request. Feel free to enlarge
  * that file with valid information for your case, customise it at will
  * for your own tests. The format is pretty raw (message bytes in hexadecimal),
@@ -135,7 +135,7 @@ sim_new_ecu_response_txt(const char* text)
 			return diag_pseterr(rv);
 		}
 
-		strncpy(resp->text, text, strlen(text));
+		strncpy(resp->text, text, strlen(text));	//using strlen() defeats the purpose of strncpy ...
 	}
 
 	return resp;
@@ -150,7 +150,6 @@ sim_new_ecu_response_bin(const uint8_t* data, const uint8_t len)
 
 	if (diag_calloc(&resp, 1))
 		return diag_pseterr(DIAG_ERR_NOMEM);
-	//resp = calloc(1, sizeof(struct sim_ecu_response));
 	resp->data = NULL;
 	resp->len = 0;
 	resp->text = NULL;
@@ -161,7 +160,6 @@ sim_new_ecu_response_bin(const uint8_t* data, const uint8_t len)
 			free(resp);
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
-		//resp->data = calloc(len, sizeof(uint8_t));
 		memcpy(resp->data, data, len);
 		resp->len = len;
 	}
@@ -181,8 +179,6 @@ sim_free_ecu_response(struct sim_ecu_response** resp)
 		next_resp = (*resp)->next;
 
 		//free this one.
-		(*resp)->len = 0;
-		(*resp)->next = 0;
 		if ((*resp)->data)
 			free((*resp)->data);
 		if ((*resp)->text)
@@ -236,10 +232,11 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 {
 #define TAG_REQUEST "RQ"
 #define TAG_RESPONSE "RP"
+#define REQBYTES	11	//number of request bytes analyzed
 
 	uint8_t resp_count = 0;
 	uint8_t new_resp_count = 0;
-	uint8_t synth_req[11]; // 11 request bytes.
+	uint8_t synth_req[REQBYTES];
 	char line_buf[1280+1]; // 255 response bytes * 5 ("0xYY ") + tolerance for a token ("abc1 ") = 1280.
 	int end_responses = 0;
 	int request_found = 0;
@@ -261,7 +258,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 	// search for the given request.
 	while (!request_found && !end_responses) {
 		// get a line from DB file.
-		if (fgets(line_buf, 1281, fp) == NULL)
+		if (fgets(line_buf, sizeof(line_buf), fp) == NULL)
 		{
 			// EOF reached.
 			break;
@@ -270,15 +267,15 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 		if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) != 0)
 			continue;
 		// synthesize up to 11 byte values from DB request line.
-		unsigned int reqvals[11];
-		memset(reqvals, 0, 11);
+		unsigned int reqvals[REQBYTES];
+		memset(reqvals, 0, REQBYTES);
 		unsigned int num = (unsigned int) sscanf(line_buf+3, "%X %X %X %X %X %X %X %X %X %X %X",
 			 &reqvals[0], &reqvals[1], &reqvals[2], &reqvals[3],
 			 &reqvals[4], &reqvals[5], &reqvals[6], &reqvals[7],
 			 &reqvals[8], &reqvals[9], &reqvals[10]);
 		//re-cast to uint8...
 		int i;
-		for (i=0; i<=10; i++) {
+		for (i=0; i < REQBYTES; i++) {
 			synth_req[i]=(uint8_t) reqvals[i];
 		}
 		// compare given request with synthesized DB file request.
@@ -287,7 +284,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 			request_found = 1;
 			while (!end_responses) {
 				// get a line from file.
-				if (fgets(line_buf, 1281, fp) == NULL) {
+				if (fgets(line_buf, sizeof(line_buf), fp) == NULL) {
 					// EOF reached.
 					end_responses = 1;
 					break;
@@ -347,55 +344,48 @@ uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
 }
 
 // Parses a response's text to data.
-// Replaces special tokens with function results.
+// Replaces special tokens with function results. This mangles resp_p->text, which shouldn't be a problem
 void sim_parse_response(struct sim_ecu_response* resp_p)
 {
-// the magic number here is "5": all elements in a file line
-// are exactly 5 characters long ("0x00 ", "cks1 ", etc).
-// don't screw this! :)
 #define TOKEN_SINE1	 "sin1"
 #define TOKEN_SAWTOOTH1 "swt1"
 #define TOKEN_ISO9141CS "cks1"
 #define SRESP_SIZE 255
 
 	uint8_t synth_resp[SRESP_SIZE];	// 255 response bytes.
-	char token[5];	// to get tokens from the text.
-	char* parse_offset = NULL;
-	int ret = 0;
-	uint8_t pos = 0;
+	char *cur_tok = NULL;		//current token
+	char *rptr = resp_p->text;	//working copy of the ptr. We will mangle resp_p->text
+	int ret;
+	int pos = 0;
 
-	// extract byte values from response line, allowing for tokens.
-	memset(synth_resp, 0, SRESP_SIZE);
-	do {
-		if ((size_t) pos*5 >= strlen(resp_p->text))
+	// extract byte values from response line, splitting tokens at whitespace / EOL.
+	while ((cur_tok = strtok(rptr, " \t\r\n")) != NULL) {
+		if (pos == 0xff) {
+			fprintf(stderr, "Malformed db file, > 255 bytes on one line !");
 			break;
-		// scan an element.
-		parse_offset = resp_p->text + pos*5;
-		ret = sscanf(parse_offset, "%s", token);
+		}
 		// try replacing a token with a calculated value.
-		if (strcmp(token, TOKEN_SINE1) == 0)
+		if (strcmp(cur_tok, TOKEN_SINE1) == 0)
 			synth_resp[pos] = sine1(synth_resp, pos);
-		else if (strcmp(token, TOKEN_SAWTOOTH1) == 0)
+		else if (strcmp(cur_tok, TOKEN_SAWTOOTH1) == 0)
 			synth_resp[pos] = sawtooth1(synth_resp, pos);
-		else if (strcmp(token, TOKEN_ISO9141CS) == 0)
+		else if (strcmp(cur_tok, TOKEN_ISO9141CS) == 0)
 			synth_resp[pos] = diag_cks1(synth_resp, pos);
 		else {
 			// failed. try scanning element as an Hex byte.
 			unsigned int tempbyte;
-			ret = sscanf(parse_offset, "%X", &tempbyte);	//can't scan direct to uint8 !
+			ret = sscanf(cur_tok, "%X", &tempbyte);	//can't scan direct to uint8 !
 			if (ret != 1) {
-				// failed. something's wrong.
 				fprintf(stderr, FLFMT "Error parsing line: %s at position %d.\n", FL, resp_p->text, pos*5);
 				break;
 			}
 			synth_resp[pos] = (uint8_t) tempbyte;
 		}
-		// next byte.
 		pos++;
-	} while (ret != 0);
+		rptr = NULL;	//strtok: continue parsing
+	}
 
 	// copy to user.
-	//resp_p->data = calloc(pos, sizeof(uint8_t));
 	if (diag_calloc(&(resp_p->data),pos)) {
 		fprintf(stderr, FLFMT "Error parsing response\n", FL);
 		return;
