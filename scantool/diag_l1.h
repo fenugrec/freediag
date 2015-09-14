@@ -179,7 +179,7 @@ struct diag_l1_initbus_args
 #define DIAG_L1_INITBUS_5BAUD	2	/* 5 baud init */
 #define DIAG_L1_INITBUS_2SLOW	3	/* 2 second low on bus, ISO9141-1989 style ? */
 
-
+/*** stuff to move to diag_l0.h ***/
 
 // diag_l0 : every diag_l0_???.c "driver" fills in one of these to describe itself.
 struct diag_l0
@@ -206,7 +206,6 @@ struct diag_l0
 		const struct diag_serial_settings *pss);
 	uint32_t	(*diag_l0_getflags)(struct diag_l0_device *);
 };
-
 
 
 //********** Public L1 interface

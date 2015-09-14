@@ -41,7 +41,7 @@
 #include "diag_l1.h"
 
 
-static const struct diag_l0 diag_l0_br;
+extern const struct diag_l0 diag_l0_br;
 
 /*
  * States
@@ -896,7 +896,7 @@ diag_l0_br_getflags(struct diag_l0_device *dl0d)
 	return flags;
 }
 
-static const struct diag_l0 diag_l0_br = {
+const struct diag_l0 diag_l0_br = {
 	"B. Roadman BR-1 interface",
 	"BR1",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
@@ -911,15 +911,3 @@ static const struct diag_l0 diag_l0_br = {
 	diag_l0_br_getflags
 };
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-extern int diag_l0_br_add(void);
-#if defined(__cplusplus)
-}
-#endif
-
-int
-diag_l0_br_add(void) {
-	return diag_l1_add_l0dev(&diag_l0_br);
-}

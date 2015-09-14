@@ -49,11 +49,6 @@ int diag_init(void)	//returns 0 if normal exit
 		return 0;
 
 	/* Add the supported protocols and links */
-	// (these fill in l0dev_list and l2proto_list)
-
-	if ((rv=diag_l0_config()))
-		return diag_iseterr(rv);
-
 	if ((rv=diag_l2_config()))
 		return diag_iseterr(rv);
 
@@ -79,7 +74,7 @@ int diag_end(void) {
 	if (! diag_initialized)
 		return 0;
 
-	//we don't empty the l0dev_list and l2proto_list linked lists.
+	//we don't empty the l2proto_list linked list.
 	if (diag_l2_end()) {
 		fprintf(stderr, FLFMT "Could not close L2 level\n", FL);
 		rv=-1;

@@ -52,63 +52,19 @@ static int diag_l1_saferead(struct diag_l0_device *dl0d,
 uint8_t *buf, size_t bufsiz, int timeout);
 
 /*
- * l0dev_list : Linked list of supported L0 devices.
- * The devices should be added with "diag_l1_add_l0dev".
+ * l0dev_list : static-allocated list of supported L0 devices, since it can
+ * be entirely determined at compile-time.
+ * The last item is a NULL ptr to ease iterating.
  */
-
-struct diag_l0_node {
-	const struct diag_l0 *l0dev;
-	struct diag_l0_node *next;
-} *l0dev_list;
-
-
-//diag_l1_add_l0dev : this is called by each diag_l0_??_add function.
-//It fills the l0dev_list linked list.
-int
-diag_l1_add_l0dev(const struct diag_l0 *l0dev) {
-	int rv;
-
-	struct diag_l0_node *last_node, *new_node;
-
-	if (l0dev_list == NULL) {
-		/*
-		 * No devices yet, create the root.
-		 */
-		if ( (rv = diag_calloc(&l0dev_list, 1)) )
-			return diag_iseterr(DIAG_ERR_NOMEM);
-
-		l0dev_list->l0dev = l0dev;
-		return 0;
-	}
-
-	//set last_node to the last element of l0dev_list
-	for (last_node = l0dev_list; last_node != NULL; last_node = last_node->next)
-		if (last_node->l0dev == l0dev)
-			return diag_iseterr(DIAG_ERR_GENERAL);	/* Already in the list! */
-
-	if ( (rv = diag_calloc(&new_node, 1)) )
-		return diag_iseterr(DIAG_ERR_NOMEM);
-
-	/* Find the last non-NULL node...*/
-	for (last_node = l0dev_list; last_node->next != NULL; last_node = last_node->next)
-		/* Search for the next-to-last node */;
-
-	new_node->l0dev = l0dev;
-	last_node->next = new_node;
-
-	return 0;
-}
+extern const struct diag_l0 *l0dev_list[];	/* defined in diag_config.c */
 
 /* Global init flag */
 static int diag_l1_initdone=0;
 
-//diag_l1_init : parse through the l0dev_list linked list
-//and call diag_l0_init for each of them
+//diag_l1_init : parse through l0dev_list and call each ->diag_l0_init()
 int
 diag_l1_init(void)
 {
-	struct diag_l0_node *node;
-
 	if (diag_l1_initdone)
 		return 0;
 
@@ -117,13 +73,18 @@ diag_l1_init(void)
 
 
 	/* Now call the init routines for the L0 devices */
+
 	//NOTE : the diag_l0_init functions should NOT play any mem tricks (*alloc etc) or open handles.
 	//That way we won't need to add a diag_l0_end function.
-	//Unfortunately they do : l0dev_list is a linked-list calloc'ed by diag_l1_add_l0dev !
 
-	for (node = l0dev_list; node; node = node->next) {
-		if (node->l0dev->diag_l0_init)
-			(node->l0dev->diag_l0_init)();
+	const struct diag_l0 *dl0;
+	int i=0;
+	while (l0dev_list[i]) {
+		dl0=l0dev_list[i];
+		if (dl0->diag_l0_init) {
+			(void) dl0->diag_l0_init();	//TODO : forward errors up ?
+		}
+		i++;
 	}
 
 	diag_l1_initdone = 1;
@@ -139,7 +100,7 @@ int diag_l1_end(void) {
 /*
  * Open the diagnostic device, return a new diag_l0_device .
  *
- * Finds the unique name in the l0 device linked-list (l0dev_list),
+ * Finds the unique name in the l0 device list (l0dev_list),
  * calls its diag_l0_open function.
  *
  * This is passed a L1 subinterface (ie, what type of physical interface
@@ -148,26 +109,25 @@ int diag_l1_end(void) {
 struct diag_l0_device *
 diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 {
-	struct diag_l0_node *node;
 	const struct diag_l0 *l0dev;
 	if (diag_l1_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr, FLFMT "diag_l1_open %s on %s with l1 proto %d\n", FL,
 				name, subinterface, l1protocol);
 
-	for (node = l0dev_list; node; node = node->next) {
-		l0dev = node->l0dev;
-		if (strcmp(name, l0dev->diag_l0_name) == 0)
-		{
+	int i=0;
+	while (l0dev_list[i]) {
+		l0dev=l0dev_list[i];
+		if (strcmp(name, l0dev->diag_l0_name) == 0) {
 			/* Found it */
 
 			/* Check h/w supports this l1 protocol */
 			if ((l0dev->diag_l0_type & l1protocol) == 0)
 				return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
 
-			/* Call the open routine */
-			// Forward the requested L1 protocol
+			/* Call the open routine with the requested L1 protocol */
 			return (l0dev->diag_l0_open)(subinterface, l1protocol);
 		}
+		i++;
 	}
 	fprintf(stderr, FLFMT "diag_l1_open: did not recognize %s\n", FL, name);
 	/* Not found */

@@ -122,7 +122,6 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 	struct diag_l0_device *dl0d;
 	flag_type flags = 0;
 
-	diag_l0_config();
 	diag_l2_config();
 
 	rv = diag_l2_init();

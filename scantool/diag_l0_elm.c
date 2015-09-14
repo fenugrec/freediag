@@ -76,7 +76,7 @@ static const char * elm327_official[]={"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3
 static const char * elm327_clones[]={"1.4a", "1.5a", "1.5", "2.1", NULL};
 
 
-static const struct diag_l0 diag_l0_elm;
+extern const struct diag_l0 diag_l0_elm;
 
 static int diag_l0_elm_send(struct diag_l0_device *dl0d,
 	UNUSED(const char *subinterface), const void *data, size_t len);
@@ -214,7 +214,7 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, int ti
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "elm_sendcmd: %.*s\n", FL, (int) len-1, (char *)data);
 	}
-	
+
 	rv = elm_tmpsend(dl0d, data, len);
 	if ((rv<=0) || (rv != (int) len)) {	//XXX danger ! evil cast
 		fprintf(stderr, FLFMT "elm_sendcmd error\n", FL);
@@ -232,7 +232,7 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, int ti
 		}
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
 		elm_parse_cr(buf, rv);	//debug output is prettier with this
 		fprintf(stderr, FLFMT "received %d bytes (%.*s\n); hex: ", FL, rv, rv, (char *)buf);
@@ -336,7 +336,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	//need to clear that before sending the real ATZ ==> ATI is quick and safe; elm_purge does this.
 
 	dev->elmflags=0;	//we know nothing yet
-	
+
 	rv=elm_purge(dl0d);
 	//if rv=0, we got a prompt so we know speed is set properly.
 	if (rv==0) {
@@ -362,14 +362,14 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 			return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 		}
 	}
-	
+
 	if (diag_l0_debug&DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "elm_open : sending ATZ...\n", FL);
 	}
 
 	//the command "ATZ" causes a full reset and the ELM replies with
 	//a string like "ELM32x vX.Xx\n>"
-	
+
 	buf=(uint8_t *)"ATZ\x0D";
 	rv=elm_sendcmd(dl0d, buf, 4, 2000, rxbuf);
 	if (rv) {
@@ -394,7 +394,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		diag_l0_elm_close(&dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
-	// 2) identify valid VS clone devices.	
+	// 2) identify valid VS clone devices.
 	rv=0;	// temp "device identified" flag
 	for (i=0; elm_clones[i]; i++) {
 		if (strstr((char *)rxbuf, elm_clones[i])) {
@@ -739,12 +739,12 @@ static int elm_tmpsend(struct diag_l0_device *dl0d, const uint8_t *data, size_t 
 
 //elm_purge : sends ATI command and checks for a valid prompt. This is faster than ATZ.
 //use : if the ELM received garbage before ATI, ex.: "\xFF\xFFATI\r" it will just reject
-//the invalid command but still give a valid prompt. 
+//the invalid command but still give a valid prompt.
 //Return 0 only if a valid prompt was received.
 static int elm_purge(struct diag_l0_device *dl0d) {
 	uint8_t buf[ELM_BUFSIZE] = "ATI\x0D";
 	int rv;
-	
+
 	if (elm_tmpsend(dl0d, buf, 4) != 4) {
 		fprintf(stderr, FLFMT "elm_purge : trouble with elm_tmpsend\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -753,7 +753,7 @@ static int elm_purge(struct diag_l0_device *dl0d) {
 	if (rv <= 0) {
 		return DIAG_ERR_GENERAL;
 	}
-	
+
 	if (buf[rv-1] != '>') {
 		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "elm_purge: got ", FL);
@@ -949,7 +949,7 @@ void elm_parse_cr(uint8_t *data, int len) {
 	return;
 }
 
-static const struct diag_l0 diag_l0_elm = {
+const struct diag_l0 diag_l0_elm = {
 	"Scantool.net ELM32x Chipset Device",
 	"ELM",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_J1850_PWM | DIAG_L1_J1850_VPW | DIAG_L1_CAN,
@@ -962,17 +962,3 @@ static const struct diag_l0 diag_l0_elm = {
 	diag_l0_elm_setspeed,
 	diag_l0_elm_getflags
 };
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-extern int diag_l0_elm_add(void);
-#if defined(__cplusplus)
-}
-#endif
-
-int
-diag_l0_elm_add(void)
-{
-	return diag_l1_add_l0dev(&diag_l0_elm);
-}

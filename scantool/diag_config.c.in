@@ -1,45 +1,38 @@
 /*
  * diag_config.c.in is parsed by CMake to generate diag_config.c !
  * Do not edit diag_config.c !
- *  
+ *
  */
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
+#include <stdlib.h>		//for NULL
+
 @DIAG_CONFIG_ZONE1@
 @DIAG_CONFIG_ZONE2@
 
-#if defined(__cplusplus)
-}
-#endif
-
-//diag_l0_config fills in the l0dev_list linked list.
-//It shouldn't be called more than once per session !
-int diag_l0_config(void) {
-	static int l0_config_done=0;
-	int rv = 0;
-	
-	if (l0_config_done)
-		return 0;
-		
+/* Static allocated l0dev_list, since it can be entirely determined at compile-time.
+ * The last item must be a NULL ptr to ease iterating.
+ */
+const struct diag_l0 *l0dev_list[]={
 @DIAG_CONFIG_ZONE3@
-
-	if (rv==0)
-		l0_config_done=1;
-	return rv;
-}
+	NULL
+};
 
 int diag_l2_config(void) {
 	static int l2_config_done=0;
 	int rv = 0;
-	
+
 	if (l2_config_done)
 		return 0;
-		
+
 @DIAG_CONFIG_ZONE4@
 
 	if (rv==0)
 		l2_config_done=1;
 	return rv;
 }
+#if defined(__cplusplus)
+}
+#endif

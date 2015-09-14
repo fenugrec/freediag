@@ -9,8 +9,8 @@ file (STRINGS l2config L2LIST REGEX "^[^#].*")
 #generate zone 1 and 3 lines with L0 names
 foreach (L0NAME IN LISTS L0LIST)
 	#empty lines are skipped. Lucky us.
-	set (DIAG_CONFIG_ZONE1 "${DIAG_CONFIG_ZONE1}extern int diag_l0_${L0NAME}_add(void);\n")
-	set (DIAG_CONFIG_ZONE3 "${DIAG_CONFIG_ZONE3}\trv |= diag_l0_${L0NAME}_add();\n")
+	set (DIAG_CONFIG_ZONE1 "${DIAG_CONFIG_ZONE1}extern const struct diag_l0 diag_l0_${L0NAME};\n")
+	set (DIAG_CONFIG_ZONE3 "${DIAG_CONFIG_ZONE3}\t&diag_l0_${L0NAME},\n")
 	message(STATUS "Adding l0 driver ${L0NAME}")
 endforeach()
 

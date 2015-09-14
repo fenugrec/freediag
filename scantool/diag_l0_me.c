@@ -44,7 +44,7 @@
 #define INTERFACE_ADDRESS 0x38
 
 
-static const struct diag_l0 diag_l0_muleng;
+extern const struct diag_l0 diag_l0_me;
 
 /*
  * Baud rate table for converting single byte value from interface to
@@ -166,7 +166,7 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 
 	dev->protocol = iProtocol;
 
-	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_muleng, (void *)dev))) {
+	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_me, (void *)dev))) {
 		return diag_pseterr(rv);
 	}
 
@@ -819,7 +819,7 @@ diag_l0_muleng_getflags(struct diag_l0_device *dl0d)
 	return flags ;
 }
 
-static const struct diag_l0 diag_l0_muleng = {
+const struct diag_l0 diag_l0_me = {
 	"Multiplex Engineering T16 interface",
 	"MET16",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
@@ -833,16 +833,3 @@ static const struct diag_l0 diag_l0_muleng = {
 	diag_l0_muleng_setspeed,
 	diag_l0_muleng_getflags
 };
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-extern int diag_l0_muleng_add(void);
-#if defined(__cplusplus)
-}
-#endif
-
-int
-diag_l0_muleng_add(void) {
-	return diag_l1_add_l0dev(&diag_l0_muleng);
-}

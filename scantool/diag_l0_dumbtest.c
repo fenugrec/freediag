@@ -41,7 +41,7 @@ static unsigned int dumb_flags=0;
 #define FAST_BREAK 0x20		//do we use diag_tty_fastbreak for iso14230-style fast init.
 
 
-static const struct diag_l0 diag_l0_dt;
+extern const struct diag_l0 diag_l0_dumbt;
 
 static int
 diag_l0_dt_send(struct diag_l0_device *dl0d,
@@ -285,7 +285,7 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		return diag_pseterr(DIAG_ERR_NOMEM);
 
 	dev->protocol = DIAG_L1_RAW;	//cheat !
-	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dt, (void *)dev))) {
+	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dumbt, (void *)dev))) {
 		return diag_pseterr(rv);
 	}
 
@@ -484,7 +484,7 @@ diag_l0_dt_getflags(UNUSED(struct diag_l0_device *dl0d))
 	return DIAG_L1_HALFDUPLEX;
 }
 
-static const struct diag_l0 diag_l0_dt = {
+const struct diag_l0 diag_l0_dumbt = {
  	"Dumb interface test suite",
 	"DUMBT",
 	-1,		//support "all" L1 protos...
@@ -497,16 +497,3 @@ static const struct diag_l0 diag_l0_dt = {
 	diag_l0_dt_setspeed,
 	diag_l0_dt_getflags
 };
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-extern int diag_l0_dt_add(void);
-#if defined(__cplusplus)
-}
-#endif
-
-int
-diag_l0_dumbt_add(void) {
-	return diag_l1_add_l0dev(&diag_l0_dt);
-}

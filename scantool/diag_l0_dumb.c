@@ -67,7 +67,7 @@ static unsigned int dumb_flags=0;
 
 
 
-static const struct diag_l0 diag_l0_dumb;
+extern const struct diag_l0 diag_l0_dumb;
 
 /*
  * Init must be callable even if no physical interface is
@@ -698,7 +698,7 @@ diag_l0_dumb_getflags(struct diag_l0_device *dl0d)
 	return flags;
 }
 
-static const struct diag_l0 diag_l0_dumb = {
+const struct diag_l0 diag_l0_dumb = {
  	"Generic dumb serial interface",
 	"DUMB",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
@@ -711,16 +711,3 @@ static const struct diag_l0 diag_l0_dumb = {
 	diag_l0_dumb_setspeed,
 	diag_l0_dumb_getflags
 };
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-extern int diag_l0_dumb_add(void);
-#if defined(__cplusplus)
-}
-#endif
-
-int
-diag_l0_dumb_add(void) {
-	return diag_l1_add_l0dev(&diag_l0_dumb);
-}
