@@ -35,8 +35,6 @@
 extern "C" {
 #endif
 
-int diag_l2_vag_add(void);
-
 #if defined(__cplusplus)
 }
 #endif

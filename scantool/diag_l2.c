@@ -48,52 +48,10 @@
 int diag_l2_debug;
 
 /*
- * List of supported L2 protcols, added with "diag_l2_add_protocol".
+ * l2proto_list : static-allocated list of supported L2 protocols.
+ * The last item is a NULL ptr to ease iterating.
  */
-
-struct diag_l2_node {
-	const struct diag_l2_proto *l2proto;
-	struct diag_l2_node *next;
-} *l2proto_list;
-
-//diag_l2_add_protocol : fill in the l2proto_list linked list
-//XXX nobody free's what we calloc in here !
-int
-diag_l2_add_protocol(const struct diag_l2_proto *l2proto) {
-	int rv;
-
-	struct diag_l2_node *last_node, *new_node;
-
-	if (l2proto_list == NULL) {
-		/*
-		 * No devices yet, create the root.
-		 */
-		if ( (rv = diag_calloc(&l2proto_list, 1)) )
-			return diag_iseterr(DIAG_ERR_NOMEM);
-
-		l2proto_list->l2proto = l2proto;
-		return 0;
-	}
-
-	//set last_node to the last element of l2proto_list
-	for (last_node = l2proto_list; last_node != NULL ; last_node = last_node->next)
-		if (last_node->l2proto == l2proto)
-			return diag_iseterr(DIAG_ERR_GENERAL);	/* Already there. */
-
-	if ( (rv = diag_calloc(&new_node, 1)) )
-		return diag_iseterr(DIAG_ERR_NOMEM);
-
-	/* Find the last non-NULL node...*/
-
-	for (last_node = l2proto_list; last_node->next != NULL ;
-				last_node = last_node->next)
-	/* Do Nothing */ ;
-
-	new_node->l2proto = l2proto;
-	last_node->next = new_node;
-
-	return 0;
-}
+extern const struct diag_l2_proto *l2proto_list[];	/* defined in diag_config.c */
 
 
 /*
@@ -279,7 +237,7 @@ diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 /************************************************************************/
 
 /*
- * Init called to initialise local structures, and same for layers below
+ * Init called to initialise local structures
  */
 int diag_l2_init()
 {
@@ -293,17 +251,13 @@ int diag_l2_init()
 	memset(diag_l2_conbyid, 0, CONBYIDSIZE);
 
 	diag_l2_init_done = 1;
-
-	/*
-	 * And go do the layer 1 init
-	 */
-	return diag_l1_init();
+	return 0;
 }
 
 //diag_l2_end : opposite of diag_l2_init !
 int diag_l2_end() {
 	diag_l2_init_done=0;
-	return diag_l1_end();
+	return 0;
 }
 
 /*
@@ -483,10 +437,10 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	unsigned int bitrate, target_type target, source_type source)
 {
 	struct diag_l2_conn	*d_l2_conn;
-	struct diag_l2_node *node;
+	const struct diag_l2_proto *dl2p;
 
 	struct diag_l2_link *dl2l;
-	int rv;
+	int i,rv;
 	int reusing = 0;
 
 	assert(dl0d!=NULL);
@@ -538,9 +492,10 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 	d_l2_conn->l2proto = 0;
 
-	for (node = l2proto_list; node != NULL; node = node->next) {
-		if (node->l2proto->diag_l2_protocol == L2protocol) {
-			d_l2_conn->l2proto = node->l2proto;
+	for (i=0; l2proto_list[i] ; i++) {
+		dl2p = l2proto_list[i];
+		if (dl2p->diag_l2_protocol == L2protocol) {
+			d_l2_conn->l2proto = dl2p;
 			break;
 		}
 	}

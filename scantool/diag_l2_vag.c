@@ -664,7 +664,7 @@ diag_l2_proto_vag_timeout(struct diag_l2_conn *d_l2_conn)
 	(void)diag_l2_recv(d_l2_conn, d_l2_conn->diag_l2_p3min, NULL, NULL);
 }
 
-static const struct diag_l2_proto diag_l2_proto_vag = {
+const struct diag_l2_proto diag_l2_proto_vag = {
 	DIAG_L2_PROT_VAG, DIAG_L2_FLAG_FRAMED,
 	diag_l2_proto_vag_startcomms,
 	diag_l2_proto_vag_stopcomms,
@@ -673,7 +673,3 @@ static const struct diag_l2_proto diag_l2_proto_vag = {
 	diag_l2_proto_vag_request,
 	diag_l2_proto_vag_timeout
 };
-
-int diag_l2_vag_add(void) {
-	return diag_l2_add_protocol(&diag_l2_proto_vag);
-}

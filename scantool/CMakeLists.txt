@@ -16,8 +16,8 @@ endforeach()
 
 #generate zone 2 and 4 lines with L2 names
 foreach (L2NAME IN LISTS L2LIST)
-	set (DIAG_CONFIG_ZONE2 "${DIAG_CONFIG_ZONE2}extern int diag_l2_${L2NAME}_add(void);\n")
-	set (DIAG_CONFIG_ZONE4 "${DIAG_CONFIG_ZONE4}\trv |= diag_l2_${L2NAME}_add();\n")
+	set (DIAG_CONFIG_ZONE2 "${DIAG_CONFIG_ZONE2}extern const struct diag_l2_proto diag_l2_proto_${L2NAME};\n")
+	set (DIAG_CONFIG_ZONE4 "${DIAG_CONFIG_ZONE4}\t&diag_l2_proto_${L2NAME},\n")
 	message(STATUS "Adding l2 driver ${L2NAME}")
 endforeach()
 

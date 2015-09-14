@@ -749,7 +749,7 @@ diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *m
 	return rmsg;
 }
 
-static const struct diag_l2_proto diag_l2_proto_iso9141 =
+const struct diag_l2_proto diag_l2_proto_iso9141 =
 {
 	DIAG_L2_PROT_ISO9141,
 	DIAG_L2_FLAG_FRAMED,
@@ -760,10 +760,3 @@ static const struct diag_l2_proto diag_l2_proto_iso9141 =
 	diag_l2_proto_iso9141_request,
 	NULL
 };
-
-
-int diag_l2_iso9141_add(void)
-{
-	return diag_l2_add_protocol(&diag_l2_proto_iso9141);
-}
-

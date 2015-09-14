@@ -431,7 +431,7 @@ diag_l2_proto_mb1_timeout(struct diag_l2_conn *d_l2_conn)
 	return;
 }
 
-static const struct diag_l2_proto diag_l2_proto_mb1 = {
+const struct diag_l2_proto diag_l2_proto_mb1 = {
 	DIAG_L2_PROT_MB1, DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_KEEPALIVE,
 	diag_l2_proto_mb1_startcomms,
 	diag_l2_proto_raw_stopcomms,
@@ -440,7 +440,3 @@ static const struct diag_l2_proto diag_l2_proto_mb1 = {
 	diag_l2_proto_mb1_request,
 	diag_l2_proto_mb1_timeout
 };
-
-int diag_l2_mb1_add(void) {
-	return diag_l2_add_protocol(&diag_l2_proto_mb1);
-}

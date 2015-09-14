@@ -36,8 +36,6 @@
 extern "C" {
 #endif
 
-int diag_l2_raw_add(void);
-
 int
 diag_l2_proto_raw_startcomms( struct diag_l2_conn *d_l2_conn, flag_type flags,
 	unsigned int bitrate, target_type target, source_type source);

@@ -91,8 +91,6 @@ struct diag_l2_14230
 extern "C" {
 #endif
 
-int diag_l2_14230_add(void);
-
 #if defined(__cplusplus)
 }
 #endif

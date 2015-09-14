@@ -87,9 +87,6 @@ struct diag_l2_iso9141
 
  /* Public Interface */
 
-int diag_l2_iso9141_add(void);
-
-
 
 // TODO: why does diag_l2_vag.c call this...
 int diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout);

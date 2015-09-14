@@ -244,10 +244,6 @@ uint32_t diag_l1_getflags(struct diag_l0_device *);
 int diag_l1_gettype(struct diag_l0_device *);
 //**********
 
-//diag_l1_add_l0dev : only called from l0 drivers to add themselves to the l0 device
-//linked-list.
-int diag_l1_add_l0dev(const struct diag_l0 *l0dev);
-
 extern int diag_l1_debug;	//L1 debug flags (see diag.h)
 
 #if defined(__cplusplus)

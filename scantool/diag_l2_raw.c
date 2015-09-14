@@ -180,7 +180,7 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	return rmsg;
 }
 
-static const struct diag_l2_proto diag_l2_proto_raw = {
+const struct diag_l2_proto diag_l2_proto_raw = {
 	DIAG_L2_PROT_RAW, 0,
 	diag_l2_proto_raw_startcomms,
 	diag_l2_proto_raw_stopcomms,
@@ -189,7 +189,3 @@ static const struct diag_l2_proto diag_l2_proto_raw = {
 	diag_l2_proto_raw_request,
 	NULL
 };
-
-int diag_l2_raw_add(void) {
-	return diag_l2_add_protocol(&diag_l2_proto_raw);
-}

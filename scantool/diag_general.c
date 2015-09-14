@@ -48,10 +48,6 @@ int diag_init(void)	//returns 0 if normal exit
 	if (diag_initialized)
 		return 0;
 
-	/* Add the supported protocols and links */
-	if ((rv=diag_l2_config()))
-		return diag_iseterr(rv);
-
 	//XXX This is interesting: the following functions only ever return 0...
 
 	if ((rv = diag_l1_init()))
@@ -74,7 +70,6 @@ int diag_end(void) {
 	if (! diag_initialized)
 		return 0;
 
-	//we don't empty the l2proto_list linked list.
 	if (diag_l2_end()) {
 		fprintf(stderr, FLFMT "Could not close L2 level\n", FL);
 		rv=-1;

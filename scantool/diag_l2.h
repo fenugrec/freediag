@@ -433,9 +433,6 @@ struct diag_l2_proto {
 	void (*diag_l2_proto_timeout)(struct diag_l2_conn*);
 };
 
-int diag_l2_add_protocol(const struct diag_l2_proto *l2proto);
-
-
 #if defined(__cplusplus)
 }
 #endif

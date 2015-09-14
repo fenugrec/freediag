@@ -69,8 +69,8 @@ main(int argc,  char **argv)
 	diag_l1_debug = -1;
 	diag_l2_debug = -1;
 
-	if (diag_os_init()) {
-		printf("error with diag_os_init\n");
+	if (diag_init()) {
+		printf("error with diag_init\n");
 		return 0;
 	}
 
@@ -121,11 +121,6 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 	struct diag_l2_conn *d_conn;
 	struct diag_l0_device *dl0d;
 	flag_type flags = 0;
-
-	diag_l2_config();
-
-	rv = diag_l2_init();
-	printf("init rv = 0x%X\n", rv);
 
 	dl0d = diag_l2_open("DUMB", set_subinterface, DIAG_L1_RAW);
 	if (! dl0d) {
@@ -252,9 +247,6 @@ do_l1_test(void)
 	uint8_t buf[MAXRBUF];
 	int rcvd;
 	struct diag_serial_settings set;
-
-	rv = diag_l1_init();
-	printf("init rv = 0x%X\n", rv);
 
 	dl0d = diag_l1_open("DUMB", set_subinterface, DIAG_L1_RAW);
 	if (dl0d==0)

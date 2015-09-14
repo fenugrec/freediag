@@ -24,7 +24,7 @@
  *
  * Diag
  *
- * L2 header file for SAEJ1850 (VPW and PWM) 
+ * L2 header file for SAEJ1850 (VPW and PWM)
  *
  */
 
@@ -32,7 +32,6 @@
 extern "C" {
 #endif
 
-int diag_l2_j1850_add(void);
 
 #if defined(__cplusplus)
 }
