@@ -1136,7 +1136,7 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 	diag_l0_debug=debug_l0_orig;
 
 }
-const struct diag_l2_proto diag_l2_proto_14230 = {
+const struct diag_l2_proto diag_l2_proto_iso14230 = {
 	DIAG_L2_PROT_ISO14230,
 	DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_KEEPALIVE,
 	diag_l2_proto_14230_startcomms,

@@ -5,12 +5,15 @@
 file (STRINGS l0config L0LIST REGEX "^[^#].*")
 file (STRINGS l2config L2LIST REGEX "^[^#].*")
 
-#now generate the "zone" string lists for diag_config.c.in
+#now generate the "zone" string lists for diag_config.c.in, and
+#select appropriate source files
+
 #generate zone 1 and 3 lines with L0 names
 foreach (L0NAME IN LISTS L0LIST)
 	#empty lines are skipped. Lucky us.
 	set (DIAG_CONFIG_ZONE1 "${DIAG_CONFIG_ZONE1}extern const struct diag_l0 diag_l0_${L0NAME};\n")
 	set (DIAG_CONFIG_ZONE3 "${DIAG_CONFIG_ZONE3}\t&diag_l0_${L0NAME},\n")
+	set (DL0_SRCS ${DL0_SRCS} "diag_l0_${L0NAME}.c")
 	message(STATUS "Adding l0 driver ${L0NAME}")
 endforeach()
 
@@ -18,6 +21,7 @@ endforeach()
 foreach (L2NAME IN LISTS L2LIST)
 	set (DIAG_CONFIG_ZONE2 "${DIAG_CONFIG_ZONE2}extern const struct diag_l2_proto diag_l2_proto_${L2NAME};\n")
 	set (DIAG_CONFIG_ZONE4 "${DIAG_CONFIG_ZONE4}\t&diag_l2_proto_${L2NAME},\n")
+	set (DL2_SRCS ${DL2_SRCS} "diag_l2_${L2NAME}.c")
 	message(STATUS "Adding l2 driver ${L2NAME}")
 endforeach()
 
@@ -41,13 +45,12 @@ endif()
 
 
 ### build source file lists (useful later)
-set (LIBDIAG_SRCS diag_l0_me.c diag_l0_br.c diag_l0_elm.c diag_l0_sim.c
-	diag_l0_dumb.c  diag_l0_dumbtest.c ${CMAKE_CURRENT_BINARY_DIR}/diag_config.c
-	${OS_DIAGTTY} diag_l1.c diag_l2.c diag_l2_can.c diag_l2_raw.c
-		diag_l2_iso9141.c diag_l2_iso9141.c diag_l2_iso14230.c
-	diag_l2_saej1850.c diag_l2_vag.c diag_l2_mb1.c
-	diag_l3.c diag_l3_saej1979.c diag_l3_iso14230.c diag_l3_vag.c
-	${OS_DIAGOS} diag_general.c diag_dtc.c )
+set (LIBDIAG_SRCS ${DL0_SRCS} ${DL2_SRCS}
+	${CMAKE_CURRENT_BINARY_DIR}/diag_config.c
+	${OS_DIAGTTY} ${OS_DIAGOS}
+	diag_l1.c diag_l2.c diag_l3.c
+	diag_l3_saej1979.c diag_l3_iso14230.c diag_l3_vag.c
+	diag_general.c diag_dtc.c )
 set (LIBDYNO_SRCS dyno.c)
 set (DIAGTEST_SRCS diag_test.c)
 set (SCANTOOL_SRCS scantool.c scantool_cli.c scantool_diag.c scantool_set.c

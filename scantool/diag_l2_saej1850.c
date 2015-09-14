@@ -387,7 +387,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	return rmsg;
 }
 
-const struct diag_l2_proto diag_l2_proto_j1850 = {
+const struct diag_l2_proto diag_l2_proto_saej1850 = {
 	DIAG_L2_PROT_SAEJ1850, DIAG_L2_FLAG_FRAMED
 	| DIAG_L2_FLAG_CONNECTS_ALWAYS,
 	diag_l2_proto_j1850_startcomms,
