@@ -115,7 +115,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 			/* Found it */
 
 			/* Check h/w supports this l1 protocol */
-			if ((l0dev->diag_l0_type & l1protocol) == 0)
+			if ((l0dev->l1proto_mask & l1protocol) == 0)
 				return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
 
 			/* Call the open routine with the requested L1 protocol */
@@ -295,11 +295,11 @@ uint32_t diag_l1_getflags(struct diag_l0_device *dl0d)
 	return dl0d->dl0->diag_l0_getflags(dl0d);
 }
 
-//diag_l1_gettype: returns diag_l0_type :supported L1 protos
+//diag_l1_gettype: returns l1proto_mask :supported L1 protos
 //of the l0 driver
 int diag_l1_gettype(struct diag_l0_device *dl0d)
 {
-	return dl0d->dl0->diag_l0_type;
+	return dl0d->dl0->l1proto_mask;
 }
 
 

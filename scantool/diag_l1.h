@@ -134,7 +134,7 @@ extern "C" {
  * Each "device" has up to 16 interfaces, and many sub-interfaces XXX what ?
  *
  * This is a bitmask of what is supported;
- * used for struct diag_l0 (diag_l0_type)
+ * used for struct diag_l0 (l1proto_mask)
  */
 #define	DIAG_L1_ISO9141		0x01	/* K line */
 #define	DIAG_L1_ISO14230	0x02	/* K line, different inits allowed */
@@ -188,7 +188,7 @@ struct diag_l0
 	const char	*diag_l0_textname;	/* Useful textual name, unused at the moment */
 	const char	*diag_l0_name;	/* Short, unique text name for user interface */
 
-	int 	diag_l0_type;			/* supported L1protocols, defined above*/
+	int 	l1proto_mask;			/* supported L1protocols, defined above*/
 
 	/* function pointers to L0 code */
 	/* diag_l0_new() : create new driver instance (no open, default params, etc) */

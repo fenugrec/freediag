@@ -572,7 +572,7 @@ cmd_watch(int argc, char **argv)
 		diag_end();
 		return CMD_FAILED;
 	}
-	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);
+	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, global_cfg.L1proto);
 	if (dl0d == NULL) {
 		rv = diag_geterr();
 		printf("Failed to open hardware interface, ");
@@ -674,8 +674,8 @@ print_current_data(int english)
 	printf("%-30.30s %-15.15s FreezeFrame\n",
 		"Parameter", "Current");
 
-	for (j = 0 ; get_pid ( j ) != NULL ; j++) {
-		const struct pid *p = get_pid ( j ) ;
+	for (j = 0 ; get_pid(j) != NULL ; j++) {
+		const struct pid *p = get_pid(j) ;
 
 		for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 			if (DATA_VALID(p, ep->mode1_data) ||

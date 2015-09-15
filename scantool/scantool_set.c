@@ -47,8 +47,6 @@ struct globcfg global_cfg;
 struct diag_l0_device *test_dl0d;	//global dl0d test
 
 unsigned int set_speed;	/* Comms speed */
-int	set_L1protocol;	/* L1 protocol type */
-int	set_initmode;
 
 const char *	set_vehicle;	/* Vehicle */
 const char *	set_ecu;	/* ECU name */
@@ -80,12 +78,12 @@ int set_init(void)
 	global_cfg.addrtype = 1;	/* Use functional addressing */
 	global_cfg.tgt = 0x33;	/* Dest ECU address */
 
-	set_L1protocol = DIAG_L1_ISO9141;	/* L1 protocol type */
+	global_cfg.L1proto = DIAG_L1_ISO9141;	/* L1 protocol type */
 
 	global_cfg.L2idx = 0;
 	global_cfg.L2proto = l2proto_list[0]->diag_l2_protocol; /* cannot guarantee 9141 was compiled... DIAG_L2_PROT_ISO9141; */
 
-	set_initmode = DIAG_L2_TYPE_FASTINIT ;
+	global_cfg.initmode = DIAG_L2_TYPE_FASTINIT ;
 
 	global_cfg.units = 0;		/* English (1), or Metric (0) */
 
@@ -508,7 +506,7 @@ static int cmd_set_l1protocol(int argc, char **argv)
 			else
 				if (strcasecmp(argv[1], l1_names[i]) == 0)
 				{
-					set_L1protocol = 1 << i;
+					global_cfg.L1proto = 1 << i;
 					found = 1;
 				}
 		}
@@ -526,7 +524,7 @@ static int cmd_set_l1protocol(int argc, char **argv)
 
 		for (offset=0; offset < 8; offset++)
 		{
-			if (set_L1protocol == (1 << offset))
+			if (global_cfg.L1proto == (1 << offset))
 				break;
 		}
 		printf("l1protocol: Layer 1 (H/W) protocol to use %s\n",
@@ -552,7 +550,7 @@ static int cmd_set_initmode(int argc, char **argv)
 				if (strcasecmp(argv[1], l2_initmodes[i]) == 0)
 				{
 					found = 1;
-					set_initmode = i;
+					global_cfg.initmode = i;
 				}
 			}
 		}
@@ -567,7 +565,7 @@ static int cmd_set_initmode(int argc, char **argv)
 	else
 	{
 		printf("initmode: Initmode to use with above protocol is %s\n",
-			l2_initmodes[set_initmode]);
+			l2_initmodes[global_cfg.initmode]);
 	}
 	return CMD_OK;
 }

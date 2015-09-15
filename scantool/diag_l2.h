@@ -51,7 +51,7 @@ struct diag_l2_link
 	char	diag_l2_name[DIAG_NAMELEN];	/* XXX this is set to the l0 driver shortname !? */
 
 	uint32_t	l1flags;		/* L1 flags, filled with diag_l1_getflags in diag_l2_open*/
-	int	l1type;			/* L1 type (see diag_l1.h): filled with diag_l1_gettype*/
+	int	l1type;			/* L1 type (see diag_l1.h): mask of supported L1 protos. */
 
 	struct diag_l2_link *next;		/* linked list of all connections */
 
@@ -210,6 +210,7 @@ extern const struct diag_l2_proto *l2proto_list[];
 
  * The bottom 4 bits are not a bit mask because of how scantool_set.c works, i.e.
  * "5BAUD" has to be ==0, etc. That's also why we need _INITMASK
+ * "initmode" macros
  */
 #define DIAG_L2_TYPE_SLOWINIT	0		/* Do 5 Baud init */
 #define DIAG_L2_TYPE_FASTINIT	1		/* Do fast init */

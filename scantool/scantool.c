@@ -870,13 +870,13 @@ do_l2_generic_start(void)
 	}
 
 	/* Open interface using current L1 proto and hardware */
-	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, set_L1protocol);
+	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, global_cfg.L1proto);
 	if (dl0d == 0) {
 		//indicating an error
 		rv = diag_geterr();
 		//if ((rv != DIAG_ERR_BADIFADAPTER) && (rv != DIAG_ERR_PROTO_NOTSUPP))
 		fprintf(stderr, "l2_generic_start: open failed for protocol %d with %s on %s\n",
-			set_L1protocol,l0_names[set_interface_idx].longname,set_subinterface);
+			global_cfg.L1proto,l0_names[set_interface_idx].longname,set_subinterface);
 		return diag_iseterr(rv);
 	}
 
@@ -885,7 +885,7 @@ do_l2_generic_start(void)
 	else
 		flags = 0;
 
-	flags |= (set_initmode & DIAG_L2_TYPE_INITMASK) ;
+	flags |= (global_cfg.initmode & DIAG_L2_TYPE_INITMASK) ;
 
 	d_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
 		flags, set_speed, global_cfg.tgt, global_cfg.src);
@@ -1807,7 +1807,7 @@ const struct pid *get_pid ( unsigned int i )
 	if ( i >= ARRAY_SIZE(pids) )
 		return NULL ;
 
-	return & pids [ i ] ;
+	return & pids[i] ;
 }
 
 
@@ -1822,16 +1822,16 @@ main(int argc, char **argv)
 	int i ;
 
 	for ( i = 1 ; i < argc ; i++ ) {
-		if ( argv [ i ][ 0 ] == '-' || argv [ i ][ 0 ] == '+' ) {
-			switch ( argv [ i ][ 1 ] ) {
+		if ( argv[i][0] == '-' || argv[i][0] == '+' ) {
+			switch ( argv[i][1] ) {
 			case 'c' : user_interface = 1 ; break ;
 			case 'a' : user_interface = 0 ; break ;
-			case 'h' : do_usage () ; exit ( 0 ) ;
-			default : do_usage () ; exit ( 1 ) ;
+			case 'h' : do_usage() ; exit(0 ) ;
+			default : do_usage() ; exit(1) ;
 			}
 		} else {
-		do_usage () ;
-		exit ( 1 ) ;
+		do_usage() ;
+		exit(1) ;
 		}
 	}
 
