@@ -901,6 +901,9 @@ static const struct diag_l0 diag_l0_br = {
 	"BR1",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
 		DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
+	NULL,
+	NULL,
+	NULL,
 	diag_l0_br_init,
 	diag_l0_br_open,
 	diag_l0_br_close,

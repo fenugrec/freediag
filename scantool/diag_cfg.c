@@ -1,8 +1,9 @@
 /* freediag
  *
- * L0 config code;
+ * Configurable items code
  *
  * (c) fenugrec 2015
+ * GPLv3
  *
  */
 
@@ -137,7 +138,7 @@ const char * diag_cfg_getstr(struct cfgi *cfgp) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
 	}
 
-	snprintf(str, len-1, fmt);
+	snprintf(str, len, fmt, cfgp->val);
 	return str;
 }
 

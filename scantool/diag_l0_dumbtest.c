@@ -488,6 +488,9 @@ static const struct diag_l0 diag_l0_dt = {
  	"Dumb interface test suite",
 	"DUMBT",
 	-1,		//support "all" L1 protos...
+	NULL,
+	NULL,
+	NULL,
 	diag_l0_dt_init,
 	diag_l0_dt_open,
 	diag_l0_dt_close,

@@ -824,6 +824,9 @@ static const struct diag_l0 diag_l0_muleng = {
 	"MET16",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
 		DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
+	NULL,
+	NULL,
+	NULL,
 	diag_l0_muleng_init,
 	diag_l0_muleng_open,
 	diag_l0_muleng_close,

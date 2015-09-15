@@ -2,9 +2,10 @@
 #define DIAG_CFG_H
 
 /* freediag
- * API for configuring L0 devices
+ * API for configurable items
  *
  * (c) fenugrec 2015
+ * GPLv3
  *
  *
  */
@@ -15,8 +16,7 @@
 /* This struct describes one configurable param,
  * including description,type, *value, etc.
  *
- * Typically an L0 driver will alloc an array of (struct cfgi) and fill appropriately, for example
- * struct *cfgi[]={&cfg_port, &cfg_speed, &cfg_fastbreak, &cfg_initmode,...}
+ * Typically an L0 driver will alloc a linked-list of (struct cfgi) items
  */
 struct cfgi {
 	const char *descr;		//description; not mallocd
@@ -41,6 +41,9 @@ struct cfgi {
 	void *dval;		//default value;  used for reset()
 	bool dyn_dval;	//dval needs to be free'd
 
+	struct cfgi *next;	//single-linked list
+
+	/* do not call these directly */
 	void (*refresh)(struct cfgi *_this);	//called by diag_cfg_refresh()
 		//  Possible problem with refresh() if numopts>0; and refresh() makes *val invalid / illegal !
 	void (*reset)(struct cfgi *_this);	//called by diag_cfg_reset()
