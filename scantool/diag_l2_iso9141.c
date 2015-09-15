@@ -752,6 +752,7 @@ diag_l2_proto_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *m
 const struct diag_l2_proto diag_l2_proto_iso9141 =
 {
 	DIAG_L2_PROT_ISO9141,
+	"ISO9141",
 	DIAG_L2_FLAG_FRAMED,
 	diag_l2_proto_iso9141_startcomms,
 	diag_l2_proto_iso9141_stopcomms,

@@ -47,12 +47,6 @@
 
 int diag_l2_debug;
 
-/*
- * l2proto_list : static-allocated list of supported L2 protocols.
- * The last item is a NULL ptr to ease iterating.
- */
-extern const struct diag_l2_proto *l2proto_list[];	/* defined in diag_config.c */
-
 
 /*
  * The list of connections, not searched often so no need to hash
@@ -431,6 +425,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
  * and sets all the timer parameters etc etc
  * this creates & alloc's a new diag_l2_conn (freed in diag_l2_stopcomm)
  * we just pass along the flags arg straight to the proto_startcomm()
+ * L2protocol : matched with ->diag_l2_protocol constants
  */
 struct diag_l2_conn *
 diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_type flags,

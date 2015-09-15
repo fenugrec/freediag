@@ -179,7 +179,6 @@ extern enum globstate global_state;
 /* Parameters set by user interface (and their defaults) */
 extern unsigned int 	set_speed ;	/* Comms speed */
 extern int	set_L1protocol ;	/* L1 (H/W) Protocol type */
-extern int	set_L2protocol ;	/* L2 (S/W) Protocol type */
 extern int	set_initmode ;
 
 extern const char*	set_vehicle;	/* Vehicle name */
@@ -207,6 +206,9 @@ extern struct globcfg {
 	uint8_t tgt;	/* u8; target address */
 	uint8_t src;	/* u8: source addr / tester ID */
 	bool addrtype;	/* Address type, 1 = functional */
+
+	int L2proto;	/* L2 (S/W) Protocol type; value of ->diag_l2_protocol. */
+	int L2idx;		/* index of that L2 proto in struct l2proto_list[] */
 } global_cfg;
 
 /**/

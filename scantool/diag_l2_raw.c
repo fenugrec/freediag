@@ -181,7 +181,9 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 }
 
 const struct diag_l2_proto diag_l2_proto_raw = {
-	DIAG_L2_PROT_RAW, 0,
+	DIAG_L2_PROT_RAW,
+	"RAW",
+	0,
 	diag_l2_proto_raw_startcomms,
 	diag_l2_proto_raw_stopcomms,
 	diag_l2_proto_raw_send,

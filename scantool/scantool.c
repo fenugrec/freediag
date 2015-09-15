@@ -887,7 +887,7 @@ do_l2_generic_start(void)
 
 	flags |= (set_initmode & DIAG_L2_TYPE_INITMASK) ;
 
-	d_conn = diag_l2_StartCommunications(dl0d, set_L2protocol,
+	d_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
 		flags, set_speed, global_cfg.tgt, global_cfg.src);
 
 	if (d_conn == NULL) {

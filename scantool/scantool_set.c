@@ -48,7 +48,6 @@ struct diag_l0_device *test_dl0d;	//global dl0d test
 
 unsigned int set_speed;	/* Comms speed */
 int	set_L1protocol;	/* L1 protocol type */
-int	set_L2protocol;	/* Protocol type */
 int	set_initmode;
 
 const char *	set_vehicle;	/* Vehicle */
@@ -82,7 +81,10 @@ int set_init(void)
 	global_cfg.tgt = 0x33;	/* Dest ECU address */
 
 	set_L1protocol = DIAG_L1_ISO9141;	/* L1 protocol type */
-	set_L2protocol = DIAG_L2_PROT_ISO9141;	/* Protocol type */
+
+	global_cfg.L2idx = 0;
+	global_cfg.L2proto = l2proto_list[0]->diag_l2_protocol; /* cannot guarantee 9141 was compiled... DIAG_L2_PROT_ISO9141; */
+
 	set_initmode = DIAG_L2_TYPE_FASTINIT ;
 
 	global_cfg.units = 0;		/* English (1), or Metric (0) */
@@ -189,12 +191,6 @@ const char * const l1_names[] = //these MUST be in the same order as they are li
 	"J1850-VPW", "J1850-PWM", "CAN", "", "", "RAW", NULL
 };
 
-const char * const l2_names[] = //these MUST match the listing in diag_l2.h !
-{
-	"RAW", "ISO9141", PROTO_NONE, "ISO14230",
-	"J1850", "CAN", "VAG", "MB1", NULL
-};
-
 //These MUST match the DIAG_L2_TYPE_* flags in diag_l2.h  so that
 // l2_initmodes[DIAG_L2_TYPE_XX] == "XX" !!
 const char * const l2_initmodes[] =
@@ -224,12 +220,9 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 	cmd_set_testerid(0,NULL);
 	cmd_set_addrtype(0,NULL);
 	cmd_set_destaddr(0,NULL);
-	printf("l1protocol: Layer 1 (H/W) protocol to use %s\n",
-		l1_names[offset]);
-	printf("l2protocol: Layer 2 (S/W) protocol to use %s\n",
-		l2_names[set_L2protocol]);
-	printf("initmode: Initmode to use with above L2 protocol is %s\n",
-		l2_initmodes[set_initmode]);
+	cmd_set_l1protocol(0,NULL);
+	cmd_set_l2protocol(0,NULL);
+	cmd_set_initmode(0,NULL);
 
 	/* Parse L0-specific config items */
 	if (test_dl0d && test_dl0d->dl0->diag_l0_getcfg) {
@@ -469,42 +462,36 @@ cmd_set_addrtype(int argc, char **argv)
 
 static int cmd_set_l2protocol(int argc, char **argv)
 {
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		int i, prflag = 0, found = 0;
-		if (strcmp(argv[1], "?") == 0)
-		{
+		if (strcmp(argv[1], "?") == 0) {
 			prflag = 1;
 			printf("L2 protocol: valid names are ");
 		}
-		for (i=0; l2_names[i] != NULL; i++)
-		{
-			if (prflag)
-			{
-				if (strcasecmp(l2_names[i], PROTO_NONE))
-				{
-					printf("%s ", l2_names[i]);
-				}
+		for (i=0; l2proto_list[i] != NULL; i++) {
+			const struct diag_l2_proto *d2p=l2proto_list[i];
+			if (prflag) {
+					printf("%s ", d2p->shortname);
+					continue;
 			}
-			else
-				if (strcasecmp(argv[1], l2_names[i]) == 0)
-				{
-					found = 1;
-					set_L2protocol = i;
-				}
+			if (strcasecmp(argv[1], d2p->shortname) == 0) {
+				found = 1;
+				global_cfg.L2idx = i;
+				global_cfg.L2proto = d2p->diag_l2_protocol;
+				break;
+			}
 		}
-		if (prflag)
+		if (prflag) {
 			printf("\n");
-		else if (! found)
-		{
+			return CMD_OK;
+		}
+		if (! found) {
 			printf("l2protocol: invalid protocol %s\n", argv[1]);
 			printf("l2protocol: use \"set l2protocol ?\" to see list of protocols\n");
 		}
-	}
-	else
-	{
+	} else {
 		printf("l2protocol: Layer 2 protocol to use %s\n",
-			l2_names[set_L2protocol]);
+			l2proto_list[global_cfg.L2idx]->shortname);
 	}
 	return CMD_OK;
 }

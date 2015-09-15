@@ -590,7 +590,7 @@ cmd_watch(int argc, char **argv)
 			global_cfg.tgt,
 			global_cfg.src);
 	} else {
-		d_l2_conn = diag_l2_StartCommunications(dl0d, set_L2protocol,
+		d_l2_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
 			DIAG_L2_TYPE_MONINIT, set_speed, global_cfg.tgt, global_cfg.src);
 	}
 

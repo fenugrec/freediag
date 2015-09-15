@@ -194,6 +194,13 @@ struct diag_l2_conn
 #define DIAG_L2_PROT_MB2	8	/* MB protocol 2 */
 #define DIAG_L2_PROT_MAX	9	/* Maximum number of protocols */
 
+/*
+ * l2proto_list : static-allocated list of supported L2 protocols.
+ * The last item is a NULL ptr to ease iterating.
+ * The array indices don't necessarily match the macros above !
+ */
+
+extern const struct diag_l2_proto *l2proto_list[];
 
 /* *****
  * Flags for diag_l2_proto_startcomms(...flag_type flags); this is not the same
@@ -411,6 +418,7 @@ extern struct diag_l2_conn  *global_l2_conn;
  */
 struct diag_l2_proto {
 	int diag_l2_protocol;
+	const char *shortname;
 	int diag_l2_flags;		//see #defines above
 
 	//_StartCommunications: the l2 proto implementation of this should modify
