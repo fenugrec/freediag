@@ -41,6 +41,7 @@
 #include "diag.h"
 #include "diag_err.h"
 #include "diag_tty.h"
+#include "diag_l0.h"
 #include "diag_l1.h"
 
 
@@ -50,13 +51,6 @@ int diag_l1_debug;	//debug flags for l1
 
 static int diag_l1_saferead(struct diag_l0_device *dl0d,
 uint8_t *buf, size_t bufsiz, int timeout);
-
-/*
- * l0dev_list : static-allocated list of supported L0 devices, since it can
- * be entirely determined at compile-time.
- * The last item is a NULL ptr to ease iterating.
- */
-extern const struct diag_l0 *l0dev_list[];	/* defined in diag_config.c */
 
 /* Global init flag */
 static int diag_l1_initdone=0;

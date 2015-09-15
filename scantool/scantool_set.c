@@ -29,6 +29,7 @@
  */
 
 #include "diag.h"
+#include "diag_l0.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
 
@@ -36,6 +37,8 @@
 #include "scantool_cli.h"
 
 #define PROTO_NONE	"<not_used>"
+
+struct diag_l0_device *test_dl0d;	//global dl0d test
 
 unsigned int set_speed;	/* Comms speed */
 uint8_t set_testerid;	/* Our tester ID */
@@ -93,6 +96,7 @@ int set_init(void)
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	strcpy(set_simfile, DB_FILE);			//default simfile for use with CARSIM
 	diag_l0_sim_setfile(set_simfile);
+	test_dl0d=NULL;
 
 	return 0;
 }
@@ -225,6 +229,16 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 	printf("initmode: Initmode to use with above L2 protocol is %s\n",
 		l2_initmodes[set_initmode]);
 
+	/* Parse L0-specific config items */
+	if (test_dl0d && test_dl0d->dl0->diag_l0_getcfg) {
+		struct cfgi *cfgp= test_dl0d->dl0->diag_l0_getcfg(test_dl0d);
+		for (;cfgp; cfgp = cfgp->next) {
+			const char *cs = diag_cfg_getstr(cfgp);
+			if (cfgp->shortname == NULL || cs==NULL) continue;
+			printf("L0 option: %s=%s\n",cfgp->shortname, cs);
+		}
+	}
+
 	return CMD_OK;
 }
 
@@ -278,6 +292,25 @@ static int cmd_set_interface(int argc, char **argv)
 	} else {
 		printf("interface: using %s on %s\n",
 			l0_names[set_interface_idx].longname, set_subinterface);
+	}
+	/* update current global dl0d. */
+	if (test_dl0d) {
+		/* XXX warn before breaking the (possibly) active L0-L2 chain */
+		if (test_dl0d->dl0->diag_l0_del) test_dl0d->dl0->diag_l0_del(test_dl0d);
+		test_dl0d=NULL;
+	}
+
+	if (1) {
+		const struct diag_l0 *l0dev;
+		int i;
+		for (i=0; l0dev_list[i]; i++) {
+			l0dev = l0dev_list[i];
+			if (strcmp(l0_names[set_interface_idx].longname, l0dev->diag_l0_name) == 0) {
+				/* Found it */
+				if (l0dev->diag_l0_new) test_dl0d = l0dev->diag_l0_new();
+				break;
+			}
+		}
 	}
 	return CMD_OK;
 }

@@ -30,6 +30,7 @@
 
 #include "diag.h"		//we need this for uint8_t
 #include "diag_tty.h"	//for structs serial_settings and diag_l0_device
+#include "diag_cfg.h"
 
 
 #if defined(__cplusplus)
@@ -190,7 +191,15 @@ struct diag_l0
 	int 	diag_l0_type;			/* supported L1protocols, defined above*/
 
 	/* function pointers to L0 code */
+	/* diag_l0_new() : create new driver instance (no open, default params, etc) */
+	struct diag_l0_device *(*diag_l0_new)(void);
+	/* diag_l0_getcfg() : get linked-list of config items. */
+	struct cfgi* (*diag_l0_getcfg)(struct diag_l0_device *dl0d);
+	/* diag_l0_del() : delete driver instance (XXX forces close ?) */
+	void (*diag_l0_del)(struct diag_l0_device *);
+	/* diag_l0_init() : set up global/default state of driver */
 	int	(*diag_l0_init)(void);
+
 	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
 		int iProtocol);
 	int	(*diag_l0_close)(struct diag_l0_device **);

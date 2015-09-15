@@ -490,7 +490,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 	/* Look up the protocol we want to use */
 
-	d_l2_conn->l2proto = 0;
+	d_l2_conn->l2proto = NULL;
 
 	for (i=0; l2proto_list[i] ; i++) {
 		dl2p = l2proto_list[i];
@@ -500,7 +500,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 		}
 	}
 
-	if (d_l2_conn->l2proto == 0) {
+	if (d_l2_conn->l2proto == NULL) {
 		fprintf(stderr,
 			FLFMT "Protocol %d not installed.\n", FL, L2protocol);
 		free(d_l2_conn);

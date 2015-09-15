@@ -50,7 +50,7 @@ set (LIBDIAG_SRCS ${DL0_SRCS} ${DL2_SRCS}
 	${OS_DIAGTTY} ${OS_DIAGOS}
 	diag_l1.c diag_l2.c diag_l3.c
 	diag_l3_saej1979.c diag_l3_iso14230.c diag_l3_vag.c
-	diag_general.c diag_dtc.c )
+	diag_general.c diag_dtc.c diag_cfg.c)
 set (LIBDYNO_SRCS dyno.c)
 set (DIAGTEST_SRCS diag_test.c)
 set (SCANTOOL_SRCS scantool.c scantool_cli.c scantool_diag.c scantool_set.c

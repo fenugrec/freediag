@@ -42,12 +42,14 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h> // str**()
+#include <stdbool.h>
 #include <math.h> // sin()
 
 #include "diag.h"
 #include "diag_err.h"
 #include "diag_tty.h"
 #include "diag_l1.h"
+#include "diag_cfg.h"
 
 
 
@@ -75,6 +77,9 @@ struct diag_l0_sim_device
 	// from the DB file in use.
 	int sim_skip_frame;
 	int sim_skip_crc;
+	bool	open;
+
+	struct cfgi simfile;
 };
 
 // ECU responses linked list:
@@ -462,6 +467,38 @@ diag_l0_sim_init(void)
 	return 0;
 }
 
+/* create new simfile instance */
+/* XXX WIP, for testing new config API */
+/* this currently duplicates most of _open() */
+static struct diag_l0_device *
+sim_new(void) {
+	int rv;
+	struct diag_l0_device *dl0d;
+	struct diag_l0_sim_device *dev;
+
+	// Create diag_l0_sim_device:
+	if ((rv=diag_calloc(&dev, 1)))
+		return diag_pseterr(rv);
+
+	// Create diag_l0_device:
+	if ((rv=diag_calloc(&dl0d, 1))) {
+		free(dev);
+		return diag_pseterr(rv);
+	}
+
+	dl0d->dl0_handle = dev;
+	dl0d->dl0 = &diag_l0_sim;
+	//init configurable params:
+	if (diag_cfgn_str(&dev->simfile, simfile_default)) {
+		free(dev);
+		free(dl0d);
+		return diag_pseterr(DIAG_ERR_GENERAL);
+	}
+	dev->simfile.shortname="simfile";
+	dev->simfile.descr="Simulation file to use as data input";
+	dev->simfile.next = NULL;	//mark as first/only/last item in the list
+	return dl0d;
+}
 
 // Opens the simulator DB file.
 static struct diag_l0_device *
@@ -549,6 +586,19 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 	return 0;
 }
 
+/* XXX WIP, this should be run after _close() */
+static void
+sim_del(struct diag_l0_device * dl0d) {
+	struct diag_l0_sim_device *dev;
+
+	if (dl0d==NULL) return;
+
+	dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
+
+	diag_cfg_clear(&dev->simfile);
+	diag_l0_sim_close(&dl0d);
+	return;
+}
 
 // Simulates the bus initialization.
 static int
@@ -732,6 +782,14 @@ diag_l0_sim_setfile(char * fname)
 	return;
 }
 
+static struct cfgi*
+sim_getcfg(struct diag_l0_device *dl0d) {
+	struct diag_l0_sim_device *dev;
+	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+
+	dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
+	return &dev->simfile;
+}
 
 // Declares the interface's protocol flags
 // and pointers to functions.
@@ -742,6 +800,9 @@ const struct diag_l0 diag_l0_sim =
 	"Car Simulator interface",
 	"CARSIM",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM | DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
+	sim_new,
+	sim_getcfg,
+	sim_del,
 	diag_l0_sim_init,
 	diag_l0_sim_open,
 	diag_l0_sim_close,
