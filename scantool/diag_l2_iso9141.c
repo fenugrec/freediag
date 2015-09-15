@@ -105,7 +105,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 	if (rv < 0)
 		return diag_iseterr(rv);
 
-	if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESFULLINIT) {
+	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) {
 		d_l2_conn->diag_l2_kb1=0x08;
 		d_l2_conn->diag_l2_kb2=0x08;	//possibly not true, but who cares.
 		d_l2_conn->diag_l2_p2min = 25;
@@ -143,7 +143,7 @@ diag_l2_proto_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn)
 
 	// Now send inverted KeyByte2, and receive inverted address
 	// (unless L1 deals with this):
-	if ( (d_l2_conn->diag_link->diag_l2_l1flags
+	if ( (d_l2_conn->diag_link->l1flags
 	  & DIAG_L1_DOESSLOWINIT) == 0)
 	{
 		//Wait W4min:
@@ -382,7 +382,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	}
 
 	// Check if L1 device does L2 framing:
-	l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
+	l1flags = d_l2_conn->diag_link->l1flags;
 	l1_doesl2frame = (l1flags & DIAG_L1_DOESL2FRAME);
 	if (l1_doesl2frame) {
 		// Extend timeouts for the "smart" interfaces:
@@ -682,7 +682,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	offset = 0;
 
 	// If the interface doesn't do ISO9141-2 header, add it before the data:
-	if ((d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2FRAME) == 0)
+	if ((d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2FRAME) == 0)
 	{
 		buf[offset++] = 0x68; //defined by spec;
 		buf[offset++] = 0x6A; //defined by spec;
@@ -694,7 +694,7 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	offset += msg->len;
 
 	// If the interface doesn't do ISO9141-2 checksum, add it in:
-	if ((d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2CKSUM) == 0)
+	if ((d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2CKSUM) == 0)
 	{
 		uint8_t curoff = (uint8_t) offset;
 		buf[offset++] = diag_cks1(buf, curoff);

@@ -202,15 +202,8 @@ const char * const l2_initmodes[] =
 static int
 cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 {
-	/* Show stuff */
-	int offset;
-	for (offset=0; offset < 8; offset++)
-	{
-		if (set_L1protocol == (1 << offset))
-			break;
-	}
-
-	printf("interface: %s on %s\n", l0_names[set_interface_idx].longname, set_subinterface);
+	/* Show stuff; calling the cmd_set_*() functions with argc=0 displays the current setting. */
+	cmd_set_interface(0,NULL);
 	if (set_interface==CARSIM)
 		printf("simfile: %s\n", set_simfile);
 	if (set_interface==DUMB)

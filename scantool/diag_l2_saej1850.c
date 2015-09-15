@@ -175,12 +175,12 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
-	l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
+	l1flags = d_l2_conn->diag_link->l1flags;
 
 	// Add the J1850 header to the data
 	// XXX 0x68 is no correct for all J1850 protocols
 
-	l1protocol = d_l2_conn->diag_link->diag_l2_l1protocol;
+	l1protocol = d_l2_conn->diag_link->l1proto;
 
 	if (l1protocol == DIAG_L1_J1850_PWM)
 		buf[0] = 0x61;
@@ -226,7 +226,7 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 	struct diag_l2_j1850 *dp;
 	int tout;
 	struct diag_msg	*tmsg;
-	int l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
+	int l1flags = d_l2_conn->diag_link->l1flags;
 
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
 

@@ -474,7 +474,7 @@ unsigned int bitrate, target_type target, UNUSED(source_type source))
 	d_l2_conn->diag_l2_kb1 = cbuf[0] & 0x7f;
 	d_l2_conn->diag_l2_kb2 = cbuf[1] & 0x7f;
 
-	if ( (d_l2_conn->diag_link->diag_l2_l1flags
+	if ( (d_l2_conn->diag_link->l1flags
 		& DIAG_L1_DOESSLOWINIT) == 0)
 	{
 

@@ -46,12 +46,12 @@ extern "C" {
 struct diag_l2_link
 {
 	struct diag_l0_device * 	diag_l2_dl0d;	/* Link we're using to talk to lower layer */
-	int	diag_l2_l1protocol;		/* L1 protocol used; see diag_l1.h*/
+	int	l1proto;		/* L1 protocol used; see diag_l1.h*/
 
 	char	diag_l2_name[DIAG_NAMELEN];	/* XXX this is set to the l0 driver shortname !? */
 
-	uint32_t	diag_l2_l1flags;		/* L1 flags, filled with diag_l1_getflags in diag_l2_open*/
-	int	diag_l2_l1type;			/* L1 type (see diag_l1.h): filled with diag_l1_gettype*/
+	uint32_t	l1flags;		/* L1 flags, filled with diag_l1_getflags in diag_l2_open*/
+	int	l1type;			/* L1 type (see diag_l1.h): filled with diag_l1_gettype*/
 
 	struct diag_l2_link *next;		/* linked list of all connections */
 

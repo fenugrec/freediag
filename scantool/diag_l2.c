@@ -182,7 +182,7 @@ diag_l2_timer(void)
 		 */
 		if (((d_l2_conn->diag_l2_type & DIAG_L2_TYPE_INITMASK) ==DIAG_L2_TYPE_MONINIT) ||
 				(d_l2_conn->diag_l2_state != DIAG_L2_STATE_OPEN) ||
-				(d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESKEEPALIVE)) {
+				(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESKEEPALIVE)) {
 			continue;
 		}
 
@@ -314,7 +314,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 		if (diag_l2_debug & DIAG_DEBUG_OPEN)
 			fprintf(stderr, "\texisting L2 link \"%s\" found\n", dl2l->diag_l2_name);
 		/* device open */
-		if (dl2l->diag_l2_l1protocol != L1protocol) {
+		if (dl2l->l1proto != L1protocol) {
 			/* Wrong L1 protocol, close link */
 			diag_l2_closelink(dl2l);
 			dl2l=NULL;
@@ -341,9 +341,9 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 	dl0d->dl2_link=dl2l;	/* Associate ourselves with this */
 
 	dl2l->diag_l2_dl0d = dl0d;
-	dl2l->diag_l2_l1flags = diag_l1_getflags(dl0d);
-	dl2l->diag_l2_l1type = diag_l1_gettype(dl0d);
-	dl2l->diag_l2_l1protocol = L1protocol;
+	dl2l->l1flags = diag_l1_getflags(dl0d);
+	dl2l->l1type = diag_l1_gettype(dl0d);
+	dl2l->l1proto = L1protocol;
 
 	strcpy(dl2l->diag_l2_name, dev_name);
 
@@ -746,7 +746,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		d->kb2 = d_l2_conn->diag_l2_kb2;
 		break;
 	case DIAG_IOCTL_SETSPEED:
-		if (dl0d->dl2_link->diag_l2_l1flags & (DIAG_L1_AUTOSPEED | DIAG_L1_NOTTY))
+		if (dl0d->dl2_link->l1flags & (DIAG_L1_AUTOSPEED | DIAG_L1_NOTTY))
 			break;
 		ic = (struct diag_serial_settings *)data;
 		rv = diag_l1_setspeed(dl0d, ic);
@@ -755,7 +755,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		rv = diag_l1_initbus(dl0d, (struct diag_l1_initbus_args *)data);
 		break;
 	case DIAG_IOCTL_IFLUSH:
-		if (dl0d->dl2_link->diag_l2_l1flags & DIAG_L1_NOTTY)
+		if (dl0d->dl2_link->l1flags & DIAG_L1_NOTTY)
 			break;
 		rv = diag_tty_iflush(dl0d);
 		break;

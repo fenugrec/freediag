@@ -221,7 +221,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, int timeout)
 		d_l2_conn->diag_msg = NULL;
 	}
 
-	l1flags = d_l2_conn->diag_link->diag_l2_l1flags;
+	l1flags = d_l2_conn->diag_link->l1flags;
 
 	if (l1flags & DIAG_L1_DOESL2FRAME)
 		l1_doesl2frame = 1;
@@ -574,7 +574,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 
 		// some L0 devices already do the full startcomm transaction:
-		if ((d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESFULLINIT) && (rv==0)) {
+		if ((d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) && (rv==0)) {
 			//TODO : somehow extract keybyte data for those cases...
 			//original elm327s have the "atkw" command to get the keybytes, but clones suck.
 			dp->state = STATE_ESTABLISHED;
@@ -590,7 +590,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			break;
 		}
 
-		if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2FRAME)
+		if (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2FRAME)
 			timeout = 200;
 		else
 			timeout = d_l2_conn->diag_l2_p2max + RXTOFFSET;
@@ -646,7 +646,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 
 		//some L0 devices handle the full init transaction:
-		if ((d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESFULLINIT) && (rv==0)) {
+		if ((d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) && (rv==0)) {
 			dp->state = STATE_ESTABLISHED ;
 			break;
 		}
@@ -671,7 +671,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		d_l2_conn->diag_l2_kb1 = cbuf[0] & 0x7f;
 		d_l2_conn->diag_l2_kb2 = cbuf[1];
 
-		if ( (d_l2_conn->diag_link->diag_l2_l1flags
+		if ( (d_l2_conn->diag_link->l1flags
 			& DIAG_L1_DOESSLOWINIT) == 0) {
 
 			/*
@@ -849,7 +849,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 
 	//if L1 requires headerless data, send directly :
-	if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DATAONLY) {
+	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DATAONLY) {
 		rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, NULL,
 				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
 		return rv? diag_iseterr(rv):0;
@@ -910,7 +910,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	len = msg->len + offset;	/* data + hdr */
 
-	if ((d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2CKSUM) == 0) {
+	if ((d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2CKSUM) == 0) {
 		/* We must add checksum, which is sum of bytes */
 		for (i = 0, csum = 0; i < len; i++)
 			csum += buf[i];
@@ -1126,7 +1126,7 @@ diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
 	 * longer on "smart" L2 interfaces
 	 */
 	timeout = d_l2_conn->diag_l2_p2max;
-	if (d_l2_conn->diag_link->diag_l2_l1flags & DIAG_L1_DOESL2FRAME) {
+	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2FRAME) {
 		if (timeout < SMART_TIMEOUT)
 			timeout += SMART_TIMEOUT;
 	}
