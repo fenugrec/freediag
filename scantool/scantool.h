@@ -176,7 +176,7 @@ enum globstate {
 };	//only for global_state !
 extern enum globstate global_state;
 
-/* Parameters set by user interface (and their defaults) */
+/** Global parameters set by user interface **/
 extern unsigned int 	set_speed ;	/* Comms speed */
 
 extern const char*	set_vehicle;	/* Vehicle name */
@@ -211,7 +211,7 @@ extern struct globcfg {
 	int	L2idx;		/* index of that L2 proto in struct l2proto_list[] */
 } global_cfg;
 
-/**/
+/** J1979 PID structures + utils **/
 struct pid ;
 typedef void (formatter)(char *, int, const struct pid *, response_t *, int);
 

@@ -199,7 +199,7 @@ diag_l0_muleng_close(struct diag_l0_device **pdl0d)
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
 		struct diag_l0_muleng_device *dev =
-			(struct diag_l0_muleng_device *)dl0d->dl0_handle;
+			(struct diag_l0_muleng_device *)dl0d->l0_int;
 
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, FLFMT "link %p closing\n",
@@ -401,7 +401,7 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 	int rv = 0;
 	struct diag_l0_muleng_device *dev;
 
-	dev = (struct diag_l0_muleng_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_muleng_device *)dl0d->l0_int;
 
 	if (!dev)
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -488,7 +488,7 @@ const void *data, size_t len)
 	uint8_t txbuf[MAXRBUF];
 	struct diag_l0_muleng_device *dev;
 
-	dev = (struct diag_l0_muleng_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_muleng_device *)dl0d->l0_int;
 
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -589,7 +589,7 @@ void *data, size_t len, int timeout)
 	uint8_t *pdata = (uint8_t *)data;
 
 	struct diag_l0_muleng_device *dev;
-	dev = (struct diag_l0_muleng_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_muleng_device *)dl0d->l0_int;
 
 	if (!len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -787,7 +787,7 @@ diag_l0_muleng_getflags(struct diag_l0_device *dl0d)
 	struct diag_l0_muleng_device *dev;
 	int flags;
 
-	dev = (struct diag_l0_muleng_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_muleng_device *)dl0d->l0_int;
 
 	flags = 0;
 	switch (dev->protocol)

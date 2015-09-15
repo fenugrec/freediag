@@ -27,7 +27,7 @@
 int diag_tty_open(struct diag_l0_device **ppdl0d,
 	const char *subinterface,
 	const struct diag_l0 *dl0,
-	void *dl0_handle)
+	void *l0_int)
 {
 	int rv;
 	struct diag_ttystate	*dt;
@@ -37,7 +37,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 		return diag_iseterr(rv);
 
 	dl0d->fd = DL0D_INVALIDHANDLE;
-	dl0d->dl0_handle = dl0_handle;
+	dl0d->l0_int = l0_int;
 	dl0d->dl0 = dl0;
 
 	if ((rv=diag_calloc(&dl0d->ttystate, 1))) {
@@ -518,7 +518,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	int rv;
 
 	assert(count>0) && timeout > 0;
-	
+
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
 			fprintf(stderr, FLFMT "Entered diag_tty_read with count=%d, timeout=%dms", FL, count, timeout);
 	}
@@ -587,7 +587,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	struct timeval tv;
 	int time,rv,fd,retval;
 	unsigned long data;
-	
+
 	assert(timeout < 10000);
 
 	if (diag_l0_debug & DIAG_DEBUG_READ) {

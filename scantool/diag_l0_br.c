@@ -117,7 +117,7 @@ diag_l0_br_close(struct diag_l0_device **pdl0d)
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
 		struct diag_l0_br_device *dev =
-			(struct diag_l0_br_device *)dl0d->dl0_handle;
+			(struct diag_l0_br_device *)dl0d->l0_int;
 
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
@@ -275,7 +275,7 @@ static int
 diag_l0_br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr)
 {
 	struct diag_l0_br_device *dev =
-		(struct diag_l0_br_device *)dl0d->dl0_handle;
+		(struct diag_l0_br_device *)dl0d->l0_int;
 
 	uint8_t txbuf[3];
 	uint8_t rxbuf[MAXRBUF];
@@ -351,7 +351,7 @@ static int
 diag_l0_br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
 	struct diag_l0_br_device *dev =
-		(struct diag_l0_br_device *)dl0d->dl0_handle;
+		(struct diag_l0_br_device *)dl0d->l0_int;
 	/*
 	 * Slow init
 	 * Build message into send buffer, and calculate checksum
@@ -408,7 +408,7 @@ diag_l0_br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 	int rv = 0;
 	struct diag_l0_br_device *dev;
 
-	dev = (struct diag_l0_br_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_br_device *)dl0d->l0_int;
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr,
@@ -568,7 +568,7 @@ diag_l0_br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 		 const void *dp, size_t txlen)
 {
 	struct diag_l0_br_device *dev =
-		(struct diag_l0_br_device *)dl0d->dl0_handle;
+		(struct diag_l0_br_device *)dl0d->l0_int;
 	int rv, j1850mode;
 	uint8_t outb;
 
@@ -648,7 +648,7 @@ const void *data, size_t len)
 
 	struct diag_l0_br_device *dev;
 
-	dev = (struct diag_l0_br_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_br_device *)dl0d->l0_int;
 
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -728,7 +728,7 @@ void *data, size_t len, int timeout)
 	uint8_t *pdata = (uint8_t *)data;
 
 	struct diag_l0_br_device *dev;
-	dev = (struct diag_l0_br_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_br_device *)dl0d->l0_int;
 
 	if (!len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -870,7 +870,7 @@ diag_l0_br_getflags(struct diag_l0_device *dl0d)
 	struct diag_l0_br_device *dev;
 	uint32_t flags;
 
-	dev = (struct diag_l0_br_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_br_device *)dl0d->l0_int;
 
 	flags = 0;
 	switch (dev->protocol) {

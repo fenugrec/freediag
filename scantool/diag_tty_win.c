@@ -28,7 +28,7 @@ struct tty_int {
 int diag_tty_open(struct diag_l0_device **ppdl0d,
 	const char *subinterface,
 	const struct diag_l0 *dl0,
-	void *dl0_handle)
+	void *l0_int)
 {
 	int rv;
 	struct diag_l0_device *dl0d;
@@ -38,7 +38,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
 		return diag_iseterr(rv);
-	
+
 	if ((rv=diag_calloc(&wti,1))) {
 		free(dl0d);
 		return diag_iseterr(rv);
@@ -46,7 +46,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 
 	dl0d->tty_int = wti;
 	wti->fd = INVALID_HANDLE_VALUE;
-	dl0d->dl0_handle = dl0_handle;
+	dl0d->l0_int = l0_int;
 	dl0d->dl0 = dl0;
 
 	*ppdl0d = dl0d;
@@ -155,7 +155,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
 	DCB *devstate;
 	COMMPROP supportedprops;
 	DCB verif_dcb;
-	
+
 	wti = (struct tty_int *)dl0d->tty_int;
 	devhandle = wti->fd;
 	devstate = &wti->dcb;
@@ -274,7 +274,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 {
 	unsigned int escapefunc;
 	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
-	
+
 
 	if (wti->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
@@ -354,7 +354,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, int timeout)
 	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
 	pOverlap=NULL;
 	COMMTIMEOUTS devtimeouts;
-	
+
 	assert(count>0);
 	if (count == 0) return DIAG_ERR_BADLEN;
 
@@ -479,7 +479,7 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	uint8_t cbuf;
 	int xferd;
 	DWORD byteswritten;
-	
+
 	dh = wti->fd;
 	if (ms<25)		//very funny
 		return diag_iseterr(DIAG_ERR_TIMEOUT);

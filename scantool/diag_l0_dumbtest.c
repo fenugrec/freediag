@@ -370,7 +370,7 @@ diag_l0_dt_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 
 	struct diag_l0_dt_device *dev;
 
-	dev = (struct diag_l0_dt_device *)(dl0d->dl0_handle);
+	dev = (struct diag_l0_dt_device *)(dl0d->l0_int);
 
 	fprintf(stderr, FLFMT "device link %p info %p initbus type %d, doing nothing.\n",
 			FL, (void *)dl0d, (void *)dev, in->type);
@@ -460,7 +460,7 @@ const struct diag_serial_settings *pset)
 {
 	struct diag_l0_dt_device *dev;
 
-	dev = (struct diag_l0_dt_device *)(dl0d->dl0_handle);
+	dev = (struct diag_l0_dt_device *)(dl0d->l0_int);
 
 	dev->serial = *pset;
 

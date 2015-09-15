@@ -486,7 +486,7 @@ sim_new(void) {
 		return diag_pseterr(rv);
 	}
 
-	dl0d->dl0_handle = dev;
+	dl0d->l0_int = dev;
 	dl0d->dl0 = &diag_l0_sim;
 	//init configurable params:
 	if (diag_cfgn_str(&dev->simfile, simfile_default,
@@ -525,7 +525,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 		return diag_pseterr(rv);
 	}
 
-	dl0d->dl0_handle = dev;
+	dl0d->l0_int = dev;
 	dl0d->dl0 = &diag_l0_sim;
 
 	if ((rv=diag_calloc(&dl0d->name, strlen(simfile)+1))) {
@@ -562,7 +562,7 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
+		struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)dl0d->l0_int;
 
 		// If debugging, print to stderr.
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
@@ -592,7 +592,7 @@ sim_del(struct diag_l0_device * dl0d) {
 
 	if (dl0d==NULL) return;
 
-	dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
 
 	diag_cfg_clear(&dev->simfile);
 	diag_l0_sim_close(&dl0d);
@@ -609,7 +609,7 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 
 	sim_free_ecu_responses(&sim_last_ecu_responses);
 
-	dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n", FL, (void *)dl0d, (void *)dev, in->type);
@@ -650,7 +650,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 const void *data, const size_t len)
 {
-	struct diag_l0_sim_device * dev = dl0d->dl0_handle;
+	struct diag_l0_sim_device * dev = dl0d->l0_int;
 
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -753,7 +753,7 @@ diag_l0_sim_setspeed(UNUSED(struct diag_l0_device *dl0d),
 static uint32_t
 diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 {
-	struct diag_l0_sim_device * dev = dl0d->dl0_handle;
+	struct diag_l0_sim_device * dev = dl0d->l0_int;
 	int ret = 0;
 
 	ret = DIAG_L1_SLOW |
@@ -786,7 +786,7 @@ sim_getcfg(struct diag_l0_device *dl0d) {
 	struct diag_l0_sim_device *dev;
 	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
 
-	dev = (struct diag_l0_sim_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
 	return &dev->simfile;
 }
 

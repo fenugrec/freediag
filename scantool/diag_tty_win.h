@@ -25,7 +25,7 @@ extern "C" {
 // and a given serial port.
 struct diag_l0_device
 {
-	void *dl0_handle;					/* Handle for the L0 switch */
+	void *l0_int;					/* Handle for internal L0 data */
 	const struct diag_l0 *dl0;		/* The L0 driver's diag_l0 */
 	struct diag_l2_link *dl2_link;	/* The L2 link using this dl0d */
 	char *name;					/* device name, like /dev/ttyS0 or \\.\COM3*/

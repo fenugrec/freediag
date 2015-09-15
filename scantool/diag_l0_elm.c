@@ -123,7 +123,7 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
 		struct diag_l0_elm_device *dev =
-			(struct diag_l0_elm_device *)dl0d->dl0_handle;
+			(struct diag_l0_elm_device *)dl0d->l0_int;
 
 		/* If debugging, print to stderr */
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
@@ -148,7 +148,7 @@ const char * elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) {
 	const char ** elm_errors;	//just used to select between the 2 error lists
 	int i;
 
-	dev = (struct diag_l0_elm_device *) dl0d->dl0_handle;
+	dev = (struct diag_l0_elm_device *) dl0d->l0_int;
 
 	//pick the right set of error messages. Although we could just systematically
 	//use the vaster ELM327 set of error messages...
@@ -188,7 +188,7 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, int ti
 	struct diag_l0_elm_device *dev;
 	const char *err_str;	//hold a possible error message
 
-	dev = (struct diag_l0_elm_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_elm_device *)dl0d->l0_int;
 	//we need access to diag_l0_elm_device to access .elmflags
 
 	if (resp==NULL)
@@ -625,7 +625,7 @@ diag_l0_elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 		fprintf(stderr, FLFMT "ELM initbus type %d\n",
 			FL, in->type);
 
-	dev = (struct diag_l0_elm_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_elm_device *)dl0d->l0_int;
 
 	if (!dev)
 		return diag_iseterr(rv);
@@ -910,7 +910,7 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 	struct diag_l0_elm_device *dev;
 	uint32_t flags=0;
 
-	dev = (struct diag_l0_elm_device *)dl0d->dl0_handle;
+	dev = (struct diag_l0_elm_device *)dl0d->l0_int;
 
 	flags = DIAG_L1_DATAONLY | DIAG_L1_AUTOSPEED | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_DOESP4WAIT |
 		DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM | DIAG_L1_DOESFULLINIT | DIAG_L1_DOESKEEPALIVE;
