@@ -65,7 +65,7 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid);
 //void diag_cfg_setraw(struct cfgi *cfgp, void *val);
 
 //get param value: generates new string to be free'd by caller
-const char * diag_cfg_getstr(struct cfgi *cfgp);
+char * diag_cfg_getstr(struct cfgi *cfgp);
 
 //free contents of *cfgp but not the struct itself
 void diag_cfg_clear(struct cfgi *cfgp);
@@ -87,8 +87,8 @@ int diag_cfgn_int(struct cfgi *cfgp, int *val, int *def);
 //ordinary u8 param (copy of _int code); use dval as default value for reset(). Don't fill descr and shortname
 int diag_cfgn_u8(struct cfgi *cfgp, uint8_t *val, uint8_t *def);
 
-//ordinary string, copies *dval for its default value.
-int diag_cfgn_str(struct cfgi *cfgp, const char *dval);
+//ordinary string, copies *def for its default value; sets descr and shortname ptrs
+int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const char *sn);
 
 //ordinary bool (copy of _int code)
 int diag_cfgn_bool(struct cfgi *cfgp, bool *val, bool *def);

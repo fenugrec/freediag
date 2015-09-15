@@ -228,9 +228,11 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 	if (test_dl0d && test_dl0d->dl0->diag_l0_getcfg) {
 		struct cfgi *cfgp= test_dl0d->dl0->diag_l0_getcfg(test_dl0d);
 		for (;cfgp; cfgp = cfgp->next) {
-			const char *cs = diag_cfg_getstr(cfgp);
+			char *cs = diag_cfg_getstr(cfgp);
 			if (cfgp->shortname == NULL || cs==NULL) continue;
+
 			printf("L0 option: %s=%s\n",cfgp->shortname, cs);
+			free(cs);
 		}
 	}
 

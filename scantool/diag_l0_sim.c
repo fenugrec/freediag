@@ -489,13 +489,12 @@ sim_new(void) {
 	dl0d->dl0_handle = dev;
 	dl0d->dl0 = &diag_l0_sim;
 	//init configurable params:
-	if (diag_cfgn_str(&dev->simfile, simfile_default)) {
+	if (diag_cfgn_str(&dev->simfile, simfile_default,
+						"Simulation file to use as data input", "simfile")) {
 		free(dev);
 		free(dl0d);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
-	dev->simfile.shortname="simfile";
-	dev->simfile.descr="Simulation file to use as data input";
 	dev->simfile.next = NULL;	//mark as first/only/last item in the list
 	return dl0d;
 }

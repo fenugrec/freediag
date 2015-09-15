@@ -111,7 +111,7 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid) {
 
 //get param value, as new string to be free'd by caller.
 //for u8 / int types, sprintf with %X and %d formatters respectively
-const char * diag_cfg_getstr(struct cfgi *cfgp) {
+char * diag_cfg_getstr(struct cfgi *cfgp) {
 	char *str;
 	const char *fmt;
 	size_t len;
@@ -232,11 +232,8 @@ void tty_refresh(struct cfgi *cfgp) {
 //new TTY / serial port config item
 int diag_cfgn_tty(struct cfgi *cfgp) {
 	//TODO : implement+call diag_tty_find()
-	if (diag_cfgn_str(cfgp, NULL))	//XXX fill in default str
+	if (diag_cfgn_str(cfgp, NULL, tty_descr, tty_sn))	//XXX fill in default str
 		return DIAG_ERR_GENERAL;
-
-	cfgp->descr = tty_descr;
-	cfgp->shortname = tty_sn;
 
 	cfgp->numopts = 0;	//depending on tty_find()
 	cfgp->opt=NULL;
@@ -301,8 +298,8 @@ int diag_cfgn_bool(struct cfgi *cfgp, bool *val, bool *def) {
 	return 0;
 }
 
-//ordinary string, copies *def for its default value. Doesn't fill descr and shortname
-int diag_cfgn_str(struct cfgi *cfgp, const char *def) {
+//ordinary string, copies *def for its default value; sets descr and shortname ptrs
+int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const char *sn) {
 	char *dval;
 	cfgp->type = CFGT_STR;
 	if (diag_malloc(&dval, strlen(def)+1))
@@ -313,6 +310,10 @@ int diag_cfgn_str(struct cfgi *cfgp, const char *def) {
 
 	cfgp->val = dval;
 	cfgp->dyn_val = 0;
+
+	cfgp->descr = descr;
+	cfgp->shortname = sn;
+
 	cfgp->refresh = NULL;
 	cfgp->reset = &std_reset;
 	return 0;
