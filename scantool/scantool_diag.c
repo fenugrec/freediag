@@ -269,12 +269,12 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 			d_conn = diag_l2_StartCommunications(dl0d,
 				DIAG_L2_PROT_ISO14230,
 				DIAG_L2_TYPE_FASTINIT | funcmode,
-				set_speed, (target_type) i, set_testerid);
+				set_speed, (target_type) i, global_cfg.src);
 		else
 			d_conn = diag_l2_StartCommunications(dl0d,
 				DIAG_L2_PROT_ISO9141,
 				DIAG_L2_TYPE_SLOWINIT,
-				set_speed, (target_type) i, set_testerid);
+				set_speed, (target_type) i, global_cfg.src);
 
 		if (d_conn != NULL) {
 			int gotsome;

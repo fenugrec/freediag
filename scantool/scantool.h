@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -104,14 +105,6 @@ extern uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
 
 extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
 
-//XXX The following defs should probably go in an auto-generated l0_list.h file ... and they MUST match the list in scantool_set.c !
-enum l0_nameindex {MET16, BR1, ELM, CARSIM, DUMB, DUMBT, LAST};
-struct l0_name
-{
-	char * longname;
-	enum l0_nameindex code;
-};
-
 struct diag_l2_conn;
 struct diag_l3_conn;
 
@@ -185,16 +178,20 @@ extern enum globstate global_state;
 
 /* Parameters set by user interface (and their defaults) */
 extern unsigned int 	set_speed ;	/* Comms speed */
-extern uint8_t	set_testerid ;	/* Our tester ID */
-extern int	set_addrtype ;	/* Address type, 1 = functional */
-extern uint8_t	set_destaddr ;	/* Dest ECU address */
 extern int	set_L1protocol ;	/* L1 (H/W) Protocol type */
 extern int	set_L2protocol ;	/* L2 (S/W) Protocol type */
 extern int	set_initmode ;
-extern int 	set_display ;	/* English (1) or Metric (0) display */
 
 extern const char*	set_vehicle;	/* Vehicle name */
 extern const char*	set_ecu;	/* ECU name */
+
+//XXX The following defs should probably go in an auto-generated l0_list.h file ... and they MUST match the list in scantool_set.c !
+enum l0_nameindex {MET16, BR1, ELM, CARSIM, DUMB, DUMBT, LAST};
+struct l0_name
+{
+	char * longname;
+	enum l0_nameindex code;
+};
 
 extern enum l0_nameindex set_interface;	/* Physical interface name to use */
 int set_interface_idx;	//index into l0_names
@@ -203,6 +200,16 @@ extern const struct l0_name l0_names[];	//filled in scantool_set.c
 #define SUBINTERFACE_MAX 256
 extern char	set_subinterface[SUBINTERFACE_MAX];	/* Sub interface (aka device name) */
 
+/* struct global_cfg contains all global parameters */
+extern struct globcfg {
+	bool units;	/* English(1) or Metric(0)  display */
+
+	uint8_t tgt;	/* u8; target address */
+	uint8_t src;	/* u8: source addr / tester ID */
+	bool addrtype;	/* Address type, 1 = functional */
+} global_cfg;
+
+/**/
 struct pid ;
 typedef void (formatter)(char *, int, const struct pid *, response_t *, int);
 

@@ -587,11 +587,11 @@ cmd_watch(int argc, char **argv)
 	if (rawmode) {
 		d_l2_conn = diag_l2_StartCommunications(dl0d, DIAG_L2_PROT_RAW,
 			0, set_speed,
-			set_destaddr,
-			set_testerid);
+			global_cfg.tgt,
+			global_cfg.src);
 	} else {
 		d_l2_conn = diag_l2_StartCommunications(dl0d, set_L2protocol,
-			DIAG_L2_TYPE_MONINIT, set_speed, set_destaddr, set_testerid);
+			DIAG_L2_TYPE_MONINIT, set_speed, global_cfg.tgt, global_cfg.src);
 	}
 
 	if (d_l2_conn == NULL) {
@@ -769,7 +769,7 @@ cmd_monitor(int argc, char **argv)
 		else
 			return CMD_USAGE;
 	} else {
-		english = set_display;
+		english = global_cfg.units;
 	}
 
 	printf("Please wait\n");

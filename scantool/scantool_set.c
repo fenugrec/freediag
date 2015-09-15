@@ -27,6 +27,7 @@
  *
  *
  */
+#include <stdbool.h>
 
 #include "diag.h"
 #include "diag_l0.h"
@@ -38,17 +39,17 @@
 
 #define PROTO_NONE	"<not_used>"
 
+/** Global parameters **/
+/* struct global_cfg contains all global parameters */
+struct globcfg global_cfg;
+
+/** WIP : convert the following items **/
 struct diag_l0_device *test_dl0d;	//global dl0d test
 
 unsigned int set_speed;	/* Comms speed */
-uint8_t set_testerid;	/* Our tester ID */
-int	set_addrtype;	/* Use virtual addressing */
-uint8_t set_destaddr;	/* Dest ECU address */
 int	set_L1protocol;	/* L1 protocol type */
 int	set_L2protocol;	/* Protocol type */
 int	set_initmode;
-
-int set_display;		/* English (1), or Metric (0) */
 
 const char *	set_vehicle;	/* Vehicle */
 const char *	set_ecu;	/* ECU name */
@@ -61,6 +62,7 @@ enum l0_nameindex set_interface;	//hw interface to use
 
 char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
 
+/** deprecated : **/
 char *set_simfile;	//source for simulation data
 extern void diag_l0_sim_setfile(char * fname);
 extern unsigned int diag_l0_dumb_getopts(void);
@@ -74,14 +76,16 @@ int set_init(void)
 	/* Reset parameters to defaults. */
 
 	set_speed = 10400;	/* Comms speed; ECUs will probably send at 10416 bps (96us per bit) */
-	set_testerid = 0xf1;	/* Our tester ID */
-	set_addrtype = 1;	/* Use virtual addressing */
-	set_destaddr = 0x33;	/* Dest ECU address */
+
+	global_cfg.src = 0xf1;	/* Our tester ID */
+	global_cfg.addrtype = 1;	/* Use functional addressing */
+	global_cfg.tgt = 0x33;	/* Dest ECU address */
+
 	set_L1protocol = DIAG_L1_ISO9141;	/* L1 protocol type */
 	set_L2protocol = DIAG_L2_PROT_ISO9141;	/* Protocol type */
 	set_initmode = DIAG_L2_TYPE_FASTINIT ;
 
-	set_display = 0;		/* English (1), or Metric (0) */
+	global_cfg.units = 0;		/* English (1), or Metric (0) */
 
 	set_vehicle = "ODBII";	/* Vehicle */
 	set_ecu = "ODBII";	/* ECU name */
@@ -216,12 +220,10 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 	if (set_interface==DUMB)
 		printf("dumbopts: %#02x\n", diag_l0_dumb_getopts());
 	printf("speed:    Connect speed: %d\n", set_speed);
-	printf("display:  %s units\n", set_display?"english":"metric");
-	printf("testerid: Source ID to use: 0x%X\n", set_testerid);
-	printf("addrtype: %s addressing\n",
-		set_addrtype ? "functional" : "physical");
-	printf("destaddr: Destination address to connect to: 0x%X\n",
-		set_destaddr);
+	cmd_set_display(0,NULL);
+	cmd_set_testerid(0,NULL);
+	cmd_set_addrtype(0,NULL);
+	cmd_set_destaddr(0,NULL);
 	printf("l1protocol: Layer 1 (H/W) protocol to use %s\n",
 		l1_names[offset]);
 	printf("l2protocol: Layer 2 (S/W) protocol to use %s\n",
@@ -352,14 +354,14 @@ cmd_set_display(int argc, char **argv)
 	if (argc > 1)
 	{
 		if (strcasecmp(argv[1], "english") == 0)
-			set_display = 1;
+			global_cfg.units = 1;
 		else if (strcasecmp(argv[1], "metric") == 0)
-			set_display = 0;
+			global_cfg.units = 0;
 		else
 			return CMD_USAGE;
 	}
 	else
-		printf("display: %s units\n", set_display?"english":"metric");
+		printf("display: %s units\n", global_cfg.units?"english":"metric");
 
 	return CMD_OK;
 }
@@ -419,10 +421,10 @@ cmd_set_testerid(int argc, char **argv)
 		if ( (tmp < 0) || (tmp > 0xff))
 			printf("testerid: must be between 0 and 0xff\n");
 		else
-			set_testerid = (uint8_t) tmp;
+			global_cfg.src = (uint8_t) tmp;
 	}
 	else
-		printf("testerid: Source ID to use: 0x%X\n", set_testerid);
+		printf("testerid: Source ID to use: 0x%X\n", global_cfg.src);
 
 	return CMD_OK;
 }
@@ -430,19 +432,16 @@ cmd_set_testerid(int argc, char **argv)
 static int
 cmd_set_destaddr(int argc, char **argv)
 {
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		int tmp;
 		tmp = htoi(argv[1]);
 		if ( (tmp < 0) || (tmp > 0xff))
 			printf("destaddr: must be between 0 and 0xff\n");
 		else
-			set_destaddr = (uint8_t) tmp;
-	}
-	else
-	{
+			global_cfg.tgt = (uint8_t) tmp;
+	} else {
 		printf("destaddr: Destination address to connect to: 0x%X\n",
-			set_destaddr);
+			global_cfg.tgt);
 	}
 
 	return CMD_OK;
@@ -453,16 +452,16 @@ cmd_set_addrtype(int argc, char **argv)
 	if (argc > 1)
 	{
 		if (strncmp(argv[1], "func", 4) == 0)
-			set_addrtype = 1;
+			global_cfg.addrtype = 1;
 		else if (strncmp(argv[1], "phys", 4) == 0)
-			set_addrtype = 0;
+			global_cfg.addrtype = 0;
 		else
 			return CMD_USAGE;
 	}
 	else
 	{
 		printf("addrtype: %s addressing\n",
-			set_addrtype ? "functional" : "physical");
+			global_cfg.addrtype ? "functional" : "physical");
 	}
 
 	return CMD_OK;

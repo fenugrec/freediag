@@ -554,8 +554,8 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	}
 
 	/* Put in src/dest etc, L3 or L2 may override/ignore them */
-	msg.src = set_testerid;
-	msg.dest = set_destaddr;	/* Current set destination */
+	msg.src = global_cfg.src;
+	msg.dest = global_cfg.tgt;	/* Current set destination */
 
 	/* XXX add funcmode flags */
 
@@ -660,8 +660,8 @@ l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle)
 		return DIAG_ERR_GENERAL;
 
 	/* Put in src/dest etc, L3 or L2 may override/ignore them */
-	msg.src = set_testerid;
-	msg.dest = set_destaddr;
+	msg.src = global_cfg.src;
+	msg.dest = global_cfg.tgt;
 
 	msg.len = (uint8_t) len;
 	msg.data = (uint8_t *)data;
@@ -684,8 +684,8 @@ l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle)
 		return DIAG_ERR_GENERAL;
 
 	/* Put in src/dest etc, L2 may override/ignore them */
-	msg.src = set_testerid;
-	msg.dest = set_destaddr;
+	msg.src = global_cfg.src;
+	msg.dest = global_cfg.tgt;
 
 	msg.len = len;
 	msg.data = (uint8_t *)data;
@@ -788,7 +788,7 @@ do_l2_9141_start(int destaddr)
 
 	d_conn = do_l2_common_start(DIAG_L1_ISO9141, DIAG_L2_PROT_ISO9141,
 		DIAG_L2_TYPE_SLOWINIT, set_speed, (uint8_t)destaddr,
-		set_testerid);
+		global_cfg.src);
 
 	if (d_conn == NULL)
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -808,7 +808,7 @@ do_l2_14230_start(int init_type)
 	struct diag_l2_conn *d_conn;
 	flag_type flags = 0;
 
-	if (set_addrtype == 1)
+	if (global_cfg.addrtype)
 		flags = DIAG_L2_TYPE_FUNCADDR;
 	else
 		flags = 0;
@@ -818,7 +818,7 @@ do_l2_14230_start(int init_type)
 	flags |= (init_type & DIAG_L2_TYPE_INITMASK) ;
 
 	d_conn = do_l2_common_start(DIAG_L1_ISO14230, DIAG_L2_PROT_ISO14230,
-		flags, set_speed, set_destaddr, set_testerid);
+		flags, set_speed, global_cfg.tgt, global_cfg.src);
 
 	if (d_conn == NULL)
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -839,7 +839,7 @@ do_l2_j1850_start(int l1_type)
 	struct diag_l2_conn *d_conn;
 
 	d_conn = do_l2_common_start(l1_type, DIAG_L2_PROT_SAEJ1850,
-		flags, set_speed, 0x6a, set_testerid);
+		flags, set_speed, 0x6a, global_cfg.src);
 
 	if (d_conn == NULL)
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -880,7 +880,7 @@ do_l2_generic_start(void)
 		return diag_iseterr(rv);
 	}
 
-	if (set_addrtype == 1)
+	if (global_cfg.addrtype)
 		flags = DIAG_L2_TYPE_FUNCADDR;
 	else
 		flags = 0;
@@ -888,7 +888,7 @@ do_l2_generic_start(void)
 	flags |= (set_initmode & DIAG_L2_TYPE_INITMASK) ;
 
 	d_conn = diag_l2_StartCommunications(dl0d, set_L2protocol,
-		flags, set_speed, set_destaddr, set_testerid);
+		flags, set_speed, global_cfg.tgt, global_cfg.src);
 
 	if (d_conn == NULL) {
 	rv=diag_geterr();
