@@ -28,8 +28,22 @@ struct cfgi {
 		//#define CFGT_TTY	4	//const char *; special string ?
 		//#define CFGT_ENUM	5	//redundant with ((type==CFGT_INT) && (numopts >0) )?
 		#define CFGT_BOOL	6
-	void *val;		//actual param
-	bool dyn_val;	//if *val must be free'd
+	union uval {
+		bool	b;
+		uint8_t u8;
+		int	i;
+		char *str;
+	} val;		//Actual value of parameter
+
+	union udval {
+		bool	b;
+		uint8_t u8;
+		int	i;
+		char *str;
+	} dval;		//default value;  used for reset()
+
+	bool dyn_val;	//if val must be free'd
+	bool dyn_dval;	//if dval must be free'd
 
 	int numopts;		//if > 0 : number of predefined string options / enum values. If ==0 : value set directly.
 	char **opt;	//description for each predefined option, i.e. numopts==1 means
@@ -38,8 +52,6 @@ struct cfgi {
 							// use { cfg_param->opt = opt0_table; }
 	bool dyn_opt;	//if *opt[] must be free'd (recursively)
 
-	void *dval;		//default value;  used for reset()
-	bool dyn_dval;	//dval needs to be free'd
 
 	struct cfgi *next;	//single-linked list
 
@@ -78,19 +90,19 @@ void diag_cfg_clear(struct cfgi *cfgp);
 int diag_cfgn_tty(struct cfgi *cfgp);
 
 //serial link speed;
-int diag_cfgn_bps(struct cfgi *cfgp, int *val, int *def);
+int diag_cfgn_bps(struct cfgi *cfgp, int val, int def);
 
 //ordinary int param using caller's &val, and *dev as default value for reset().
 //Doesn't fill descr and shortname
-int diag_cfgn_int(struct cfgi *cfgp, int *val, int *def);
+int diag_cfgn_int(struct cfgi *cfgp, int val, int def);
 
 //ordinary u8 param (copy of _int code); use dval as default value for reset(). Don't fill descr and shortname
-int diag_cfgn_u8(struct cfgi *cfgp, uint8_t *val, uint8_t *def);
+int diag_cfgn_u8(struct cfgi *cfgp, uint8_t val, uint8_t def);
 
 //ordinary string, copies *def for its default value; sets descr and shortname ptrs
 int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const char *sn);
 
 //ordinary bool (copy of _int code)
-int diag_cfgn_bool(struct cfgi *cfgp, bool *val, bool *def);
+int diag_cfgn_bool(struct cfgi *cfgp, bool val, bool def);
 
 #endif // DIAG_CFG_H

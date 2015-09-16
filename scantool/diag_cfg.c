@@ -41,15 +41,15 @@ void diag_cfg_reset(struct cfgi *cfgp) {
 int diag_cfg_setstr(struct cfgi *cfgp, const char *str) {
 	if (cfgp->type == CFGT_STR) {
 		size_t slen=strlen(str);
-		if (cfgp->dyn_val && (cfgp->val != NULL)) {
-			free(cfgp->val);
-			cfgp->val = NULL;
+		if (cfgp->dyn_val && (cfgp->val.str != NULL)) {
+			free(cfgp->val.str);
+			cfgp->val.str = NULL;
 		}
-		if (diag_malloc(&cfgp->val, slen+1)) {
+		if (diag_malloc(&cfgp->val.str, slen+1)) {
 			return diag_iseterr(DIAG_ERR_NOMEM);
 		}
 		cfgp->dyn_val = 1;	//need to free
-		strncpy(cfgp->val, str, slen);
+		strncpy(cfgp->val.str, str, slen);
 		return 0;
 	}
 	return diag_iseterr(DIAG_ERR_BADCFG);
@@ -57,8 +57,8 @@ int diag_cfg_setstr(struct cfgi *cfgp, const char *str) {
 
 //set config value for a BOOL param
 int diag_cfg_setbool(struct cfgi *cfgp, bool val) {
-	if ((cfgp->type == CFGT_BOOL) && (cfgp->val != NULL)) {
-		*(bool *)cfgp->val = val;
+	if (cfgp->type == CFGT_BOOL) {
+		cfgp->val.b = val;
 		return 0;
 	}
 	return diag_iseterr(DIAG_ERR_BADCFG);
@@ -66,16 +66,16 @@ int diag_cfg_setbool(struct cfgi *cfgp, bool val) {
 
 //
 int diag_cfg_setu8(struct cfgi *cfgp, uint8_t val) {
-	if ((cfgp->type == CFGT_U8) && (cfgp->val != NULL)) {
-		*(uint8_t *)cfgp->val = val;
+	if (cfgp->type == CFGT_U8) {
+		cfgp->val.u8 = val;
 		return 0;
 	}
 	return diag_iseterr(DIAG_ERR_BADCFG);
 }
 
 int diag_cfg_setint(struct cfgi *cfgp, int val) {
-	if ((cfgp->type == CFGT_U8) && (cfgp->val != NULL)) {
-		*(int *)cfgp->val = val;
+	if (cfgp->type == CFGT_INT) {
+		cfgp->val.i = val;
 		return 0;
 	}
 	return diag_iseterr(DIAG_ERR_BADCFG);
@@ -95,7 +95,7 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid) {
 		break;
 
 	case CFGT_INT:
-		*(int *)cfgp->val = optid;
+		cfgp->val.i = optid;
 		break;
 	case CFGT_U8:	//these don't really make sense
 	case CFGT_BOOL:
@@ -126,7 +126,7 @@ char * diag_cfg_getstr(struct cfgi *cfgp) {
 		fmt="%5d";
 		break;
 	case CFGT_STR:
-		len=strlen(cfgp->val)+1;
+		len=strlen(cfgp->val.str)+1;
 		fmt="%s";
 		break;
 	default:
@@ -138,25 +138,27 @@ char * diag_cfg_getstr(struct cfgi *cfgp) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
 	}
 
-	snprintf(str, len, fmt, cfgp->val);
+	snprintf(str, len, fmt, cfgp->val.str);
 	return str;
 }
 
 //free contents of *cfgp (prior to free'ing the struct itself, for instance)
 void diag_cfg_clear(struct cfgi *cfgp) {
-	if (cfgp->dyn_val && (cfgp->val != NULL)) {
-		free(cfgp->val);
+	/* For now, handles only CFGT_STR types */
+	if (cfgp->type != CFGT_STR) return;
+	if (cfgp->dyn_val && (cfgp->val.str != NULL)) {
+		free(cfgp->val.str);
 	}
 	cfgp->dyn_val = 0;
-	cfgp->val=NULL;
+	cfgp->val.str=NULL;
 
 	optarray_clear(cfgp);
 
-	if (cfgp->dyn_dval && (cfgp->dval != NULL)) {
-		free(cfgp->dval);
+	if (cfgp->dyn_dval && (cfgp->dval.str != NULL)) {
+		free(cfgp->dval.str);
 	}
 	cfgp->dyn_dval = 0;
-	cfgp->dval=NULL;
+	cfgp->dval.str=NULL;
 }
 
 
@@ -181,26 +183,25 @@ void optarray_clear(struct cfgi *cfgp) {
 void std_reset(struct cfgi *cfgp) {
 	switch (cfgp->type) {
 	case CFGT_U8:
-		*(uint8_t *)cfgp->val = *(uint8_t *)cfgp->dval;
+		cfgp->val.b = cfgp->dval.b;
 	case CFGT_INT:
-		*(int *)cfgp->val = *(int *)cfgp->dval;
+		cfgp->val.i = cfgp->dval.i;
 		break;
 	case CFGT_STR:
-		if (cfgp->dval == NULL)
+		if (cfgp->dval.str == NULL)
 			return;
 
-		if (cfgp->dyn_val && (cfgp->val != NULL)) {
-			free(cfgp->val);
+		if (cfgp->dyn_val && (cfgp->val.str != NULL)) {
+			free(cfgp->val.str);
 		}
 
-		cfgp->val = cfgp->dval;
+		cfgp->val.str = cfgp->dval.str;
 		cfgp->dyn_val = 0;	//don't free val, dval will be free'd
 		break;
 	case CFGT_BOOL:
-		*(bool *)cfgp->val = *(bool *)cfgp->dval;
+		cfgp->val.b = cfgp->dval.b;
 		break;
 	default:
-		//eject
 		break;
 	}
 }
@@ -213,19 +214,19 @@ void tty_refresh(struct cfgi *cfgp) {
 		optarray_clear(cfgp);
 	cfgp->numopts = 0;
 
-	if (cfgp->val == cfgp->dval) {
+	if (cfgp->val.str == cfgp->dval.str) {
 		//don't free val; alloc new copy
-		if (diag_malloc(&cfgp->val, strlen(cfgp->dval)+1)) {
+		if (diag_malloc(&cfgp->val.str, strlen(cfgp->dval.str)+1)) {
 			return;
 		}
-		strcpy(cfgp->val, cfgp->dval);	//we just used strlen; strcpy is just as dangerous...
+		strcpy(cfgp->val.str, cfgp->dval.str);	//we just used strlen; strcpy is just as dangerous...
 	}
-	if (cfgp->dyn_dval && (cfgp->dval != NULL)) {
-		free(cfgp->dval);
+	if (cfgp->dyn_dval && (cfgp->dval.str != NULL)) {
+		free(cfgp->dval.str);
 	}
 	//XXX populate opt[], numopts, and dval
 	cfgp->dyn_dval = 0;
-	cfgp->dval=NULL;	//will depend on tty_find() output
+	cfgp->dval.str=NULL;	//will depend on tty_find() output
 	return;
 }
 
@@ -245,7 +246,7 @@ int diag_cfgn_tty(struct cfgi *cfgp) {
 /** serial link speed **/
 
 //serial link speed; uses caller's &val for actual parameter
-int diag_cfgn_bps(struct cfgi *cfgp, int *val, int *def) {
+int diag_cfgn_bps(struct cfgi *cfgp, int val, int def) {
 	if (diag_cfgn_int(cfgp, val, def))	//start with standard int config
 		return DIAG_ERR_GENERAL;
 
@@ -257,15 +258,15 @@ int diag_cfgn_bps(struct cfgi *cfgp, int *val, int *def) {
 
 /** generic types **/
 
-//ordinary int param using caller's &val, and *dev as default value for reset().
+//ordinary int param using caller's val, and def as default value for reset().
 //Doesn't fill descr and shortname
-int diag_cfgn_int(struct cfgi *cfgp, int *val, int *def) {
+int diag_cfgn_int(struct cfgi *cfgp, int val, int def) {
 	cfgp->dyn_val = 0;	//caller-supplied
 	cfgp->dyn_dval = 0;
 	cfgp->type = CFGT_INT;
 	cfgp->numopts=0;
-	cfgp->dval = def;
-	cfgp->val = val;
+	cfgp->dval.i = def;
+	cfgp->val.i = val;
 	cfgp->refresh = NULL;
 	cfgp->reset = &std_reset;
 	return 0;
@@ -273,26 +274,26 @@ int diag_cfgn_int(struct cfgi *cfgp, int *val, int *def) {
 
 //ordinary u8 param (copy of _int code) using caller's &val, and *dev as default value for reset().
 //Doesn't fill descr and shortname
-int diag_cfgn_u8(struct cfgi *cfgp, uint8_t *val, uint8_t *def) {
+int diag_cfgn_u8(struct cfgi *cfgp, uint8_t val, uint8_t def) {
 	cfgp->dyn_val = 0;	//managed by caller
 	cfgp->dyn_dval = 0;
 	cfgp->type = CFGT_U8;
 	cfgp->numopts=0;
-	cfgp->val = val;
-	cfgp->dval = def;
+	cfgp->val.u8 = val;
+	cfgp->dval.u8 = def;
 	cfgp->refresh = NULL;
 	cfgp->reset = &std_reset;
 	return 0;
 }
 
 //ordinary bool (copy of _int code)
-int diag_cfgn_bool(struct cfgi *cfgp, bool *val, bool *def) {
+int diag_cfgn_bool(struct cfgi *cfgp, bool val, bool def) {
 	cfgp->dyn_val = 0;	//managed by caller
 	cfgp->dyn_dval = 0;
 	cfgp->type = CFGT_BOOL;
 	cfgp->numopts=0;
-	cfgp->val = val;
-	cfgp->dval = def;
+	cfgp->val.b = val;
+	cfgp->dval.b = def;
 	cfgp->refresh = NULL;
 	cfgp->reset = &std_reset;
 	return 0;
@@ -304,11 +305,11 @@ int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const c
 	cfgp->type = CFGT_STR;
 	if (diag_malloc(&dval, strlen(def)+1))
 		return diag_iseterr(DIAG_ERR_NOMEM);
-	cfgp->dval = dval;
+	cfgp->dval.str = dval;
 	cfgp->dyn_dval = 1;
 	strcpy(dval, def);	//danger
 
-	cfgp->val = dval;
+	cfgp->val.str = dval;
 	cfgp->dyn_val = 0;
 
 	cfgp->descr = descr;
