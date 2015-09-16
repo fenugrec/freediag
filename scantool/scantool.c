@@ -1652,52 +1652,52 @@ static void do_usage (void)
 
 
 
-static void format_o2(char *buf, UNUSED(int english),
+static void format_o2(char *buf, int maxlen, UNUSED(int english),
 	const struct pid *p, response_t *data, int n)
 {
 		double v = DATA_SCALED(p, DATA_1(p, n, data));
 		int t = DATA_1(p, n + 1, data);
 
 		if (t == 0xff)
-				sprintf(buf, p->fmt1, v);
+				snprintf(buf, maxlen, p->fmt1, v);
 		else
-				sprintf(buf, p->fmt2, v, t * p->scale2 + p->offset2);
+				snprintf(buf, maxlen, p->fmt2, v, t * p->scale2 + p->offset2);
 }
 
 
 static void
-format_aux(char *buf, UNUSED(int english), const struct pid *p,
+format_aux(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
 	response_t *data, int n)
 {
-		sprintf(buf, (DATA_RAW(p, n, data) & 1) ? "PTO Active" : "----");
+		snprintf(buf, maxlen, (DATA_RAW(p, n, data) & 1) ? "PTO Active" : "----");
 }
 
 
 
 static void
-format_fuel(char *buf, UNUSED(int english), const struct pid *p,
+format_fuel(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
 	response_t *data, int n)
 {
 		int s = DATA_1(p, n, data);
 
 		switch (s) {
 		case 1 << 0:
-			sprintf(buf, "Open");
+			snprintf(buf, maxlen, "Open");
 			break;
 		case 1 << 1:
-			sprintf(buf, "Closed");
+			snprintf(buf, maxlen, "Closed");
 			break;
 		case 1 << 2:
-			sprintf(buf, "Open-Driving");
+			snprintf(buf, maxlen, "Open-Driving");
 			break;
 		case 1 << 3:
-			sprintf(buf, "Open-Fault");
+			snprintf(buf, maxlen, "Open-Fault");
 			break;
 		case 1 << 4:
-			sprintf(buf, "Closed-Fault");
+			snprintf(buf, maxlen, "Closed-Fault");
 			break;
 		default:
-			sprintf(buf, "Open(rsvd)");
+			snprintf(buf, maxlen, "Open(rsvd)");
 			break;
 		}
 
@@ -1706,15 +1706,15 @@ format_fuel(char *buf, UNUSED(int english), const struct pid *p,
 
 
 static void
-format_data(char *buf, int english, const struct pid *p, response_t *data, int n)
+format_data(char *buf, int maxlen, int english, const struct pid *p, response_t *data, int n)
 {
 		double v;
 
 		v = DATA_SCALED(p, DATA_RAW(p, n, data));
 		if (english && p->fmt2)
-				sprintf(buf, p->fmt2, DATA_ENGLISH(p, v));
+				snprintf(buf, maxlen, p->fmt2, DATA_ENGLISH(p, v));
 		else
-				sprintf(buf, p->fmt1, v);
+				snprintf(buf, maxlen, p->fmt1, v);
 }
 
 

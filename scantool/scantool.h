@@ -213,13 +213,14 @@ extern struct globcfg {
 
 /** J1979 PID structures + utils **/
 struct pid ;
-typedef void (formatter)(char *, int, const struct pid *, response_t *, int);
+/* format <numbytes> bytes of data into buf, up to <maxlen> chars. */
+typedef void (formatter)(char *buf, int maxlen, int units, const struct pid *, response_t *, int numbytes);
 
 struct pid
 {
 	int pidID ;
 	const char *desc ;
-	formatter *cust_sprintf ;
+	formatter *cust_snprintf ;
 	int bytes ;
 	const char *fmt1 ; // SI
 	double scale1 ;
@@ -230,8 +231,8 @@ struct pid
 };
 
 #define DATA_VALID(p, d)	(d[p->pidID].type == TYPE_GOOD)
-#define DATA_1(p, n, d)	(d[p->pidID].data[n])
-#define DATA_2(p, n, d)	(DATA_1(p, n, d) * 256 + DATA_1(p, n+1, d))
+#define DATA_1(p, n, d)	(d[p->pidID].data[n])	/* extract 8bit value @offset n */
+#define DATA_2(p, n, d)	(DATA_1(p, n, d) * 256 + DATA_1(p, n+1, d))	/* extract 16bit value @offset n */
 #define DATA_RAW(p, n, d)	(p->bytes == 1 ? DATA_1(p, n, d) : DATA_2(p, n, d))
 
 #define DATA_SCALED(p, v)	(v * p->scale1 + p->offset1)

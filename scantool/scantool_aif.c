@@ -109,12 +109,12 @@ static void aif_monitor (void *data)
 					DATA_VALID(p, ep->mode2_data))
 					{
 						if (DATA_VALID(p, ep->mode1_data))
-							p->cust_sprintf(buf, global_cfg.units, p, ep->mode1_data, 2);
+							p->cust_snprintf(buf, sizeof(buf), global_cfg.units, p, ep->mode1_data, 2);
 
 						printf("%-15.15s ", buf);
 
 						if (DATA_VALID(p, ep->mode2_data))
-							p->cust_sprintf(buf, global_cfg.units, p, ep->mode2_data, 3);
+							p->cust_snprintf(buf, sizeof(buf), global_cfg.units, p, ep->mode2_data, 3);
 
 						printf("%-15.15s\n", buf);
 					}
