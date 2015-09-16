@@ -201,7 +201,7 @@ struct diag_l0
 	int	(*diag_l0_init)(void);
 
 	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
-		int iProtocol);
+		int l1_proto);
 	int	(*diag_l0_close)(struct diag_l0_device **);
 	int	(*diag_l0_initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);

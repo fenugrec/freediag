@@ -44,8 +44,34 @@
 
 struct diag_l0_dumb_device
 {
-	int protocol;	//set in diag_l0_dumb_open with specified iProtocol
-	struct diag_serial_settings serial;
+	int	protocol;	//set in diag_l0_dumb_open with specified iProtocol
+	struct	diag_serial_settings serial;
+
+	/* "dumb_opts", conversion not complete */
+	bool	use_L;
+		#define DD_USEL	"Use RTS to drive the L line for init. Interface must support this."
+		#define DS_USEL	"USEL"
+	bool	clr_dtr;
+		#define DD_CLRDTR	"Always keep DTR cleared (neg. voltage). Unusual."
+		#define DS_CLRDTR	"CLRDTR"
+	bool	set_rts;
+		#define DD_SETRTS	"Always keep RTS set (pos. voltage). Unusual; do not use with USE_L."
+		#define DS_SETRTS	"SETRTS"
+	bool	man_break;
+		#define DD_MANBRK	"Send manual breaks (essential for USB-serial ICs that don't support 5bps.)"
+		#define	DS_MANBRK	"MANBRK"
+	bool	lline_inv;
+		#define DD_INVL	"Invert polarity of the L line. Unusual."
+		#define DS_INVL	"INVL"
+	bool	fast_break;
+		#define DD_FASTBK	"Try alternate iso14230 fastinit code."
+		#define DS_FASTBK	"FASTB"
+	bool	blockduplex;
+		#define DD_BKDUPX	"Use message-based half duplex removal if P4==0."
+		#define	DS_BKDUPX	"BLKDUP"
+
+	struct	cfgi port;
+
 };
 
 
