@@ -718,9 +718,11 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 
 	/* Check if its a valid SID 1 PID 0 response */
 	if ((rxmsg->len < 1) || (rxmsg->data[0] != 0x41)) {
+		diag_freemsg(rxmsg);
 		return diag_iseterr(DIAG_ERR_ECUSAIDNO);
 	}
 
+	diag_freemsg(rxmsg);
 	return 0;
 
 }
