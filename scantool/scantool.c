@@ -1103,12 +1103,12 @@ print_single_dtc(databyte_type d0, databyte_type d1)
 }
 
 static void
-print_dtcs(uint8_t *data)
+print_dtcs(uint8_t *data, uint8_t len)
 {
 	/* Print the DTCs just received */
 	int i, j;
 
-	for (i=0, j=1; i<3; i++, j+=2) {
+	for (i=0, j=1; (i<3) && ((j+1) < len); i++, j+=2) {
 		if ((data[j]==0) && (data[j+1]==0))
 			continue;
 		print_single_dtc(data[j], data[j+1]);
@@ -1145,7 +1145,7 @@ do_j1979_cms()
 
 	for (i=0; i<ecu_count;i++) {
 		for (msg=ecu_info[i].rxmsg; msg; msg=msg->next) {
-			print_dtcs(msg->data);
+			print_dtcs(msg->data, msg->len);
 		}
 
 	}
@@ -1469,7 +1469,7 @@ do_j1979_getdtcs()
 		for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 			if ((ep->rxmsg) && (ep->rxmsg->data[0] == 0x43)) {
 				for (msg=ep->rxmsg; msg; msg=msg->next) {
-					print_dtcs(ep->rxmsg->data);
+					print_dtcs(ep->rxmsg->data, ep->rxmsg->len);
 				}
 				fprintf(stderr, "\n");
 			}
