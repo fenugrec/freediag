@@ -1,5 +1,5 @@
 ***
-fenugrec - 2014
+fenugrec - 2014-2015
 This is bits and pieces of descriptions of elements of the source code. The
 code can be confusing, and it takes time to become familiar with all the
 data structures, functions, etc. In the ~15 years' existence of the project,
@@ -126,6 +126,23 @@ required, so L3 and up don't need to bother with this.
 
 L3 : 
 
+**** Serial ports
+Two main issues : setting custom baud rates (essential for ISO9141/14230 traffic @ 10.4kbps), and
+enforcing precise timeouts (very useful for splitting ISO9141/14230 messages).
+1. Custom baud rates
+1a. Linux : a super mess, see diag_tty_unix.c
+	http://www.downtowndougbrown.com/2013/11/linux-custom-serial-baud-rates/
+	http://stackoverflow.com/questions/12646324/how-to-set-a-custom-baud-rate-on-linux
+	https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=683826
+1b. Windows : seems to work ok, does not require any black magic, at least for some USB-RS232 ICs
+
+2. Timeouts
+2a. Linux : Unfortunately the standard method of enforcing a read timeout, c_cc[VTIME] in struct termios,
+ is not good enough (100ms resolution). A few alternate methods are implemented :
+	- a POSIX timer that interrupts the read() call
+	- select() with a timeout, looped
+	- using /dev/rtc and select() (dubious implementation, possibly broken)
+2b. Windows : seems to work ok with the standard SetCommTimeouts()
 
 **** Time & freediag
 Timing can make or break freediag, especially when using dumb interfaces. I will divide
@@ -145,17 +162,15 @@ on the context:
 	 similar to A, but the ability to use an arbitrary reference (like a stopwatch) seemed useful
 	 so I wrote diag_os_chronoms() for those cases.
 	 
-	C- Short interval, fine resolution (sub-ms) validation of certain operations. For example,
-	 in a lot of the Win32 code (diag_tty mostly) I use QueryPerformanceCounter() to measure
-	 the elapsed time for certain operations. This is typically a monotonic 1-10MHz counter,
-	 hopefully with little overhead per call and therefore little impact on the measured operation. For
-	 the moment there is no freediag abstraction of this "C" requirement; no "diag_os_getus()"
-	 function etc. It would be a lot of work to port to different platforms, and perhaps not
-	 essential outside of the already-OS-specific diag_tty and diag_os functions.
+	C- Short interval, fine resolution (sub-ms) validation of certain operations. diag_os_gethrt()
+	and diag_os_hrtus() provide this. The Windows implementation uses
+	QueryPerformanceCounter() ; typically a monotonic 1-10MHz counter,
+	 hopefully with little overhead per call and therefore little impact on the measured operation.
+	Linux uses either POSIX clock_gettime() or gettimeofday() as a fallback.
 
 2. Control : freediag needs to make certain things happen at precise times. Again this can
 be seen as three requirement levels:
-	A- Coarse : an error of 10-20ms is not a problem. The periodic
+	A- Coarse : an error of >10ms is not a problem. The periodic
 	 timer callbacks that take care of keepalive messages would qualify as Coarse: as long
 	 as they are carried out within the required period (P3max=5s for ISO* and J1979),
 	 communications with an ECU will not be perturbed. We could also include the delays
@@ -163,7 +178,7 @@ be seen as three requirement levels:
 	 
 	B- Medium : an error of <= 5ms is desirable, but 10ms is tolerable. Some examples include:
 	 P3 (for ISO
-	 protocols : time after all vehicle responses and the start of a new request; default is 55ms);
+	 protocols : time after all vehicle responses and before a new request; default is 55ms);
 	 {W1,W2,W3,W4} : (ISO) 5bps slow initialization; P4 when P4 > 0 (ISO interbyte spacing,
 	 if freediag must handle it - most smart interfaces already do). For those requirements,
 	 diag_os_millisleep() is usually satisfactory since even on the worst systems, its
