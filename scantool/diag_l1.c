@@ -176,8 +176,12 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 	l0flags = diag_l1_getflags(dl0d);
 
 	if (diag_l1_debug & DIAG_DEBUG_WRITE) {
-			fprintf(stderr, FLFMT "diag_l1_send: len=%d P4=%u l0flags=0x%X\n", FL,
-					(int) len, p4, l0flags);
+		fprintf(stderr, FLFMT "_send: len=%d P4=%u l0flags=0x%X; ", FL,
+				(int) len, p4, l0flags);
+		if (diag_l1_debug & DIAG_DEBUG_DATA) {
+			diag_data_dump(stderr, data, len);
+		}
+		fprintf(stderr, "\n");
 	}
 
 	/*
@@ -276,6 +280,13 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 	if (!rv) {
 		fprintf(stderr, FLFMT "L0 returns with 0 bytes; returning TIMEOUT instead. Report this !\n", FL);
 		return DIAG_ERR_TIMEOUT;
+	}
+
+	if ((rv>0) &&
+			(diag_l1_debug & DIAG_DEBUG_DATA) && (diag_l1_debug & DIAG_DEBUG_READ)) {
+		fprintf(stderr, FLFMT "_recv: %d bytes, ", FL,rv);
+		diag_data_dump(stderr, data, (size_t)rv);
+		fprintf(stderr, "\n");
 	}
 
 	return rv;

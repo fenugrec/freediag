@@ -371,7 +371,6 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int time
 			FLFMT "_int_recv offset 0x%X\n",
 			FL, d_l2_conn->rxoffset);
 
-	state = ST_STATE1;
 	dp = (struct diag_l2_iso9141 *)d_l2_conn->diag_l2_proto_data;
 
 	// Clear out last received message if not done already.
@@ -397,6 +396,7 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int time
 	//	Inter-frame gap < p2max
 	// We are a bit more flexible than that, see below.
 	// Frames get acumulated in the protocol structure list.
+	state = ST_STATE1;
 	while (1)
 	{
 		switch(state)
