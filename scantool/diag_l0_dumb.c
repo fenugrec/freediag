@@ -417,7 +417,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 			fprintf(stderr, FLFMT "_slowinit: address echo error\n", FL);
 			return DIAG_ERR_GENERAL;
 		}
-		
+
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "\tgot address echo 0x%X\n",
 					FL, cbuf[0]);
@@ -582,10 +582,9 @@ void *data, size_t len, unsigned int timeout)
 			FLFMT "_recv dl0d=%p req=%ld bytes timeout=%u\n",
 			FL, (void *)dl0d, (long)len, timeout);
 
-	if ((rv=diag_tty_read(dl0d, data, len, timeout)) != (int) len) {
+	if ((rv=diag_tty_read(dl0d, data, len, timeout)) <= 0) {
 		if (rv == DIAG_ERR_TIMEOUT)
 			return DIAG_ERR_TIMEOUT;
-		fprintf(stderr, FLFMT "dumb_recv: error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
