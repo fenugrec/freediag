@@ -15,7 +15,6 @@
  */
 
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>	//for memcmp
 
@@ -77,57 +76,69 @@ diag_l0_dt_init(void)
 
 static void dtest_1(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 1: pulsing TXD=1, 1s, TXD=0, 500ms\n", FL);
+	fprintf(stderr, "Starting test 1: pulsing TXD=1, 1s, TXD=0, 500ms:");
 	for (i=0; i<=4; i++) {
 		diag_os_millisleep(1000);
-		diag_tty_break(dl0d, 500);
+		if (diag_tty_break(dl0d, 500)) break;
+		fprintf(stderr, ".");
 	}
-
+	fprintf(stderr, "\n");
 	return;
 }
 
 //dtest_2 : fast pulse TXD by sending 0x55 @ 10.4kps with 5ms interbyte
 static void dtest_2(struct diag_l0_device *dl0d) {
-	int i;
+	int i, pc=0;
+	const int iters=300;
 	uint8_t patternbyte=0x55;
-	fprintf(stderr, FLFMT "Starting test 2: sending 0x55 with P4=5ms\n", FL);
-	for (i=0; i<=300; i++) {
-		diag_tty_write(dl0d, &patternbyte, 1);
+
+	fprintf(stderr, "Starting test 2: sending 0x55 with P4=5ms:");
+	for (i=0; i<=iters; i++) {
+		if (diag_tty_write(dl0d, &patternbyte, 1) != 1) {
+			printf("write error\n");
+			break;
+		}
+		if ((10*i/iters) != pc) {
+			pc +=1;
+			fprintf(stderr, ".");
+		}
 		diag_os_millisleep(5);
 	}
-
+	fprintf(stderr, "\n");
 	return;
 }
 
 //dtest_3: slow pulse RTS
 static void dtest_3(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms\n", FL);
+	fprintf(stderr, "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
-		diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1);
+		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1)) break;
 		diag_os_millisleep(1000);
-		diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0);
+		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0)) break;
 		diag_os_millisleep(500);
+		fprintf(stderr, ".");
 	}
 	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
-
+	fprintf(stderr, "\n");
 	return;
 }
 
 //dtest_4: slow pulse DTR
 static void dtest_4(struct diag_l0_device *dl0d) {
 	int i;
-	fprintf(stderr, FLFMT "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms\n", FL);
+	fprintf(stderr, "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
-		diag_tty_control(dl0d, 1, (dumb_flags & SET_RTS));
+		if (diag_tty_control(dl0d, 1, (dumb_flags & SET_RTS))) break;
 		diag_os_millisleep(1000);
-		diag_tty_control(dl0d, 0, (dumb_flags & SET_RTS));
+		if (diag_tty_control(dl0d, 0, (dumb_flags & SET_RTS))) break;
 		diag_os_millisleep(500);
+		fprintf(stderr, ".");
 	}
 	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
-
+	fprintf(stderr, "\n");
 	return;
 }
 
@@ -135,26 +146,42 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 //dtest_5 : fast pulse TXD with diag_tty_break;
 
 static void dtest_5(struct diag_l0_device *dl0d) {
-	int i;
-	fprintf(stderr, FLFMT "Starting test 5: pulsing TXD=1, 50, TXD=0, 25ms\n", FL);
-	for (i=0; i<=40; i++) {
+	int i, pc=0;
+	const int iters=40;
+	fprintf(stderr, "Starting test 5: pulsing TXD=1, 50, TXD=0, 25ms:");
+	for (i=0; i<=iters; i++) {
 		diag_os_millisleep(50);
-		diag_tty_break(dl0d, 25);
+		if (diag_tty_break(dl0d, 25)) {
+			printf("break error\n");
+			break;
+		}
+		if ((10*i/iters) != pc) {
+			pc +=1;
+			fprintf(stderr, ".");
+		}
 	}
-
+	fprintf(stderr, "\n");
 	return;
 }
 
 //dtest_6 : fast pulse TXD with diag_tty_fastbreak;
 
 static void dtest_6(struct diag_l0_device *dl0d) {
-	int i;
-	fprintf(stderr, FLFMT "Starting test 6: pulsing TXD=1, 50ms, TXD=0, 25ms\n", FL);
-	for (i=0; i<=50; i++) {
+	int i, pc=0;
+	const int iters=50;
+	fprintf(stderr, "Starting test 6: pulsing TXD=1, 50ms, TXD=0, 25ms:");
+	for (i=0; i<=iters; i++) {
 		diag_os_millisleep(25);
-		diag_tty_fastbreak(dl0d, 50);
+		if (diag_tty_fastbreak(dl0d, 50)) {
+			printf("fastbreak error\n");
+			break;
+		}
+		if ((10*i/iters) != pc) {
+			pc +=1;
+			fprintf(stderr, ".");
+		}
 	}
-
+	fprintf(stderr, "\n");
 	return;
 }
 
@@ -162,34 +189,36 @@ static void dtest_6(struct diag_l0_device *dl0d) {
 //one by one; P4=0. Print per-byte time to do this; use _dumb_send() instead
 // of diag_tty directly, like l1_send().
 static void dtest_7(struct diag_l0_device *dl0d) {
-	uint8_t i, echo;
+	uint8_t i, pc=0, echo;
 	int rv, badechos=0;
-	unsigned long ti, tf;
+	unsigned long long ti, tf=0; //measure inner time
 #define DT7_ITERS 100
-	printf("Starting test 7: half duplex single echo removal...\n");
+	fprintf(stderr, "Starting test 7: half duplex single echo removal:");
 
-	ti=diag_os_getms();	//get starting time.
-	for (i=0; i<=DT7_ITERS; i++) {
+	for (i=0; i<DT7_ITERS; i++) {
 		echo=i-1;	//init to bad value
-		rv=diag_l0_dt_send(dl0d, NULL, &i, 1);
-		if (rv==0) {
-			while ( (rv = diag_tty_read(dl0d, &echo, 1, 100)) < 0) {
-				if (errno != EINTR)
-					break;
-				rv = 0; /* Interrupted read, nothing transferred. */
-			}
-			//check echo
-			if (echo != i)
-				badechos++;
-			else
-				rv=0;
-		} else {
-			break;	//dumb_send failed, this is bad
+		ti=diag_os_gethrt();	//get starting time.
+		if (diag_l0_dt_send(dl0d, NULL, &i, 1))
+			break;
+
+		rv = diag_tty_read(dl0d, &echo, 1, 1000);
+		if (rv != 1) {
+			fprintf(stderr, "\ndt7: tty_read rets %d.\n", rv);
+			break;
+		}
+		tf = tf + diag_os_gethrt() - ti;
+		//check echo
+		if (echo != i)
+			badechos++;
+
+		if ((10*i/DT7_ITERS) != pc) {
+			pc +=1;
+			fprintf(stderr, ".");
 		}
 	}	//for
-	tf=diag_os_getms();	//stop time
-	tf = (tf-ti)/DT7_ITERS;	//average time per byte
-	printf("Average speed : %lu ms/byte. %d bad echos received.\n", tf, badechos);
+	fprintf(stderr, "\n");
+	tf = tf / DT7_ITERS;	//average time per byte
+	printf("Average speed : %d us/byte. %d good; %d bad echos received.\n", (int) diag_os_hrtus(tf), i, badechos);
 
 
 	return;
@@ -199,41 +228,42 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 static void dtest_8(struct diag_l0_device *dl0d) {
 #define DT8_MSIZE 10
 	uint8_t tx[DT8_MSIZE], echo[DT8_MSIZE];
-	int i, rv, badechos=0;
-	unsigned long ti, tf;
+	int i, rv = -1, badechos=0;
+	unsigned long long ti, tf=0;
 #define DT8_ITERS 10
-	printf("Starting test 8: half duplex block echo removal...\n");
+	fprintf(stderr, "Starting test 8: half duplex block echo removal:");
 	//fill i[] first
 	for (i=0; i<DT8_MSIZE; i++)
 		tx[i]=(uint8_t) i;
 
 
-	ti=diag_os_getms();	//get starting time.
 	for (i=0; i<=DT8_ITERS; i++) {
+		ti=diag_os_gethrt();	//get starting time.
+		if (diag_l0_dt_send(dl0d, NULL, tx, DT8_MSIZE))
+			break;
 
-		rv=diag_l0_dt_send(dl0d, NULL, tx, DT8_MSIZE);
-		if (rv==0) {
-			while ( (rv = diag_tty_read(dl0d, echo, DT8_MSIZE, 100)) < 0) {
-				if (errno != EINTR)
-					break;
-				rv = 0; /* Interrupted read, nothing transferred. */
-			}
-			//check echo
-			if ( (rv>0) && ( memcmp(tx, echo, DT8_MSIZE) == 0))
-				rv=0;	//all's well
-			else
-				badechos++;
-
-		} else {
-			break;	//dumb_send failed, this is bad
+		rv = diag_tty_read(dl0d, echo, DT8_MSIZE, 100 + 5*DT8_MSIZE);
+		if (rv != DT8_MSIZE) {
+			fprintf(stderr, "\ndt8: tty_read rets %d.\n", rv);
+			break;
 		}
+		tf = tf + diag_os_gethrt() - ti;
+		//check echo
+		if ( memcmp(tx, echo, DT8_MSIZE) == 0) {
+			//ok
+			rv=0;
+		} else {
+			badechos++;
+		}
+		fprintf(stderr, ".");
 	}	//for
+
+	tf = tf / (DT8_ITERS * DT8_MSIZE);	//average time per byte
+	fprintf(stderr, "\n");
 	if (rv != 0) {
 		printf("Error, test did not complete.\n");
 	} else {
-		tf=diag_os_getms();	//stop time
-		tf = (tf-ti)/(DT8_ITERS * DT8_MSIZE);	//average time per byte
-		printf("Average speed : %lu ms/byte. %d bad echos received.\n", tf, badechos);
+		printf("Average speed : %d us/byte. %d bad echos received.\n", (int) diag_os_hrtus(tf), badechos);
 	}
 
 	return;
@@ -242,25 +272,95 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 //dtest_9 : test accuracy of read timeouts.
 static void dtest_9(struct diag_l0_device *dl0d) {
 	#define DT9_ITERS	4
-	int i;
+	unsigned int i;
 	int iters;
 	uint8_t garbage[MAXRBUF];
-	unsigned long t0, tf;
-	printf("Starting test 9: checking accuracy of read timeouts.\n");
+	unsigned long long t0, tf;
+	fprintf(stderr, "Starting test 9: checking accuracy of read timeouts:\n");
 	diag_tty_iflush(dl0d);	//purge before starting
 
 	for (i=10; i<=200; i += 20) {
-		printf("Timeout=%d: ", i);
-		t0=diag_os_getms();
+		t0=diag_os_gethrt();
 		for (iters=0; iters < DT9_ITERS; iters++) {
 			diag_tty_read(dl0d, garbage, MAXRBUF, i);
 		}
-		tf = (diag_os_getms() - t0)/(DT9_ITERS);	//average measured timeout
-		printf("avg=%lums\n", tf);
+		tf = (diag_os_gethrt() - t0) / DT9_ITERS;	//average measured timeout
+		printf("Timeout=%d: avg=%dms\n", i, (int) (diag_os_hrtus(tf)/1000));
 	}
 
 	return;
 }	//dtest_9
+
+//dtest_10 == dtest_2 with a different speed
+
+//dtest_11 : test incomplete read timeout (needs half-duplex connection)
+static void dtest_11(struct diag_l0_device *dl0d) {
+	#define DT11_ITERS	4
+	unsigned int i;
+	int iters,rv;
+	uint8_t garbage[MAXRBUF];
+	unsigned long long t0, tf;
+	fprintf(stderr, "Starting test 11: half-duplex incomplete read timeout accuracy:\n");
+	diag_tty_iflush(dl0d);	//purge before starting
+
+	for (i=10; i<=180; i += 20) {
+		tf=0;
+		for (iters=0; iters < DT11_ITERS; iters++) {
+			uint8_t tc = i;
+			if ((rv=diag_l0_dt_send(dl0d, NULL, &tc, 1))) goto failed;
+			t0=diag_os_gethrt();
+			if ((rv=diag_tty_read(dl0d, garbage, MAXRBUF, i)) != 1) {
+				// failed: purge + try next timeout value
+				printf("failed @ timeout=%d : %s\n", i, diag_errlookup(rv));
+				diag_tty_iflush(dl0d);
+				break;
+			}
+			tf = tf + diag_os_gethrt() - t0;
+		}
+		tf = tf / DT11_ITERS;
+		printf("Timeout=%d: avg=%dms\n", i, (int) (diag_os_hrtus(tf)/1000));
+	}
+	return;
+failed:
+	fprintf(stderr, "Problem during test! %s\n",diag_errlookup(rv));
+	return;
+}	//dtest_11
+
+//dtest_12 : diag_tty_write() duration
+static void dtest_12(struct diag_l0_device *dl0d) {
+	#define DT12_ITERS	4
+	unsigned int i;
+	int iters;
+	uint8_t garbage[MAXRBUF];
+	unsigned long long t0, tf;	//measure inner time
+	unsigned long long ts1, ts2;	//measure overall loop
+
+	fprintf(stderr, "Starting test 12: diag_tty_write() duration:\n");
+	diag_tty_iflush(dl0d);	//purge before starting
+
+	for (i=1; i<=50; i += 5) {
+		tf=0;
+		printf("len=%d:", i);
+		ts1=diag_os_gethrt();
+		for (iters=0; iters < DT12_ITERS; iters++) {
+			unsigned long long tt1;
+			t0 = diag_os_gethrt();
+			if (diag_l0_dt_send(dl0d, NULL, garbage, i)) goto failed;
+			tt1 = diag_os_gethrt();
+			tf = tf + (tt1 - t0);
+			printf("\t%luus", (long unsigned int) (diag_os_hrtus(tt1-t0)));
+			(void) diag_tty_read(dl0d, garbage, MAXRBUF, 5);
+		}
+		ts2= (diag_os_gethrt() - ts1) / DT12_ITERS;
+		tf = tf / DT12_ITERS;
+		printf(" => avg=%dms / %dms\n", (int) (diag_os_hrtus(tf)/1000), (int) (diag_os_hrtus(ts2)/1000));
+		if (i==1) i=0;
+	}
+	return;
+failed:
+	fprintf(stderr, "Problem during test!\n");
+	return;
+}
 
 /*
  * Open the diagnostic device, returns a file descriptor
@@ -289,7 +389,11 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		return diag_pseterr(rv);
 	}
 
-	pset.speed=10400;
+	if (testnum == 10) {
+		pset.speed = 15000;
+	} else {
+		pset.speed=10400;
+	}
 	pset.databits = diag_databits_8;
 	pset.stopbits = diag_stopbits_1;
 	pset.parflag = diag_par_n;
@@ -337,13 +441,22 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	case 9:
 		dtest_9(dl0d);
 		break;
+	case 10:
+		dtest_2(dl0d);	//same test, different speed
+		break;
+	case 11:
+		dtest_11(dl0d);
+		break;
+	case 12:
+		dtest_12(dl0d);
+		break;
 	default:
 		break;
 	}
 
 	diag_tty_close(&dl0d);
 	free(dev);
-	fprintf(stderr, FLFMT "L0 test finished. Ignore the following error.\n", FL);
+	fprintf(stderr, "L0 test finished. Ignore the following error.\n");
 	return NULL;
 }
 
@@ -398,36 +511,22 @@ const void *data, size_t len)
 	 * as the L1 code that called this will be adding the P4 gap between
 	 * bytes
 	 */
-	ssize_t xferd;
-	if (!len)
+	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %ld bytes ",
+		fprintf(stderr, FLFMT "dt_send dl0d=%p , len=%ld. ",
 			FL, (void *)dl0d, (long)len);
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 			diag_data_dump(stderr, data, len);
 		fprintf(stderr, "\n");
 	}
 
-	while ((size_t)(xferd = diag_tty_write(dl0d, data, len)) != len) {
-		/* Partial write */
-		if (xferd < 0) {
-			/* error */
-			if (errno != EINTR) {
-				perror("write");
-				fprintf(stderr, FLFMT "write returned error %d !!\n", FL, errno);
-				return diag_iseterr(DIAG_ERR_GENERAL);
-			}
-			xferd = 0; /* Interrupted read, nothing transferred. */
-		}
-		/*
-		 * Successfully wrote xferd bytes (or 0 && EINTR),
-		 * so inc pointers and continue
-		 */
-		len -= (size_t) xferd;
-		data = (const void *)((const uint8_t *)data + xferd);
+	if (diag_tty_write(dl0d, data, len) != (int) len) {
+		fprintf(stderr, FLFMT "dt_send: write error\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+
 	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
 		fprintf(stderr, "\n");
@@ -442,10 +541,10 @@ const void *data, size_t len)
 static int
 diag_l0_dt_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-UNUSED(void *data), size_t len, int timeout)
+UNUSED(void *data), size_t len, unsigned int timeout)
 {
 	fprintf(stderr,
-		FLFMT "link %p recv upto %ld bytes timeout %d; doing nothing.\n",
+		FLFMT "link %p recv upto %ld bytes timeout %u; doing nothing.\n",
 		FL, (void *)dl0d, (long)len, timeout);
 
 	return diag_iseterr(DIAG_ERR_TIMEOUT);

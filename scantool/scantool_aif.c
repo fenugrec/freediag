@@ -68,9 +68,8 @@ static void aif_vw(void *data) { (void) data; BadToApp() ; }
 static void aif_dyno(void *data) { (void) data; BadToApp() ; }
 
 
-static void aif_monitor (void *data)
+static void aif_monitor (UNUSED(void *data))
 {
-	(void) data;	//note : this is the cleanest way I know to silence "unused parameter" warnings.
 	if (global_state < STATE_CONNECTED)
 	{
 		fprintf(stderr, "scantool: Can't monitor - car is not yet connected.\n");
@@ -218,16 +217,14 @@ static void aif_set (void *data)
 }
 
 
-static void aif_noop (void *data)
+static void aif_noop (UNUSED(void *data))
 {
-	(void) data;
 	OkToApp() ;
 }
 
 
-static void aif_exit (void *data)
+static void aif_exit (UNUSED(void *data))
 {
-	(void) data;
 	OkToApp() ;
 	fprintf(stderr, "scantool: Exiting.\n") ;
 	set_close();
@@ -235,9 +232,8 @@ static void aif_exit (void *data)
 }
 
 
-static void aif_disconnect (void *data)
+static void aif_disconnect (UNUSED(void *data))
 {
-	(void) data;
 	if (global_state < STATE_CONNECTED)
 	{
 		OkToApp() ;
@@ -261,9 +257,8 @@ static void aif_disconnect (void *data)
 
 
 
-static void aif_scan (void *data)
+static void aif_scan (UNUSED(void *data))
 {
-	(void) data;
 	if (global_state >= STATE_CONNECTED)
 	{
 		OkToApp() ;

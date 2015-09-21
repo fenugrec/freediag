@@ -85,18 +85,6 @@ else()
 	check_function_exists (select HAVE_SELECT)
 	check_function_exists (gettimeofday HAVE_GETTIMEOFDAY)
 
-	set (CMAKE_REQUIRED_INCLUDES "sys/time.h")
-	#we could use CMakePushCheckState to push / pop CMAKE_REQUIRED_INCLUDES
-	#but I think it has no influence on the rest of the build...
-	check_function_exists (timersub HAVE_TIMERSUB)
-	#timersub isn't detected properly on some systems. We'll assume it's common enough to be available
-	#on all non-windows OSes...
-	if (NOT HAVE_TIMERSUB)
-		message(WARNING "timersub() not detected, but it may be available anyway. Forcing HAVE_TIMERSUB !")
-		set(HAVE_TIMERSUB 1)
-	endif ()
-
-
 	#diag_os_unix needs some _POSIX_TIMERS functions wich
 	#may require linking with -lrt
 	set (CMAKE_REQUIRED_INCLUDE_FILES time.h)
@@ -123,7 +111,6 @@ endif()
 option(BUILDGUI "Enable scangui (default=no)" OFF)
 option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
 option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
-option(TRY_POSIX "Try POSIX implementations. (default=disabled)" OFF)
 option(NISPROG "Enable experimental Nissan Consult-II functions. (default=disabled)" OFF)
 
 ###### Includes

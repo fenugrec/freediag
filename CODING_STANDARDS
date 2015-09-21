@@ -48,8 +48,8 @@ typically not very microcontroller friendly.
 7- malloc, calloc, etc. : these should never be called directly; instead
 use the diag_*alloc wrappers defined in diag.h and diag_general.c
 
-8- everything OS-dependant must be constrained to diag_os*.c
- and diag_tty*.c , to avoid #ifdef hell.
+8- everything OS-dependant must be kept inside diag_os_*
+ and diag_tty_* files, to avoid #ifdef hell.
  
 9- I think aiming for a silent ouptut when compiling with 
  "-Wall -Wextra -pedantic -std=gnu99" flags will help find many potential bugs.
@@ -64,6 +64,8 @@ use the diag_*alloc wrappers defined in diag.h and diag_general.c
  In freediag this happened with debug message fprintfs. In
  the meantime I removed the offending casts and added a //%pcallback!
  comment in every place.
+ Also, on certain versions of windows, the printf() provided by msvcrt.dll is
+ broken and *DOES NOT* support the %llu and %lld formatters !
   
 11- any function that can fail, should free() everything it successfully
  alloc'ed so far, *before* returning an error. Similarly, it should "undo"

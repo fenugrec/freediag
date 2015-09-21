@@ -54,7 +54,7 @@ diag_l2_proto_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
 /*
 */
 int
-diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, int timeout,
+diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg), void *handle);
 
 /*

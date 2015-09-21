@@ -386,12 +386,12 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
  * XXX currently broken because I'm halfway through modifying _process_data
  */
 static int
-diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
+diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle)
 {
 	int rv;
 	struct diag_msg *msg;
-	int tout;
+	unsigned int tout;
 	int state;
 //State machine:
 #define ST_STATE1 1	// timeout=0 to get data already in buffer
@@ -440,7 +440,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, int timeout,
 		}
 
 		if (diag_l3_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr,FLFMT "recv state %d tout %d\n",
+			fprintf(stderr,FLFMT "recv state %d tout %u\n",
 				FL, state, tout);
 
 		/*

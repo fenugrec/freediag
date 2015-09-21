@@ -6,6 +6,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * 2014-2015 fenugrec
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +27,10 @@
  * Library user header file
  */
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #ifdef CMAKE_ENABLED
 	#include "cconf.h"
 #else
@@ -44,28 +49,11 @@
 #include <stdint.h>		/* For uint8_t, etc. This is a C99 header */
 #include <stdio.h>		/* For FILE */
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 // Nice to have anywhere...
 #define MIN(_a_, _b_) (((_a_) < (_b_) ? (_a_) : (_b_)))
-#ifdef __GNUC__
-	#define UNUSED(X) 	X __attribute__((unused))	//magic !
-#else
-	#define UNUSED(X)	X	//how can we suppress "unused parameter" warnings on other compilers?
-#endif // __GNUC__
+#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+#define FLFMT "%s:%d:  "		//for debug messages
 
-
-#ifdef HAVE_GETTIMEOFDAY
-	#include <sys/time.h>	//probably the right place where gettimeofday(), timeval etc would be defined ?
-#endif //HAVE_GETTIMEOFDAY
-
-#ifndef HAVE_TIMERSUB
-	//win32 code doesn't use timersub, but declaring this should do no harm.
-	//bare implementation, in diag_os_??.c
-	void timersub(struct timeval *a, struct timeval *b, struct timeval *res);
-#endif	//HAVE_TIMERSUB
 
 #ifndef HAVE_STRCASECMP	//strcasecmp is POSIX, but kernel32 provides lstrcmpi which should be equivalent.
 #ifdef WIN32
@@ -75,13 +63,17 @@ extern "C" {
 #endif 	//WIN32
 #endif	//have_strcasecmp
 
-#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+
 #define DB_FILE "./freediag_carsim_all.db"	//default simfile for CARSIM interface
 #define DIAG_NAMELEN	256
 
-/* For diagnostics */
 
-#define FLFMT "%s:%d:  "
+/****** compiler-specific tweaks ******/
+#ifdef __GNUC__
+	#define UNUSED(X) 	X __attribute__((unused))	//magic !
+#else
+	#define UNUSED(X)	X	//how can we suppress "unused parameter" warnings on other compilers?
+#endif // __GNUC__
 
 #ifndef CMAKE_ENABLED
 	#define CURFILE __FILE__
@@ -109,6 +101,7 @@ extern "C" {
 #else
 	#define FL CURFILE, __LINE__
 #endif
+/****** ******/
 
 /*
  * Many receive buffers are set to this, which is voluntarily larger than
@@ -141,7 +134,7 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
 #define DIAG_IOCTL_INITBUS	0x2201	/* Initialise the ecu bus, data is diag_l1_init */
 #define DIAG_IOCTL_IFLUSH 0x2202	//flush input buffers
 
-/* debug control */
+/****** debug control ******/
 // flag containers : diag_l0_debug, diag_l1_debug diag_l2_debug, diag_l3_debug, diag_cli_debug
 
 #define DIAG_DEBUG_OPEN		0x01	/* Open events */
@@ -219,7 +212,9 @@ uint8_t diag_cks1(const uint8_t *data, unsigned int len);	//calculate 8bit check
 /*
  * General functions
  */
+//diag_init : ret 0 if ok;
 int diag_init(void);
+//diag_end : must be called before exiting. Ret 0 if ok
 int diag_end(void);
 
 //diag_data_dump : print (len) uin8_t bytes from data[], to FILE (i.e. stderr, etc.)
@@ -276,10 +271,10 @@ int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 #define diag_malloc(P, S) diag_flmalloc(CURFILE, __LINE__, \
 	((void **)(P)), (S))
 
+#include "diag_os.h"	/* OS wrappers specific definitions. */
+
 #if defined(__cplusplus)
 }
 #endif
-
-#include "diag_os.h"	/* OS specific definitions. */
 
 #endif /* _DIAG_H_ */

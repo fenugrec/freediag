@@ -397,7 +397,7 @@ cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
 static int
 cmd_diag_read(int argc, char **argv)
 {
-	int timeout = 0;
+	unsigned int timeout = 0;
 
 	if (global_state < STATE_CONNECTED)
 	{
@@ -406,7 +406,7 @@ cmd_diag_read(int argc, char **argv)
 	}
 
 	if (argc > 1)
-		timeout = atoi(argv[1]) * 1000;
+		timeout = (unsigned int) atoi(argv[1]) * 1000;
 
 	if (global_state < STATE_L3ADDED)
 	{

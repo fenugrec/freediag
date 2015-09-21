@@ -39,7 +39,6 @@
  *
  */
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h> // str**()
 #include <stdbool.h>
@@ -109,7 +108,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 static int
 diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
-		 void *data, size_t len, int timeout);
+		 void *data, size_t len, unsigned int timeout);
 
 extern void
 diag_l0_sim_setfile(char * fname);
@@ -538,7 +537,6 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 	// Open the DB file:
 	if ((dev->fp = fopen(dl0d->name, "r")) == NULL) {
 		fprintf(stderr, FLFMT "Unable to open file \"%s\": ", FL, dl0d->name);
-		perror(NULL);
 		free(dl0d->name);
 		free(dev);
 		free(dl0d);
@@ -691,7 +689,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 static int
 diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
-		void *data, size_t len, int timeout)
+		void *data, size_t len, unsigned int timeout)
 {
 	size_t xferd;
 	struct sim_ecu_response* resp_p = NULL;
@@ -700,7 +698,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "link %p recv upto %ld bytes timeout %d\n",
+			FLFMT "link %p recv upto %ld bytes timeout %u\n",
 			FL, (void *)dl0d, (long)len, timeout);
 
 	// "Receive from the ECU" a response.

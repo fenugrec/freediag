@@ -7,7 +7,7 @@
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -35,12 +35,11 @@
  *			(i.e restartable system calls)
  *		SYSV does, so you see lots of code that copes with EINTR
  *	(4)	EINTR handling code belongs inside diag_os* and diag_tty* functions only,
- *		to provide a clean OS-independant API to upper levels. (WIP)
+ *		to provide a clean OS-independant API to upper levels.
  *
-  * Goals : if _POSIX_TIMERS is defined, we attempt to use:
+ * Goals : if _POSIX_TIMERS is defined, we attempt to use:
  *		1- POSIX timer_create() mechanisms for the periodic callbacks
  *		2- POSIX clock_gettime(), using best available clockid, for _getms() and _gethrt()
- *		(2b- using clock_gettime() removes requirement for gettimeofday() and associated compile-time checks)
  *		3- clock_nanosleep(), using best available clockid, for _millisleep()
  *
  * Fallbacks for above:
@@ -62,6 +61,7 @@
 #include <assert.h>
 
 #include "diag_os.h"
+#include "diag_os_unix.h"
 #include "diag.h"
 
 #include "diag_l2.h"
@@ -69,15 +69,18 @@
 #include "diag_err.h"
 
 #include <unistd.h>
-#include <sys/time.h>
-#include <sys/types.h>
 
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
 
-
+/***
+ * In the following #ifdefs, enable/include everything supported.
+ * Other #ifdefs in the code will 'choose' the correct implementations
+ * when applicable. In other words, the following blocks should not
+ * interfere with each other (ex. if both _POSIX_TIMERS && __linux__ )
+ */
 #ifdef _POSIX_TIMERS
 	/* This should be defined on a lot of linux/unix systems.
 		Implications : timer_create(), clock_gettime(), clock_nanosleep() are available.
@@ -88,12 +91,21 @@
 	static clockid_t clkid_ns = CLOCK_MONOTONIC;	// for clock_nanosleep()
 
 	static timer_t ptimer_id;	//periodic timer ID
+#endif // _POSIX_TIMERS
 
-#else
-	#warning ****** no POSIX timers on your system !?!? Report this!
+#ifdef __linux__
 	#include <sys/ioctl.h>	//need these for
 	#include <linux/rtc.h>	//diag_os_millisleep fallback
+#ifndef _POSIX_TIMERS
+	#warning ****** WARNING ! Linux without _POSIX_TIMERS ?? Please report this !
 #endif
+#endif // __linux__
+
+#ifdef HAVE_GETTIMEOFDAY
+	#include <sys/time.h>	//only for gettimeofday(), timeval etc?
+#endif
+/***/
+
 
 static int diag_os_init_done=0;
 static int discover_done = 0;	//protect diag_os_millisleep() and _gethrt()
@@ -101,7 +113,7 @@ static int discover_done = 0;	//protect diag_os_millisleep() and _gethrt()
 static void diag_os_discover(void);
 
 static void
-#ifdef _POSIX_TIMERS
+#if defined(_POSIX_TIMERS) && (SEL_PERIODIC==S_POSIX || SEL_PERIODIC==S_AUTO)
 diag_os_periodic(UNUSED(union sigval sv))
 #else
 diag_os_periodic(UNUSED(int unused))
@@ -130,8 +142,8 @@ diag_os_init(void)
 
 	diag_os_discover();	//auto-select clockids or other capabilities
 	diag_os_calibrate();	//calibrate before starting periodic timer
-	
-#ifdef _POSIX_TIMERS
+
+#if defined(_POSIX_TIMERS) && (SEL_PERIODIC==S_POSIX || SEL_PERIODIC==S_AUTO)
 	struct itimerspec pti;
 	struct sigevent pt_sigev;
 
@@ -140,7 +152,7 @@ diag_os_init(void)
 	pt_sigev.sigev_notify_attributes = NULL;	//not sure what we need here, if anything.
 //	pt_sigev.sigev_value.sival_int = 0;	//not used
 //	pt_sigev.siev_signo = 0;	//not used
-	
+
 	if (timer_create(clkid_pt, &pt_sigev, &ptimer_id) != 0) {
 		fprintf(stderr, FLFMT "Could not create periodic timer... report this\n", FL);
 		diag_os_geterr(0);
@@ -161,7 +173,7 @@ diag_os_init(void)
 #else	//so, no _POSIX_TIMERS ... sucks
 	struct sigaction stNew;
 	struct itimerval tv;
-	
+
 	/*
 	 * Install alarm handler
 	 */
@@ -188,10 +200,10 @@ diag_os_init(void)
     original timeout value. If the flag is not set, interruptible
     functions interrupted by this signal shall fail with errno set to
     [EINTR].
-   
+
 *** Interesting synthesis on
   http://unix.stackexchange.com/questions/16455/interruption-of-system-calls-when-a-signal-is-caught
- 
+
 *** Conclusion : since we need to handle EINTR for read(), write(), select()
 	and some *sleep() syscalls anyway, we don't specify SA_RESTART.
 
@@ -216,7 +228,7 @@ diag_os_init(void)
 //diag_os_close: delete alarm handlers / periodic timers
 //return 0 if ok (in this case, always)
 int diag_os_close() {
-#ifdef _POSIX_TIMERS
+#if defined(_POSIX_TIMERS) && (SEL_PERIODIC==S_POSIX || SEL_PERIODIC==S_AUTO)
 	//disarm + delete periodic timer
 	timer_delete(ptimer_id);
 #else
@@ -230,7 +242,7 @@ int diag_os_close() {
 	disable_tmr.sa_handler=SIG_DFL;
 	sigaction(SIGALRM, &disable_tmr, NULL);
 #endif // _POSIX_TIMERS
-	
+
 	diag_os_init_done = 0;
 	return 0;
 
@@ -243,15 +255,15 @@ diag_os_millisleep(unsigned int ms)
 {
 	unsigned long long t1,t2;	//for verification
 	long int offsetus;
-	
+
 	t1=diag_os_gethrt();
-	
+
 	if (ms==0 || !discover_done)
 		return;
 
 //3 different compile-time implementations
-//TODO : select implem at runtime if possible?
-#ifdef _POSIX_TIMERS
+//TODO : select implem at runtime if possible? + internal feedback loop
+#if defined(_POSIX_TIMERS) && (SEL_SLEEP==S_POSIX || SEL_SLEEP==S_AUTO)
 	struct timespec rqst, resp;
 	int rv;
 
@@ -265,12 +277,12 @@ diag_os_millisleep(unsigned int ms)
 			rqst = resp;
 			errno = 0;
 		} else {
-			break;	//unlikely
+			//unlikely
+			fprintf(stderr, "diag_os_millisleep : error %d\n",rv);
+			break;
 		}
 	}
-#elif defined(__linux__)
-#warning ****** WARNING ! Your system claims to be __linux__ but without _POSIX_TIMERS ??
-#warning ****** WARNING ! Good luck.
+#elif defined(__linux__) && (SEL_SLEEP==S_LINUX || SEL_SLEEP==S_AUTO)
 /** ugly /dev/rtc implementation; requires uid=0 or appropriate permissions. **/
 	int fd, retval;
 	unsigned int i;
@@ -278,7 +290,7 @@ diag_os_millisleep(unsigned int ms)
 
 	/* adjust time for 2048 rate */
 
-	ms = (unsigned int)((unsigned long) ms* 4096/2000);	//avoid overflow
+	ms = (unsigned int)((unsigned long) ms* 2048/1000);	//avoid overflow
 
 	if (ms > 2)	//Bias delay -1ms to avoid overshoot ?
 		ms-=2;
@@ -336,7 +348,8 @@ diag_os_millisleep(unsigned int ms)
 
 	close(fd);
 #else
-#warning ****** WARNING ! Your system needs help. Trying nanosleep() third-string backup plan.
+#warning ****** WARNING ! Your system needs help. Using nanosleep() third-string backup plan.
+#warning ****** Please report this!
 	struct timespec rqst, resp;
 	int rv;
 
@@ -353,14 +366,13 @@ diag_os_millisleep(unsigned int ms)
 			break;	//unlikely
 		}
 	}
-#endif // _POSIX_TIMERS
+#endif // SEL_SLEEP
 
 	t2 = diag_os_gethrt();
-	offsetus = (long int) (diag_os_hrtus(t2-t1) - ms*1000);
+	offsetus = ((long int) diag_os_hrtus(t2-t1)) - ms*1000;
 	if ((offsetus > 1500) || (offsetus < -1500))
 		printf("_millisleep off by %ld\n", offsetus);
-	//TODO : auto-adjust ?
-	
+
 	return;
 
 }	//diag_os_millisleep
@@ -407,31 +419,8 @@ diag_os_sched(void)
 	if (os_sched_done)
 		return 0;
 
-#ifdef _POSIX_PRIORITY_SCHEDULING
+#if defined(_POSIX_PRIORITY_SCHEDULING) && (SEL_SCHED==S_POSIX || SEL_SCHED==S_LINUX || SEL_SCHED==S_AUTO)
 #include <sched.h>
-	int r = 0;
-	struct sched_param p;
-
-#ifndef __linux__		//&& _POSIX_PRIO SCHED
-	/*
-	+* If we're not running on Linux, we're not sure if what is
-	+* being done is remotely applicable for our flavor of POSIX
-	+* priority scheduling.
-	+* For example, you set the scheduling priority to 1.  Ouch.
-	 */
-#warning Scheduling setup should be examined on your particular platform !
-#warning Please report this !
-
-	/* Code block */
-	{
-		static int setup_warned;
-		if (setup_warned == 0) {
-			setup_warned = 1;
-			fprintf(stderr,
-				FLFMT "Scheduling setup should be examined.\n", FL);
-		}
-	}
-#else		//so it's __linux__
 	/*
 	 * Check privileges
 	 */
@@ -441,50 +430,56 @@ diag_os_sched(void)
 		if (suser_warned == 0) {
 			suser_warned = 1;
 			fprintf(stderr,
-				FLFMT "WARNING: Not running as superuser\n", FL);
-			fprintf(stderr,
-				FLFMT "WARNING: Could not set real-time mode. "
-				"Things will not work correctly\n", FL);
+				FLFMT "WARNING: Not running as superuser; "
+				"things may not work correctly\n", FL);
 		}
 	}
-#endif	//ndef linux (inside _POSIX_PRIO_SCHED)
-
-	/* Set real time UNIX scheduling */
-	p.sched_priority = 1;
-  	if ( sched_setscheduler(getpid(), SCHED_FIFO, &p) < 0)
+#if defined(__linux__) && (SEL_SCHED==S_LINUX || SEL_SCHED==S_AUTO)
 	{
-		fprintf(stderr, FLFMT "sched_setscheduler failed: %s.\n",
-			FL, strerror(errno));
-		r = -1;
+		int r=0;
+		struct sched_param p;
+
+		/* Set real time UNIX scheduling */
+		p.sched_priority = 1;
+		if ( sched_setscheduler(getpid(), SCHED_FIFO, &p) < 0)
+		{
+			fprintf(stderr, FLFMT "sched_setscheduler failed: %s.\n",
+				FL, strerror(errno));
+			r = -1;
+		}
+		rv=r;
 	}
-	rv=r;
+#else
+	/*
+	+* If we're not running on Linux, we're not sure if what is
+	+* being done is remotely applicable for our flavor of POSIX
+	+* priority scheduling.
+	+* For example, you set the scheduling priority to 1.  Ouch.
+	 */
+#warning Scheduling setup should be examined on your particular platform !
+#warning Please report this !
+
+	fprintf(stderr, FLFMT "Scheduling setup should be examined.\n", FL);
+	rv = 0;
+
+#endif // __linux__
+
 #else	//not POSIX_PRIO_SCHED
 #warning No special scheduling support in diag_os.c for your OS! Please report this !
 
 	fprintf(stderr,
 		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
-	rv=-1;
+	rv=0;
 #endif // _POSIX_PRIORITY_SCHEDULING
 	os_sched_done=1;
 	return rv;
 }	//of diag_os_sched
 
 
-#ifndef HAVE_GETTIMEOFDAY
-	//TODO : don't need gettimeofday if _POSIX_TIMERS ?
-	#error No implementation of gettimeofday() for your system!
-#endif	//HAVE_GETTIMEOFDAY
-
-#ifndef HAVE_TIMERSUB
-	#error No implementation of timersub() for your system !
-#endif //HAVE_TIMERSUB
-
-
 //diag_os_geterr : get OS-specific error string.
 //Either gets the last error if os_errno==0, or print the
 //message associated with the specified os_errno
 // XXX this is not async-safe / re-entrant !
-//
 const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 	//we'll suppose strerr is satisfactory.
 	return (const char *) strerror(os_errno? os_errno : errno);
@@ -513,7 +508,7 @@ static int diag_os_testns(clockid_t ckid, char * ckname) {
 	rqtp.tv_nsec = 0;	//bogus interval for nanosleep test
 	if (clock_nanosleep(ckid, 0, &rqtp, NULL) != ENOTSUP) {
 		printf("clock_nanosleep(): using %s\n", ckname);
-		clkid_gt = ckid;
+		clkid_ns = ckid;
 		return 0;
 	}
 	return -1;
@@ -523,7 +518,7 @@ static int diag_os_testns(clockid_t ckid, char * ckname) {
 //use best clock truly available:
 //TODO : add weird clockids for other systems
 static void diag_os_discover(void) {
-#ifdef _POSIX_TIMERS
+#ifdef _POSIX_TIMERS	//this guarantees clock_gettime and CLOCK_REALTIME are available
 	int gtdone=0, nsdone=0;
 
 //***** 1) set clockid for periodic timers
@@ -580,9 +575,6 @@ static void diag_os_discover(void) {
 //adequate performances.
 //call after diag_os_discover !
 void diag_os_calibrate(void) {
-	//TODO: implement linux/unix diag_os_calibrate !
-	//For the moment we only check the resolution of diag_os_getms(),
-	//diag_os_gethrt() and test diag_os_chronoms().
 	#define RESOL_ITERS	5
 	static int calibrate_done=0;
 	unsigned long t1, t2, t3;
@@ -594,7 +586,7 @@ void diag_os_calibrate(void) {
 		diag_os_discover();
 
 	//test _gethrt(). clock_getres() would tell us the resolution, but measuring
-	//like this including overhead gives a better measure of "usable" res.
+	//like this gives a better measure of "usable" res.
 	resol=0;
 	maxres=0;
 	for (int i=0; i < RESOL_ITERS; i++) {
@@ -609,7 +601,24 @@ void diag_os_calibrate(void) {
 			diag_os_hrtus(maxres), diag_os_hrtus(resol / RESOL_ITERS));
 	if (diag_os_hrtus(maxres) >= 1200)
 		printf("WARNING : your system offers no clock >= 1kHz; this WILL be a problem!\n");
-	
+
+	//test _getms()
+	resol=0;
+	maxres=0;
+	for (int i=0; i < RESOL_ITERS; i++) {
+		unsigned long tr;
+		t1=diag_os_getms();
+		while ((t2=diag_os_getms()) == t1) {}
+		tr = (t2-t1);
+		if (tr > maxres) maxres = tr;
+		resol += tr;
+	}
+	printf("diag_os_getms() resolution <= ~%llums, avg ~%llums\n", maxres, resol / RESOL_ITERS);
+	if (t2 > ((unsigned long)(-1) - 1000*30*60)) {
+		//unlikely, since 32-bit milliseconds will wrap in 49.7 days
+		printf("warning : diag_os_getms() will wrap in <30 minutes ! Consider rebooting...\n");
+	}
+
 	//test _millisleep() VS _gethrt()
 	printf("testing diag_os_millisleep(), this will take a moment...\n");
 	for (int testval=50; testval > 0; testval -= 2) {
@@ -648,23 +657,6 @@ void diag_os_calibrate(void) {
 			testval -= 7;
 	}	//for testvals
 
-	//test _getms()
-	resol=0;
-	maxres=0;
-	for (int i=0; i < RESOL_ITERS; i++) {
-		unsigned long tr;
-		t1=diag_os_getms();
-		while ((t2=diag_os_getms()) == t1) {}
-		tr = (t2-t1);
-		if (tr > maxres) maxres = tr;
-		resol += tr;
-	}
-	printf("diag_os_getms() resolution <= ~%llums, avg ~%llums\n", maxres, resol / RESOL_ITERS);
-	if (t2 > ((unsigned long)(-1) - 1000*30*60)) {
-		//unlikely, since 32-bit milliseconds will wrap in 49.7 days
-		printf("warning : diag_os_getms() will wrap in <30 minutes ! Consider rebooting...\n");
-	}
-
 	//now test chronoms()
 	t3=diag_os_chronoms(0);	//get current relative time
 	t1=diag_os_chronoms(t3);	//reset stopwatch & get current time (~0)
@@ -687,39 +679,45 @@ unsigned long diag_os_getms(void) {
 //return high res timestamp, monotonic.
 unsigned long long diag_os_gethrt(void) {
 	assert(discover_done);
-#ifdef _POSIX_TIMERS
+#if defined(_POSIX_TIMERS) && (SEL_HRT==S_POSIX || SEL_HRT==S_AUTO)
 	//units : ns
 	struct timespec curtime={0};
 
 	clock_gettime(clkid_gt, &curtime);
 
-	return curtime.tv_nsec + (curtime.tv_sec * 1000*1000*1000);
+	return curtime.tv_nsec + (curtime.tv_sec * 1000*1000*1000ULL);
 
 #else
-	//but we'll use gettimeofday anyway as a stopgap. This is evil
+	#warning Using gettimeofday() ! This is evil !
+
+#ifndef HAVE_GETTIMEOFDAY
+	#error No implementation of gettimeofday() for your system!
+#endif // HAVE_GETTIMEOFDAY
+
+	//Use gettimeofday anyway as a stopgap. This is evil
 	//because gettimeofday isn't guaranteed to be monotonic (always increasing)
-	//TODO : OSX has a mach_absolute_time() which could be used.
 	//units : us
 	struct timeval tv;
 	unsigned long long rv;
 	gettimeofday(&tv, NULL);
-	rv= tv.tv_usec + (tv.tv_sec * 1000000);
+	rv= tv.tv_usec + (tv.tv_sec * 1000000ULL);
 	return rv;
 #endif
 }
 
 //convert a delta of diag_os_gethrt() timestamps to microseconds
+//must match diag_os_gethrt() implementation!
 unsigned long long diag_os_hrtus(unsigned long long hrdelta) {
-#ifdef _POSIX_TIMERS	//must match diag_os_gethrt() implementation!
+#if defined(_POSIX_TIMERS) && (SEL_HRT==S_POSIX || SEL_HRT==S_AUTO)
 	return hrdelta / 1000;
 #else
 	return hrdelta;
-#endif // _POSIX_MONOTONIC_CLOCK
+#endif // _POSIX_TIMERS
 }
 
 //arbitrarily resettable stopwatch. See comments in diag_os.h
 unsigned long diag_os_chronoms(unsigned long treset) {
-#ifdef _POSIX_TIMERS	//this guarantees clock_gettime and CLOCK_REALTIME will work
+#if defined(_POSIX_TIMERS) && (SEL_HRT==S_POSIX || SEL_HRT==S_AUTO)
 	static struct timespec offset={0,0};
 	struct timespec curtime;
 	unsigned long rv;

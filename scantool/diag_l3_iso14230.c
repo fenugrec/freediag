@@ -195,7 +195,7 @@ diag_l3_14230_rxcallback(void *handle, struct diag_msg *msg)
 // iso14230 L3 over anything else than an iso14230 L2, so there's no reason to do anything else
 // in here.
 static int
-diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, int timeout,
+diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 		void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle) {
 
 	int rv;
