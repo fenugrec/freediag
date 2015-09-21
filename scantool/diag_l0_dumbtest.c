@@ -218,7 +218,7 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 	}	//for
 	fprintf(stderr, "\n");
 	tf = tf / DT7_ITERS;	//average time per byte
-	printf("Average speed : %llu us/byte. %d good; %d bad echos received.\n", diag_os_hrtus(tf), i, badechos);
+	printf("Average speed : %d us/byte. %d good; %d bad echos received.\n", (int) diag_os_hrtus(tf), i, badechos);
 
 
 	return;
@@ -263,7 +263,7 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 	if (rv != 0) {
 		printf("Error, test did not complete.\n");
 	} else {
-		printf("Average speed : %llu us/byte. %d bad echos received.\n", diag_os_hrtus(tf), badechos);
+		printf("Average speed : %d us/byte. %d bad echos received.\n", (int) diag_os_hrtus(tf), badechos);
 	}
 
 	return;
@@ -285,7 +285,7 @@ static void dtest_9(struct diag_l0_device *dl0d) {
 			diag_tty_read(dl0d, garbage, MAXRBUF, i);
 		}
 		tf = (diag_os_gethrt() - t0) / DT9_ITERS;	//average measured timeout
-		printf("Timeout=%d: avg=%llums\n", i, diag_os_hrtus(tf)/1000);
+		printf("Timeout=%d: avg=%dms\n", i, (int) (diag_os_hrtus(tf)/1000));
 	}
 
 	return;
@@ -313,7 +313,7 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 			tf = tf + diag_os_gethrt() - t0;
 		}
 		tf = tf / DT11_ITERS;
-		printf("Timeout=%d: avg=%llums\n", i, diag_os_hrtus(tf)/1000);
+		printf("Timeout=%d: avg=%dms\n", i, (int) (diag_os_hrtus(tf)/1000));
 	}
 	return;
 failed:
@@ -343,12 +343,12 @@ static void dtest_12(struct diag_l0_device *dl0d) {
 			if (diag_l0_dt_send(dl0d, NULL, garbage, i)) goto failed;
 			tt1 = diag_os_gethrt();
 			tf = tf + (tt1 - t0);
-			printf("\t%lluus", diag_os_hrtus(tt1-t0));
+			printf("\t%luus", (long unsigned int) (diag_os_hrtus(tt1-t0)));
 			(void) diag_tty_read(dl0d, garbage, MAXRBUF, 5);
 		}
 		ts2= (diag_os_gethrt() - ts1) / DT12_ITERS;
 		tf = tf / DT12_ITERS;
-		printf(" => avg=%llums / %llums\n", diag_os_hrtus(tf)/1000, diag_os_hrtus(ts2)/1000);
+		printf(" => avg=%dms / %dms\n", (int) (diag_os_hrtus(tf)/1000), (int) (diag_os_hrtus(ts2)/1000));
 		if (i==1) i=0;
 	}
 	return;
@@ -516,7 +516,7 @@ const void *data, size_t len)
 			diag_data_dump(stderr, data, len);
 		fprintf(stderr, "\n");
 	}
-	
+
 	if (diag_tty_write(dl0d, data, len) != (int) len) {
 		fprintf(stderr, FLFMT "dt_send: write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
