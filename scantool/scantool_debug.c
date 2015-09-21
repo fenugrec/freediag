@@ -257,27 +257,23 @@ cmd_debug_show(UNUSED(int argc), UNUSED(char **argv))
 	return CMD_OK;
 }
 
+/*print_pidinfo() : print supported PIDs (0 to 0x60) */
 static void
 print_pidinfo(int mode, uint8_t *pid_data)
 {
-	int i,j,p;
+	int i,j;	/* j : # pid per line */
 
-	j = 0; p = 0;
-	printf(" Mode %d:\n	", mode);
-	for (i=0; i<=0x60; i++)
-	{
+	printf(" Mode %d:", mode);
+	for (i=0, j=0; i<=0x60; i++) {
+		if (j == 8) j=0;
+
 		if (pid_data[i]) {
-			printf("0x%X ", i);
-			j++; p++;
-		}
-		if (j == 10)
-		{
-			j = 0;
-			printf("\n	");
+			if (j == 0) printf("\n \t");	//once per line
+			printf("0x%02X ", i);
+			j++;
 		}
 	}
-	if ((p == 0) || (j != 0))
-		printf("\n");
+	printf("\n");
 }
 
 
@@ -298,7 +294,7 @@ static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 		{
 			printf("ECU %d address 0x%X: Supported PIDs:\n",
 				i, ep->ecu_addr & 0xff);
-			print_pidinfo(1, ep->pids);
+			print_pidinfo(1, ep->mode1_info);
 			print_pidinfo(2, ep->mode2_info);
 			print_pidinfo(5, ep->mode5_info);
 			print_pidinfo(6, ep->mode6_info);

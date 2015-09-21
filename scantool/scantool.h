@@ -73,7 +73,7 @@ typedef struct ecu_data
 
 	uint8_t	supress;	/* Supress output of data from ECU in monitor mode; not implemented*/
 
-	uint8_t	pids[0x100];	/* Pids supported by ECU */
+	uint8_t	mode1_info[0x100];	/* Pids supported by ECU */
 	uint8_t	mode2_info[0x100];	/* Freeze frame version */
 	uint8_t	mode5_info[0x100];	/* Mode 5 info */
 	uint8_t	mode6_info[0x100];	/* Mode 6 info */

@@ -1259,7 +1259,7 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset)
 			/* Sort out where to store the received data */
 			switch (mode) {
 			case 1:
-				data = ep->pids;
+				data = ep->mode1_info;
 				break;
 			case 2:
 				data = ep->mode2_info;
@@ -1327,8 +1327,8 @@ do_j1979_getpids()
 	 */
 	memset(merged_mode1_info, 0, sizeof(merged_mode1_info));
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
-		for (j=0; j<sizeof(ep->pids);j++) {
-			merged_mode1_info[j] |= ep->pids[j] ;
+		for (j=0; j<sizeof(ep->mode1_info);j++) {
+			merged_mode1_info[j] |= ep->mode1_info[j] ;
 		}
 	}
 
