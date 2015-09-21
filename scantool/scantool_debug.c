@@ -159,7 +159,7 @@ cmd_debug_dumpdata(UNUSED(int argc), UNUSED(char **argv))
 	{
 		if (ep->valid)
 		{
-			printf("ECU %d:\n", ep->ecu_addr & 0xff);
+			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
 			print_resp_info(1, ep->mode1_data);
 		}
 	}
@@ -169,7 +169,7 @@ cmd_debug_dumpdata(UNUSED(int argc), UNUSED(char **argv))
 	{
 		if (ep->valid)
 		{
-			printf("ECU %d:\n", ep->ecu_addr & 0xff);
+			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
 			print_resp_info(2, ep->mode2_data);
 		}
 	}
@@ -292,7 +292,7 @@ static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 	{
 		if (ep->valid)
 		{
-			printf("ECU %d address 0x%X: Supported PIDs:\n",
+			printf("ECU %d address 0x%02X: Supported PIDs:\n",
 				i, ep->ecu_addr & 0xff);
 			print_pidinfo(1, ep->mode1_info);
 			print_pidinfo(2, ep->mode2_info);
