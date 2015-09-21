@@ -297,7 +297,7 @@ static void dtest_9(struct diag_l0_device *dl0d) {
 static void dtest_11(struct diag_l0_device *dl0d) {
 	#define DT11_ITERS	4
 	unsigned int i;
-	int iters;
+	int iters,rv;
 	uint8_t garbage[MAXRBUF];
 	unsigned long long t0, tf;
 	fprintf(stderr, "Starting test 11: half-duplex incomplete read timeout accuracy:\n");
@@ -305,11 +305,16 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 
 	for (i=10; i<=180; i += 20) {
 		tf=0;
-		for (iters=0; iters < DT9_ITERS; iters++) {
+		for (iters=0; iters < DT11_ITERS; iters++) {
 			uint8_t tc = i;
-			if (diag_l0_dt_send(dl0d, NULL, &tc, 1)) goto failed;
+			if ((rv=diag_l0_dt_send(dl0d, NULL, &tc, 1))) goto failed;
 			t0=diag_os_gethrt();
-			if (diag_tty_read(dl0d, garbage, MAXRBUF, i) != 1) goto failed;
+			if ((rv=diag_tty_read(dl0d, garbage, MAXRBUF, i)) != 1) {
+				// failed: purge + try next timeout value
+				printf("failed @ timeout=%d : %s\n", i, diag_errlookup(rv));
+				diag_tty_iflush(dl0d);
+				break;
+			}
 			tf = tf + diag_os_gethrt() - t0;
 		}
 		tf = tf / DT11_ITERS;
@@ -317,7 +322,7 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 	}
 	return;
 failed:
-	fprintf(stderr, "Problem during test!\n");
+	fprintf(stderr, "Problem during test! %s\n",diag_errlookup(rv));
 	return;
 }	//dtest_11
 
