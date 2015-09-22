@@ -1050,7 +1050,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
  * ret CMD_FAILED if file was unreadable
  * forward CMD_EXIT if applicable */
 static int
-command_file(char *filename)
+command_file(const char *filename)
 {
 	int rv;
 	FILE *prev_instream = instream;
@@ -1166,21 +1166,40 @@ rc_file(void)
 
 }
 
+/* start a cli with <name> as a prompt, and optionally run the <initscript> file */
 void
-enter_cli(const char *name)
+enter_cli(const char *name, const char *initscript)
 {
 	global_logfp = NULL;
 	//progname = name;	//we use the supplied *name instead.
 
-	printf("%s: %s version %s\n", name, projname, PACKAGE_VERSION);
-	printf("%s: Type HELP for a list of commands\n", name);
-	printf("%s: Type SCAN to start ODBII Scan\n", name);
-	printf("%s: Then use MONITOR to monitor real-time data\n", name);
-	printf("%s: **** IMPORTANT : this is beta software ! Use at your own risk.\n", name);
-	printf("%s: **** Remember, \"debug all -1\" displays all debugging info.\n", name);
-
 	readline_init();
 	set_init();
+
+	if (initscript != NULL) {
+		int rv=command_file(initscript);
+		switch (rv) {
+			case CMD_OK:
+				/* script was succesful, start a normal CLI afterwards */
+				break;
+			case CMD_FAILED:
+				printf("Problem with file %s\n", initscript);
+				// fallthrough, yes
+			default:
+			case CMD_EXIT:
+				set_close();
+				return;
+		}
+	} else {
+		/* print banner only if running without an initscript */
+		printf("%s: %s version %s\n", name, projname, PACKAGE_VERSION);
+		printf("%s: Type HELP for a list of commands\n", name);
+		printf("%s: Type SCAN to start ODBII Scan\n", name);
+		printf("%s: Then use MONITOR to monitor real-time data\n", name);
+		printf("%s: **** IMPORTANT : this is beta software ! Use at your own risk.\n", name);
+		printf("%s: **** Remember, \"debug all -1\" displays all debugging info.\n", name);
+	}
+
 	if (rc_file() != CMD_EXIT) {
 		printf("\n");
 		/* And go start CLI */

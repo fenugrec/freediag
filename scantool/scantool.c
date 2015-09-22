@@ -1637,17 +1637,18 @@ do_init(void)
  */
 static void do_usage (void)
 {
-	fprintf ( stderr, "FreeDiag ScanTool:\n\n" ) ;
-	fprintf ( stderr, "  Usage -\n" ) ;
-	fprintf ( stderr, "	scantool [-h][-a|-c]\n\n" ) ;
-	fprintf ( stderr, "  Where:\n" ) ;
-	fprintf ( stderr, "	-h   -- Display this help message\n" ) ;
-	fprintf ( stderr, "	-a   -- Start in Application/Interface mode\n" ) ;
-	fprintf ( stderr, "			(some other program provides the\n" ) ;
-	fprintf ( stderr, "			user interface)\n" ) ;
-	fprintf ( stderr, "	-c   -- Start in command-line interface mode\n" ) ;
-	fprintf ( stderr, "			(this is the default)\n" ) ;
-	fprintf ( stderr, "\n" ) ;
+	fprintf( stderr, "FreeDiag ScanTool:\n\n" ) ;
+	fprintf( stderr, "  Usage -\n" ) ;
+	fprintf( stderr, "	scantool [-h][-a|-c][-f <file]\n\n" ) ;
+	fprintf( stderr, "  Where:\n" ) ;
+	fprintf( stderr, "\t-h   -- Display this help message\n" ) ;
+	fprintf( stderr, "\t-a   -- Start in Application/Interface mode\n" ) ;
+	fprintf( stderr, "\t		(some other program provides the\n" ) ;
+	fprintf( stderr, "\t		user interface)\n" ) ;
+	fprintf( stderr, "\t-c   -- Start in command-line interface mode\n" ) ;
+	fprintf( stderr, "\t		(this is the default)\n" ) ;
+	fprintf( stderr, "\t-f <file> Runs the commands from <file> at startup\n");
+	fprintf( stderr, "\n" ) ;
 }
 
 
@@ -1820,18 +1821,29 @@ main(int argc, char **argv)
 {
 	int user_interface = 1 ;
 	int i ;
+	const char *startfile=NULL;	/* optional commands to run at startup */
 
 	for ( i = 1 ; i < argc ; i++ ) {
 		if ( argv[i][0] == '-' || argv[i][0] == '+' ) {
 			switch ( argv[i][1] ) {
 			case 'c' : user_interface = 1 ; break ;
 			case 'a' : user_interface = 0 ; break ;
+			case 'f' :
+				user_interface = 1;
+				i++;
+				if (i < argc) {
+					startfile = argv[i];
+				} else {
+					do_usage();
+					exit(1);
+				}
+				break;
 			case 'h' : do_usage() ; exit(0 ) ;
 			default : do_usage() ; exit(1) ;
 			}
 		} else {
-		do_usage() ;
-		exit(1) ;
+			do_usage() ;
+			exit(1) ;
 		}
 	}
 
@@ -1840,9 +1852,9 @@ main(int argc, char **argv)
 	do_init();
 
 	if ( user_interface )
-		enter_cli ( progname ) ;
+		enter_cli(progname, startfile);
 	else
-		enter_aif ( progname ) ;
+		enter_aif(progname );
 
 	/* Done */
 	exit(0);

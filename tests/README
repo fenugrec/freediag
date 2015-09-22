@@ -1,0 +1,20 @@
+Test suite for freediag subsystems.
+Work in progress; the goal is to automate as much of this as possible.
+Currently, cmake is required to run the tests.
+
+Steps to use :
+1) edit conf_l0_dumb.ini to set the desired serial port
+2) "ctest -N" to list available tests
+3) "ctest -I <x> -V" to try a specific test, with verbose output
+
+
+**** Test validation
+the runcli.cmake script compares stdout and stderr output each to their own "pass" and "fail" regexp, such that:
+- if the pass RE isn't matched, the test fails
+- if the fail RE is matched, the test fails
+Those 4 regexps are optional and are in <testname>.std{o,e}_{p,f} files.
+
+If no stderr output is expected, the file  <testname>.stde_f could contain a single period (.) to match any character
+and therefore fail the test.
+
+If no regex files are provided, the test will pass.

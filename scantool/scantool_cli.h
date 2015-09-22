@@ -59,7 +59,7 @@ int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
 void wait_enter(const char *message);
 int pressed_enter(void);
 
-void enter_cli(const char *pname);
+void enter_cli(const char *pname, const char *initscript);
 
 /* Sub menus */
 

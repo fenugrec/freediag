@@ -126,6 +126,10 @@ configure_file (cconf.h.in cconf.h)
 #parse cconf.h.in and produce cconf.h in builddir
 
 
+### Test suite (WIP)
+enable_testing()
+
+
 ###### parse sub-dirs
 add_subdirectory(scantool)
 

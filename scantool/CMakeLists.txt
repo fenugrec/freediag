@@ -113,6 +113,28 @@ endif ()
 install(TARGETS scantool DESTINATION bin)
 
 
+
+## Test suite (WIP)
+# scantool tests:
+set(SCANTOOL_TESTS
+	cli_1
+	l0_carsim_1
+	)
+set(TESTSRC "${CMAKE_SOURCE_DIR}/tests")
+
+foreach (TF_ITER IN LISTS SCANTOOL_TESTS)
+	add_test(NAME ${TF_ITER}
+		WORKING_DIRECTORY ${TESTSRC}
+		COMMAND ${CMAKE_COMMAND}
+		-DTEST_PROG=$<TARGET_FILE:scantool>
+		-DTESTFDIR=${TESTSRC}
+		-DTESTF=${TF_ITER}
+		-P ${TESTSRC}/runcli.cmake
+		)
+
+	message(STATUS "Adding test \"${TF_ITER}\"")
+endforeach()
+
 ### install & copy targets
 # defined mainly to simplify packaging
 
