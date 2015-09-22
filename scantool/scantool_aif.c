@@ -276,11 +276,11 @@ static void aif_scan (UNUSED(void *data))
 	else
 	{
 		fprintf(stderr, "Connection to ECU failed\n") ;
-		fprintf(stderr, "Please check :-\n") ;
-		fprintf(stderr, "		Adapter is connected to PC\n") ;
-		fprintf(stderr, "		Cable is connected to Vehicle\n") ;
-		fprintf(stderr, "		Vehicle is switched on\n") ;
-		fprintf(stderr, "		Vehicle is OBDII compliant\n") ;
+		fprintf(stderr, "Please check :\n") ;
+		fprintf(stderr, "\tAdapter is connected to PC\n") ;
+		fprintf(stderr, "\tCable is connected to Vehicle\n") ;
+		fprintf(stderr, "\tVehicle is switched on\n") ;
+		fprintf(stderr, "\tVehicle is OBDII compliant\n") ;
 
 		BadToApp() ;
 	}

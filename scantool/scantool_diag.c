@@ -351,10 +351,10 @@ cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 	else
 	{
 		printf("\nConnection to ECU failed\n");
-		printf("Please check :-\n");
-		printf("	Adapter is connected to PC\n");
-		printf("	Cable is connected to Vehicle\n");
-		printf("	Vehicle is switched on\n");
+		printf("Please check :\n");
+		printf("\tAdapter is connected to PC\n");
+		printf("\tCable is connected to Vehicle\n");
+		printf("\tVehicle is switched on\n");
 	}
 	return CMD_OK;
 }

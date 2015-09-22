@@ -359,7 +359,7 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
 			printf("");
 
 			/* Display new measure */
-			length = printf("%d (speed=%d km/h, d=%5.5f, f=%4.2f)	 ",
+			length = printf("%d (speed=%d km/h, d=%5.5f, f=%4.2f)\t ",
 			nb, SPEED_ISO_TO_KMH(speed), dyno_loss_get_d(), dyno_loss_get_f());
 			fflush(stdout); /* force displaying now (may slow down dyno...) */
 		}
@@ -598,7 +598,7 @@ static void display_results(dyno_result * results, int nb)
 	int max_torque = 0;
 
 	for (i=0; i<nb; i++) {
-		printf("%d:\tRPM=%d	\tpower=%d W (%d ch)\ttorque=%d Nm\n", i,
+		printf("%d:\tRPM=%d\t\tpower=%d W (%d ch)\ttorque=%d Nm\n", i,
 			results[i].rpm, results[i].power, results[i].power_ch, results[i].torque);
 
 		if (results[i].power > max_power) {

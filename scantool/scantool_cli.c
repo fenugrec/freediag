@@ -362,7 +362,7 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
 		ctp = cmd_table;
 		while (ctp->command) {
 			if ((ctp->flags & FLAG_HIDDEN) == 0)
-				printf("	%s\n", ctp->usage);
+				printf("\t%s\n", ctp->usage);
 			ctp++;
 		}
 		printf("\nTry \"help <command>\" for further help\n");
@@ -519,7 +519,7 @@ cmd_play(int argc, char **argv)
 	while (1) {
 		int ch;
 		printf("Warning : incomplete code");
-		printf("DATE:	+/- to step, S/E to goto start or end, Q to quit\n");
+		printf("DATE:\t+/- to step, S/E to goto start or end, Q to quit\n");
 		ch = getc(stdin);
 		switch (ch) {
 			case '-':
@@ -956,7 +956,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 				continue;
 			}
 			cmd_argc = 0;
-			while ( (s = strtok(inptr, " 	")) != NULL ) {
+			while ( (s = strtok(inptr, " \t")) != NULL ) {
 				cmd_argv[cmd_argc] = s;
 				inptr = NULL;
 				if (cmd_argc == (ARRAY_SIZE(cmd_argv)-1))
