@@ -5,7 +5,7 @@ Currently, cmake is required to run the tests.
 Steps to use :
 1) edit conf_l0_dumb.ini to set the desired serial port
 2) "ctest -N" to list available tests
-3) "ctest -I <x> -V" to try a specific test, with verbose output
+3) "ctest -I x,y -V" to try tests #x to #y, with verbose output
 
 
 **** Test validation

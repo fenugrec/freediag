@@ -50,7 +50,7 @@ endif ()
 if (CMAKE_COMPILER_IS_GNUCC)
 	set (CMAKE_C_FLAGS_DEBUG "-g")
 	set (CMAKE_C_FLAGS_RELEASE "-DNDEBUG")
-	set (CMAKE_C_FLAGS_RELWITHDEBINFO "")
+	set (CMAKE_C_FLAGS_RELWITHDEBINFO "-gsplit-dwarf")
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -std=gnu99 -Wstrict-prototypes -Wsign-compare -Wredundant-decls" )
 #else ()
 	#not sure what we should use on other compilers.

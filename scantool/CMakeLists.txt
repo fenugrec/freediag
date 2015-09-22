@@ -115,8 +115,10 @@ install(TARGETS scantool DESTINATION bin)
 
 
 ## Test suite (WIP)
-# scantool tests:
+# scantool tests; these are arranged roughly from slowest to fastest
 set(SCANTOOL_TESTS
+	l0_dumb_halfdup
+	l0_dumb_halfdup_2
 	cli_1
 	l0_carsim_1
 	)

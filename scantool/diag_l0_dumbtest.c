@@ -95,7 +95,7 @@ static void dtest_2(struct diag_l0_device *dl0d) {
 	fprintf(stderr, "Starting test 2: sending 0x55 with P4=5ms:");
 	for (i=0; i<=iters; i++) {
 		if (diag_tty_write(dl0d, &patternbyte, 1) != 1) {
-			printf("write error\n");
+			fprintf(stderr, "write error\n");
 			break;
 		}
 		if ((10*i/iters) != pc) {
@@ -152,7 +152,7 @@ static void dtest_5(struct diag_l0_device *dl0d) {
 	for (i=0; i<=iters; i++) {
 		diag_os_millisleep(50);
 		if (diag_tty_break(dl0d, 25)) {
-			printf("break error\n");
+			fprintf(stderr, "break error\n");
 			break;
 		}
 		if ((10*i/iters) != pc) {
@@ -173,7 +173,7 @@ static void dtest_6(struct diag_l0_device *dl0d) {
 	for (i=0; i<=iters; i++) {
 		diag_os_millisleep(25);
 		if (diag_tty_fastbreak(dl0d, 50)) {
-			printf("fastbreak error\n");
+			fprintf(stderr, "fastbreak error\n");
 			break;
 		}
 		if ((10*i/iters) != pc) {
@@ -311,7 +311,7 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 			t0=diag_os_gethrt();
 			if ((rv=diag_tty_read(dl0d, garbage, MAXRBUF, i)) != 1) {
 				// failed: purge + try next timeout value
-				printf("failed @ timeout=%d : %s\n", i, diag_errlookup(rv));
+				fprintf(stderr, "failed @ timeout=%d : %s\n", i, diag_errlookup(rv));
 				diag_tty_iflush(dl0d);
 				break;
 			}
