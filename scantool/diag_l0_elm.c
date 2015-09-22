@@ -815,7 +815,7 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 		return DIAG_ERR_TIMEOUT;
 	}
 
-	if (rv != (int)(3*len)) {
+	if (rv <= 0) {
 		fprintf(stderr, FLFMT "elm_recv error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
