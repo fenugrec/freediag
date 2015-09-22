@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<title>Request Messages</title>
+<link rel="profile" href="http://gmpg.org/xfn/11">
+<meta name="viewport" content="width=device-width" />
+<meta name="generator" content="WordPress 4.3.1" />
+<link rel="alternate" type="application/rss+xml" title="Multiplex Engineering &raquo; Feed" href="http://multiplex-engineering.com/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Multiplex Engineering &raquo; Comments Feed" href="http://multiplex-engineering.com/comments/feed/" />
+		<script type="text/javascript">
+			window._wpemojiSettings = {"baseUrl":"http:\/\/s.w.org\/images\/core\/emoji\/72x72\/","ext":".png","source":{"concatemoji":"http:\/\/multiplex-engineering.com\/wp-includes\/js\/wp-emoji-release.min.js?ver=4.3.1"}};
+			!function(a,b,c){function d(a){var c=b.createElement("canvas"),d=c.getContext&&c.getContext("2d");return d&&d.fillText?(d.textBaseline="top",d.font="600 32px Arial","flag"===a?(d.fillText(String.fromCharCode(55356,56812,55356,56807),0,0),c.toDataURL().length>3e3):(d.fillText(String.fromCharCode(55357,56835),0,0),0!==d.getImageData(16,16,1,1).data[0])):!1}function e(a){var c=b.createElement("script");c.src=a,c.type="text/javascript",b.getElementsByTagName("head")[0].appendChild(c)}var f,g;c.supports={simple:d("simple"),flag:d("flag")},c.DOMReady=!1,c.readyCallback=function(){c.DOMReady=!0},c.supports.simple&&c.supports.flag||(g=function(){c.readyCallback()},b.addEventListener?(b.addEventListener("DOMContentLoaded",g,!1),a.addEventListener("load",g,!1)):(a.attachEvent("onload",g),b.attachEvent("onreadystatechange",function(){"complete"===b.readyState&&c.readyCallback()})),f=c.source||{},f.concatemoji?e(f.concatemoji):f.wpemoji&&f.twemoji&&(e(f.twemoji),e(f.wpemoji)))}(window,document,window._wpemojiSettings);
+		</script>
+		<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 .07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+<link rel='stylesheet' id='google-fonts-css'  href='//fonts.googleapis.com/css?family=Ubuntu:400' type='text/css' media='all' />
+<link rel='stylesheet' id='omega-style-css'  href='http://multiplex-engineering.com/wp-content/themes/beta/style.css?ver=4.3.1' type='text/css' media='all' />
+<script type='text/javascript' src='http://multiplex-engineering.com/wp-includes/js/jquery/jquery.js?ver=1.11.3'></script>
+<script type='text/javascript' src='http://multiplex-engineering.com/wp-includes/js/jquery/jquery-migrate.min.js?ver=1.2.1'></script>
+<script type='text/javascript' src='http://multiplex-engineering.com/wp-content/themes/beta/js/init.js?ver=4.3.1'></script>
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://multiplex-engineering.com/xmlrpc.php?rsd" />
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="http://multiplex-engineering.com/wp-includes/wlwmanifest.xml" /> 
+<link rel='canonical' href='http://multiplex-engineering.com/request-messages/' />
+<link rel='shortlink' href='http://multiplex-engineering.com/?p=152' />
+<link rel="apple-touch-icon" sizes="57x57" href="/wp-content/uploads/fbrfg/apple-touch-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="/wp-content/uploads/fbrfg/apple-touch-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="/wp-content/uploads/fbrfg/apple-touch-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="/wp-content/uploads/fbrfg/apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="/wp-content/uploads/fbrfg/apple-touch-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="/wp-content/uploads/fbrfg/apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="/wp-content/uploads/fbrfg/apple-touch-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/wp-content/uploads/fbrfg/apple-touch-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/wp-content/uploads/fbrfg/apple-touch-icon-180x180.png">
+<link rel="icon" type="image/png" href="/wp-content/uploads/fbrfg/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/wp-content/uploads/fbrfg/android-chrome-192x192.png" sizes="192x192">
+<link rel="icon" type="image/png" href="/wp-content/uploads/fbrfg/favicon-96x96.png" sizes="96x96">
+<link rel="icon" type="image/png" href="/wp-content/uploads/fbrfg/favicon-16x16.png" sizes="16x16">
+<link rel="manifest" href="/wp-content/uploads/fbrfg/manifest.json">
+<link rel="shortcut icon" href="/wp-content/uploads/fbrfg/favicon.ico">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="msapplication-TileImage" content="/wp-content/uploads/fbrfg/mstile-144x144.png">
+<meta name="msapplication-config" content="/wp-content/uploads/fbrfg/browserconfig.xml">
+<meta name="theme-color" content="#ffffff">	<!--[if lt IE 9]>
+	<script src="http://multiplex-engineering.com/wp-content/themes/omega/js/html5.js" type="text/javascript"></script>
+	<![endif]-->
+
+<style type="text/css" id="custom-css">.site-header, .site-header .omega-nav-menu .sub-menu a, .omega-nav-menu .children a {
+    background: none repeat scroll 0 0 #002c77;
+    border: medium none;
+    font-family: "Ubuntu",sans-serif;
+    text-transform: uppercase;
+}
+
+.omega-nav-menu a {
+    border: medium none;
+    color: #FFF;
+    display: block;
+    padding: 5px 15px;
+    position: relative;
+}
+
+h1 {
+    color: #002c77;
+}
+
+h2 {
+    color: #cc0000;
+}
+
+a {
+    color: #002c77;
+}
+td {
+    border: 1px solid #000000;
+}</style>
+	<style type="text/css">.recentcomments a{display:inline !important;padding:0 !important;margin:0 !important;}</style>
+</head>
+<body class="wordpress ltr child-theme y2015 m09 d21 h14 monday logged-out singular singular-page singular-page-152 page-template-full-width" dir="ltr" itemscope="itemscope" itemtype="http://schema.org/WebPage">
+<div class="site-container">
+	<header id="header" class="site-header" role="banner" itemscope="itemscope" itemtype="http://schema.org/WPHeader"><div class="wrap"><div class="title-area"><div itemscope itemtype="http://schema.org/Organization" class="site-title"><a itemprop="url" href="http://multiplex-engineering.com" title="Multiplex Engineering" rel="home"><img itemprop="logo" alt="Multiplex Engineering" src="http://multiplex-engineering.com/wp-content/uploads/2015/01/logo.png"/></a></div></div><nav id="navigation" class="nav-primary" role="navigation" itemscope="itemscope" itemtype="http://schema.org/SiteNavigationElement">	
+	<div class="wrap"><a href="#" id="menu-icon" class="menu-icon"><span></span></a><ul id="menu-menu-1" class="menu omega-nav-menu menu-primary"><li id="menu-item-146" class="menu-item menu-item-type-post_type menu-item-object-page first menu-item-146"><a href="http://multiplex-engineering.com/">About Us</a></li>
+<li id="menu-item-210" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-210"><a href="http://multiplex-engineering.com/obd2-interfaces/">OBD2 Interfaces</a></li>
+<li id="menu-item-206" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-206"><a href="http://multiplex-engineering.com/cables/">Cables</a></li>
+<li id="menu-item-211" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-211"><a href="http://multiplex-engineering.com/other-products-2/">Other Products</a></li>
+<li id="menu-item-215" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-ancestor current-menu-parent current_page_parent current_page_ancestor menu-item-has-children menu-item-215"><a href="http://multiplex-engineering.com/technical-manual/">Technical Manual</a>
+<ul class="sub-menu">
+	<li id="menu-item-207" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-207"><a href="http://multiplex-engineering.com/communications/">Communications</a></li>
+	<li id="menu-item-212" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-152 current_page_item menu-item-212"><a href="http://multiplex-engineering.com/request-messages/">Request Messages</a></li>
+	<li id="menu-item-213" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-213"><a href="http://multiplex-engineering.com/response-messages/">Response Messages</a></li>
+	<li id="menu-item-209" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-209"><a href="http://multiplex-engineering.com/error-response-messages/">Error Response Messages</a></li>
+	<li id="menu-item-216" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-216"><a href="http://multiplex-engineering.com/tutorials/">Tutorials</a></li>
+	<li id="menu-item-214" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-214"><a href="http://multiplex-engineering.com/special-commands-and-examples/">Special Commands and Examples</a></li>
+	<li id="menu-item-208" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-208"><a href="http://multiplex-engineering.com/downloads/">Downloads</a></li>
+</ul>
+</li>
+<li id="menu-item-217" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-217"><a href="http://multiplex-engineering.com/contact/">Contact</a></li>
+<li id="menu-item-218" class="menu-item menu-item-type-post_type menu-item-object-page last menu-item-218"><a href="http://multiplex-engineering.com/faq/">FAQ</a></li>
+</ul></div></nav><!-- .nav-primary --></div></header><!-- .site-header -->	<div class="site-inner">
+		<div class="wrap">
+	<main  class="content" id="content" role="main" itemprop="mainContentOfPage">
+
+		<article id="post-152" class="entry page publish author-adminME post-152" itemscope="itemscope" itemtype="http://schema.org/CreativeWork"><div class="entry-wrap">
+	<header class="entry-header">	<h1 class="entry-title" itemprop="headline">Request Messages</h1>
+</header><!-- .entry-header -->	
+		<div class="entry-content" itemprop="text">
+	<h2>Request Message Format</h2>
+<p>The Request Message is a message sent from a personal computer to the Multiplex Engineering interface that is 15 bytes long. The request message either instructs the interface to send a message to the vehicle with the data included, or it requests information from the interface itself. The message sent to the vehicle or information requested from the interface depends on the Command sent in the message.</p>
+<p>The Format for a request message is:</p>
+<p>(Destination), (Command), (Byte Count), (Data 1), &#8230;, (Data 11), (Sum check)</p>
+<p>All bytes in the message including the command number are in hexadecimal format.</p>
+<p><strong>Destination</strong><br />
+The destination address can be different for different interfaces. Specific destination addresses are assigned to different customers. You must send your destination address to your interface or the interface will not allow any communications.</p>
+<p><strong>Command</strong><br />
+This is the command byte. The Commands that the diagnostic interface will respond to are described in Request Message Commands.</p>
+<p><strong>Byte Count</strong><br />
+This is the number of bytes that will be sent over the automobile data bus. This does not include the error detection byte sent on the automobile data bus. (The interface will generate the error detection byte.) The byte count is not used in some commands. Please refer to the specific command format to see its structure.</p>
+<p><strong>Data</strong><br />
+These are the actual data bytes of the message that will be sent on the automobile data bus. The first byte sent to the vehicle is the most significant byte in the message for the vehicle.</p>
+<p><strong>Sum check</strong><br />
+The sum check is the lower 8 bits of the sum of the Command byte through the last data byte. The Destination byte is not included in the Sum check.</p>
+<h3>Request Message Format &#8211; Byte Description:</h3>
+<p>1. Destination</p>
+<p>2. Command</p>
+<p>3. Byte Count</p>
+<p>4. 1st (most significant) byte of the message to be sent to the automobile</p>
+<p>5. 2nd byte of the message to be sent to the automobile</p>
+<p>6. 3rd byte of the message to be sent to the automobile</p>
+<p>7. 4th byte of the message to be sent to the automobile</p>
+<p>8. 5th byte of the message to be sent to the automobile</p>
+<p>9. 6th byte of the message to be sent to the automobile</p>
+<p>10. 7th byte of the message to be sent to the automobile</p>
+<p>11. 8th byte of the message to be sent to the automobile</p>
+<p>12. 9th byte of the message to be sent to the automobile</p>
+<p>13. 10th byte of the message to be sent to the automobile</p>
+<p>14. 11th byte of the message to be sent to the automobile</p>
+<p>15. Sum check</p>
+<h2>Request Message Commands</h2>
+<p>Request message commands are used to instruct the interface what to do with the message it receives. The interface first reads the command and then performs the corresponding action with the data included in the request message. The command messages are detailed below.</p>
+<h3>Legacy Buses Commands</h3>
+<p>01 = Send message on ISO-9141-2 with initialization</p>
+<p>Command Usage<br />
+Command 01 is used as the first message sent over ISO 9141 to initialize the connection. The initialization takes place at 5 bits/sec, because of this and other bytes sent it can require up to 2 seconds to complete the initialization. After the bus is initialized, you will need to send a command at least every 5 seconds according to the specifications to keep the connection active. However, we recommend you send a 10 command every 3 seconds to keep the connections alive.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 01<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check<code><br />
+</code></p>
+<p>02 = Send message on J1850 VPW [details]</p>
+<p>Command Usage<br />
+Command 02 is used to send the message contained in the Data Bytes 1-11 over J1850 VPW.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 02<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 102<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>04 = Send message on J1850 PWM without IFR [details]</p>
+<p>Command Usage<br />
+Command 04 is used to send the message contained in the Data Bytes 1-11 over J1850 VPW without In Frame Response (IFR). In Frame Response is an internal handshake used by Ford vehicles. We do not recommend sending PWM message to Ford vehicles without IFR.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 04<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>10 = Send message on ISO-9141-2 without initialization [details]</p>
+<p>Command Usage<br />
+Command 10 is used to send the message contained in the Data Bytes 1-11 over IS0 9141. The connection needs to have already been established with the 01 command to use the 10 command.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 10<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>When bit 5 of the Byte Count is set to a 1 the interface will be configured for receive of one long response message.</p>
+<p>When bit 6 of the Byte Count is set to a 1 the ISO request message will be sent but the interface will not wait to receive the response message.</p>
+<p>When bit 7 of the Byte Count is set to a 1the ISO request message will be sent with out a checksum byte.</p>
+<p>20 = VW Intelligent Pass-through Mode with 5 baud init and baud rate detect. (Not available in USB) [details]</p>
+<p>Command Usage</p>
+<p>Command is an old way of communicating with VW cars. While this feature is still in our RS232 interfaces we do not recommend using it.</p>
+<p>A Brief Over Of How The VW Intelligent Pass-through Mode Works</p>
+<p>1. Command 20 is sent with the desired controller address.</p>
+<p>2. The interface sends the desired controller address at exactly 5 baud on both the K and L lines.</p>
+<p>3. The interface observes the sync byte (55) from the ECU and determines the period of baud rate used by the ECU.</p>
+<p>4. The interface responds with an RS232 message that contains the vehicle&#8217;s ISO baud rate.</p>
+<p>5. The PC must then receive KW1 and KW2, and send the KW2 inverted to the ECU. All future messages are in pass-through mode unless 5 seconds passes without any ISO bus activity. After 5 seconds, the interface returns to normal mode.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 20<br />
+3. 1<br />
+4. Controller Address<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>40 = VW Intelligent Pass-through Mode without 5 baud init. (Not available in USB) [details]</p>
+<p>Command Usage<br />
+Command 40 functions the same as command 20 except it allows a direct transition to pass-through mode. The 5 baud init and the baud rate detection of the sync byte are skipped. The response message is therefore empty. See Command 20 details for more information.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 40<br />
+3. 1<br />
+4. Controller Address<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>41 = Send a VPW message and ignore VPW responses 1-8, report responses 9-16 [details]</p>
+<p>Command Usage<br />
+Command 41 sends the message contained in Data Bytes 1-11 over VPW and stores responses 9-16 from the request message. Responses 1-8 are ignored.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 41<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>42 = Send a VPW message and ignore VPW responses 1-16, report responses 17-24 [details]</p>
+<p>Command Usage<br />
+Command 42 sends the message contained in Data Bytes 1-11 over VPW and stores responses 17-24 from the request message. Responses 1-16 are ignored.</p>
+<p>Request Message Format</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 42<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>43 = Send a VPW message and ignore VPW responses 1-24, report responses 25-32 [details]</p>
+<p>Command Usage<br />
+Command 43 sends the message contained in Data Bytes 1-11 over VPW and stores responses 25-32 from the request message. Responses 1-24 are ignored.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 43<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>44 = Send a VPW message and ignore VPW responses 1-32, report responses 33-40 [details]</p>
+<p>Command Usage<br />
+Command 44 sends the message contained in Data Bytes 1-11 over VPW and stores responses 33-40 from the request message. Responses 1-32 are ignored.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 44<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>45 = J1850 VPW set up for monitor mode, for use with J2190 mode 21 [details]</p>
+<p>Command Usage<br />
+Command 45 is not recommended for most users. Please contact one of our engineers for more information on this command.</p>
+<p>46 = J1850 VPW send, but do not wait for responses [details]</p>
+<p>Command Usage<br />
+Command 46 sends the message contained in Data Byte 11-1 over VPW but dose not wait for a response from the vehicle. A normal response message for J1850 VPW will be reported as soon as the request message is sent on the J1850 VPW bus.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 46<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>47 = J1850 VPW send, and enter monitor mode [details]</p>
+<p>Command Usage<br />
+Command 47 is not recommended for most users. Please contact one of our engineers for more information on this command.</p>
+<p>48 = Intelligent Pass-through mode with 5 baud init (Not available on USB interfaces) [details]</p>
+<p>Command Usage<br />
+Command 48 enters Intelligent Pass-through mode with a 5 baud init. Pass-through mode is an old way of doing communications. While this feature is still available in our RS232 interfaces we do not recommend using this feature.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 48<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>49 = VPW send, but do not report FE and FF [details]</p>
+<p>Command Usage<br />
+Command 49 sends a VPW request message and ignores responses from addresses FE and FF. This command is useful because some vehicles use source addresses FF and FE for non diagnostic purposes. In this case the data from these address is not useful to the user.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 49<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>4A = PWM send, but do not report FE and FF [details]</p>
+<p>Command Usage<br />
+Command 4A sends a PWM request message and ignores responses from addresses FE and FF. This command is useful because some vehicles use source addresses FF and FE for non diagnostic purposes. In this case the data from these address is not useful to the user.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 4A<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>4B = ISO send, but do not report FE and FF [details]</p>
+<p>Command Usage<br />
+Command 4B sends a ISO request message and ignores responses from addresses FE and FF. This command is useful because some vehicles use source addresses FF and FE for non diagnostic purposes. In this case the data from these address is not useful to the user.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 4B<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>4C = KWP send, but do not report FE and FF [details]</p>
+<p>Command Usage<br />
+Command 4C sends a KWP request message and ignores responses from addresses FE and FF. This command is useful because some vehicles use source addresses FF and FE for non diagnostic purposes. In this case the data from these address is not useful to the user.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 4C<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>4D = Reserved For Multiplex Engineering Use</p>
+<p>4E = J1850 VPW send, with aggressive arbitration (version 47 and later) [details]</p>
+<p>Command Usage<br />
+Command 4E will send the request message on the J1850 VPW bus with aggressive arbitration for use with the J1850 bus. This command waits the bare minimum time after the end of a J1850 VPW message, before attempting to send the J1850 VPW request message from the interface. This reduces the amount of time the interface waits before getting onto the bus to send its message. The reason to have this new command is to allow diagnostic messages to get through, even if the J1850 VPW bus traffic is happening at close to the maximum throughput. The normal J1850 VPW command (Command 02) was intentionally done with a long wait after the previous J1850 VPW message. This was done to avoid the risk of diagnostic messages overloading the J1850 VPW bus and causing operational errors. Due to the J1850 VPW bus loading on GM vehicles, this command is recommended.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 4E<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>4F = ISO send, with 5 baud, user-programmable 5 baud address [details]</p>
+<p>Command Usage<br />
+Command 4F sends and ISO request message with a custom 5 baud address. The custom 5 baud address is stored in Request Byte 14. This means the longest data message that can be sent with this command is 10 bytes long instead of the normal 11 byte maximum.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 4F<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Byte to be sent as 5 Baud ISO Address<br />
+15. Sum Check</p>
+<p>80 = Send message on J1850 PWM with IFR (recommended for Ford) [details]</p>
+<p>Command Usage<br />
+Command 80 sends a message on J1859 PWM with In Frame Response (IFR). In Frame Response is a internal handshake used by Ford vehicles. This is why we recommend using command 80 instead of command 04 when communicating with Ford vehicles.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 80<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>Note: setting the most significant bit in the byte count will cause the skip of sending the PWM request message and cause a receive only mode.  An example request message for receive only is FF 80 85 68 6A 01 00 00 00 00 00 00 00 00 D8</p>
+<p>81 = Send message on ISO-9141-2, receive only 1st response [details]</p>
+<p>Command Usage<br />
+Command 81 sends a message on ISO-9141-2. The interface only stores and sends back to the user the first response from the vehicle. All other responses from the vehicle are ignored.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 81<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>82 = Send message on J1850 VPW, receive only 1st response [details]</p>
+<p>Command Usage<br />
+Command 82 sends a message on J1850 VPW. The interface only stores and sends back to the user the first response from the vehicle. All other responses from the vehicle are ignored.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 82<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>83 = Read car battery voltage [details]</p>
+<p>Command Usage<br />
+Command 83 sends a message to the interface that asks it to read the voltage of the car battery. This voltage is converted from analog to digital and stored into the 3rd most significant byte in the response message. To get the value, convert the 3rd byte to decimal and multiply by 0.23.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 83<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>Note that the legacy commands will be turned off and that part of the interface will be put to &#8220;SLEEP&#8221; if a command 83 with a byte count of FF is sent.  The interface must be disconnected from the car or the reset line (hardware) activated to recover from this command.  This feature is used to reduce power consumption.</p>
+<p>84 = J1850 PWM send command, receive only 1st response [details]</p>
+<p>Command Usage<br />
+Command 84 sends a message to J1850 PWM. The interface only stores and sends back to the user the first response from the vehicle. All other responses from the vehicle are ignored.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 84<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10br&gt; 14. Data Byte 11<br />
+15. Sum Check</p>
+<p>85 = KWP send, with 5 baud initialization [details]</p>
+<p>Command Usage<br />
+Command 85 sends a message with Key Word Protocol and performs 5 baud initialization.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 85<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>When bit 4 of the Byte Count is set to a 1 the response message reported will be one long response of 96 bytes.  Some cars require this for proprietary mode communications.</p>
+<p>When bit 5 of the Byte Count is set to a 1 the baud rate of the KWP messages will be 9600 baud.  The interface will remain in 9600 baud mode until a message is sent with command 87 KWP Fast Init.  Some cars require this for proprietary mode communications.</p>
+<p>When bit 6 of the Byte Count is set to a 1 the interface transmits the request but does not wait to receive a response.</p>
+<p>When bit 7 of the Byte Count is set to a 1 the interface will not calculate the KWP checksum byte and it will not transmit the KWP checksum byte.  This allows the user to calculate a checksum byte and add it to the message.  Some cars require a different type of checksum when operating in a proprietary mode.</p>
+<p>86 = KWP report KW1 and KW2. Must do command 85 first. [details]</p>
+<p>Command Usage<br />
+Command 86 sends a message with Key Word Protocol (KWP) that reports Key Word 1(KW1) and Key Word 2(KW2). KW1 and KW2 are sent back in a single response message. KW1 is stored in the second byte of the response message. KW2 is stored in the third byte of the response message. Command 85 must be sent before 86 can be used.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 86<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>Response Message Format<br />
+1. Command<br />
+2. KW1<br />
+3. KW2<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. Sum Check</p>
+<p>87 = KWP send, with fast initialization [details]</p>
+<p>Command Usage<br />
+Command 87 sends a message with Key Word Protocol with fast initialization.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 87<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>When bit 4 of the Byte Count is set to a 1 the response message reported will be one long response of 96 bytes.  Some cars require this for proprietary mode communications.</p>
+<p>When bit 5 of the Byte Count is set to a 1 the baud rate of the KWP messages will be 9600 baud.  The interface will remain in 9600 baud mode until a message is sent with command 87 KWP Fast Init.  Some cars require this for proprietary mode communications.</p>
+<p>When bit 6 of the Byte Count is set to a 1 the interface transmits the request but does not wait to receive a response.</p>
+<p>When bit 7 of the Byte Count is set to a 1 the interface will not calculate the KWP checksum byte and it will not transmit the KWP checksum byte.  This allows the user to calculate a checksum byte and add it to the message.  Some cars require a different type of checksum when operating in a proprietary mode.</p>
+<p>88 = KWP send, without initialization [details]</p>
+<p>Command Usage<br />
+Command 88 sends a message to KWP without initialization. The baud rate that is used is determined by the previous 5 baud initialization. If no 5 baud initialization has been preformed then the baud rate defaults back to 10.4Kbps.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 88<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>When bit 4 of the Byte Count is set to a 1 the response message reported will be one long response of 96 bytes.  Some cars require this for proprietary mode communications.</p>
+<p>When bit 5 of the Byte Count is set to a 1 the baud rate of the KWP messages will be 9600 baud.  The interface will remain in 9600 baud mode until a message is sent with command 87 KWP Fast Init.  Some cars require this for proprietary mode communications.</p>
+<p>When bit 6 of the Byte Count is set to a 1 the interface transmits the request but does not wait to receive a response.</p>
+<p>When bit 7 of the Byte Count is set to a 1 the interface will not calculate the KWP checksum byte and it will not transmit the KWP checksum byte.  This allows the user to calculate a checksum byte and add it to the message.  Some cars require a different type of checksum when operating in a proprietary mode.</p>
+<p>89 through 8E = Reserved</p>
+<p>8F = Toyota Propritary KWP  [details]</p>
+<p>Command Usage<br />
+Command 89 sends a message to KWP with a special fast initialization. The baud rate is then set to 9600 baud. This command is intended for use with Toyota proprietary type communications.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 8F<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>90 = Bosch Propritary KWP  [details]</p>
+<p>Command Usage<br />
+Command 90 sends a message to KWP without initialization. One 96 byte long response message will be reported.  This command does special low level features and is not suitable for normal KWP use.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 90<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>91 through 9F = RESERVED</p>
+<h3>CAN Bus Commands</h3>
+<p>08 = Send message on CAN without flow control. [details]</p>
+<p>Command Usage<br />
+Command 08 sends the message contained in Data Bytes 1-11 over CAN without flow control. This is not recommend for most applications. Instead, we recommend using Command A0.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. 08<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>A0 = CAN send, with flow control. [details]</p>
+<p>Command Usage<br />
+Command A0 sends the message contained in Data Bytes 1-11 over CAN with flow control. This command is recommend for most CAN applications.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. A0<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>A1 = CAN configuration command, changes flow control message default values.(Version F or later) [details]</p>
+<p>Command Usage<br />
+Command A1 allows the user to change the default control flow message for CAN. It also allows the user to change some timing values. Please contact one of our engineers for more information on this command.</p>
+<p>A2 = Set the 11 bit SID address and switch to SID addressing mode. [details]</p>
+<p>Command Usage<br />
+Command A2 sets the 11 bit SID address for transmitting equal to the address stored in third and fourth bytes of the request message. It then puts the interface into SID mode. Please note that SID bits 2:0 are in the following format in the forth byte of the request message (SID2, SID1, SID0, x, x, x, x, x).</p>
+<p>Please read the tutorial on EID and SID addressing for more information and examples on how to use this command.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. A2<br />
+3. SID address 10:3<br />
+4. SID address 2:0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>A3 = Set the 29 bit EID address and switch to EID addressing mode. [details]</p>
+<p>Command Usage<br />
+Command A3 sets the 29 bit EID address for transmitting equal to the address stored in third, forth, fifth and sixth bytes of the request message. It then puts the interface into EID mode. Please note that EID address bits 20:16 are in the following byte format (EID20, EID19, EID18, x, x, x, EID17, EID16).</p>
+<p>Please read the tutorial on EID and SID addressing for more information and examples on how to use this command.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. A3<br />
+3. EID address 28:21<br />
+4. EID address 20:16<br />
+5. EID address 15:8<br />
+6. EID address 7:0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>A4 = Send one CAN message, wait for responses, saving response SID information. [details]</p>
+<p>Command Usage<br />
+Command A4 sends one CAN message and then waits for responses until another command is sent from the user. The interface will create a response message right away to indicate that the CAN message was sent. The interface will then wait forever (if needed), gathering responses until another command is received from the user.<br />
+The A4 command also reports the 11 bit SID CAN addresses of the responses. The address is stored in the first 3 data bytes of the response message. This shifts the data from the message over by three bytes as well (See the response message format below).<br />
+To retrieve the messages stored by a command A4 the user must send a command A9.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. A4<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>Response Message Format<br />
+1. Destination Address of user<br />
+2. 88<br />
+3. 00<br />
+4. SID address 10:8 (0,0,0,0,0,SID10,SID9,SID8)<br />
+5. SID address 7:0<br />
+6. Data Byte 1<br />
+7. Data Byte 2<br />
+8. Data Byte 3<br />
+9. Data Byte 4<br />
+10. Data Byte 5<br />
+11. Data Byte 6<br />
+12. Data Byte 7<br />
+13. Data Byte 8<br />
+14. Data Byte 9<br />
+15. Sum Check</p>
+<p>A5 = Send one CAN message, wait for responses, saving response EID information. [details]</p>
+<p>Command Usage<br />
+Command A5 sends one CAN message and then waits for responses until another command is sent from the user. The interface will create a response message right away to indicate that the CAN message was sent. The interface will then wait forever (if needed), gathering responses until another command is received from the user.<br />
+The A5 command also reports the 29 bit EID CAN addresses of the responses. The address is stored in the first 3 data bytes of the response message. Only the lower 24 bits of the EID address are stored in the message. The Upper 5 bits are ignored. This shifts the data from the message over by three bytes as well (See the response message format below).<br />
+To retrieve the messages stored by a command A5 the user must send a command A9.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. A5<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>Response Message Format<br />
+1. Destination Address of user<br />
+2. 88<br />
+3. EID address 23:16<br />
+4. EID address 15:8<br />
+5. EID address 7:0<br />
+6. Data Byte 1<br />
+7. Data Byte 2<br />
+8. Data Byte 3<br />
+9. Data Byte 4<br />
+10. Data Byte 5<br />
+11. Data Byte 6<br />
+12. Data Byte 7<br />
+13. Data Byte 8<br />
+14. Data Byte 9<br />
+15. Sum Check</p>
+<p>A6 = Set the SID acceptance mask and filter for receiving. [details]</p>
+<p>Command A6 sets the SID acceptance mask and filter, and puts the interface into SID mode for receiving. A bit in the incoming address is accepted regardless of its value if the corresponding bit in the mask is 0. A bit in the incoming address must be equal to the corresponding bit in the filter address if the corresponding bit in the mask is 1. If you want to receive all messages from addresses 0x7E0 through 0x7EF you would set the filter to 0x7E0 with a mask of 0xFF0. This mask will make the interface only accept messages whose upper 2 address bytes match the filter; the lowest byte is ignored when filtering the incoming messages.</p>
+<p>Please note that the bits of Mask 2:0 are in the following format (MASK2, MASK1, MASK0, x, x, x, x, x).<br />
+Also note that the bits of Filter 2:0 are in the following format (FILTER2, FILTER1, FILTER0, x, x, x, x, x). It is recommended to use 0 for x.</p>
+<p>Please read the tutorial on EID and SID addressing for more information and examples on how to use this command.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. A6<br />
+3. SID Mask bits 10:3<br />
+4. SID Mask bits 2:0<br />
+5. SID Filter bits 10:3<br />
+6. SID Filter bits 2:0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>A7 = Set the EID acceptance mask and filter for receiving. [details]</p>
+<p>A7: Configuration Command for EID Receive Mode</p>
+<p>This command writes the EID acceptance mask and filter, and puts the interface into EID mode for receiving. A bit in the incoming address is accepted regardless of its value if the corresponding bit in the mask is 0. A bit in the incoming address must be equal to the corresponding bit in the filter address if the corresponding bit in the mask is 1. If you want to receive all messages from addresses 0x18DAF100 through 0x18DAF1FF, you would set the filter to 0x18DAF100 with a mask of 0xFFFFFF00. This mask will make the interface only accept messages whose upper 6 address bytes match the filter; the lower 2 bytes are ignored when filtering the incoming messages.</p>
+<p>Please note that the bits of MASK 20:16 are in the following format (MASK20, MASK19, MASK18, x, x, x, MASK17, MASK16).<br />
+Also note that the bits of FILTER 20:16 are in the following format (FILTER20, FILTER19, FILTER18, x, 1, x, FILTER17, FILTER16). It is recommended to use 0 for x. The 1 in between the two don&#8217;t cares in the Filter is to enable EID mode in older version (Ver E or older) of our CAN enabled interface. Newer versions do not need to worry about this setting this bit to one, since it is treated as a don&#8217;t care.</p>
+<p>Please read the tutorial on EID and SID addressing for more information and examples on how to use this command.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. A7<br />
+3. EID Mask bits 28:21<br />
+4. EID Mask bits 20:16<br />
+5. EID Mask bits 15:8<br />
+6. EID Mask bits 7:0<br />
+7. EID Filter bits 28:21<br />
+8. EID Filter bits 20:16<br />
+9. EID Filter bits 15:8<br />
+10. EID Filter bits 7:0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>A8 = Send one CAN message and wait for responses. [details]</p>
+<p>Command Usage<br />
+Command A8 sends the CAN message contained in Data Bytes 1-11 and saves the response messages from this message in a buffer that can be read out with the A9 command.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. A8<br />
+3. BYTE COUNT<br />
+4. Data Byte 1<br />
+5. Data Byte 2<br />
+6. Data Byte 3<br />
+7. Data Byte 4<br />
+8. Data Byte 5<br />
+9. Data Byte 6<br />
+10. Data Byte 7<br />
+11. Data Byte 8<br />
+12. Data Byte 9<br />
+13. Data Byte 10<br />
+14. Data Byte 11<br />
+15. Sum Check</p>
+<p>A9 = Read CAN buffer to get responses from A8 command [details]</p>
+<p>Command Usage<br />
+Command A9 gets the responses from command A8, A4 or A5. Command A8, A4 or A5 must be sent prior to using Command A9.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. A9<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>AA = Change CAN baud rate [details]</p>
+<p>Command Usage<br />
+Command AA changes the CAN baud rate. The lower 5 bits, of the third byte in the request message contain the CAN baud rate. The valid values for the baud rate are defined as:<br />
+0x00 = 500 Kbaud<br />
+0x01 = 250 Kbaud<br />
+0x02 = 166.6666&#8230; Kbaud<br />
+0x03 = 125 Kbaud</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. AA<br />
+3. Baud Rate<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>AB = Reserved</p>
+<p>AC = Reserved</p>
+<p>AD = Go into reprogram mode. [details]</p>
+<p>Command Usage<br />
+Command AD puts the interface into reprogramming mode. Please contact one of our engineers for more information on this command.</p>
+<p>AE = Send &#8220;core&#8221; commands used in reprogramming. [details]</p>
+<p>Command Usage<br />
+Command AE sends the core commands used in reprogramming. Please contact one of our engineers for more information on this command.</p>
+<p>AF = Return from reprogram mode. [details]</p>
+<p>Command Usage<br />
+Command AF brings the interface out of reprogramming mode. Please contact one of our engineers for more information on this command.</p>
+<h3>USB Only Commands</h3>
+<p>F1 = Get the first response message. [details]</p>
+<p>Command Usage<br />
+Command F1 tells the interface to send out the first response message stored in the interface from the most recent request message.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. F1<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>F2 = Get the second response message. [details]</p>
+<p>Command Usage<br />
+Command F2 tells the interface to send out the second response message stored in the interface from the most recent request message.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. F2<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>F3 = Get the third response message. [details]</p>
+<p>Command Usage<br />
+Command F3 tells the interface to send out the third response message stored in the interface from the most recent request message.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. F3<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>F4 = Get the fourth response message. [details]</p>
+<p>Command Usage<br />
+Command F4 tells the interface to send out the forth response message stored in the interface from the most recent request message.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. F4<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>F5 = Get the fifth response message. [details]</p>
+<p>Command Usage<br />
+Command F5 tells the interface to send out the fifth response message stored in the interface from the most recent request message.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. F5<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>F6 = Get the sixth response message. [details]</p>
+<p>Command Usage<br />
+Command F6 tells the interface to send out the sixth response message stored in the interface from the most recent request message.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. F6<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>F7 = Get the seventh response message. [details]</p>
+<p>Command Usage<br />
+Command F7 tells the interface to send out the seventh response message stored in the interface from the most recent request message.</p>
+<p>Request Message Format<br />
+1. Destination Address<br />
+2. F7<br />
+3. 0<br />
+4. 0<br />
+5. 0<br />
+6. 0<br />
+7. 0<br />
+8. 0<br />
+9. 0<br />
+10. 0<br />
+11. 0<br />
+12. 0<br />
+13. 0<br />
+14. 0<br />
+15. Sum Check</p>
+<p>F8 = Get the eighth response message. [details]</p>
+<p>&nbsp;</p>
+	
+		</div>
+	</div></article>
+	</main><!-- .content -->
+
+		</div>	</div><!-- .site-inner -->
+	<footer id="footer" class="site-footer" role="contentinfo" itemscope="itemscope" itemtype="http://schema.org/WPFooter"><div class="wrap"><div class="footer-content footer-insert"><p class="copyright">Copyright &#169; 2015 Multiplex Engineering.</p>
+
+<p class="credit"><a class="child-link" href="http://themehall.com/beta-second-omega-child-theme" title="Beta WordPress Theme">Beta</a> WordPress Theme by themehall.com</p></div></div></footer><!-- .site-footer --></div><!-- .site-container -->
+</body>
+</html>
+<!-- Dynamic page generated in 13.313 seconds. -->
+<!-- Cached page generated by WP-Super-Cache on 2015-09-21 14:46:06 -->
+
+<!-- super cache -->
