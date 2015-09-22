@@ -519,93 +519,100 @@ diag_l2_proto_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int time
 	// Now walk through the response message list,
 	// and strip off their headers and checksums
 	// after verifying them.
-	if (rv >= 0)
-	{
-		tmsg = d_l2_conn->diag_msg;
-		lastmsg = NULL;
+	if (rv < 0) return diag_iseterr(rv);
 
-		while (tmsg)
-		{
-			int datalen;
-			uint8_t hdrlen=0, source=0, dest=0;
+	tmsg = d_l2_conn->diag_msg;
+	lastmsg = NULL;
 
-			dp = (struct diag_l2_iso9141 *)d_l2_conn->diag_l2_proto_data;
+	while (tmsg) {
+		int datalen;
+		uint8_t hdrlen=0, source=0, dest=0;
 
+		dp = (struct diag_l2_iso9141 *)d_l2_conn->diag_l2_proto_data;
 
-			// Process L2 framing, if L1 doesn't do it.
-			if (l1_doesl2frame == 0) {
-				// Get frame geometry and data:
-				rv = diag_l2_proto_iso9141_decode( tmsg->data,
-								tmsg->len, &hdrlen, &datalen, &source, &dest);
+		if ((l1flags & DIAG_L1_NOHDRS)==0) {
+			// Parse message structure, if headers are present
+			rv = diag_l2_proto_iso9141_decode( tmsg->data,
+							tmsg->len, &hdrlen, &datalen, &source, &dest);
 
-				if (rv < 0 || rv > 255) // decode failure!
-					return diag_iseterr(DIAG_ERR_BADDATA);
-				//we'll have to assume we have only a single message, since at the L1 level
-				//it's impossible to guess the message length. But, if we got more than MAXLEN_ISO9141 bytes,
-				//(not allowed by standard), we try splitting the message (assuming the first message had the maximum
-				//length). It's the best that can be done at this level.
-
-				if (rv > MAXLEN_ISO9141) {
-					struct diag_msg	*amsg;
-					amsg = diag_dupsinglemsg(tmsg);
-					if (amsg == NULL) {
-						return diag_iseterr(DIAG_ERR_NOMEM);
-					}
-					amsg->len = (uint8_t) MAXLEN_ISO9141;
-					tmsg->len -= (uint8_t) MAXLEN_ISO9141;
-					tmsg->data += MAXLEN_ISO9141;
-
-					/*  Insert new amsg before old msg */
-					amsg->next = tmsg;
-					if (lastmsg == NULL)
-						d_l2_conn->diag_msg = amsg;
-					else
-						lastmsg->next = amsg;
-
-					tmsg = amsg; /* Finish processing this one */
-				}
-
+			if (rv < 0 || rv > 255) {
+				// decode failure!
+				return diag_iseterr(DIAG_ERR_BADDATA);
 			}
-
-			// If L1 doesn't strip the checksum byte, verify it:
-			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0) {
-				uint8_t rx_cs = tmsg->data[tmsg->len - 1];
-				if(rx_cs != diag_cks1(tmsg->data, tmsg->len - 1)) {
-					fprintf(stderr, FLFMT "Checksum error in received message!\n", FL);
-					tmsg->fmt |= DIAG_FMT_BADCS;
-				} else {
-					tmsg->fmt &= ~DIAG_FMT_BADCS;
-					tmsg->fmt |= DIAG_FMT_FRAMED ;	//if the checksum fits, it means we framed things properly.
-				}
-				// "Remove" the checksum byte:
-				tmsg->len--;
-			} else {
-				tmsg->fmt |= DIAG_FMT_FRAMED ;	//if L1 stripped the checksum, it was probably valid ?
-			}
-
-			//if the headers aren't stripped by L1 already:
-			if ((l1flags & DIAG_L1_NOHDRS)==0) {
-				// Set source address:
-				tmsg->src = source;
-				// Set destination address:
-				tmsg->dest = dest;
-
-				// and "remove" headers:
-				tmsg->data += (OHLEN_ISO9141 - 1);
-				tmsg->len -= (OHLEN_ISO9141 - 1);
-			}
-
-
-			// Message done. Flag it up:
-			tmsg->fmt |= DIAG_FMT_CKSUMMED;
-
-			// Prepare to decode next message:
-			lastmsg = tmsg;
-			tmsg = tmsg->next;
+		} else if (!l1_doesl2frame) {
+			// Absent headers, and no framing -> illegal !
+			fprintf(stderr, "Warning : insane L1flags (l2frame && nohdrs ?)\n");
+			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
-	}
 
-	return (rv<0)? diag_iseterr(rv):0;
+		// Process L2 framing, if L1 doesn't do it.
+		if (l1_doesl2frame == 0) {
+
+			//we'll have to assume we have only a single message, since at the L1 level
+			//it's impossible to guess the message length. But, if we got more than MAXLEN_ISO9141 bytes,
+			//(not allowed by standard), we try splitting the message (assuming the first message had the maximum
+			//length). It's the best that can be done at this level.
+
+			if (rv > MAXLEN_ISO9141) {
+				struct diag_msg	*amsg;
+				amsg = diag_dupsinglemsg(tmsg);
+				if (amsg == NULL) {
+					return diag_iseterr(DIAG_ERR_NOMEM);
+				}
+				amsg->len = (uint8_t) MAXLEN_ISO9141;
+				tmsg->len -= (uint8_t) MAXLEN_ISO9141;
+				tmsg->data += MAXLEN_ISO9141;
+
+				/*  Insert new amsg before old msg */
+				amsg->next = tmsg;
+				if (lastmsg == NULL)
+					d_l2_conn->diag_msg = amsg;
+				else
+					lastmsg->next = amsg;
+
+				tmsg = amsg; /* Finish processing this one */
+			}
+
+		}
+
+		// If L1 doesn't strip the checksum byte, verify it:
+		if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0) {
+			uint8_t rx_cs = tmsg->data[tmsg->len - 1];
+			if(rx_cs != diag_cks1(tmsg->data, tmsg->len - 1)) {
+				fprintf(stderr, FLFMT "Checksum error in received message!\n", FL);
+				tmsg->fmt |= DIAG_FMT_BADCS;
+			} else {
+				tmsg->fmt &= ~DIAG_FMT_BADCS;
+				tmsg->fmt |= DIAG_FMT_FRAMED ;	//if the checksum fits, it means we framed things properly.
+			}
+			// "Remove" the checksum byte:
+			tmsg->len--;
+		} else {
+			tmsg->fmt |= DIAG_FMT_FRAMED ;	//if L1 stripped the checksum, it was probably valid ?
+		}
+
+		//if the headers aren't stripped by L1 already:
+		if ((l1flags & DIAG_L1_NOHDRS)==0) {
+			// Set source address:
+			tmsg->src = source;
+			// Set destination address:
+			tmsg->dest = dest;
+
+			// and "remove" headers:
+			tmsg->data += (OHLEN_ISO9141 - 1);
+			tmsg->len -= (OHLEN_ISO9141 - 1);
+		}
+
+
+		// Message done. Flag it up:
+		tmsg->fmt |= DIAG_FMT_CKSUMMED;
+
+		// Prepare to decode next message:
+		lastmsg = tmsg;
+		tmsg = tmsg->next;
+	}	//while tmsg
+
+	return 0;
 }
 
 
@@ -681,13 +688,17 @@ diag_l2_proto_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	offset = 0;
 
-	// If the interface doesn't do ISO9141-2 header, add it before the data:
-	if ((d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2FRAME) == 0)
-	{
-		buf[offset++] = 0x68; //defined by spec;
-		buf[offset++] = 0x6A; //defined by spec;
-		buf[offset++] = dp->srcaddr;
+	//if L1 requires headerless data, send directly :
+	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DATAONLY) {
+		rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, NULL,
+				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
+		return rv? diag_iseterr(rv):0;
 	}
+
+	/* add ISO9141-2 header */
+	buf[offset++] = 0x68; //defined by spec;
+	buf[offset++] = 0x6A; //defined by spec;
+	buf[offset++] = dp->srcaddr;
 
 	// Now copy in data
 	memcpy(&buf[offset], msg->data, msg->len);

@@ -62,23 +62,22 @@ extern "C" {
 /* following flags are for semi-intelligent interfaces */
 
 /*
- *	L1 is intelligent and does L2 stuff, this means it will
- *	- Return a complete L3 frame of data as one recv()
- *	- Expect complete L3 data to be sent to it, with the address header
- *	in one write,
- * DOESL2FRAME: interface expects and returns full L2 frames XXX
+ *	L1/L0 is intelligent and does L2 stuff, this means
+ *	- l1_recv() splits multiple responses and returns a complete L2 frame;
+ *		presence of headers / checksum is determined by other flags below
+ *	- l1_send() ignores P4 inter-byte spacing when forwarding the data to L0
  */
 #define	DIAG_L1_DOESL2FRAME		0x20
 /*
  * DOESSLOWINIT
- *	L1 interface does the slowinit stuff, so L2 doesn't need to do complex
+ *	L1/L0 interface does the slowinit stuff, so L2 doesn't need to do complex
  *	handshake. L1 will send the keybytes on the first recv(). (All L1's
  *	read the 0x55 and do the right thing, L2 never sees that) See DIAG_L1_DOESFULLINIT
  */
 #define	DIAG_L1_DOESSLOWINIT		0x40
 /*
  * DOESL2CKSUM
- *	L1 interface does the L2 checksum/CRC on send
+ *	L1/L0 interface adds the L2 checksum/CRC on send
  */
 #define	DIAG_L1_DOESL2CKSUM		0x80
 /*
@@ -111,6 +110,7 @@ extern "C" {
 //NOHDRS
 //this indicates that L1 already stripped the headers from the frame (ELM default behavior)
 //but the l0_elm init code enables headers so this is not useful at the moment.
+//If NOHDRS, DIAG_L1_DOESL2FRAME must also be set! (otherwise, no hope of splitting messages...)
 #define DIAG_L1_NOHDRS 0x2000
 
 //DOESFULLINIT

@@ -757,6 +757,7 @@ diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 	ret = DIAG_L1_SLOW |
 	DIAG_L1_FAST |
 	DIAG_L1_PREFFAST |
+	DIAG_L1_DOESL2FRAME |
 	DIAG_L1_DOESP4WAIT |
 	DIAG_L1_AUTOSPEED |
 	DIAG_L1_NOTTY;
@@ -765,7 +766,7 @@ diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 		ret |= DIAG_L1_DOESL2CKSUM | DIAG_L1_STRIPSL2CKSUM;
 
 	if (dev->sim_skip_frame)
-		ret |= 	DIAG_L1_DOESL2FRAME;
+		ret |= 	DIAG_L1_NOHDRS | DIAG_L1_DATAONLY;
 
 	return ret;
 }
