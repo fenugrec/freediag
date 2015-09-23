@@ -64,6 +64,16 @@ const char *simfile=NULL;	//pointer to remote filename.
 const char *simfile_default=DB_FILE;	//default filename
 
 
+// ECU responses linked list:
+struct sim_ecu_response
+{
+	char *text; // unparsed text for the response!
+	uint8_t *data; // parsed final response.
+	uint8_t len; // final response length.
+	struct sim_ecu_response* next;
+};
+
+/* Internal state (struct diag_l0_device->l0_int) */
 struct diag_l0_sim_device
 {
 	int protocol;
@@ -82,15 +92,6 @@ struct diag_l0_sim_device
 	struct cfgi simfile;	/* WIP */
 
 	struct sim_ecu_response* sim_last_ecu_responses;	// For keeping all the responses to the last request.
-};
-
-// ECU responses linked list:
-struct sim_ecu_response
-{
-	char *text; // unparsed text for the response!
-	uint8_t *data; // parsed final response.
-	uint8_t len; // final response length.
-	struct sim_ecu_response* next;
 };
 
 
@@ -539,6 +540,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 		return diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
+	dev->sim_last_ecu_responses = NULL;
 
 	// Create diag_l0_device:
 	if ((rv=diag_calloc(&dl0d, 1))) {
