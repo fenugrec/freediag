@@ -705,7 +705,6 @@ print_current_data(int english)
 static void
 log_response(int ecu, response_t *r)
 {
-	int i;
 	assert(global_logfp != NULL);
 
 	/* Only print good records */
@@ -713,9 +712,7 @@ log_response(int ecu, response_t *r)
 		return;
 
 	printf("%d: ", ecu);
-	for (i = 0; i < r->len; i++) {
-		fprintf(global_logfp, "%02X ", r->data[i]);
-	}
+	diag_data_dump(global_logfp, r->data,r->len);
 	fprintf(global_logfp, "\n");
 }
 

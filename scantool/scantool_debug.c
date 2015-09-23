@@ -133,10 +133,8 @@ print_resp_info(UNUSED(int mode), response_t *data)
 		{
 			if (data->type == TYPE_GOOD)
 			{
-				int j;
 				printf("0x%02X: ", i );
-				for (j=0; j<data->len; j++)
-					printf("%02X ", data->data[j]);
+				diag_data_dump(stdout, data->data, data->len);
 				printf("\n");
 			}
 			else

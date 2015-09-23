@@ -70,6 +70,8 @@
  */
 
 #include <assert.h>
+#include <stdbool.h>
+
 #include "diag.h"
 #include "diag_dtc.h"
 #include "diag_l1.h"
@@ -145,17 +147,17 @@ find_ecu_msg(int byte, databyte_type val)
  * Message print out / debug routines
  */
 static void
-print_msg_header(FILE *fp, struct diag_msg *msg, int timestamp, int i)
+print_msg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum)
 {
 	if (timestamp)
 		fprintf(fp, "%lu.%03lu: ",
 			msg->rxtime / 1000, msg->rxtime % 1000);
-	fprintf(fp, "msg %02d src=0x%02X dest=0x%02X\n", i, msg->src, msg->dest);
-	fprintf(fp, "msg %02d data: ", i);
+	fprintf(fp, "msg %02d src=0x%02X dest=0x%02X\n", msgnum, msg->src, msg->dest);
+	fprintf(fp, "msg %02d data: ", msgnum);
 }
 
 static void
-print_msg(FILE *fp, struct diag_msg *msg, int timestamp)
+print_msg(FILE *fp, struct diag_msg *msg, bool timestamp)
 {
 	struct diag_msg *tmsg;
 	int i;
@@ -450,12 +452,10 @@ void
 j1979_watch_rcv(void *handle, struct diag_msg *msg)
 {
 	struct diag_msg *tmsg;
-	int i, j;
+	int i;
 
 	for ( tmsg = msg , i = 0; tmsg; tmsg=tmsg->next, i++ ) {
-		fprintf(stderr, "%lu.%03lu: ", tmsg->rxtime / 1000, tmsg->rxtime % 1000);
-		fprintf(stderr, "msg %02d src 0x%X dest 0x%X ", i, msg->src, msg->dest);
-		fprintf(stderr, "msg %02d: ", i);
+		print_msg_header(stderr, tmsg, 1, i);
 
 		if (handle != NULL) {
 			char buf[256];	/* XXX Can we switch to stdargs for decoders? */
@@ -463,9 +463,7 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 				diag_l3_decode((struct diag_l3_conn *)handle, tmsg,
 				buf, sizeof(buf)));
 		} else {
-			for (j=0; j<tmsg->len; j++) {
-				fprintf(stderr, "0x%02X ", tmsg->data[j]);
-			}
+			diag_data_dump(stderr, tmsg->data, tmsg->len);
 			fprintf(stderr, "\n");
 		}
 	}
