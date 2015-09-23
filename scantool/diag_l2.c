@@ -24,8 +24,7 @@
  *
  * This sits "under" the L2 per-protocol (such as ISO 14230, SAE J1979)
  *  - understands the protocol format,
- *  - removes the "half duplex" echos from half duplex interfaces
- *  - pads messages as needed,
+  *  - pads messages as needed,
  *  - and sends "tester present" messages at the correct intervals to keep
  *	the link to an ECU alive
  *
@@ -41,8 +40,7 @@
 #include "diag_err.h"
 
 #include "diag_l2.h"
-
-/* */
+#include "utlist.h"
 
 
 int diag_l2_debug;
@@ -74,49 +72,13 @@ static struct diag_l2_link *diag_l2_links;
 static struct diag_l2_link *
 diag_l2_findlink(const char *dev_name)
 {
-	struct diag_l2_link *dl2l = diag_l2_links;
+	struct diag_l2_link *dl2l=NULL;
 
-	while (dl2l)
-	{
-		if ( strcmp(dl2l->diag_l2_name , dev_name) == 0)
-			return dl2l;
-		dl2l = dl2l->next;
+	LL_FOREACH(diag_l2_links, dl2l) {
+		if ( strcmp(dl2l->diag_l2_name , dev_name) == 0) break;
 	}
-	return NULL;
-}
 
-/*
- * Remove a link from the diag_l2_links linked list.
- * caller should free the dl2l afterwards.
- * This is only called from diag_l2_closelink();
- *
- */
-void diag_l2_rmlink(struct diag_l2_link *dl2l) {
-	struct diag_l2_link *dltemp, *d_l2_last;
-
-	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr, FLFMT "l2_rmlink: removing %p from diag_l2_links\n",
-				FL, (void *) dl2l);
-
-	assert(dl2l != NULL);
-
-	dltemp = diag_l2_links;
-	d_l2_last = NULL;
-
-	while (dltemp)
-	{
-		if (dltemp == dl2l)
-		{
-			if (d_l2_last)
-				d_l2_last = dl2l->next;
-			else
-				diag_l2_links = dl2l->next;
-			break;
-		}
-		d_l2_last = dltemp;
-		dltemp = dltemp->next;
-	}
-	return;
+	return dl2l;
 }
 
 /*
@@ -128,26 +90,10 @@ void diag_l2_rmlink(struct diag_l2_link *dl2l) {
 
 static int diag_l2_rmconn(struct diag_l2_conn *dl2c)
 {
-	struct diag_l2_conn	*d_l2_conn = diag_l2_connections;
-	struct diag_l2_conn	*d_l2_last_conn = NULL;
-
 	assert(dl2c !=NULL);
 
-	while (d_l2_conn)
-	{
-		if (d_l2_conn == dl2c)
-		{
-			/* Remove it from list */
-			if (d_l2_last_conn)
-				d_l2_last_conn->next = dl2c->next ;
-			else
-				diag_l2_connections = dl2c->next;
+	LL_DELETE(diag_l2_connections, dl2c);
 
-			break;
-		}
-		d_l2_last_conn = d_l2_conn;
-		d_l2_conn = d_l2_conn->next;
-	}
 	return 0;
 }
 
@@ -171,9 +117,7 @@ diag_l2_timer(void)
 	unsigned long now;
 	now=diag_os_getms();	/* XXX probably Not async safe */
 
-	for (d_l2_conn = diag_l2_connections;
-		d_l2_conn; d_l2_conn = d_l2_conn->next)
-	{
+	LL_FOREACH(diag_l2_connections, d_l2_conn) {
 		int expired = 0;
 
 		/*
@@ -205,25 +149,8 @@ diag_l2_timer(void)
 void
 diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
-	struct diag_msg *tmsg = d_l2_conn->diag_msg;
-
-	if (d_l2_conn->diag_msg == NULL)
-	{
-		d_l2_conn->diag_msg = msg;
-//		d_l2_conn->diag_msg->mcnt = 1;
-		return;
-	}
-	/* Add to end of list */
-	while (tmsg)
-	{
-		if (tmsg->next == NULL)
-		{
-			tmsg->next = msg;
-//			d_l2_conn->diag_msg->mcnt ++;
-			break;
-		}
-		tmsg = tmsg->next;
-	}
+	LL_CONCAT(d_l2_conn->diag_msg, msg);
+	return;
 }
 
 /************************************************************************/
@@ -272,8 +199,9 @@ diag_l2_closelink(struct diag_l2_link *dl2l)
 		fprintf(stderr,FLFMT "l2_closelink %p called\n",
 			FL, (void *)dl2l);
 
-	/* Clear out this link */
-	diag_l2_rmlink(dl2l);	/* Take off list */
+	/* Remove from linked-list */
+	LL_DELETE(diag_l2_links, dl2l);
+
 	if (dl2l->diag_l2_dl0d == NULL)
 		fprintf(stderr, FLFMT "**** Corrupt DL2L !! Report this !!!\n", FL);
 	else
@@ -307,13 +235,13 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 			FLFMT "l2_open %s on %s, L1proto=%d\n",
 			FL, dev_name, subinterface, L1protocol);
 
+	/* try to find in linked list */
 	dl2l = diag_l2_findlink(dev_name);
 
-	if (dl2l)
-	{
+	if (dl2l) {
 		if (diag_l2_debug & DIAG_DEBUG_OPEN)
 			fprintf(stderr, "\texisting L2 link \"%s\" found\n", dl2l->diag_l2_name);
-		/* device open */
+
 		if (dl2l->l1proto != L1protocol) {
 			/* Wrong L1 protocol, close link */
 			diag_l2_closelink(dl2l);
@@ -331,8 +259,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 	}
 
 	dl0d = diag_l1_open(dev_name, subinterface, L1protocol);
-	if (dl0d == NULL)
-	{
+	if (dl0d == NULL) {
 		rv=diag_geterr();
 		free(dl2l);
 		return diag_pseterr(rv);	//forward error to next level
@@ -347,11 +274,8 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 
 	strcpy(dl2l->diag_l2_name, dev_name);
 
-	/*
-	 * Put ourselves at the head of the list.
-	 */
-	dl2l->next = diag_l2_links;
-	diag_l2_links = dl2l;
+	/* Put ourselves at the head of the list. */
+	LL_PREPEND(diag_l2_links, dl2l);
 
 	return dl2l->diag_l2_dl0d;
 }
@@ -384,8 +308,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 
 	if (dl0d->dl2_link != NULL) {
 		// Check if dl2_link is still referenced by someone in diag_l2_connections
-		for (d_l2_conn = diag_l2_connections;
-			d_l2_conn; d_l2_conn = d_l2_conn->next) {
+		LL_FOREACH(diag_l2_connections, d_l2_conn) {
 			if (d_l2_conn->diag_link == dl0d->dl2_link) {
 				fprintf(stderr, FLFMT "Not closing dl0d: used by dl2conn %p!\n", FL,
 					(void *) d_l2_conn);
@@ -403,12 +326,12 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 	}
 	// this dl0d had no ->dl2_link; check in the linked-list anyway in case
 	// it was orphaned (i.e. dl0d->dl2_link was not set properly...)
-	for ( dl2l = diag_l2_links; dl2l; dl2l=dl2l->next) {
-			if (dl2l->diag_l2_dl0d == dl0d) {
-				fprintf(stderr, FLFMT "Not closing dl0d: used by dl2link %p!\n", FL,
-					(void *) dl2l);
-				return 0;	//there's still a dl2link using it !
-			}
+	LL_FOREACH(diag_l2_links, dl2l) {
+		if (dl2l->diag_l2_dl0d == dl0d) {
+			fprintf(stderr, FLFMT "Not closing dl0d: used by dl2link %p!\n", FL,
+				(void *) dl2l);
+			return 0;	//there's still a dl2link using it !
+		}
 	}
 	//So we parsed all d2 links and found no parents; let's close dl0d.
 
@@ -452,23 +375,21 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	 * target and the dl0d
 	 */
 	d_l2_conn = diag_l2_conbyid[target];
-	while (d_l2_conn)
-	{
-		/*
-		 * Find if there's an entry for this link (or may be talking
-		 * to ECU with this ID on another channel !!
-		 */
-		if (d_l2_conn->diag_link != NULL)
+
+	if (d_l2_conn == NULL) {
+		/* no connection to this ECU address, but maybe another connection with the same dl0d ? */
+		/* XXX not sure how possible this is */
+		LL_FOREACH(diag_l2_connections, d_l2_conn) {
+			if (d_l2_conn->diag_link == NULL) continue;
 			if (d_l2_conn->diag_link->diag_l2_dl0d == dl0d) {
-			reusing = 1;
-			break;
+				reusing = 1;
+				break;
 			}
-		d_l2_conn = d_l2_conn->next;
+		}
 	}
 
-	if (d_l2_conn == NULL)
-	{
-		/* New connection */
+	if (d_l2_conn == NULL) {
+		/* Still nothing -> new connection */
 		if (diag_calloc(&d_l2_conn, 1))
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		reusing = 0;
@@ -552,8 +473,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	if ( reusing == 0 )
 	{
 		/* And attach connection info to our main list */
-		d_l2_conn->next = diag_l2_connections ;
-		diag_l2_connections = d_l2_conn ;
+		LL_PREPEND(diag_l2_connections, d_l2_conn);
 
 		diag_l2_conbyid[target] = d_l2_conn;
 

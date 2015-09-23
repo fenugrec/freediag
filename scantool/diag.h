@@ -194,8 +194,6 @@ struct diag_msg
 	unsigned long	 rxtime;	/* Processed time, in ms given by diag_os_chronoms(0) */
 	struct diag_msg	*next;		/* For linked lists of messages */
 
-//	uint8_t	mcnt;		/* Number of elements on this list ; nobody used this*/
-
 	uint8_t	*idata;		/* For free() of data later: this is a "backup"
 							 * of the initial *data pointer.*/
 	uint8_t	iflags;		/* Internal flags */

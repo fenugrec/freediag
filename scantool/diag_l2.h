@@ -137,15 +137,8 @@ struct diag_l2_conn
 	uint8_t	diag_l2_kb2;	/* KB 2, (ISO stuff really) */
 
 
-	/* Main list of all connections */
+	/* Main linked list of all connections */
 	struct diag_l2_conn *next;
-
-	/* List of connections per L1 interface */
-	//XXXI'm not sure what these next two were for. They were not
-	//referenced anywhere; and we already have a linked-list of
-	//L2 connections.
-//	struct diag_l2_conn *diag_l2_next;
-//	struct diag_l2_conn *diag_l2_prev;
 
 	/* Generic receive buffer */
 	uint8_t	rxbuf[MAXRBUF];
