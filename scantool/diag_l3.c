@@ -45,7 +45,7 @@
 #include "diag_l3_vag.h"
 #include "diag_l3_iso14230.h"
 
-
+#include "utlist.h"
 
 int diag_l3_debug;
 
@@ -128,8 +128,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 			/*
 			 * And add to list
 			 */
-			d_l3_conn->next = diag_l3_list;
-			diag_l3_list = d_l3_conn;
+			LL_PREPEND(diag_l3_list, d_l3_conn);
 		}
 	}
 
@@ -146,28 +145,14 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
  */
 int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 {
-	struct diag_l3_conn *dl, *dlast;
 	int rv;
+
+	assert(d_l3_conn != NULL);
 
 	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
 
 	/* Remove from list */
-	if (d_l3_conn == diag_l3_list)
-	{
-		/* 1st in list : make list point to the actual 2nd*/
-		diag_l3_list = d_l3_conn->next;
-	} else {
-		for ( dl = diag_l3_list->next, dlast = diag_l3_list;
-				dl ; dl = dl->next )
-		{
-			if (dl == d_l3_conn)
-			{
-				dlast->next = dl->next;
-				break;
-			}
-			dlast = dl;
-		}
-	}
+	LL_DELETE(diag_l3_list, d_l3_conn);
 
 	rv = dp->diag_l3_proto_stop(d_l3_conn);
 
@@ -283,9 +268,7 @@ void diag_l3_timer(void)
 	struct diag_l3_conn *conn;
 	unsigned long now=diag_os_getms();
 
-
-	for (conn = diag_l3_list ; conn ; conn = conn->next )
-	{
+	LL_FOREACH(diag_l3_list, conn) {
 		/* Call L3 timer routine for this connection */
 		const diag_l3_proto_t *dp = conn->d_l3_proto;
 

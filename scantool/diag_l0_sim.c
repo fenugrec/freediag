@@ -50,6 +50,7 @@
 #include "diag_l1.h"
 #include "diag_cfg.h"
 
+#include "utlist.h"
 
 
 /**************************************************/
@@ -221,12 +222,11 @@ void sim_free_ecu_responses(struct sim_ecu_response** resp_pp)
 // for debug purposes.
 void sim_dump_ecu_responses(struct sim_ecu_response* resp_p)
 {
-	struct sim_ecu_response* temp_resp_p = resp_p;
+	struct sim_ecu_response* tresp;
 	uint8_t count = 0;
 
-	while (temp_resp_p != NULL) {
-		fprintf(stderr, FLFMT "response #%d: %s", FL, count, temp_resp_p->text);
-		temp_resp_p = temp_resp_p->next;
+	LL_FOREACH(resp_p, tresp) {
+		fprintf(stderr, FLFMT "response #%d: %s", FL, count, tresp->text);
 		count++;
 	}
 
@@ -247,16 +247,13 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 	char line_buf[1280+1]; // 255 response bytes * 5 ("0xYY ") + tolerance for a token ("abc1 ") = 1280.
 	int end_responses = 0;
 	int request_found = 0;
+	struct sim_ecu_response *resp_p;
 
 
 	// walk to the end of the list (last valid item).
-	struct sim_ecu_response* resp_p = *resp_pp;
-	if (resp_p != NULL) {
+	LL_FOREACH(*resp_pp, resp_p) {
 		resp_count++;
-		while (resp_p->next != NULL) {
-			resp_p = resp_p->next;
-			resp_count++;
-		}
+		if (resp_p->next == NULL) break;
 	}
 
 	// go to the beginning of the DB file.

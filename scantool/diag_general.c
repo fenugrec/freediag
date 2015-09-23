@@ -35,6 +35,8 @@
 #include "diag_l1.h"
 #include "diag_l2.h"
 
+#include "utlist.h"
+
 #define ERR_STR_LEN 30	//length of "illegal error X" string
 
 static int diag_initialized=0;
@@ -141,26 +143,22 @@ diag_dupmsg(struct diag_msg *msg)
 	 * was created, and not about the message we are duplicating
 	 */
 
+	/* newmsg : point to new chain */
 	newmsg = diag_dupsinglemsg(msg);
 	if (newmsg == NULL)
 		return diag_pseterr(DIAG_ERR_NOMEM);
 
-	/* And any on chain */
-	cmsg = newmsg;	//newmsg has to point to the first msg in the chain
-	msg = msg->next;
-	while (msg != NULL) {
+	cmsg = newmsg;
+
+	LL_FOREACH(msg->next, msg) {
 		tmsg = diag_dupsinglemsg(msg);	//copy
 		if (tmsg == NULL) {
 			diag_freemsg(newmsg);	//undo what we have so far
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
 
-		/* Attach tmsg, and update cmsg */
-		cmsg->next = tmsg;
-		cmsg = cmsg->next;
-
-		/* And process next in list */
-		msg = msg->next;
+		/* cmsg before tmsg == add tmsg at the end */
+		LL_PREPEND(tmsg, cmsg);
 	}
 
 	return newmsg;
@@ -185,7 +183,6 @@ diag_dupsinglemsg(struct diag_msg *msg)
 	newmsg->dest = msg->dest;
 	newmsg->src = msg->src;
 	newmsg->rxtime = msg->rxtime;
-	newmsg->next = NULL;
 	/* Dup data if len>0 */
 	if ((msg->len >0) && (msg->data != NULL))
 		memcpy(newmsg->data, msg->data, msg->len);
