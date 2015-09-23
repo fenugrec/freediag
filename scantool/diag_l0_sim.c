@@ -79,7 +79,9 @@ struct diag_l0_sim_device
 	bool	open;
 	int	proto_restrict;	/* (optional) only accept connections matching this proto */
 
-	struct cfgi simfile;
+	struct cfgi simfile;	/* WIP */
+
+	struct sim_ecu_response* sim_last_ecu_responses;	// For keeping all the responses to the last request.
 };
 
 // ECU responses linked list:
@@ -90,9 +92,6 @@ struct sim_ecu_response
 	uint8_t len; // final response length.
 	struct sim_ecu_response* next;
 };
-
-// For keeping all the responses to the last request.
-struct sim_ecu_response* sim_last_ecu_responses = NULL;
 
 
 
@@ -475,7 +474,6 @@ diag_l0_sim_init(void)
 {
 	// Global init flag.
 	static int diag_l0_sim_initdone=0;
-	sim_free_ecu_responses(&sim_last_ecu_responses);
 
 	if (diag_l0_sim_initdone)
 	return 0;
@@ -588,11 +586,11 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 static int
 diag_l0_sim_close(struct diag_l0_device **pdl0d)
 {
-	sim_free_ecu_responses(&sim_last_ecu_responses);
-
 	if (pdl0d && *pdl0d) {
 		struct diag_l0_device *dl0d = *pdl0d;
 		struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)dl0d->l0_int;
+
+		sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
 		// If debugging, print to stderr.
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
@@ -637,9 +635,9 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 	uint8_t synch_patt[1];
 	const uint8_t sim_break = 0x00;
 
-	sim_free_ecu_responses(&sim_last_ecu_responses);
-
 	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
+
+	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n", FL, (void *)dl0d, (void *)dev, in->type);
@@ -690,7 +688,7 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (sim_last_ecu_responses != NULL) {
+	if (dev->sim_last_ecu_responses != NULL) {
 		fprintf(stderr, FLFMT "AAAHHH!!! You're sending a new request before reading all previous responses!!! \n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -706,10 +704,10 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 
 
 	// Build the list of responses for this request.
-	sim_find_responses(&sim_last_ecu_responses, dev->fp, data, (uint8_t) len);
+	sim_find_responses(&dev->sim_last_ecu_responses, dev->fp, data, (uint8_t) len);
 
 	if (diag_l0_debug & DIAG_DEBUG_DATA)
-		sim_dump_ecu_responses(sim_last_ecu_responses);
+		sim_dump_ecu_responses(dev->sim_last_ecu_responses);
 
 	return 0;
 }
@@ -725,6 +723,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 {
 	size_t xferd;
 	struct sim_ecu_response* resp_p = NULL;
+	struct diag_l0_sim_device * dev = dl0d->l0_int;
 
 	if (!len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -734,7 +733,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 			FL, (void *)dl0d, (long)len, timeout);
 
 	// "Receive from the ECU" a response.
-	resp_p = sim_last_ecu_responses;
+	resp_p = dev->sim_last_ecu_responses;
 	if (resp_p != NULL) {
 		// Parse the response (replace simulated values if needed).
 		sim_parse_response(resp_p);
@@ -742,7 +741,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		xferd = MIN(resp_p->len, len);
 		memcpy(data, resp_p->data, xferd);
 		// Free the present response in the list (and walk to the next one).
-		sim_last_ecu_responses = sim_free_ecu_response(&sim_last_ecu_responses);
+		dev->sim_last_ecu_responses = sim_free_ecu_response(&dev->sim_last_ecu_responses);
 	} else {
 		// Nothing to receive, simulate timeout on return.
 		xferd = 0;
