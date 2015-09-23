@@ -117,6 +117,11 @@ install(TARGETS scantool DESTINATION bin)
 ## Test suite (WIP)
 # scantool tests; these are arranged roughly from slowest to fastest
 set(SCANTOOL_TESTS
+#tty_patgen requires oscilloscope validation
+#	tty_patgen
+#tty_timing requires manual verification of output
+#	tty_timing
+#dumb halfdup tests are very long (15-25 sec each):
 	l0_dumb_halfdup
 	l0_dumb_halfdup_2
 	cli_1
@@ -124,6 +129,7 @@ set(SCANTOOL_TESTS
 	l0_carsim_2
 	l0_carsim_3
 	l0_carsim_4
+	l2_14230_fast
 	)
 set(TESTSRC "${CMAKE_SOURCE_DIR}/tests")
 
