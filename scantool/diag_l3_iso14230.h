@@ -34,8 +34,6 @@ extern "C" {
 // changes (SID 83, AccessTimingParameter) to modify P3. But by default they
 // should be configured to accept 55 ms < P3 < 5000 ms
 
-extern const diag_l3_proto_t diag_l3_iso14230;
-
 #if defined(__cplusplus)
 }
 #endif

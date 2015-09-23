@@ -12,6 +12,11 @@ extern "C" {
 @DIAG_CONFIG_ZONE1@
 @DIAG_CONFIG_ZONE2@
 
+/* Hard-coded L3 protos. */
+extern const struct diag_l3_proto diag_l3_j1979;
+extern const struct diag_l3_proto diag_l3_vag;
+extern const struct diag_l3_proto diag_l3_iso14230;
+
 /* Static allocated l0dev_list, since it can be entirely determined at compile-time.
  * The last item must be a NULL ptr to ease iterating.
  */
@@ -26,6 +31,13 @@ const struct diag_l2_proto *l2proto_list[] = {
 	NULL
 };
 
+/* Static allocated L3 protocol list */
+const struct diag_l3_proto *diag_l3_protocols[] = {
+	&diag_l3_j1979,
+	&diag_l3_vag,
+	&diag_l3_iso14230,
+	NULL
+};
 
 #if defined(__cplusplus)
 }

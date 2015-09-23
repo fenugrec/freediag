@@ -39,22 +39,11 @@
 #include "diag_err.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
-
 #include "diag_l3.h"
-#include "diag_l3_saej1979.h"
-#include "diag_l3_vag.h"
-#include "diag_l3_iso14230.h"
 
 #include "utlist.h"
 
 int diag_l3_debug;
-
-static const diag_l3_proto_t * const diag_l3_protocols[] =
-{
-	&diag_l3_j1979,
-	&diag_l3_vag,
-	&diag_l3_iso14230,
-};
 
 static struct diag_l3_conn	*diag_l3_list;
 
@@ -70,7 +59,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 	struct diag_l3_conn *d_l3_conn = NULL;
 	unsigned int i;
 	int rv;
-	const diag_l3_proto_t *dp;
+	const struct diag_l3_proto *dp;
 
 	assert(d_l2_conn != NULL);
 
@@ -81,8 +70,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 
 	/* Find the protocol */
 	dp = NULL;
-	for (i=0; i < ARRAY_SIZE(diag_l3_protocols); i++)
-	{
+	for (i=0; diag_l3_protocols[i]; i++) {
 		if (strcasecmp(protocol, diag_l3_protocols[i]->proto_name) == 0)
 		{
 			dp = diag_l3_protocols[i];	/* Found. */
@@ -149,7 +137,7 @@ int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 
 	assert(d_l3_conn != NULL);
 
-	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
+	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 
 	/* Remove from list */
 	LL_DELETE(diag_l3_list, d_l3_conn);
@@ -164,7 +152,7 @@ int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 {
 	int rv;
-	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
+	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 
 	rv = dp->diag_l3_proto_send(d_l3_conn, msg);
 
@@ -177,7 +165,7 @@ int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle)
 {
-	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
+	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 	int rv;
 
 	rv=dp->diag_l3_proto_recv(d_l3_conn, timeout,
@@ -193,7 +181,7 @@ int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 	struct diag_msg *msg, char *buf, const size_t bufsize)
 {
-	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
+	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 
 	return dp->diag_l3_proto_decode(d_l3_conn, msg, buf, bufsize);
 }
@@ -204,7 +192,7 @@ char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, unsigned int cmd, void *data)
 {
 	int rv = 0;
-	const diag_l3_proto_t *dp = d_l3_conn->d_l3_proto;
+	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 
 	/* Call the L3 ioctl routine */
 	if (dp->diag_l3_proto_ioctl)
@@ -226,7 +214,7 @@ struct diag_msg *
 diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval)
 {
 	struct diag_msg *rxmsg;
-	const diag_l3_proto_t * dl3p = dl3c->d_l3_proto;
+	const struct diag_l3_proto * dl3p = dl3c->d_l3_proto;
 
 	if (diag_l3_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
@@ -270,7 +258,7 @@ void diag_l3_timer(void)
 
 	LL_FOREACH(diag_l3_list, conn) {
 		/* Call L3 timer routine for this connection */
-		const diag_l3_proto_t *dp = conn->d_l3_proto;
+		const struct diag_l3_proto *dp = conn->d_l3_proto;
 
 		//skip connection if L1 does the keepalive stuff
 		if (conn->d_l3l1_flags & DIAG_L1_DOESKEEPALIVE)

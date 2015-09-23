@@ -27,8 +27,6 @@
 extern "C" {
 #endif
 
-extern const diag_l3_proto_t diag_l3_vag;
-
 #if defined(__cplusplus)
 }
 #endif

@@ -74,8 +74,7 @@ struct diag_l3_conn
  * L3 Protocol look up table
  */
 
-typedef struct diag_l3_proto
-{
+struct diag_l3_proto {
 	const char *proto_name;
 
 	//start, stop : initiate L3 comms, filling the given diag_l3_conn
@@ -104,7 +103,7 @@ typedef struct diag_l3_proto
 	//ret 0 if ok
 	int (*diag_l3_proto_timer)(struct diag_l3_conn *, unsigned long ms);
 
-} diag_l3_proto_t;
+};
 
 
 //diag_l3_start must free() everything if it fails;
@@ -150,6 +149,9 @@ int diag_l3_ioctl(struct diag_l3_conn *connection, unsigned int cmd, void *data)
 // diag_l3_debug : contains debugging message flags (see diag.h)
 extern int diag_l3_debug;
 extern struct diag_l3_conn *global_l3_conn;
+
+/* List of supported L3 protocols; last element is NULL */
+extern const struct diag_l3_proto *diag_l3_protocols[];
 
 #if defined(__cplusplus)
 }
