@@ -121,6 +121,8 @@ set(SCANTOOL_TESTS
 	l0_dumb_halfdup_2
 	cli_1
 	l0_carsim_1
+	l0_carsim_3
+	l0_carsim_4
 	)
 set(TESTSRC "${CMAKE_SOURCE_DIR}/tests")
 

@@ -150,22 +150,23 @@ print_msg_header(FILE *fp, struct diag_msg *msg, int timestamp, int i)
 	if (timestamp)
 		fprintf(fp, "%lu.%03lu: ",
 			msg->rxtime / 1000, msg->rxtime % 1000);
-	fprintf(fp, "msg %02d src 0x%lx dest 0x%lx ", i, (long)msg->src, (long)msg->dest);
-	fprintf(fp, "msg %02d: ", i);
+	fprintf(fp, "msg %02d src=0x%02X dest=0x%02X\n", i, msg->src, msg->dest);
+	fprintf(fp, "msg %02d data: ", i);
 }
 
 static void
 print_msg(FILE *fp, struct diag_msg *msg, int timestamp)
 {
-		struct diag_msg *tmsg;
-	int i, j;
+	struct diag_msg *tmsg;
+	int i;
 
 	for (tmsg = msg, i = 0; tmsg; tmsg = tmsg->next, i++) {
-			print_msg_header(fp, tmsg, timestamp, i);
-		for (j = 0; j < tmsg->len; j++) {
-				fprintf(fp, "0x%02X ", tmsg->data[j]);
-		}
-		fprintf(fp, "\n");
+		print_msg_header(fp, tmsg, timestamp, i);
+		diag_data_dump(fp, tmsg->data, tmsg->len);
+		if (tmsg->fmt & DIAG_FMT_BADCS)
+			fprintf(fp, " [BAD CKS]\n");
+		else
+			fprintf(fp, "\n");
 	}
 }
 
@@ -478,15 +479,8 @@ l2raw_data_rcv(UNUSED(void *handle), struct diag_msg *msg)
 	 * Layer 2 call back, just print the data, this is used if we
 	 * do a "read" and we haven't yet added a L3 protocol
 	 */
-	struct diag_msg *tmsg;
-	int i;
-
-	for ( tmsg = msg , i = 0; tmsg != NULL; tmsg=tmsg->next, i++ ) {
-		fprintf(stderr, "msg %02d src 0x%X dest 0x%X\n", i, tmsg->src, tmsg->dest);
-		fprintf(stderr, "msg %02d data: ", i);
-		diag_data_dump(stderr, tmsg->data, tmsg->len);
-		fprintf(stderr, "\n");
-	}
+	print_msg(stderr, msg, 0);
+	return;
 }
 
 /*

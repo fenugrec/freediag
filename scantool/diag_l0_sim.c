@@ -74,9 +74,10 @@ struct diag_l0_sim_device
 	// or not the L2 framing and CRC/Checksums.
 	// These boolean flags are to be programmed with values
 	// from the DB file in use.
-	int sim_skip_frame;
-	int sim_skip_crc;
+	bool	dataonly;	/* messages are sent/received without headers or checksums; required for J1850 */
+	bool	nocksum;	/* messages are sent/received without checksums */
 	bool	open;
+	int	proto_restrict;	/* (optional) only accept connections matching this proto */
 
 	struct cfgi simfile;
 };
@@ -109,6 +110,8 @@ static int
 diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 void *data, size_t len, unsigned int timeout);
+
+static int diag_l0_sim_close(struct diag_l0_device **pdl0d);
 
 extern void
 diag_l0_sim_setfile(char * fname);
@@ -407,11 +410,18 @@ void sim_read_cfg(struct diag_l0_sim_device *dev)
 	char line_buf[21]; // 20 chars generally enough for a config token.
 
 #define TAG_CFG "CFG"
-#define CFG_NOL2FRAME "SIM_NOL2FRAME"
-#define CFG_NOL2CKSUM "SIM_NOL2CKSUM"
+#define CFG_DATAONLY "DATAONLY"
+#define CFG_NOL2CKSUM "NOL2CKSUM"
+#define CFG_P9141	"P_9141"
+#define CFG_P14230	"P_14230"
+#define CFG_P1850P	"P_J1850P"
+#define CFG_P1850V	"P_J1850V"
+#define CFG_PCAN	"P_CAN"
+#define CFG_PRAW	"P_RAW"
 
-	dev->sim_skip_crc = 0;
-	dev->sim_skip_frame = 0;
+	dev->dataonly = 0;
+	dev->nocksum = 0;
+	dev->proto_restrict = 0;
 
 	// search for all config lines.
 	while (1) {
@@ -426,15 +436,29 @@ void sim_read_cfg(struct diag_l0_sim_device *dev)
 		// get the config values.
 		p = line_buf + strlen(TAG_CFG) + 1;
 
-		if (strncmp(p, CFG_NOL2FRAME, strlen(CFG_NOL2FRAME)) == 0) {
-			// "no l2 frame":
-			p += strlen(CFG_NOL2FRAME) + 1;
-			sscanf(p, "%d", &dev->sim_skip_frame);
+		if (strncmp(p, CFG_DATAONLY, strlen(CFG_DATAONLY)) == 0) {
+			dev->dataonly = 1;
 			continue;
 		} else if (strncmp(p, CFG_NOL2CKSUM, strlen(CFG_NOL2CKSUM)) == 0) {
-			// "no l2 checksum":
-			p += strlen(CFG_NOL2CKSUM) + 1;
-			sscanf(p, "%d", &dev->sim_skip_crc);
+			dev->nocksum = 1;
+			continue;
+		} else if (strncmp(p, CFG_P9141, strlen(CFG_P9141)) == 0) {
+			dev->proto_restrict=DIAG_L1_ISO9141;
+			continue;
+		} else if (strncmp(p, CFG_P14230, strlen(CFG_P14230)) == 0) {
+			dev->proto_restrict=DIAG_L1_ISO14230;
+			continue;
+		} else if (strncmp(p, CFG_P1850P, strlen(CFG_P1850P)) == 0) {
+			dev->proto_restrict=DIAG_L1_J1850_PWM;
+			continue;
+		} else if (strncmp(p, CFG_P1850V, strlen(CFG_P1850V)) == 0) {
+			dev->proto_restrict=DIAG_L1_J1850_VPW;
+			continue;
+		} else if (strncmp(p, CFG_PCAN, strlen(CFG_PCAN)) == 0) {
+			dev->proto_restrict=DIAG_L1_CAN;
+			continue;
+		} else if (strncmp(p, CFG_PRAW, strlen(CFG_PRAW)) == 0) {
+			dev->proto_restrict=DIAG_L1_RAW;
 			continue;
 		}
 	}
@@ -547,6 +571,14 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 
 	// Read the configuration flags from the db file:
 	sim_read_cfg(dev);
+
+	/* if a specific proto was set, refuse a mismatched connection */
+	if (dev->proto_restrict) {
+		if (dev->proto_restrict != iProtocol) {
+			diag_l0_sim_close(&dl0d);
+			return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
+		}
+	}
 
 	return dl0d;
 }
@@ -744,10 +776,6 @@ diag_l0_sim_setspeed(UNUSED(struct diag_l0_device *dl0d),
 // Returns the interface's physical flags.
 // The simulator doesn't need half-duplex or
 // P4 timing, and implements all types of init.
-// If you don't want to deal with checksums and CRCs,
-// uncomment the SIM_NOL2CKSUM line in the file;
-// If you don't want to deal with header bytes, uncomment
-// the SIM_NOL2FRAME line in the file (required for SAEJ1850).
 static uint32_t
 diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 {
@@ -762,10 +790,11 @@ diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 	DIAG_L1_AUTOSPEED |
 	DIAG_L1_NOTTY;
 
-	if (dev->sim_skip_crc)
+	/* both "no checksum" and "dataonly" modes take care of checksums */
+	if (dev->nocksum || dev->dataonly)
 		ret |= DIAG_L1_DOESL2CKSUM | DIAG_L1_STRIPSL2CKSUM;
 
-	if (dev->sim_skip_frame)
+	if (dev->dataonly)
 		ret |= 	DIAG_L1_NOHDRS | DIAG_L1_DATAONLY;
 
 	return ret;

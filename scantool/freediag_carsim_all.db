@@ -1,5 +1,6 @@
 ###################################################################
-# Freediag Simulator Database File - ISO-9141 version.
+# Freediag Simulator Database File - Examples
+#
 # Here you hold the message bytes exchanged between the Tester and
 # a simulated car ECU (Electronic Controller Unit).
 # This file, together with the "CARSIM" type of interface, makes
@@ -19,28 +20,98 @@
 # "swt1" = replaced by a sawtooth(t) signal, period = 1 second;
 # "sin1" = replaced by sin(t) signal, period = 1 second;
 # "cks1" = replaced by the ISO9141 checksum of all previous bytes.
-# If in doubt, see the CVS/sourceforge examples.
 # For the RQ lines, it's not necessary to put the checksum byte at the end.
+# Or, more generally, only the shortest of either the request or the RQ line
+# must match. In other words, the line
+# "RQ 02 01 00 03" would match all these requests :
+#	"02 01 00"
+#	"02 01 00 03"
+#	"02 01 00 03 ff"
+# but not "02 01 ff", and not "02 01 00 04 ff"
+
+# Other examples may be found in the /tests directory.
+
+# Lines beginning with the "CFG" token can configure some parameters:
+
+# DATAONLY	Messages are sent/received without headers or checksum.
+# NOL2CKSUM	Messages are sent/received without requiring a checksum byte
+# If both options are set, the last one is used for the entire file.
+
+# Optional : restrict to a particular L2 protocol
+# P_9141	ISO-9141
+# P_14230	ISO-14230
+# P_J1850P	SAE J1850-PWM
+# P_J1850V	SAE J1850-VPW
+# P_CAN	CAN / ISO-15765
+# P_RAW	raw
+#
 ###################################################################
 
-# L2 frame - set this to 1 and you won't need header bytes in this file:
-CFG SIM_NOL2FRAME 1
+#### DATAONLY iso9141 example ####
+CFG DATAONLY
+CFG P_9141
 
-# L2 checksum - set this to 1 and you won't need checksums in this file:
-CFG SIM_NOL2CKSUM 1
+# ISO-9141-2 slow init:
+RQ 0x33
+RP 0x55
+RP 0x08
+RP 0x08
+RQ 0xF7
+RP 0xCC
 
+# What SID-1 PIDs are supported? (block 0) , support PID 1, 0x20 & others
+RQ 0x01 0x00
+RP 0x41 0x00 0x80 0xa0 0x00 0x01
+
+# What SID-1 PIDs are supported (block 0x20)
+RQ 0x01 0x20
+RP 0x41 0x20 0x80 0x05 0x00 0x00
+
+
+#### NOL2CKSUM iso9141 example ####
+CFG NOL2CKSUM
+
+# ISO-9141-2 slow init:
+RQ 0x33
+RP 0x55
+RP 0x08
+RP 0x08
+RQ 0xF7
+RP 0xCC
+
+# What SID-1 PIDs are supported? -> support PID 1 only
+RQ 0x68 0x6a 0xf1 0x01 0x00
+RP 0x48 0x6b 0x01 0x41 0x00 0x80 0x00 0x00 0x00
+
+# SID 1 PID 1 ("Monitor status since DTCs cleared"): MIL on, no DTC
+RQ 0x68 0x6a 0xf1 0x01 0x01
+RP 0x48 0x6b 0x01 0x41 0x01 0x80 0x00 0x00 0x00
+
+
+#### regular iso9141 example ####
+# ISO-9141-2 slow init:
+RQ 0x33
+RP 0x55
+RP 0x08
+RP 0x08
+RQ 0xF7
+RP 0xCC
+
+# What SID-1 PIDs are supported? support PID 1 (reply has manually-calculated checksum)
+RQ 0x68 0x6a 0xf1 0x01 0x00 0xc4
+RP 0x48 0x6b 0x01 0x41 0x00 0x80 0x00 0x00 0x00 0x75
+
+# SID 1 PID 1 ("Monitor status since DTCs cleared"): MIL on, no DTC
+RQ 0x68 0x6a 0xf1 0x01 0x01
+RP 0x48 0x6b 0x01 0x41 0x01 0x80 0x00 0x00 0x00 cks1
+
+
+#### Other samples ####
+CFG P_14230
 # ISO-14230 fast init (functional addressing):
-# RQ 0x00
-# RQ 0xC1 0x33 0xF1 0x81 0x66
-# RP 0xC0 0xF1 0x01 0x03 0xC1 0xEA 0x8F cks1
-
-# ISO-9141 slow init:
-# RQ 0x33
-# RP 0x55
-# RP 0x08
-# RP 0x08
-# RQ 0xF7
-# RP 0xCC
+RQ 0x00
+RQ 0xC1 0x33 0xF1 0x81 0x66
+RP 0xC0 0xF1 0x01 0x03 0xC1 0xEA 0x8F cks1
 
 # What SID-1 PIDs are supported? (this is also used as a "resynch" msg by freediag)
 RQ 0x01 0x00
