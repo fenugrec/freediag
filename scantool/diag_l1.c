@@ -274,7 +274,7 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (diag_l1_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "_recv request len=%d, timeout=%u;", FL, len, timeout);
+		fprintf(stderr, FLFMT "_recv request len=%d, timeout=%u;", FL, (int) len, timeout);
 
 	if (timeout==0)
 		fprintf(stderr, FLFMT "Interesting : L1 read with timeout=0. Report this !\n", FL);
