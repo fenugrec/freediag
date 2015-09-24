@@ -41,29 +41,12 @@ INSTALLATION:
 ~~~~~~~~~~~~~
 
 Refer to doc/build_system.txt for more information;
-contents of the "INSTALL" file should be ignored.
-
-1) On linux / unix platforms : cmake is preferred, but the standard
-GNU autotools also work.
 
 For the moment, you should not run make install as it is
 100% untested.
 
-If you cloned freediag from the git repo and are not using cmake,
-you may need to run automake+autoconf from the root source
-directory to re-create the ./configure script.
-
-Make sure to try "./configure --help" to view available
-options.
-
-./configure options:
---enable-scangui if you wish to build the gui (disabled by
-default). This will require the fltk package & libraries.
-
-2) On Windows platforms :
 freediag uses CMake and your choice of compiler toolchain.
 The win32 release was compiled with the mingw toolchain.
-Refer to doc\build_system.txt for more details.
 
 RUNNING:
 ~~~~~~~~
