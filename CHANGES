@@ -6,6 +6,39 @@ I took the liberty of modifying the version number format to MAJOR.MINOR, the MI
 written with 2 digits ( %02d if you will). Some early versions had a suffixed lower-case letter
 indicating a snapshot of the CVS source tree.
 
+*** Release 1.06 ; 2015-09-24
+** Tomek Kazmierczak
+Merged readline completion from Tomasz Kazmierczak:
+- added filename completion for certain commands, filtering hidden commands, multi-level command completion
+- Massively contributed to the conversion to POSIX timers, and the much-needed rework of low-level tty code
+
+** fenugrec
+A number of uninitialized vars, possible corruption, segfaults, mem leaks, etc.
+
+Some doc/*.html cleanup
+ELM support : many improvements !
+ -Auto-detect speed, supported features (clone VS genuine)
+ -fixed receiving multiple responses
+ Low level serial port code : major rework of the unix TTY code, including
+ - better read timeout accuracy
+ - much more solid methods of setting non-standard baudrates
+diag_os timing improvements:
+ -added diag_os_gethrt() + diag_os_hrtus()  (monotonic microsecond clock)
+ -diag_os_unix.c: auto detect clock_gettime() source & capabilities
+diag_l0_dumbtest : added more tests
+diag_l0_sim:
+ -moved global data & cfg to "instance"-specific struct
+ -added optional protocol selection/restriction
+Fixed a few issues with CR+LF vs LF line endings not being treated properly.
+Static allocation of L0, L2 and L3 lists instead of malloc'd linked-lists
+scantool_cli.c : allow "cmd_source", and rc / ini files to exit freediag
+Improved presentation of many commands
+Fixed: %llu printf formatters are broken in msvcrt.dll (windows)
+New: unit tests !
+Improved L2 ISO framing
+Linked list rework: started using third-party linked-list macros, for great justice and code cleanliness.
+
+
 *** Release 1.05 ; 2014-11-18
 From the release notes:
 This release includes a ridiculous amount of commits since 1.04.
