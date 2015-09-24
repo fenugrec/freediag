@@ -40,7 +40,7 @@ else()
 endif()
 
 if (NISPROG)
-	message (WARNING "*****Compiling with nisprog !!!!!!*****")
+	message (STATUS "*****Compiling with nisprog !!!!!!*****")
 endif()
 
 

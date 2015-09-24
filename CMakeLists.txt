@@ -31,9 +31,6 @@ set (PKGVERSION "${PKGVERSIONMAJOR}.${PKGVERSIONMINOR}")
 set (SCANTOOL_PROGNAME "scantool")
 #that sets the command-line tool prompt.
 
-# define CMAKE_ENABLED to toggle between autotools' config.h(.in) and our cconf.h(.in)
-# This can be removed if autotools is ever phased out
-add_definitions (-DCMAKE_ENABLED)
 
 ###### Compiler flags & build types
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "")

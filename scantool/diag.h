@@ -31,11 +31,7 @@
 extern "C" {
 #endif
 
-#ifdef CMAKE_ENABLED
-	#include "cconf.h"
-#else
-	#include "config.h"	//still with autotoools. Both should work...
-#endif
+#include "cconf.h"
 
 #ifdef WIN32
 	#define _WIN32_WINNT 0x0500	//use > winXP features...
@@ -74,15 +70,6 @@ extern "C" {
 #else
 	#define UNUSED(X)	X	//how can we suppress "unused parameter" warnings on other compilers?
 #endif // __GNUC__
-
-#ifndef CMAKE_ENABLED
-	#define CURFILE __FILE__
-	//with autotools __FILE__ seems OK, so less reason for these warnings :
-
-	//#warning *** Without CMake, the debbuging & error messages will show the
-	//#warning *** absolute path of the relevant source file. This is annoying
-	//#warning *** but not severe. See diag.h
-#endif
 
 //hacks for MS Visual studio / visual C
 #ifdef MSVC

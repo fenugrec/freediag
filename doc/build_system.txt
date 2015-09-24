@@ -1,5 +1,8 @@
 freediag build system overview
-CSB / fenugrec 07/2014
+CSB / fenugrec 09/2015
+
+Note : since release 1.06, the autotools (./configure etc.)  build system has been removed. I could not maintain
+it to the same level as the CMake buildsys.
 
 1- instructions for cmake
 **** 1A- Steps to compile freediag on win32 (requires CMake) ****
@@ -45,38 +48,23 @@ If generating makefiles, there are a few special targets added by CMake :
 	- make edit_cache		// open cmake-gui cache editor if applicable
 	- make package		// generate a binary package
 	- make package_source	// generate source tar.gz
+	- make help		//show available targets
 
 Once the Makefiles are generated, it's usually not necessary to run cmake again unless the CMakeLists.txt files
 were changed, or build options were changed. 
-
-
-
-2- Autotools
-GNU autotools, while arcane, are also widespread and familiar to most. Here is just
-some information specific to freediag:
-	- make sure you run "./configure --help" to see available build options. They may change before the
-	online docs are updated.
-	- the scantool/Makefile creates diag_config.c by running genconfig.sh ; 
-	you can edit l0config and l2config to select which "modules" you want to build. I recommend
-	leaving them as-is.
-
 
 3- CMake background info
 I added a CMake build system specifically to support WIN targets, as the GNU autotools
 (autoconf, ./configure & friends) are not trivial to use on MS platforms. CMake should also make
 other platforms (OSX) easier to support as well.
 The main drawback is that the CMake package is quite large (~30MB), and is an additional
-dependency that I force on anyone who wants to compile freediag. However for
-the moment, I am able to maintain both build systems (autotools and CMake), so linux users
-won't need to touch CMake. On the other hand, win users would have to install something
-in any case: either Cygwin, MSYS with autotools, or CMake. I prefer CMake as it also allows
-the user to select his compiler toolchain : mingw (that I use), Code::blocks, MSVS, etc.
-It should even work on OSX / XCode but I know nothing about Macs.
+dependency that I force on anyone who wants to compile freediag. However, as of 1.06 (09-2015)
+I have removed the autotools build system, since they offer me no advantage.
 
 As distributed, the CMake build system for freediag consists of the following files in
 the source tree :
 cconf.h.in 		// manually edited, it is eventually parsed by CMake to create cconf.h
-l0config & l2config	//typically not modified, they indicate which L0 and L2 drivers to include.
+scantool/ l0config , 2config	//typically not modified, they indicate which L0 and L2 drivers to include.
 CMakeLists.txt	//there's one of these in every subdirectory with compiled code.
 
 The CMakeLists.txt are roughly equivalent to the autotools' configure.ac and Makefile.am files, which
