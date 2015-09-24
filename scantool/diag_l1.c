@@ -273,6 +273,9 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 	if (!len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
+	if (diag_l1_debug & DIAG_DEBUG_READ)
+		fprintf(stderr, FLFMT "_recv request len=%d, timeout=%u;", FL, len, timeout);
+
 	if (timeout==0)
 		fprintf(stderr, FLFMT "Interesting : L1 read with timeout=0. Report this !\n", FL);
 
@@ -284,8 +287,10 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 
 	if ((rv>0) &&
 			(diag_l1_debug & DIAG_DEBUG_DATA) && (diag_l1_debug & DIAG_DEBUG_READ)) {
-		fprintf(stderr, FLFMT "_recv: %d bytes, ", FL,rv);
+		fprintf(stderr, "got %d bytes, ",rv);
 		diag_data_dump(stderr, data, (size_t)rv);
+	}
+	if (diag_l1_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, "\n");
 	}
 
