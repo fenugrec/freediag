@@ -44,6 +44,8 @@
 #define ELM_BUFSIZE 40	//longest data to be received during init is the version string, ~ 15 bytes,
 		// plus possible command echo. OBD data is 7 bytes, received as a 23-char string. 32 should be enough...
 		// XXX certain OBD commands (PID 06) return much more data !?
+#define ELM_SLOWNESS	100	//Add this many ms to read timeouts, because ELMs are sloooow
+#define ELM_PURGETIME	400	//Time to wait (ms) for a response to "ATI" command
 
 struct diag_l0_elm_device {
 	int protocol;		//current L1 protocol
@@ -718,7 +720,7 @@ static int elm_purge(struct diag_l0_device *dl0d) {
 		fprintf(stderr, FLFMT "elm_purge : write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	rv = diag_tty_read(dl0d, buf, sizeof(buf), 500);
+	rv = diag_tty_read(dl0d, buf, sizeof(buf), ELM_PURGETIME);
 	if (rv < 1) {
 		return DIAG_ERR_GENERAL;
 	}
@@ -787,11 +789,12 @@ diag_l0_elm_send(struct diag_l0_device *dl0d,
 
 /*
  * Get data (blocking), returns number of bytes read, between 1 and len
-  * ELM returns a string with format "%02X %02X %02X[...]\n" . But it's slow so we add a fixed 400ms to the specified timeout.
+  * ELM returns a string with format "%02X %02X %02X[...]\n" . But it's slow so we add ELM_SLOWNESS ms to the specified timeout.
  * We convert this received ascii string to hex before returning.
  * note : "len" is the number of bytes read on the OBD bus, *NOT* the number of ASCII chars received on the serial link !
- * TODO: parse continuously while receiving data to count actual databytes received ?
- * TODO: verify if caller sometimes requests too much data... timeouts are the wrong way to split messages on ELMs !
+ * TODO MAYBE : decode possible error strings ? not essential...
+ * TODO: improve "len" semantics for L0 interfaces that do framing, such as this. Currently this returns max 1 message, to
+ * let L2 do another call to get further messages (typical case of multiple responses)
  */
 static int
 diag_l0_elm_recv(struct diag_l0_device *dl0d,
@@ -800,58 +803,86 @@ diag_l0_elm_recv(struct diag_l0_device *dl0d,
 	int rv, xferd;
 	uint8_t rxbuf[3*MAXRBUF +1];	//I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
 				//the +1 is to \0-terminate the buffer for elm_parse_errors() to work
-	char *rptr, *bp;
-	const char *errstr;
-	unsigned int rbyte;
+
+	unsigned long t0,tf;	//manual timeout control
+	int steplen;	/* bytes per read */
+	int wp, rp;	/* write & read indexes in rxbuf; a type of FIFO */
 
 	if ((!len) || (len > MAXRBUF))
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
+	t0=diag_os_getms();
+	tf=t0+timeout + ELM_SLOWNESS;	//timeout when tf is reached
+
+	steplen=2;
+	wp=0;
+	rp=0;
+	xferd=0;
+
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "Expecting 3*%d bytes from ELM, %u ms timeout(+400)...", FL, (int) len, timeout);
 
-	rv = diag_tty_read(dl0d, rxbuf, 3*len, timeout+400);
-	if (rv == DIAG_ERR_TIMEOUT) {
-		return DIAG_ERR_TIMEOUT;
-	}
+	while (1) {
+		unsigned long tcur;
+		/* technique : try to read hexpairs (2 bytes); split messages according to
+		 * spacing chars (">\r\n")
+		 */
+		tcur = diag_os_getms();
+		if (tcur >= tf) {
+			/* timed out : */
+			return (xferd>0)? xferd:DIAG_ERR_TIMEOUT;
+		}
+		timeout = tf - tcur;
 
-	if (rv <= 0) {
-		fprintf(stderr, FLFMT "elm_recv error\n", FL);
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
+		rv = diag_tty_read(dl0d, rxbuf+wp, steplen, timeout);
+		if (rv == DIAG_ERR_TIMEOUT) {
+			return (xferd>0)? xferd:rv;
+		}
 
-	if (diag_l0_debug & DIAG_DEBUG_DATA) {
-		diag_data_dump(stderr, rxbuf, (size_t)rv);
-		fprintf(stderr, "\n");
-	}
+		if (rv <= 0) {
+			fprintf(stderr, FLFMT "elm_recv error\n", FL);
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
 
-	rxbuf[rv]=0;		// \0-terminate "string"
-	//Here, rxbuf contains the string received from ELM. First check for errors:
-	errstr=elm_parse_errors(dl0d, rxbuf);
-	if (errstr != NULL) {
-		fprintf(stderr, "\tELM reply: %s\n", errstr);	//make this conditional if it happens too often
-		//XXX also : we might check for "NO DATA" and return DIAG_ERR_TIMEOUT instead ?
-		return DIAG_ERR_ECUSAIDNO;
-	}
+		wp += rv;	/* position for next tty_read */
+		rxbuf[wp]=0;		// '\0'-terminate "string"
 
-	//no errors : parse to get hex digits
-	xferd=0;
-	rptr=(char *)(rxbuf + strspn((char *)rxbuf, " \n\r"));	//skip all leading spaces and linefeeds
-	while ((bp=strtok(rptr, " >\n\r")) !=NULL) {
-		//process token delimited by spaces or prompt character
-		//this is very sketchy and deserves to be tested more... note : rxbuf is modified by strtok !!
-		sscanf(bp, "%02X", &rbyte);
-		((uint8_t *)data)[xferd]=(uint8_t) rbyte;
-		xferd++;
-		if ( (size_t)xferd==len)
-			break;	//XXX should we read more bytes until we get a good '>' prompt ?
-		rptr=NULL;
-	}
+		int skipc;	/* chars to skip */
 
-	if (diag_l0_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "got %d bytes.\n", FL, xferd);
+		skipc = strspn((char *)(&rxbuf[rp]), " ");	/* skip contig spaces */
+		rp += skipc;
+		/* line end ? */
+		skipc=strspn((char *)(&rxbuf[rp]), "\r\n>");
+		rp += skipc;
+		if (skipc > 0) {
+			/* definitely a line-end / prompt ! return data so far, if any */
+			if (xferd > 0) {
+				return xferd;
+			}
+		}
 
-	return xferd? xferd:DIAG_ERR_TIMEOUT;
+		if (strlen((char *)(&rxbuf[rp])) < 2) {
+			/* probably incomplete hexpair. */
+			steplen=1;
+			continue;
+		}
+
+		unsigned int rbyte;
+		if (sscanf((char *)(&rxbuf[rp]), "%02X", &rbyte) == 1) {
+			/* good hexpair */
+			((uint8_t *)data)[xferd]=(uint8_t) rbyte;
+			xferd++;
+			if ( (size_t)xferd==len)
+				return xferd;
+		}
+		/* here, we just sscanf'd 2 bytes (succesfully or not), so we read 1 more. */
+		/* we can't read 2 more, in case we're in a multi-message, for instance if we just decoded 0x00 in
+		 * "48 6A 01 00\n48 6A..." , reading two bytes "\n4" would corrupt the next message !
+		 */
+		rp += 2;
+		steplen=1;
+	}	// while (1)
+
 }
 
 /*
