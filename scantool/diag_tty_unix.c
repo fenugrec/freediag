@@ -445,7 +445,7 @@ int _tty_setspeed(struct diag_l0_device *dl0d, unsigned int spd) {
 
 	while (!spd_done) {
 		errno = 0;
-		int spd_nearest;	//index of nearest std value
+		int spd_nearest=0;	//index of nearest std value
 		int32_t besterror=1000;
 
 		for (size_t i=0; i< ARRAY_SIZE(std_table); i++) {

@@ -231,7 +231,7 @@ extern const struct diag_l2_proto *l2proto_list[];
  * SAE J1978 is the ODB II ScanTool specification document
  */
 #define DIAG_L2_IDLE_J1978	0x20
-//*****
+/*****/
 
 
 

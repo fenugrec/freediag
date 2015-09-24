@@ -47,7 +47,7 @@ struct cfgi {
 
 	int numopts;		//if > 0 : number of predefined string options / enum values. If ==0 : value set directly.
 	char **opt;	//description for each predefined option, i.e. numopts==1 means
-							//*opt[0]=="option_id 0 descr", etc.
+							// *opt[0]=="option_id 0 descr", etc.
 							// given { const char opt0_descr[]="option_id 0 descr"; const char *opt0_table[]={opt0_descr, opt1_descr}; }
 							// use { cfg_param->opt = opt0_table; }
 	bool dyn_opt;	//if *opt[] must be free'd (recursively)

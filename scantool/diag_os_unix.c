@@ -521,7 +521,7 @@ static void diag_os_discover(void) {
 #ifdef _POSIX_TIMERS	//this guarantees clock_gettime and CLOCK_REALTIME are available
 	int gtdone=0, nsdone=0;
 
-//***** 1) set clockid for periodic timers
+// ***** 1) set clockid for periodic timers
 #ifdef _POSIX_MONOTONIC_CLOCK
 	//for some reason we can't use CLOCK_MONOTONIC_RAW, but
 	//CLOCK_MONOTONIC will do just fine
@@ -531,7 +531,7 @@ static void diag_os_discover(void) {
 	clkid_pt = CLOCK_REALTIME;
 #endif // _POSIX_MONOTONIC_CLOCK
 
-//***** 2) test clockids for clock_gettime and clock_nanosleep
+// ***** 2) test clockids for clock_gettime and clock_nanosleep
 #define TESTCK(X)	if (!gtdone) if (diag_os_testgt(X, #X)==0) { gtdone=1;} \
 					if (!nsdone) if (diag_os_testns(X, #X)==0) { nsdone=1;}
 
@@ -551,7 +551,7 @@ static void diag_os_discover(void) {
 	if (clkid_gt == CLOCK_REALTIME)
 		printf("CLOCK_REALTIME is suboptimal !\n");
 #endif
-//***** 3) report possible problems
+// ***** 3) report possible problems
 	if (!gtdone) {
 		clkid_gt = CLOCK_REALTIME;	//won't work anyway...
 		printf("WARNING: no clockid for clock_gettime()!!\n");

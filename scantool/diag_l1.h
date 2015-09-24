@@ -217,7 +217,7 @@ struct diag_l0
 };
 
 
-//********** Public L1 interface
+/********** Public L1 interface **********/
 //diag_l1_init : parse through the l0dev_list linked list
 //and call diag_l0_init for each of them. returns 0 on success (always succeeds)
 // must not be used to allocate memory or open handles !
@@ -251,7 +251,7 @@ int diag_l1_setspeed(struct diag_l0_device *dl0d,
 //getflags, gettype: get flags and type as defined above
 uint32_t diag_l1_getflags(struct diag_l0_device *);
 int diag_l1_gettype(struct diag_l0_device *);
-//**********
+/**********/
 
 extern int diag_l1_debug;	//L1 debug flags (see diag.h)
 

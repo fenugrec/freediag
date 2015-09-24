@@ -54,7 +54,7 @@ struct diag_l2_14230
 	int rxoffset;		/* Offset to write into buffer */
 };
 
-//******* flags for ->modeflags :
+// ******* flags for ->modeflags :
 //(these are set in 14230_startcomms() according to init type and keybytes received)
 
 // ISO14230_SHORTHDR (for iso14230) : if set, the ECU supports address-less
