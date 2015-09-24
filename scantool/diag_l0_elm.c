@@ -876,7 +876,7 @@ diag_l0_elm_getflags(struct diag_l0_device *dl0d)
 
 	dev = (struct diag_l0_elm_device *)dl0d->l0_int;
 
-	flags = DIAG_L1_DATAONLY | DIAG_L1_AUTOSPEED | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_DOESP4WAIT |
+	flags = DIAG_L1_DATAONLY | DIAG_L1_AUTOSPEED | DIAG_L1_DOESP4WAIT |
 		DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM | DIAG_L1_DOESFULLINIT | DIAG_L1_DOESKEEPALIVE;
 
 	switch (dev->protocol) {
