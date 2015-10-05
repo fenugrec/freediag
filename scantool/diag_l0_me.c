@@ -37,6 +37,7 @@
 #include "diag_err.h"
 #include "diag_iso14230.h"
 #include "diag_tty.h"
+#include "diag_l0.h"
 #include "diag_l1.h"
 
 
@@ -645,7 +646,7 @@ void *data, size_t len, unsigned int timeout)
 		if (rv == DIAG_ERR_TIMEOUT) {
 			return DIAG_ERR_TIMEOUT;
 		}
-		
+
 		if (rv <= 0) {
 			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
 			return diag_iseterr(DIAG_ERR_GENERAL);

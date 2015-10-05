@@ -37,6 +37,7 @@
 #include "diag.h"
 #include "diag_err.h"
 #include "diag_tty.h"
+#include "diag_l0.h"
 #include "diag_l1.h"
 
 
@@ -140,7 +141,7 @@ diag_l0_br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 		fprintf(stderr, FLFMT "br_write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	return 0;
 }
 

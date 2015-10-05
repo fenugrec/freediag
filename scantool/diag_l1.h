@@ -180,43 +180,6 @@ struct diag_l1_initbus_args
 #define DIAG_L1_INITBUS_5BAUD	2	/* 5 baud init */
 #define DIAG_L1_INITBUS_2SLOW	3	/* 2 second low on bus, ISO9141-1989 style ? */
 
-/*** stuff to move to diag_l0.h ***/
-
-// diag_l0 : every diag_l0_???.c "driver" fills in one of these to describe itself.
-struct diag_l0
-{
-	const char	*diag_l0_textname;	/* Useful textual name, unused at the moment */
-	const char	*diag_l0_name;	/* Short, unique text name for user interface */
-
-	int 	l1proto_mask;			/* supported L1protocols, defined above*/
-
-	/* function pointers to L0 code */
-	/* diag_l0_new() : create new driver instance (no open, default params, etc) */
-	struct diag_l0_device *(*diag_l0_new)(void);
-	/* diag_l0_getcfg() : get linked-list of config items. */
-	struct cfgi* (*diag_l0_getcfg)(struct diag_l0_device *dl0d);
-	/* diag_l0_del() : delete driver instance (XXX forces close ?) */
-	void (*diag_l0_del)(struct diag_l0_device *);
-	/* diag_l0_init() : set up global/default state of driver */
-	int	(*diag_l0_init)(void);
-
-	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
-		int l1_proto);
-	int	(*diag_l0_close)(struct diag_l0_device **);
-	int	(*diag_l0_initbus)(struct diag_l0_device *,
-		struct diag_l1_initbus_args *in);
-	//diag_l0_send: return 0 on success
-	int	(*diag_l0_send)(struct diag_l0_device *,
-		const char *subinterface, const void *data, size_t len);
-	//diag_l0_recv: ret # of bytes read
-	int	(*diag_l0_recv)(struct diag_l0_device *,
-		const char *subinterface, void *data, size_t len, unsigned int timeout);
-	int	(*diag_l0_setspeed)(struct diag_l0_device *,
-		const struct diag_serial_settings *pss);
-	uint32_t	(*diag_l0_getflags)(struct diag_l0_device *);
-};
-
-
 /********** Public L1 interface **********/
 //diag_l1_init : parse through the l0dev_list linked list
 //and call diag_l0_init for each of them. returns 0 on success (always succeeds)
