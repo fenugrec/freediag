@@ -195,7 +195,7 @@ int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 
 //diag_l1_open : calls diag_l0_open with the specified L1 protocol; returns a
 // *diag_l0_device on success, 0 on failure (pseterr).
-//	Often calls diag_tty_open; alloc + fill + return a new diag_l0_device
+//	Alloc + fill + return a new diag_l0_device
 //	struct if succesful.
 struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, int L1protocol);
 //diag_l1_close : calls diag_l0_close as required; always succeeds and returns 0. Close & free everything.

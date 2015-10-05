@@ -386,7 +386,16 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		return diag_pseterr(DIAG_ERR_NOMEM);
 
 	dev->protocol = DIAG_L1_RAW;	//cheat !
-	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dumbtest, (void *)dev))) {
+
+	dl0d = diag_l0_new(&diag_l0_dumbtest, (void *)dev);
+	if (!dl0d) {
+		free(dev);
+		return diag_pseterr(rv);
+	}
+	/* try to open TTY */
+	if ((rv=diag_tty_open(dl0d, subinterface))) {
+		free(dev);
+		diag_l0_del(dl0d);
 		return diag_pseterr(rv);
 	}
 
@@ -400,13 +409,17 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	pset.parflag = diag_par_n;
 
 	if (diag_tty_setup(dl0d, &pset)) {
-		diag_tty_close(&dl0d);
+		diag_tty_close(dl0d);
+		free(dev);
+		diag_l0_del(dl0d);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	//set initial DTR and RTS lines before starting tests;
 	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
-		diag_tty_close(&dl0d);
+		diag_tty_close(dl0d);
+		free(dev);
+		diag_l0_del(dl0d);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -455,8 +468,9 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		break;
 	}
 
-	diag_tty_close(&dl0d);
+	diag_tty_close(dl0d);
 	free(dev);
+	diag_l0_del(dl0d);
 	fprintf(stderr, "L0 test finished. Ignore the following error.\n");
 	return NULL;
 }

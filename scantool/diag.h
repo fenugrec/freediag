@@ -249,7 +249,7 @@ int diag_flcalloc(const char *name, const int line,
 //diag_flmalloc : do not call directly !
 int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 
-//diag_calloc: P=*ptr, N= num of (sizeof) elems to allocate
+/** diag_calloc: P=*ptr, N= num of (sizeof) elems to allocate */
 #define diag_calloc(P, N) diag_flcalloc(CURFILE, __LINE__, \
 	((void **)(P)), (N), sizeof(*(*P)))
 

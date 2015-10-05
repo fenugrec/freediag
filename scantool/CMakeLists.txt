@@ -48,7 +48,7 @@ endif()
 set (LIBDIAG_SRCS ${DL0_SRCS} ${DL2_SRCS}
 	${CMAKE_CURRENT_BINARY_DIR}/diag_config.c
 	${OS_DIAGTTY} ${OS_DIAGOS}
-	diag_l1.c diag_l2.c diag_l3.c
+	diag_l0.c diag_l1.c diag_l2.c diag_l3.c
 	diag_l3_saej1979.c diag_l3_iso14230.c diag_l3_vag.c
 	diag_general.c diag_dtc.c diag_cfg.c)
 set (LIBDYNO_SRCS dyno.c)

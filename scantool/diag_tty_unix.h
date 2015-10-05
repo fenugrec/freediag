@@ -140,6 +140,7 @@ extern "C" {
 
 //struct tty_int : internal data, one per L0 struct
 struct unix_tty_int {
+	char *name;		/* port name */
 	int fd;						/* File descriptor */
 
 #if defined(__linux__)

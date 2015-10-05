@@ -86,6 +86,8 @@ static int diag_l0_br_initialise(struct diag_l0_device *dl0d,
 static int diag_l0_br_writemsg(struct diag_l0_device *dl0d,
 	uint8_t type, const void *dp, size_t txlen);
 
+static int diag_l0_br_close(struct diag_l0_device **pdl0d);
+
 /* Types for writemsg - corresponds to top bit values for the control byte */
 #define BR_WRTYPE_DATA	0x00
 #define BR_WRTYPE_INIT	0x40
@@ -124,8 +126,8 @@ diag_l0_br_close(struct diag_l0_device **pdl0d)
 
 		if (dev)
 			free(dev);
-
-		(void) diag_tty_close(pdl0d);
+		(void) diag_tty_close(dl0d);
+		diag_l0_del(dl0d);
 	}
 
 	return 0;
@@ -171,7 +173,14 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	dev->dev_features = BR_FEATURE_SETADDR;
 
 	/* Get an L0 link */
-	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_br, (void *)dev))) {
+	dl0d = diag_l0_new(&diag_l0_br, (void *)dev);
+	if (!dl0d) {
+		free(dev);
+		return diag_pseterr(rv);
+	}
+	/* try to open TTY */
+	if ((rv=diag_tty_open(dl0d, subinterface))) {
+		diag_l0_del(dl0d);
 		free(dev);
 		return diag_pseterr(rv);
 	}

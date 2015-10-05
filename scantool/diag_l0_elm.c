@@ -89,6 +89,7 @@ static int elm_sendcmd(struct diag_l0_device *dl0d,
 static int elm_purge(struct diag_l0_device *dl0d);
 
 void elm_parse_cr(uint8_t *data, int len);	//change 0x0A to 0x0D
+static int diag_l0_elm_close(struct diag_l0_device **pdl0d);
 
 /*
  * Init must be callable even if no physical interface is
@@ -132,7 +133,8 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 		if (dev)
 			free(dev);
 
-		(void) diag_tty_close(pdl0d);
+		(void) diag_tty_close(dl0d);
+		diag_l0_del(*pdl0d);
 	}
 
 	return 0;
@@ -308,8 +310,15 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 	dev->protocol = iProtocol;
 
-	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_elm, (void *)dev))) {
-		fprintf(stderr, FLFMT "Problem opening %s.\n", FL, subinterface);
+	dl0d = diag_l0_new(&diag_l0_elm, (void *)dev);
+	if (!dl0d) {
+		free(dev);
+		return diag_pseterr(rv);
+	}
+	/* try to open TTY */
+	if ((rv=diag_tty_open(dl0d, subinterface))) {
+		diag_l0_del(dl0d);
+		free(dev);
 		return diag_pseterr(rv);
 	}
 

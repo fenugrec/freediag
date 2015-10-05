@@ -49,13 +49,10 @@ diag_tty_rw_timeout_handler(UNUSED(int sig), siginfo_t *si, UNUSED(void *uc))
 }
 #endif
 
-int diag_tty_open(struct diag_l0_device **ppdl0d,
-	const char *subinterface,
-	const struct diag_l0 *dl0,
-	void *l0_int)
+int diag_tty_open(struct diag_l0_device *dl0d,
+	const char *subinterface)
 {
 	int rv;
-	struct diag_l0_device *dl0d;
 	struct unix_tty_int *uti;
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 	struct sigevent to_sigev;
@@ -63,11 +60,9 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	clockid_t timeout_clkid;
 #endif
 
-	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
-		return diag_iseterr(rv);
+	if (!dl0d) return diag_iseterr(DIAG_ERR_GENERAL);
 
 	if ((rv=diag_calloc(&uti,1))) {
-		free(dl0d);
 		return diag_iseterr(rv);
 	}
 
@@ -84,7 +79,6 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	if(sigaction(SIGUSR1, &sa, NULL) != 0) {
 		fprintf(stderr, FLFMT "Could not set-up action for timeout timer... report this\n", FL);
 		free(uti);
-		free(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -94,28 +88,22 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	if(timer_create(timeout_clkid, &to_sigev, &uti->timerid) != 0) {
 		fprintf(stderr, FLFMT "Could not create timeout timer... report this\n", FL);
 		free(uti);
-		free(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 #endif
 
 	dl0d->tty_int = uti;
 	uti->fd = DL0D_INVALIDHANDLE;
-	dl0d->l0_int = l0_int;
-	dl0d->dl0 = dl0;
-
-	//past this point, we can call diag_tty_close(dl0d) to abort in case of errors
-
-	*ppdl0d = dl0d;
 
 	size_t n = strlen(subinterface) + 1;
 
-	if ((rv=diag_malloc(&dl0d->name, n))) {
-		(void)diag_tty_close(ppdl0d);
+	if ((rv=diag_malloc(&uti->name, n))) {
+		free(uti);
 		return diag_iseterr(rv);
 	}
-	strncpy(dl0d->name, subinterface, n);
+	strncpy(uti->name, subinterface, n);
 
+	//past this point, we can call diag_tty_close(dl0d) to abort in case of errors
 
 	errno = 0;
 
@@ -126,7 +114,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	 */
 	{
 		int fl;
-		uti->fd = open(dl0d->name, O_RDWR | O_NONBLOCK);
+		uti->fd = open(uti->name, O_RDWR | O_NONBLOCK);
 
 		if (uti->fd > 0) {
 			errno = 0;
@@ -134,7 +122,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 				fprintf(stderr,
 					FLFMT "Can't get flags with fcntl on fd %d: %s.\n",
 					FL, uti->fd, strerror(errno));
-				(void)diag_tty_close(ppdl0d);
+				(void)diag_tty_close(dl0d);
 				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 			fl &= ~O_NONBLOCK;
@@ -143,7 +131,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 				fprintf(stderr,
 					FLFMT "Can't set flags with fcntl on fd %d: %s.\n",
 					FL, uti->fd, strerror(errno));
-				(void)diag_tty_close(ppdl0d);
+				(void)diag_tty_close(dl0d);
 				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 		}
@@ -152,21 +140,21 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	#ifndef O_NONBLOCK
 	#warning No O_NONBLOCK on your system ?! Please report this
 	#endif
-	uti->fd = open(dl0d->name, O_RDWR);
+	uti->fd = open(uti->name, O_RDWR);
 
 #endif // O_NONBLOCK
 
 	if (uti->fd >= 0) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN)
 			fprintf(stderr, FLFMT "Device %s opened, fd %d\n",
-				FL, dl0d->name, uti->fd);
+				FL, uti->name, uti->fd);
 	} else {
 		fprintf(stderr,
 			FLFMT "Could not open \"%s\" : %s. "
 			"Make sure the device specified corresponds to the "
 			"serial device your interface is connected to.\n",
-			FL, dl0d->name, strerror(errno));
-		(void)diag_tty_close(ppdl0d);
+			FL, uti->name, strerror(errno));
+		(void)diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -190,7 +178,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	if (ioctl(uti->fd, TIOCMGET, &uti->modemflags) < 0) {
 		fprintf(stderr,
 			FLFMT "open: TIOCMGET failed: %s\n", FL, strerror(errno));
-		(void)diag_tty_close(ppdl0d);
+		(void)diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -202,7 +190,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	if (rv != 0) {
 		fprintf(stderr, FLFMT "open: could not get orig settings: %s\n",
 			FL, strerror(errno));
-		(void)diag_tty_close(ppdl0d);
+		(void)diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -244,7 +232,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	if (rv != 0) {
 		fprintf(stderr, FLFMT "open: can't set input flags: %s.\n",
 				FL, strerror(errno));
-		(void)diag_tty_close(ppdl0d);
+		(void)diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -255,42 +243,37 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 }
 
 /* Close up the TTY and restore. */
-void diag_tty_close(struct diag_l0_device **ppdl0d)
+void diag_tty_close(struct diag_l0_device *dl0d)
 {
 	struct unix_tty_int *uti;
-	if (ppdl0d) {
-		struct diag_l0_device *dl0d = *ppdl0d;
-		if (dl0d) {
-			uti = (struct unix_tty_int *)dl0d->tty_int;
-			if(uti) {
-#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
-				timer_delete(uti->timerid);
-#endif
-				if (uti->fd != DL0D_INVALIDHANDLE) {
-			#if defined(__linux__)
-					if (uti->tioc_works)
-						(void)ioctl(uti->fd, TIOCSSERIAL, &uti->ss_orig);
-			#endif
-			#ifdef USE_TERMIOS2
-					(void)ioctl(uti->fd, TCSETS2, &uti->st2_orig);
-			#else
-					(void)tcsetattr(uti->fd, TCSADRAIN, &uti->st_orig);
-			#endif
-					(void)ioctl(uti->fd, TIOCMSET, &uti->modemflags);
-					(void)close(uti->fd);
-				}
 
-				free(uti);
-			}
+	if (!dl0d) return;
 
-			if (dl0d->name) {
-				free(dl0d->name);
-			}
-
-			free(dl0d);
-			*ppdl0d = NULL;
+	uti = (struct unix_tty_int *)dl0d->tty_int;
+	if(uti) {
+		if (uti->name) {
+			free(uti->name);
 		}
+#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
+		timer_delete(uti->timerid);
+#endif
+		if (uti->fd != DL0D_INVALIDHANDLE) {
+	#if defined(__linux__)
+			if (uti->tioc_works)
+				(void)ioctl(uti->fd, TIOCSSERIAL, &uti->ss_orig);
+	#endif
+	#ifdef USE_TERMIOS2
+			(void)ioctl(uti->fd, TCSETS2, &uti->st2_orig);
+	#else
+			(void)tcsetattr(uti->fd, TCSADRAIN, &uti->st_orig);
+	#endif
+			(void)ioctl(uti->fd, TIOCMSET, &uti->modemflags);
+			(void)close(uti->fd);
+		}
+
+		free(uti);
 	}
+
 	return;
 }
 

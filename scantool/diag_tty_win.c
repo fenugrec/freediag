@@ -21,47 +21,38 @@ extern float pf_conv;	//these two are defined in diag_os
 
 //struct tty_int : internal data, one per L0 struct
 struct tty_int {
+	char *name;	//port name, alloc'd
 	HANDLE fd;
 	DCB dcb;
 };
 
-//diag_tty_open : load the diag_l0_device with the correct stuff
-int diag_tty_open(struct diag_l0_device **ppdl0d,
-	const char *subinterface,
-	const struct diag_l0 *dl0,
-	void *l0_int)
+//diag_tty_open : open specified port for L0
+int diag_tty_open(struct diag_l0_device *dl0d,
+	const char *portname)
 {
 	int rv;
-	struct diag_l0_device *dl0d;
 	struct tty_int *wti;
-	size_t n = strlen(subinterface) + 1;
+	size_t n = strlen(portname) + 1;
 	COMMTIMEOUTS devtimeouts;
 
-	if ((rv=diag_calloc(&dl0d, 1)))		//free'd in diag_tty_close
-		return diag_iseterr(rv);
+	if (!dl0d) return diag_iseterr(DIAG_ERR_GENERAL);
 
 	if ((rv=diag_calloc(&wti,1))) {
-		free(dl0d);
 		return diag_iseterr(rv);
 	}
 
 	dl0d->tty_int = wti;
 	wti->fd = INVALID_HANDLE_VALUE;
-	dl0d->l0_int = l0_int;
-	dl0d->dl0 = dl0;
 
-	*ppdl0d = dl0d;
-
-	//allocate space for subinterface name
-	if ((rv=diag_malloc(&dl0d->name, n))) {
+	//allocate space for portname name
+	if ((rv=diag_malloc(&wti->name, n))) {
 		free(dl0d->tty_int);
-		free(dl0d);
 		return diag_iseterr(rv);
 	}
 	//Now, in case of errors we can call diag_tty_close() on the dl0d since its members are alloc'ed
-	strncpy(dl0d->name, subinterface, n);
+	strncpy(wti->name, portname, n);
 
-	wti->fd=CreateFile(subinterface, GENERIC_READ | GENERIC_WRITE, 0, NULL,
+	wti->fd=CreateFile(portname, GENERIC_READ | GENERIC_WRITE, 0, NULL,
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH,
 		NULL);
@@ -70,17 +61,17 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	if (wti->fd != INVALID_HANDLE_VALUE) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN)
 			fprintf(stderr, FLFMT "Device %s opened, fd %p\n",
-				FL, dl0d->name, wti->fd);
+				FL, wti->name, wti->fd);
 	} else {
 		fprintf(stderr,
 			FLFMT "Open of device interface \"%s\" failed: %s\n",
-			FL, dl0d->name, diag_os_geterr(0));
+			FL, wti->name, diag_os_geterr(0));
 		fprintf(stderr, FLFMT
 			"(Make sure the device specified corresponds to the\n", FL );
 		fprintf(stderr,
 			FLFMT "serial device your interface is connected to.\n", FL);
 
-		diag_tty_close(ppdl0d);
+		diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -94,7 +85,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	//and the DCB should contain coherent initial values
 	if (! GetCommState(wti->fd, &wti->dcb)) {
 		fprintf(stderr, FLFMT "Could not get comm state: %s\n",FL, diag_os_geterr(0));
-		diag_tty_close(ppdl0d);
+		diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -106,7 +97,7 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 	devtimeouts.WriteTotalTimeoutConstant=0;
 	if (! SetCommTimeouts(wti->fd,&devtimeouts)) {
 		fprintf(stderr, FLFMT "Could not set comm timeouts: %s\n",FL, diag_os_geterr(0));
-		diag_tty_close(ppdl0d);
+		diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -114,31 +105,28 @@ int diag_tty_open(struct diag_l0_device **ppdl0d,
 } //diag_tty_open
 
 /* Close up the TTY and restore. */
-void diag_tty_close(struct diag_l0_device **ppdl0d)
+void diag_tty_close(struct diag_l0_device *dl0d)
 {
 	struct tty_int *wti;
-	if (ppdl0d) {
-		struct diag_l0_device *dl0d = *ppdl0d;
-		if (dl0d) {
-			wti = (struct tty_int *)dl0d->tty_int;
-			if (wti) {
-				if (wti->fd != INVALID_HANDLE_VALUE) {
-					PurgeComm(wti->fd,PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
-					CloseHandle(wti->fd);
-					if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-						fprintf(stderr, FLFMT "diag_tty_close : closing fd %p\n", FL, wti->fd);
-				}
-				free(wti);
-			}
 
-			if (dl0d->name) {
-				free(dl0d->name);
-			}
+	if (!dl0d) return;
 
-			free(dl0d);
-			*ppdl0d = NULL;
-		}
+	wti = (struct tty_int *)dl0d->tty_int;
+	if (!wti) return;
+
+	if (wti->name) {
+		free(wti->name);
 	}
+
+	if (wti->fd != INVALID_HANDLE_VALUE) {
+		PurgeComm(wti->fd,PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+		CloseHandle(wti->fd);
+		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
+			fprintf(stderr, FLFMT "diag_tty_close : closing fd %p\n", FL, wti->fd);
+	}
+
+	free(wti);
+
 	return;
 } //diag_tty_close
 
@@ -324,7 +312,7 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	
+
 	if (count <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 

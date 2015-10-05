@@ -95,6 +95,8 @@ static unsigned int dumb_flags=0;
 
 extern const struct diag_l0 diag_l0_dumb;
 
+static int diag_l0_dumb_close(struct diag_l0_device **pdl0d);
+
 /*
  * Init must be callable even if no physical interface is
  * present, it's just here for the code here to initialise its
@@ -139,7 +141,16 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 		return diag_pseterr(DIAG_ERR_NOMEM);
 
 	dev->protocol = iProtocol;
-	if ((rv=diag_tty_open(&dl0d, subinterface, &diag_l0_dumb, (void *)dev))) {
+
+	dl0d = diag_l0_new(&diag_l0_dumb, (void *)dev);
+	if (!dl0d) {
+		free(dev);
+		return diag_pseterr(rv);
+	}
+	/* try to open TTY */
+	if ((rv=diag_tty_open(dl0d, subinterface))) {
+		diag_l0_del(dl0d);
+		free(dev);
 		return diag_pseterr(rv);
 	}
 
@@ -149,7 +160,7 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 	 * this is altered according to dumb_flags.
 	 */
 	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
-		diag_tty_close(&dl0d);
+		diag_l0_dumb_close(&dl0d);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -177,7 +188,8 @@ diag_l0_dumb_close(struct diag_l0_device **pdl0d)
 		if (dev)
 			free(dev);
 
-		(void) diag_tty_close(pdl0d);
+		(void) diag_tty_close(dl0d);
+		diag_l0_del(dl0d);
 	}
 
 	return 0;

@@ -47,13 +47,11 @@ struct diag_serial_settings {
 /*** Public functions ***/
 
 /* Open, close device */
-int diag_tty_open(struct diag_l0_device **ppdl0d,
-	const char *subinterface,
-	const struct diag_l0 *,
-	void *handle);
+int diag_tty_open(struct diag_l0_device *dl0d,
+	const char *subinterface);
 
 //diag_tty_close : free & close everything in ppdl0d (including dl0d itself)
-void diag_tty_close(struct diag_l0_device **ppdl0d);
+void diag_tty_close(struct diag_l0_device *dl0d);
 
 /* Set speed/parity etc, return 0 if ok. */
 int diag_tty_setup(struct diag_l0_device *dl0d,

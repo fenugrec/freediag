@@ -31,7 +31,7 @@ struct diag_l0_device
 	void *l0_int;					/** Handle for internal L0 data */
 	const struct diag_l0 *dl0;		/** The L0 driver's diag_l0 */
 	struct diag_l2_link *dl2_link;	/** The L2 link using this dl0d */
-	char *name;					/** device name, like /dev/ttyS0 or \\.\COM3 */
+	//char *name;					/** XXX MOVED TO TTY INTERNAL device name, like /dev/ttyS0 or \\.\COM3 */
 	void *tty_int;			/** generic holder for internal tty stuff */
 };
 
@@ -70,6 +70,11 @@ struct diag_l0
 	uint32_t	(*diag_l0_getflags)(struct diag_l0_device *);
 };
 
+
+
+/** Public funcs **/
+struct diag_l0_device *diag_l0_new(const struct diag_l0 *dl0, void *l0_int);
+void diag_l0_del(struct diag_l0_device *dl0d);
 
 
 /** globals **/

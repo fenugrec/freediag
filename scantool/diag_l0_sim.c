@@ -519,7 +519,7 @@ sim_new(void) {
 	return dl0d;
 }
 
-// Opens the simulator DB file.
+// Opens the simulator DB file (uses global simfile var)
 static struct diag_l0_device *
 diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 {
@@ -541,27 +541,17 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 	dev->sim_last_ecu_responses = NULL;
 
 	// Create diag_l0_device:
-	if ((rv=diag_calloc(&dl0d, 1))) {
+	dl0d = diag_l0_new(&diag_l0_sim, (void *)dev);
+	if (!dl0d) {
 		free(dev);
 		return diag_pseterr(rv);
 	}
-
-	dl0d->l0_int = dev;
-	dl0d->dl0 = &diag_l0_sim;
-
-	if ((rv=diag_calloc(&dl0d->name, strlen(simfile)+1))) {
-		free(dev);
-		free(dl0d);
-		return diag_pseterr(rv);
-	}
-	strcpy(dl0d->name, simfile);
 
 	// Open the DB file:
-	if ((dev->fp = fopen(dl0d->name, "r")) == NULL) {
-		fprintf(stderr, FLFMT "Unable to open file \"%s\": ", FL, dl0d->name);
-		free(dl0d->name);
+	if ((dev->fp = fopen(simfile, "r")) == NULL) {
+		fprintf(stderr, FLFMT "Unable to open file \"%s\": ", FL, simfile);
 		free(dev);
-		free(dl0d);
+		diag_l0_del(dl0d);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -594,19 +584,15 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 
 		// If debugging, print to stderr.
 		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "dl0d=%p closing simfile=%s\n", FL,
-				(void *)dl0d, dl0d->name);
+			fprintf(stderr, FLFMT "dl0d=%p closing simfile\n", FL,
+				(void *)dl0d);
 
 		if (dev) {
 			if (dev->fp != NULL)
 				fclose(dev->fp);
 			free(dev);
 		}
-		if (dl0d==NULL)
-			return 0;
-		if (dl0d->name)
-			free(dl0d->name);
-		free(dl0d);
+		diag_l0_del(dl0d);
 		*pdl0d=NULL;
 	}
 
