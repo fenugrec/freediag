@@ -29,8 +29,9 @@
  */
 
 #include "diag.h"		//we need this for uint8_t
-#include "diag_tty.h"	//for structs serial_settings and diag_l0_device
+#include "diag_tty.h"	//for structs serial_settings
 #include "diag_cfg.h"
+#include "diag_l0.h"
 
 
 #if defined(__cplusplus)

@@ -9,6 +9,7 @@
 
 
 #include "diag.h"
+#include "diag_l0.h"
 
 #define IFLUSH_TIMEOUT 30	//timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX buffer.
 		//must not be too long or diag_l0_dumb:slowinit() will not work
@@ -42,23 +43,8 @@ struct diag_serial_settings {
 	enum diag_parity parflag;
 };
 
-/*
- * L0 device structure
- * This is the structure to interface between the L1 code
- * and the interface-manufacturer dependent code (which is in diag_l0_if.c)
- * A "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
- * and a given serial port.
- */
-struct diag_l0_device
-{
-	void *l0_int;					/* Handle for internal L0 data */
-	const struct diag_l0 *dl0;		/* The L0 driver's diag_l0 */
-	struct diag_l2_link *dl2_link;	/* The L2 link using this dl0d */
-	char *name;					/* device name, like /dev/ttyS0 or \\.\COM3 */
-	void *tty_int;			/* generic holder for internal tty stuff */
-};
 
-extern int diag_l0_debug;
+/*** Public functions ***/
 
 /* Open, close device */
 int diag_tty_open(struct diag_l0_device **ppdl0d,

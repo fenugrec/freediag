@@ -8,8 +8,32 @@
  */
 
 #include "diag_cfg.h"	//for cfgi
-#include "diag_l1.h"	//for initbus args
-#include "diag_tty.h"	//for serial_settings
+
+/* Cheats for structs defined elsewhere;
+ * the alternate solution of including diag_l*.h gets messy fast
+ * because of inter-dependencies
+ */
+
+struct diag_l2_link;
+struct diag_l1_initbus_args;
+struct diag_serial_settings;
+struct diag_l0;
+
+/*
+ * L0 device structure
+ * This is the structure to interface between the L1 code
+ * and the interface-manufacturer dependent code (which is in diag_l0_if.c)
+ * A "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
+ * and a given serial port.
+ */
+struct diag_l0_device
+{
+	void *l0_int;					/** Handle for internal L0 data */
+	const struct diag_l0 *dl0;		/** The L0 driver's diag_l0 */
+	struct diag_l2_link *dl2_link;	/** The L2 link using this dl0d */
+	char *name;					/** device name, like /dev/ttyS0 or \\.\COM3 */
+	void *tty_int;			/** generic holder for internal tty stuff */
+};
 
 
 // diag_l0 : every diag_l0_???.c "driver" fills in one of these to describe itself.
@@ -45,6 +69,12 @@ struct diag_l0
 		const struct diag_serial_settings *pss);
 	uint32_t	(*diag_l0_getflags)(struct diag_l0_device *);
 };
+
+
+
+/** globals **/
+
+extern int diag_l0_debug;	// debug flags; defined in l1.c (TODO : move to l0 somewhere)
 
 
 /*

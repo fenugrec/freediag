@@ -317,11 +317,9 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 		}
 		//So we found nobody in diag_l2_connections that uses this dl0d + dl2link.
 		if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, "\tclosing unused dl2link %p.\n",
-				(void *)dl0d->dl2_link);
+			fprintf(stderr, "\tclosing unused dl2link %p.\n", (void *) dl0d->dl2_link);
 		diag_l2_closelink(dl0d->dl2_link);	//closelink calls diag_l1_close() as required
 		//
-		//dl0d->dl2_link = NULL;
 		return 0;
 	}
 	// this dl0d had no ->dl2_link; check in the linked-list anyway in case
@@ -639,6 +637,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 	struct diag_serial_settings *ic;
 	int rv = 0;
 	struct diag_l2_data *d;
+	struct diag_l2_link *dl2l;
 
 	if (diag_l2_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr,
@@ -666,7 +665,8 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		d->kb2 = d_l2_conn->diag_l2_kb2;
 		break;
 	case DIAG_IOCTL_SETSPEED:
-		if (dl0d->dl2_link->l1flags & (DIAG_L1_AUTOSPEED | DIAG_L1_NOTTY))
+		dl2l = dl0d->dl2_link;
+		if (dl2l->l1flags & (DIAG_L1_AUTOSPEED | DIAG_L1_NOTTY))
 			break;
 		ic = (struct diag_serial_settings *)data;
 		rv = diag_l1_setspeed(dl0d, ic);
@@ -675,7 +675,8 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		rv = diag_l1_initbus(dl0d, (struct diag_l1_initbus_args *)data);
 		break;
 	case DIAG_IOCTL_IFLUSH:
-		if (dl0d->dl2_link->l1flags & DIAG_L1_NOTTY)
+		dl2l = dl0d->dl2_link;
+		if (dl2l->l1flags & DIAG_L1_NOTTY)
 			break;
 		rv = diag_tty_iflush(dl0d);
 		break;
