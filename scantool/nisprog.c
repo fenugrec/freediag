@@ -181,6 +181,9 @@ static int np_1(UNUSED(int argc), UNUSED(char **argv)) {
 //np 2 :
 static int np_2(int argc, char **argv) {
 	//np 2 <addr> : read 1 byte @ addr, with SID A4
+	// TX {07 A4 <A0> <A1> <A2> <A3> 04 01 cks}, 9 bytes on bus
+	// RX {06 E4 <A0> <A1> <A2> <A3> <BB> cks}, 8 bytes
+	// total traffic : 17 bytes for 1 rx'd byte - very slow
 	//printf("Attempting to read 1 byte @ 000000:\n");
 	uint8_t txdata[64];	//data for nisreq
 	uint32_t addr;
@@ -346,9 +349,13 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		hackmode=1;
 		printf("**** Activating Hackmode 5 ! ****\n\n");
 	case 4:
-		//SID AC + 21 test.
-		// AC 81 {83 GGGG} {83 GGGG} ... to load addresses
-		// 21 81 04 01 to dump data
+		//SID AC + 21 technique.
+		// AC 81 {83 GGGG} {83 GGGG} ... to load addresses, (5*n + 4) bytes on bus
+		// RX: {EC 81}, 4 bytes
+		// TX: {21 81 04 01} to dump data (6 bytes)
+		// RX: {61 81 <n*data>} (4 + n) bytes.
+		// Total traffic : (6*n + 18) bytes on bus for <n> bytes RX'd
+
 		// use "np 4 0 511" to dump from 0 to 511.
 		// try with P3min = 5ms rather than 55ms; this should
 		// save ~8ms per byte overall.

@@ -48,7 +48,7 @@ struct diag_serial_settings {
 
 /* Open, close device */
 int diag_tty_open(struct diag_l0_device *dl0d,
-	const char *subinterface);
+	const char *portname);
 
 //diag_tty_close : free & close everything in ppdl0d (including dl0d itself)
 void diag_tty_close(struct diag_l0_device *dl0d);

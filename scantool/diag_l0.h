@@ -22,7 +22,7 @@ struct diag_l0;
 /*
  * L0 device structure
  * This is the structure to interface between the L1 code
- * and the interface-manufacturer dependent code (which is in diag_l0_if.c)
+ * and the interface-manufacturer dependent code (which is in diag_l0_<if>.c)
  * A "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
  * and a given serial port.
  */
