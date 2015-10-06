@@ -126,10 +126,10 @@ void genkey1(const uint8_t *seed8, uint32_t m, uint8_t *key) {
 
 //np 7 <scode>: same as np 6 but with the NPT_DDL algo.
 
-//np 1 :
+//np 1: try start diagsession, Nissan Repro style +
+// accesstimingparams (get limits + setvals)
 static int np_1(UNUSED(int argc), UNUSED(char **argv)) {
-	//try start diagsession, Nissan Repro style +
-	// accesstimingparams (get limits + setvals)
+
 	uint8_t txdata[64];	//data for nisreq
 	struct diag_msg nisreq={0};	//request to send
 	struct diag_msg *rxmsg=NULL;	//pointer to the reply
@@ -283,6 +283,128 @@ static int np_6_7(UNUSED(int argc), UNUSED(char **argv), int keyalg, uint32_t sc
 	return CMD_OK;
 }
 
+/** Read bytes from memory
+ * copies <len> bytes from <raddr> to dest,
+ * using SID AC and std L2_request mechanism.
+ * Uses global conn, assumes global state is OK
+ * @return num of bytes read
+ */
+uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+	uint32_t addr;
+	uint32_t sent;	//count
+
+	if (!dest || (len==0)) return 0;
+
+	unsigned int linecur;	//count from 0 to 11 (12 addresses per request)
+
+	addr = raddr;
+
+	int txi;	//index into txbuf for constructing request
+
+	txdata[0]=0xAC;
+	txdata[1]=0x81;
+	nisreq.len = 2;	//AC 81 : 2 bytes so far
+	nisreq.data=txdata;
+	txi=2;
+	linecur = 0;
+
+	for (sent=0; sent < len; sent++, addr++) {
+		txdata[txi++]= 0x83;		//field type
+		txdata[txi++]= (uint8_t) ((addr & 0xFF<<24) >>24);
+		txdata[txi++]= (uint8_t) ((addr & 0xFF<<16) >>16);
+		txdata[txi++]= (uint8_t) ((addr & 0xFF<<8) >>8);
+		txdata[txi++]= (uint8_t) (addr & 0xFF);
+		nisreq.len += 5;
+		linecur += 1;
+
+		//request 12 addresses at a time, or whatever's left at the end
+		if ((linecur != 0x0c) && ((sent +1) != len))
+			continue;
+
+		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+		if (rxmsg==NULL) {
+			printf("\nError: no resp to rqst AC @ %06X, err=%d\n", addr, errval);
+			break;	//leave for loop
+		}
+		if ((rxmsg->data[0] != 0xEC) || (rxmsg->len != 2) ||
+				(rxmsg->fmt & DIAG_FMT_BADCS)) {
+			printf("\nFatal : bad AC resp at addr=0x%X: %02X, len=%u\n", addr,
+				rxmsg->data[0], rxmsg->len);
+			diag_freemsg(rxmsg);
+			break;
+		}
+		diag_freemsg(rxmsg);
+
+		//Here, we sent a AC 81 83 ... 83... request that was accepted.
+		//We need to send 21 81 04 01 to get the data now
+		txdata[0]=0x21;
+		txdata[1]=0x81;
+		txdata[2]=0x04;
+		txdata[3]=0x01;
+		nisreq.len=4;
+
+		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+		if (rxmsg==NULL) {
+			printf("\nFatal : did not get response at address %06X, err=%d\n", addr, errval);
+			break;	//leave for loop
+		}
+		if ((rxmsg->data[0] != 0x61) || (rxmsg->len != (2+linecur)) ||
+				(rxmsg->fmt & DIAG_FMT_BADCS)) {
+			printf("\nFatal : error at addr=0x%X: %02X, len=%u\n", addr,
+				rxmsg->data[0], rxmsg->len);
+			diag_freemsg(rxmsg);
+			break;
+		}
+		//Now we got the reply to SID 21 : 61 81 x x x ...
+		memcpy(dest, &(rxmsg->data[2]), linecur);
+		if (rxmsg)
+			diag_freemsg(rxmsg);
+
+		linecur=0;
+
+		//and reset tx template + sub-counters
+		txdata[0]=0xAc;
+		txdata[1]=0x81;
+		nisreq.len=2;
+		txi=2;
+
+	}	//for
+
+	return sent;
+}
+
+//np 8 : (WIP) watch 4 bytes @ specified addr, using SID AC.
+//"np 8 <addr>"
+int np_8(int argc, char **argv) {
+	uint32_t addr;
+	uint32_t len;
+	uint8_t wbuf[4];
+
+	if (argc != 3) {
+		printf("usage: np 8 <addr>: watch 4 bytes @ <addr>\n");
+		return CMD_USAGE;
+	}
+	addr = (uint32_t) htoi(argv[2]);
+	printf("\nMonitoring 0x%0X; press Enter to interrupt.\n", addr);
+	(void) diag_os_ipending();	//must be done outside the loop first
+	while ( !diag_os_ipending()) {
+
+		len = read_ac(wbuf, addr, 4);
+		if (len != 4) {
+			printf("? got %u bytes\n", len);
+			break;
+		}
+		printf("\r0x%0X: %02X %02X %02X %02X", addr, wbuf[0], wbuf[1], wbuf[2], wbuf[3]);
+		fflush(stdout);
+	}
+	printf("\n");
+	return CMD_OK;
+}
+
 static int cmd_diag_nisprog(int argc, char **argv) {
 	unsigned testnum;
 	struct diag_msg nisreq={0};	//request to send
@@ -310,7 +432,7 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		return CMD_FAILED;
 	}
 
-	nisreq.data=txdata;
+	nisreq.data=txdata;	//super very essential !
 
 	switch (testnum) {
 	case 0:
@@ -415,6 +537,7 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 				printf("Using short headers.\n");
 				dlproto->modeflags &= ~ISO14230_LONGHDR;	//deactivate long headers
 			} else {
+				printf("cannot use hackmode; short headers not supported !\n");
 				hackmode=0;	//won't work without short headers
 			}
 
@@ -638,6 +761,9 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 	case 6:
 		return np_6_7(argc, argv, 2, 0);
 		break;	//case 6,7 (sid27)
+	case 8:
+		return np_8(argc, argv);
+		break;
 	default:
 		return CMD_USAGE;
 		break;
