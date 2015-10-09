@@ -21,7 +21,16 @@
 //As-is, this is hack quality (low) code that "trespasses" levels to go faster, skips some
 //checks, and is generally not robust. But it does works on an old Win XP laptop, with a
 //USB->serial converter + dumb interface, so there's hope yet.
-//Uses the global l2 connection
+//Uses the global l2 connection.
+
+
+#include <stdbool.h>
+
+/** fwd decls **/
+uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len);
+
+/****/
+
 uint32_t readinvb(const uint8_t *buf) {
 	// ret 4 bytes at *buf with SH endianness
 	// " reconst_4B"
@@ -201,9 +210,9 @@ static int np_2(int argc, char **argv) {
 	}
 	txdata[0]=0xA4;
 	txdata[4]= (uint8_t) (addr & 0xFF);
-	txdata[3]= (uint8_t) ((addr & 0xFF<<8) >>8);
-	txdata[2]= (uint8_t) ((addr & 0xFF<<16) >>16);
-	txdata[1]= (uint8_t) ((addr & 0xFF<<24) >>24);
+	txdata[3]= (uint8_t) (addr >> 8) & 0xFF;
+	txdata[2]= (uint8_t) (addr >> 16) & 0xFF;
+	txdata[1]= (uint8_t) (addr >> 24) & 0xFF;
 	txdata[5]=0x04;	//TXM
 	txdata[6]=0x01;	//NumResps
 	nisreq.len=7;
@@ -220,6 +229,253 @@ static int np_2(int argc, char **argv) {
 	}
 	printf("Got: 0x%02X\n", rxmsg->data[5]);
 	diag_freemsg(rxmsg);
+	return CMD_OK;
+}
+
+
+/* np 4 : dump <len> bytes @<start> to already-opened <outf>;
+ * uses read_ac() (std L2 request + recv mechanism)
+ */
+static int np_4(FILE *outf, uint32_t start, uint32_t len) {
+	int retryscore = 100;	/* iteration failures decrease this; success increases it up to 100. Abort when 0. */
+
+	if (!outf) return CMD_FAILED;
+
+	/* cheat : we know read_ac is faster (less overhead) for multiples of 12,
+	 * so read 12*16 = 192B chunks.
+	 */
+	while ((len > 0) && (retryscore > 0)) {
+		uint8_t tbuf[12*16];
+		uint32_t rsize;
+		uint32_t res;
+		unsigned long chrono;
+
+		chrono=diag_os_getms();
+		rsize = MIN(len, ARRAY_SIZE(tbuf));
+		res = read_ac(tbuf, start, rsize);
+		if (res != rsize) {
+			/* partial read; not necessarily fatal */
+			retryscore -= 25;
+		}
+		diag_data_dump(stderr, tbuf, res);
+		if (fwrite(tbuf, 1, res, outf) != res) {
+			/* partial write; bigger problem. */
+			return CMD_FAILED;
+		}
+		chrono = diag_os_getms() - chrono;
+
+		retryscore += (retryscore <= 95)? 5:0;
+
+		len -= res;
+		start += res;
+		printf("%u bytes remaining @ ~%lu Bps = %lu s.\n", len, (1000 * res) / chrono,
+				len * chrono / (res * 1000));
+	}
+	if (retryscore <= 0) {
+		//there was an error inside and no retries left
+		printf("Too many errors, no more retries @ addr=%08X.\n", start);
+		return CMD_FAILED;
+	}
+	return CMD_OK;
+}
+
+
+/* np 5 : fast dump <len> bytes @<start> to already-opened <outf>;
+ * uses fast read technique (receive from L1 direct)
+ */
+static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
+		//SID AC + 21 technique.
+		// AC 81 {83 GGGG} {83 GGGG} ... to load addresses, (5*n + 4) bytes on bus
+		// RX: {EC 81}, 4 bytes
+		// TX: {21 81 04 01} to dump data (6 bytes)
+		// RX: {61 81 <n*data>} (4 + n) bytes.
+		// Total traffic : (6*n + 18) bytes on bus for <n> bytes RX'd
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	uint8_t txdata[64];	//data for nisreq
+	int errval;
+	int retryscore=100;	//successes increase this up to 100; failures decrease it.
+	uint8_t hackbuf[70];
+	int extra;	//extra bytes to purge
+	uint32_t addr, nextaddr, maxaddr;
+	unsigned long chrono;
+
+	nextaddr = start;
+	maxaddr = start + len - 1;
+
+	if (!outf) return CMD_FAILED;
+
+	nisreq.data=txdata;	//super very essential !
+	chrono = diag_os_getms();
+	while (retryscore >0) {
+
+		unsigned int linecur=0;	//count from 0 to 11 (12 addresses per request)
+
+		int txi;	//index into txbuf for constructing request
+
+
+		printf("Starting dump from 0x%08X to 0x%08X.\n", nextaddr, maxaddr);
+
+		txdata[0]=0xAC;
+		txdata[1]=0x81;
+		nisreq.len = 2;	//AC 81 : 2 bytes so far
+		txi=2;
+		linecur = 0;
+
+		for (addr=nextaddr; addr <= maxaddr; addr++) {
+			txdata[txi++]= 0x83;		//field type
+			txdata[txi++]= (uint8_t) (addr >> 24) & 0xFF;
+			txdata[txi++]= (uint8_t) (addr >> 16) & 0xFF;
+			txdata[txi++]= (uint8_t) (addr >> 8) & 0xFF;
+			txdata[txi++]= (uint8_t) (addr & 0xFF);
+			nisreq.len += 5;
+			linecur += 1;
+
+			//request 12 addresses at a time, or whatever's left at the end
+			if ((linecur != 0x0c) && (addr != maxaddr))
+				continue;
+
+			printf("\n%08X: ", nextaddr);
+
+			int i, rqok=0;	//default to fail
+			//send the request "properly"
+			if (diag_l2_send(global_l2_conn, &nisreq)==0) {
+				//and get a response; we already know the max expected length:
+				// 0xEC 0x81 + 2 (short hdr) or +4 (full hdr).
+				// we'll request just 4 bytes so we return very fast;
+				// We should find 0xEC if it's in there no matter what kind of header.
+				// We'll "purge" the next bytes when we send SID 21
+				errval=diag_l1_recv(global_l2_conn->diag_link->diag_l2_dl0d,
+						NULL, hackbuf, 4, 25);
+				if (errval == 4) {
+					//try to find 0xEC in the first bytes:
+					for (i=0; i<=3 && i<errval; i++) {
+						if (hackbuf[i] == 0xEC) {
+							rqok=1;
+							break;
+						}
+					}
+				}
+			}	// if l2_send ok
+			if (!rqok) {
+				printf("\nhack mode : bad AC response %02X %02X\n", hackbuf[0], hackbuf[1]);
+				retryscore -= 25;
+				break;	//out of for()
+			}
+			//Here, we're guaranteed to have found 0xEC in the first 4 bytes we got. But we may
+			//need to "purge" some extra bytes on the next read
+			// hdr0 (hdr1) (hdr2) 0xEC 0x81 ck
+			//
+			extra = (3 + i - errval);	//bytes to purge. I think the formula is ok
+			extra = (extra < 0) ? 0: extra;	//make sure >=0
+
+			//Here, we sent a AC 81 83 ... 83... request that was accepted.
+			//We need to send 21 81 04 01 to get the data now
+			txdata[0]=0x21;
+			txdata[1]=0x81;
+			txdata[2]=0x04;
+			txdata[3]=0x01;
+			nisreq.len=4;
+
+			rqok=0;	//default to fail
+			//send the request "properly"
+			if (diag_l2_send(global_l2_conn, &nisreq)==0) {
+				//and get a response; we already know the max expected length:
+				//61 81 [2+linecur] + max 4 (header+cks) = 8+linecur
+				//but depending on the previous message there may be extra
+				//bytes still in buffer; we already calculated how many.
+				//By requesting (extra) + 4 with a short timeout, we'll return
+				//here very quickly and we're certain to "catch" 0x61.
+				errval=diag_l1_recv(global_l2_conn->diag_link->diag_l2_dl0d,
+						NULL, hackbuf, extra + 4, 25);
+				if (errval != extra+4) {
+					retryscore -=25;
+					break;	//out of for ()
+				}
+				//try to find 0x61 in the first bytes:
+				for (i=0; i<errval; i++) {
+						if (hackbuf[i] == 0x61) {
+							rqok=1;
+							break;
+						}
+				}
+				//we now know where the real data starts so we can request the
+				//exact number of bytes remaining. Now, (errval - i) is the number
+				//of packet bytes already read including 0x61, ex.:
+				//[XX XX 61 81 YY YY ..] : i=2 and errval =5 means we have (5-2)=3 bytes
+				// of packet data (61 81 YY)
+				// Total we need (2 + linecur) packet bytes + 1 cksum
+				// So we need to read (2+linecur+1) - (errval-i) bytes...
+				// Plus : we need to dump those at the end of what we already got !
+				extra = (3 + linecur) - (errval - i);
+				if (extra<0) {
+					printf("\nhack mode : problem ! extra=%d\n",extra);
+					extra=0;
+				} else {
+					errval=diag_l1_recv(global_l2_conn->diag_link->diag_l2_dl0d,
+						NULL, &hackbuf[errval], extra, 25);
+				}
+
+				if (errval != extra)	//this should always fit...
+					rqok=0;
+
+				if (!rqok) {
+					//either negative response or not enough data !
+					printf("\nhack mode : bad 61 response %02X %02X, i=%02X extra=%02X ev=%02X\n",
+							hackbuf[i], hackbuf[i+1], i, extra, errval);
+					retryscore -= 25;
+					break;	//out of for ()
+				}
+				//and verify checksum. [i] points to 0x61;
+				if (hackbuf[i+2+linecur] != diag_cks1(&hackbuf[i-1], 3+linecur)) {
+					//this checksum will not work with long headers...
+					printf("\nhack mode : bad 61 CS ! got %02X\n", hackbuf[i+2+linecur]);
+					diag_data_dump(stdout, &hackbuf[i], linecur+3);
+					retryscore -=20;
+					break;	//out of for ()
+				}
+
+			}	//if l2_send OK
+
+				//We can now dump this to the file...
+			if (fwrite(&(hackbuf[i+2]), 1, linecur, outf) != linecur) {
+				printf("Error writing file!\n");
+				retryscore -= 50;
+				break;	//out of for ()
+			}
+			diag_data_dump(stdout, &hackbuf[i+2], linecur);
+
+			nextaddr += linecur;	//if we crash, we can resume starting at nextaddr
+			linecur=0;
+			//success: allow us more errors
+			retryscore = (retryscore > 95)? 100:(retryscore+5) ;
+
+			//and reset tx template + sub-counters
+			txdata[0]=0xAc;
+			txdata[1]=0x81;
+			nisreq.len=2;
+			txi=2;
+
+			if (rxmsg)
+				diag_freemsg(rxmsg);
+		}	//for
+		if (addr <= maxaddr) {
+			//the for loop didn't complete;
+			//(if succesful, addr == maxaddr+1 !!)
+			printf("\nRetry score: %d\n", retryscore);
+		} else {
+			printf("\nFinished! ~%lu Bps\n", 1000*(maxaddr - start)/(diag_os_getms() - chrono));
+			break;	//leave while()
+		}
+	}	//while retryscore>0
+
+	fclose(outf);
+
+	if (retryscore <= 0) {
+			//there was an error inside and no retries left
+		printf("Too many errors, no more retries @ addr=%08X.\n", start);
+		return CMD_FAILED;
+	}
 	return CMD_OK;
 }
 
@@ -283,6 +539,67 @@ static int np_6_7(UNUSED(int argc), UNUSED(char **argv), int keyalg, uint32_t sc
 	return CMD_OK;
 }
 
+/** Dump memory to a file (direct binary copy)
+ * @param froot: optional; prefix to auto-generated output filename
+ * @param hackmode: if set, use shortcut method for reads (bypass L2_recv)
+ * @return CMD_OK or CMD_FAILED
+ */
+static int dumpmem(const char *froot, uint32_t start, uint32_t len, bool hackmode) {
+	// try with P3min = 5ms rather than 55ms; this should
+	// save ~8ms per byte overall.
+#define DUMPFILESZ 30
+	FILE *romdump;
+	char romfile[DUMPFILESZ+1]="";
+	char * openflags;
+	uint32_t nextaddr;	//start addr
+	uint32_t maxaddr;	//end addr
+	struct diag_l2_14230 * dlproto;	// for bypassing headers
+
+	nextaddr = start;
+	maxaddr = start + len - 1;
+
+	global_l2_conn->diag_l2_p4min=0;	//0 interbyte spacing
+	global_l2_conn->diag_l2_p3min=5;	//5ms before new requests
+
+	snprintf(romfile, DUMPFILESZ, "%s_%X-%X.bin", froot, start, start+len - 1);
+
+	//this allows download resuming if starting address was >0
+	openflags = (start>0)? "ab":"wb";
+
+	//Create / append to "rom-[ECUID].bin"
+	if ((romdump = fopen(romfile, openflags))==NULL) {
+		printf("Cannot open %s !\n", romfile);
+		return CMD_FAILED;
+	}
+
+	dlproto=(struct diag_l2_14230 *)global_l2_conn->diag_l2_proto_data;
+	if (dlproto->modeflags & ISO14230_SHORTHDR) {
+		printf("Using short headers.\n");
+		dlproto->modeflags &= ~ISO14230_LONGHDR;	//deactivate long headers
+	} else {
+		printf("cannot use hackmode; short headers not supported !\n");
+		hackmode=0;	//won't work without short headers
+	}
+
+	if (!hackmode) {
+		int rv=np_4(romdump, nextaddr, maxaddr - nextaddr + 1);
+		fclose(romdump);
+		if (rv != CMD_OK) {
+			printf("Errors occured, dump may be incomplete.\n");
+			return CMD_FAILED;
+		}
+		return CMD_OK;
+	}
+	int rv = np_5(romdump, nextaddr, maxaddr - nextaddr +1);
+	fclose(romdump);
+	if (rv != CMD_OK) {
+		printf("Errors occured, dump may be incomplete.\n");
+		return CMD_FAILED;
+	}
+	return CMD_OK;
+
+}
+
 /** Read bytes from memory
  * copies <len> bytes from <raddr> to dest,
  * using SID AC and std L2_request mechanism.
@@ -314,9 +631,9 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 
 	for (sent=0; sent < len; sent++, addr++) {
 		txdata[txi++]= 0x83;		//field type
-		txdata[txi++]= (uint8_t) ((addr & 0xFF<<24) >>24);
-		txdata[txi++]= (uint8_t) ((addr & 0xFF<<16) >>16);
-		txdata[txi++]= (uint8_t) ((addr & 0xFF<<8) >>8);
+		txdata[txi++]= (uint8_t) (addr >> 24) & 0xFF;
+		txdata[txi++]= (uint8_t) (addr >> 16) & 0xFF;
+		txdata[txi++]= (uint8_t) (addr >> 8) & 0xFF;
 		txdata[txi++]= (uint8_t) (addr & 0xFF);
 		nisreq.len += 5;
 		linecur += 1;
@@ -327,7 +644,7 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 
 		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
 		if (rxmsg==NULL) {
-			printf("\nError: no resp to rqst AC @ %06X, err=%d\n", addr, errval);
+			printf("\nError: no resp to rqst AC @ %08X, err=%d\n", addr, errval);
 			break;	//leave for loop
 		}
 		if ((rxmsg->data[0] != 0xEC) || (rxmsg->len != 2) ||
@@ -349,7 +666,7 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 
 		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
 		if (rxmsg==NULL) {
-			printf("\nFatal : did not get response at address %06X, err=%d\n", addr, errval);
+			printf("\nFatal : did not get response at address %08X, err=%d\n", addr, errval);
 			break;	//leave for loop
 		}
 		if ((rxmsg->data[0] != 0x61) || (rxmsg->len != (2+linecur)) ||
@@ -361,6 +678,8 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 		}
 		//Now we got the reply to SID 21 : 61 81 x x x ...
 		memcpy(dest, &(rxmsg->data[2]), linecur);
+		dest = &dest[linecur];
+
 		if (rxmsg)
 			diag_freemsg(rxmsg);
 
@@ -411,9 +730,7 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 	struct diag_msg *rxmsg=NULL;	//pointer to the reply
 	uint8_t txdata[64];	//data for nisreq
 	static uint8_t ECUID[7]="";
-	uint32_t addr;
 	int errval;
-	int retryscore;
 	int hackmode=0;	//to modify test #4's behavior
 	uint32_t scode;	//for SID27
 
@@ -466,32 +783,14 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		break;
 	case 5:
 		//this is a "hack mode" of case 4: instead of using L2's request()
-		//interface, we use L2_send and L1_recv directly; this should allow
-		//much faster speeds.
+		//interface, we use L2_send and L1_recv directly; this is much faster.
+		/* TODO : change syntax to np [4|5] <start> <len> ? */
 		hackmode=1;
 		printf("**** Activating Hackmode 5 ! ****\n\n");
 	case 4:
-		//SID AC + 21 technique.
-		// AC 81 {83 GGGG} {83 GGGG} ... to load addresses, (5*n + 4) bytes on bus
-		// RX: {EC 81}, 4 bytes
-		// TX: {21 81 04 01} to dump data (6 bytes)
-		// RX: {61 81 <n*data>} (4 + n) bytes.
-		// Total traffic : (6*n + 18) bytes on bus for <n> bytes RX'd
-
-		// use "np 4 0 511" to dump from 0 to 511.
-		// try with P3min = 5ms rather than 55ms; this should
-		// save ~8ms per byte overall.
-
-		retryscore=100;	//successes increase this up to 100; failures decrease it.
-
-		FILE *romdump;
-		char romfile[20]="rom-";
-		char * openflags;
-		uint32_t nextaddr;	//start addr
-		uint32_t maxaddr;	//end addr
-		uint8_t hackbuf[70];	//just used for "hackmode" (5)
-		int extra;	//extra bytes to purge, for hackmode
-
+		// ex.: "np 4 0 511" to dump from 0 to 511.
+		{	//cheat : code block to allow local var decls
+		uint32_t nextaddr, maxaddr;
 		if (argc != 4) {
 			printf("Bad args. np 4 <start> <end>\n");
 			return CMD_USAGE;
@@ -500,254 +799,14 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		maxaddr = (uint32_t) htoi(argv[3]);
 		nextaddr = (uint32_t) htoi(argv[2]);
 
-		//~ if ( (sscanf(argv[3], "%u", &maxaddr) != 1) ||
-				//~ (sscanf(argv[2], "%u", &nextaddr) !=1)) {
-			//~ printf("Did not understand %s\n", argv[2]);
-			//~ return CMD_USAGE;
-		//~ }
-
 		if (nextaddr > maxaddr) {
 			printf("bad args.\n");
 			return CMD_FAILED;
 		}
 
-		global_l2_conn->diag_l2_p4min=0;	//0 interbyte spacing
-		global_l2_conn->diag_l2_p3min=5;	//5ms before new requests
-
-		strncat(romfile, (char *) ECUID, 6);
-		strcat(romfile, ".bin");
-
-		//this allows download resuming if starting address was >0
-		openflags = (nextaddr>0)? "ab":"wb";
-
-		//Create / append to "rom-[ECUID].bin"
-		if ((romdump = fopen(romfile, openflags))==NULL) {
-			printf("Cannot open %s !\n", romfile);
-			return CMD_FAILED;
+		return dumpmem((const char *)ECUID, nextaddr, maxaddr - nextaddr + 1, hackmode);
 		}
-
-		while (retryscore >0) {
-
-			unsigned int linecur=0;	//count from 0 to 11 (12 addresses per request)
-			struct diag_l2_14230 * dlproto;
-			int txi;	//index into txbuf for constructing request
-
-			dlproto=(struct diag_l2_14230 *)global_l2_conn->diag_l2_proto_data;
-			if (dlproto->modeflags & ISO14230_SHORTHDR) {
-				printf("Using short headers.\n");
-				dlproto->modeflags &= ~ISO14230_LONGHDR;	//deactivate long headers
-			} else {
-				printf("cannot use hackmode; short headers not supported !\n");
-				hackmode=0;	//won't work without short headers
-			}
-
-
-			printf("Starting dump from 0x%06X to 0x%06X.\n", nextaddr, maxaddr);
-
-			txdata[0]=0xAC;
-			txdata[1]=0x81;
-			nisreq.len = 2;	//AC 81 : 2 bytes so far
-			txi=2;
-			linecur = 0;
-
-			for (addr=nextaddr; addr <= maxaddr; addr++) {
-				txdata[txi++]= 0x83;		//field type
-				txdata[txi++]= (uint8_t) ((addr & 0xFF<<24) >>24);
-				txdata[txi++]= (uint8_t) ((addr & 0xFF<<16) >>16);
-				txdata[txi++]= (uint8_t) ((addr & 0xFF<<8) >>8);
-				txdata[txi++]= (uint8_t) (addr & 0xFF);
-				nisreq.len += 5;
-				linecur += 1;
-
-				//request 12 addresses at a time, or whatever's left at the end
-				if ((linecur != 0x0c) && (addr != maxaddr))
-					continue;
-
-				printf("\n%06X: ", nextaddr);
-
-				if (hackmode==1) {
-					int i, rqok=0;	//default to fail
-					//send the request "properly"
-					if (diag_l2_send(global_l2_conn, &nisreq)==0) {
-						//and get a response; we already know the max expected length:
-						// 0xEC 0x81 + 2 (short hdr) or +4 (full hdr).
-						// we'll request just 4 bytes so we return very fast;
-						// We should find 0xEC if it's in there no matter what kind of header.
-						// We'll "purge" the next bytes when we send SID 21
-						errval=diag_l1_recv(global_l2_conn->diag_link->diag_l2_dl0d,
-								NULL, hackbuf, 4, 25);
-						if (errval == 4) {
-							//try to find 0xEC in the first bytes:
-							for (i=0; i<=3 && i<errval; i++) {
-								if (hackbuf[i] == 0xEC) {
-									rqok=1;
-									break;
-								}
-							}
-						}
-					}	// if l2_send ok
-					if (!rqok) {
-						printf("\nhack mode : bad AC response %02X %02X\n", hackbuf[0], hackbuf[1]);
-						retryscore -= 25;
-						break;
-					}
-					//Here, we're guaranteed to have found 0xEC in the first 4 bytes we got. But we may
-					//need to "purge" some extra bytes on the next read
-					// hdr0 (hdr1) (hdr2) 0xEC 0x81 ck
-					//
-					extra = (3 + i - errval);	//bytes to purge. I think the formula is ok
-					extra = (extra < 0) ? 0: extra;	//make sure >=0
-				} else {
-					//not hackmode:
-
-					rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
-					if (rxmsg==NULL) {
-						printf("\nError: no resp to rqst AC @ %06X, err=%d\n", addr, errval);
-						retryscore -= 20;
-						break;	//leave for loop
-					}
-					if ((rxmsg->data[0] != 0xEC) || (rxmsg->len != 2) ||
-							(rxmsg->fmt & DIAG_FMT_BADCS)) {
-						printf("\nFatal : bad AC resp at addr=0x%X: %02X, len=%u\n", addr,
-							rxmsg->data[0], rxmsg->len);
-						diag_freemsg(rxmsg);
-						retryscore -= 25;
-						break;
-					}
-					diag_freemsg(rxmsg);
-				}	//if hackmode
-				//Here, we sent a AC 81 83 ... 83... request that was accepted.
-				//We need to send 21 81 04 01 to get the data now
-				txdata[0]=0x21;
-				txdata[1]=0x81;
-				txdata[2]=0x04;
-				txdata[3]=0x01;
-				nisreq.len=4;
-
-				if (hackmode==1) {
-					int i, rqok=0;	//default to fail
-					//send the request "properly"
-					if (diag_l2_send(global_l2_conn, &nisreq)==0) {
-						//and get a response; we already know the max expected length:
-						//61 81 [2+linecur] + max 4 (header+cks) = 8+linecur
-						//but depending on the previous message there may be extra
-						//bytes still in buffer; we already calculated how many.
-						//By requesting (extra) + 4 with a short timeout, we'll return
-						//here very quickly and we're certain to "catch" 0x61.
-						errval=diag_l1_recv(global_l2_conn->diag_link->diag_l2_dl0d,
-								NULL, hackbuf, extra + 4, 25);
-						if (errval != extra+4) {
-							retryscore -=25;
-							break;
-						}
-						//try to find 0x61 in the first bytes:
-						for (i=0; i<errval; i++) {
-								if (hackbuf[i] == 0x61) {
-									rqok=1;
-									break;
-								}
-						}
-						//we now know where the real data starts so we can request the
-						//exact number of bytes remaining. Now, (errval - i) is the number
-						//of packet bytes already read including 0x61, ex.:
-						//[XX XX 61 81 YY YY ..] : i=2 and errval =5 means we have (5-2)=3 bytes
-						// of packet data (61 81 YY)
-						// Total we need (2 + linecur) packet bytes + 1 cksum
-						// So we need to read (2+linecur+1) - (errval-i) bytes...
-						// Plus : we need to dump those at the end of what we already got !
-						extra = (3 + linecur) - (errval - i);
-						if (extra<0) {
-							printf("\nhack mode : problem ! extra=%d\n",extra);
-							extra=0;
-						} else {
-							errval=diag_l1_recv(global_l2_conn->diag_link->diag_l2_dl0d,
-								NULL, &hackbuf[errval], extra, 25);
-						}
-
-						if (errval != extra)	//this should always fit...
-							rqok=0;
-
-						if (!rqok) {
-							//either negative response or not enough data !
-							printf("\nhack mode : bad 61 response %02X %02X, i=%02X extra=%02X ev=%02X\n",
-									hackbuf[i], hackbuf[i+1], i, extra, errval);
-							retryscore -= 25;
-							break;
-						}
-						//and verify checksum. [i] points to 0x61;
-						if (hackbuf[i+2+linecur] != diag_cks1(&hackbuf[i-1], 3+linecur)) {
-							//this checksum will not work with long headers...
-							printf("\nhack mode : bad 61 CS ! got %02X\n", hackbuf[i+2+linecur]);
-							diag_data_dump(stdout, &hackbuf[i], linecur+3);
-							retryscore -=20;
-							break;
-						}
-
-					}	//if l2_send OK
-
-						//We can now dump this to the file...
-					if (fwrite(&(hackbuf[i+2]), 1, linecur, romdump) != linecur) {
-						printf("Error writing file!\n");
-						retryscore -= 50;
-						break;
-					}
-					diag_data_dump(stdout, &hackbuf[i+2], linecur);
-				} else {
-					//not hack mode:
-					rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
-					if (rxmsg==NULL) {
-						printf("\nFatal : did not get response at address %06X, err=%d\n", addr, errval);
-						retryscore -= 20;
-						break;	//leave for loop
-					}
-					if ((rxmsg->data[0] != 0x61) || (rxmsg->len != (2+linecur)) ||
-							(rxmsg->fmt & DIAG_FMT_BADCS)) {
-						printf("\nFatal : error at addr=0x%X: %02X, len=%u\n", addr,
-							rxmsg->data[0], rxmsg->len);
-						diag_freemsg(rxmsg);
-						retryscore -= 25;
-						break;
-					}
-					//Now we got the reply to SID 21 : 61 81 x x x ...
-					if (fwrite(&(rxmsg->data[2]), 1, linecur, romdump) != linecur) {
-						printf("\nError writing file!\n");
-						diag_freemsg(rxmsg);
-						retryscore -= 50;
-						break;
-					}
-					diag_data_dump(stdout, &rxmsg->data[2], linecur);
-				}	//end second if(hackmode)
-
-				nextaddr += linecur;	//if we crash, we can resume starting at nextaddr
-				linecur=0;
-				//success: allow us more errors
-				retryscore = (retryscore > 95)? 100:(retryscore+5) ;
-
-				//and reset tx template + sub-counters
-				txdata[0]=0xAc;
-				txdata[1]=0x81;
-				nisreq.len=2;
-				txi=2;
-
-				if (rxmsg)
-					diag_freemsg(rxmsg);
-			}	//for
-			if (addr <= maxaddr) {
-				//the for loop didn't complete;
-				//(if succesful, addr == maxaddr+1 !!)
-				printf("\nRetry score: %d\n", retryscore);
-			} else {
-				printf("\nFinished!\n");
-				break;	//leave while()
-			}
-		}	//while retryscore>0
-		fclose(romdump);
-
-		if (retryscore <= 0) {
-			//there was an error inside and no retries left
-			printf("No more retries; addr=%06X.\n", addr);
-		}
-		break;	//case 4 : dump with AC
+		break;	//cases 4,5 : dump with AC
 	case 7:
 		if (argc != 3) {
 			printf("SID27 test. usage: np 7 <scode>\n");
