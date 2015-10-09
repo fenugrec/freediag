@@ -10,7 +10,7 @@
  * WIN32 will use CreateTimerQueueTimer instead of the SIGALRM handler of unix.
  * Right now there's no self-checking but it should be of OK accuracy for basic stuff ( keepalive messages )
  * NOTE : that means at least WinXP is required.
- 
+
  * additional timing info: http://www.windowstimestamp.com/description
  */
 
@@ -183,8 +183,10 @@ diag_os_millisleep(unsigned int ms)
 		if (tdiff > reqt) {
 			//we busted the required time by:
 			real_t = (long) (pf_conv * (tdiff-reqt));	//in us
-			if (real_t > 1000)
+			if (real_t > 1000) {
 				correction += real_t;
+				if (correction > 4000) correction = 4000;
+			}
 			return;
 		}
 	}
@@ -285,7 +287,6 @@ const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 
 void diag_os_calibrate(void) {
 	static int calibrate_done=0;	//do it only once
-	const int iters=8;
 	int testval;	//timeout to test
 	LARGE_INTEGER qpc1, qpc2;
 	LONGLONG tsum;
@@ -294,7 +295,7 @@ void diag_os_calibrate(void) {
 	unsigned long t1, t2, t3;	//for _getms() test
 
 	assert(pfconv_valid);
-	
+
 	if (calibrate_done)
 		return;
 
@@ -311,7 +312,7 @@ void diag_os_calibrate(void) {
 	}
 	printf("diag_os_gethrt() resolution <= %luus, avg ~%luus\n",
 			(unsigned long) diag_os_hrtus(maxres), (unsigned long) diag_os_hrtus(resol / RESOL_ITERS));
-	
+
 	//now test diag_os_getms
 	t1=diag_os_getms();
 	while ( ((t2=diag_os_getms())-t1) ==0) {}
@@ -342,8 +343,8 @@ void diag_os_calibrate(void) {
 		tsum=0;
 		counts=(testval*perfo_freq.QuadPart)/1000;	//expected # of counts
 		min=counts;
-
-		for (i=0; i< iters; i++) {
+#define CAL_ITERS 6
+		for (i=0; i< CAL_ITERS; i++) {
 			LONGLONG timediff;
 			QueryPerformanceCounter(&qpc1);
 			diag_os_millisleep(testval);
@@ -356,7 +357,7 @@ void diag_os_calibrate(void) {
 			if (timediff > max)
 				max = timediff;
 		}
-		avgerr= (LONGLONG) (((tsum/iters)-counts) * pf_conv);	//average error in us
+		avgerr= (LONGLONG) (((tsum/CAL_ITERS)-counts) * pf_conv);	//average error in us
 		//a high spread (max-min) indicates initbus with dumb interfaces will be
 		//fragile. We just print it out; there's not much we can do to fix this.
 		if ((min < counts) || (avgerr > 900))
@@ -364,8 +365,8 @@ void diag_os_calibrate(void) {
 			"; spread=%"PRIu64"%%\n", testval, (avgerr*100/1000)/testval, avgerr, ((max-min)*100)/counts);
 
 
-		if (testval>=25)
-			testval -= 7;
+		if (testval>=30)
+			testval -= 8;
 	}	//for testvals
 
 	printf("Calibration done.\n");
