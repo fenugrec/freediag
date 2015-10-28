@@ -42,11 +42,11 @@ INSTALLATION:
 
 Refer to doc/build_system.txt for more information;
 
-For the moment, you should not run make install as it is
-100% untested.
+For the moment, you should not run 'make install' as it will probably
+copy files to inappropriate destinations.
 
 freediag uses CMake and your choice of compiler toolchain.
-The win32 release was compiled with the mingw toolchain.
+The win32 release is usually compiled with the mingw toolchain.
 
 RUNNING:
 ~~~~~~~~
@@ -60,3 +60,12 @@ grounded.
  
 Check the README file in each tool directory for detailed instructions.
 
+SUPPORT / CONTRIBUTING:
+~~~~~~~~~~~~~~~~~~~~~~~
+http://github.com/fenugrec/freediag
+http://freediag.sourceforge.net
+
+Issues may be reported either on the SF or GH project pages.
+There is also a mailing list and forums hosted on SF.
+The current maintainer (fenugrec) can be reached directly @ fenugrec
+at users.sourceforge .net.

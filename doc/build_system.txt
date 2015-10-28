@@ -1,12 +1,11 @@
 freediag build system overview
-CSB / fenugrec 09/2015
 
 Note : since release 1.06, the autotools (./configure etc.)  build system has been removed. I could not maintain
-it to the same level as the CMake buildsys.
+it to the same level of functionality as the CMake buildsys.
 
 1- instructions for cmake
-**** 1A- Steps to compile freediag on win32 (requires CMake) ****
-To compile freediag on win32, the general process is as such (rename directories as required)
+**** 1A- Steps to compile freediag on MS Windows ****
+To compile freediag on win, the general process is as such (rename directories as required)
 	-make sure cmake is installed and %PATH% holds the cmake/bin directory
 	-extract the source tree (git clone, or a source package) to somewhere\srcdir\
 	-make an empty build directory not far from the source tree, I recommend srcdir\..\builddir\
@@ -18,8 +17,8 @@ To compile freediag on win32, the general process is as such (rename directories
 	 be "cmake -L", or browsing the cached variable list from cmake-gui.
 	-compile according to your selected toolchain. I run mingw32-make from the builddir and off it goes.
 	
-**** 1B- Steps to compile freediag on linux (with CMake instead of autotools) ****
-The instructions given above for win32 may be used almost as-is on linux; here are methods without using
+**** 1B- Steps to compile freediag on linux ****
+The instructions given above for Win may be used almost as-is on linux; here are methods without using
 "cmake-gui"
 	-extract the source tree (git clone, or a source package) to  <srcdir>
 	-make an empty build directory not far from the source tree, I recommend <srcdir>/../<builddir>
@@ -58,8 +57,8 @@ I added a CMake build system specifically to support WIN targets, as the GNU aut
 (autoconf, ./configure & friends) are not trivial to use on MS platforms. CMake should also make
 other platforms (OSX) easier to support as well.
 The main drawback is that the CMake package is quite large (~30MB), and is an additional
-dependency that I force on anyone who wants to compile freediag. However, as of 1.06 (09-2015)
-I have removed the autotools build system, since they offer me no advantage.
+dependency that I force on anyone who wants to compile freediag. However, as of 1.06 (09-2015),
+I no longer maintain the autotools build system.
 
 As distributed, the CMake build system for freediag consists of the following files in
 the source tree :
