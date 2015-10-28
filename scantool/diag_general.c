@@ -91,10 +91,8 @@ int diag_end(void) {
 }
 
 
-/*
- * Message handling
- * diag_allocmsg : alloc a new diag_msg and its diag_msg->data if datalen>0.
- */
+/** Message handling **/
+
 struct diag_msg *
 diag_allocmsg(size_t datalen)
 {

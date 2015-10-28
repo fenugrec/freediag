@@ -49,9 +49,12 @@ extern "C" {
 int diag_os_init(void);
 int diag_os_close(void);
 
-//diag_os_millisleep: return after (ms) has elapsed.
-//millisleep makes or breaks freediag... Coding this function
-//is usually a nightmare on most OS'es. See doc/sourcetree_notes.txt
+/** Millisecond sleep (blocking)
+ *
+ * @param ms requested delay
+ * @note This makes or breaks freediag... Coding this function
+ * is usually a nightmare on most OS'es. See doc/sourcetree_notes.txt
+ */
 void diag_os_millisleep(unsigned int ms);
 
 /* diag_os_ipending:
@@ -61,33 +64,50 @@ void diag_os_millisleep(unsigned int ms);
  */
 int diag_os_ipending(void);
 
-//diag_os_calibrate : measure & adjust OS timing performance.
-//Also verifies clock resolution of diag_os_getms()
+/** Measure & adjust OS timing performance.
+ *
+ * @note Should be called only once.
+ */
 void diag_os_calibrate(void);
 
-//diag_os_geterr: return OS-specific error message or empty string if not found.
-//This should only be used from OS-specific code ! (diag_os*.c and diag_tty_*.c )
+/** Return OS-specific error message
+ *
+ * @return error string or empty string if not found.
+ * @note Caller must not free() the string.
+ * This should only be used from OS-specific code ! (diag_os*.c and diag_tty_*.c )
+ */
 const char * diag_os_geterr(OS_ERRTYPE os_errno);
 
 /* Scheduler */
 int diag_os_sched(void);
 
-//diag_os_getms: return current "time" in milliseconds. This must
-//use a monotonic (i.e. always increasing) clock source; this
-//means a *lot* of gettimeofday & similar functions are inadequate.
-// This is important because this value is used to
-// calculate time differentials.
-// Time zero can be any reference unrelated to actual
-//wall-clock time (unix EPOCH, system boot time, etc.)
-//This does not need fine resolutions; 15-20ms is good enough.
+/** Return current "time" in milliseconds.
+ *
+ * This must use a monotonic (i.e. always increasing) clock source; this
+ * means a *lot* of gettimeofday & similar functions are inadequate.
+ * This is important because this value is used to
+ * calculate time differentials.
+ * Time zero can be any reference unrelated to actual
+ * wall-clock time (unix EPOCH, system boot time, etc.)
+ * This does not need fine resolutions; 15-20ms is good enough.
+ *
+ * @return Monotonic time, in milliseconds, from an arbitrary 0 reference.
+ */
 unsigned long diag_os_getms(void);
 
-//diag_os_gethrt : get highest-resolution monotonic timestamp available;
-//For use as a short duration stopwatch.
-//Use diag_os_hrtus() to convert delta values to microseconds.
+/** Get highest-resolution monotonic timestamp available.
+ *
+ * For use as a short duration stopwatch.
+ * Use diag_os_hrtus() to convert delta values to microseconds.
+ * @return Monotonic timestamp, in arbitrary units. @see diag_os_hrtus
+ */
 unsigned long long diag_os_gethrt(void);
 
-//convert a delta of diag_os_gethrt() timestamps to microseconds
+/** Convert an hrt timestamp delta to microseconds.
+ *
+ * @return microseconds
+ * @see diag_os_gethrt
+ */
 unsigned long long diag_os_hrtus(unsigned long long hrdelta);
 
 //diag_os_chronoms: used for logging purposes; it doesn't need

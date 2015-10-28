@@ -190,11 +190,32 @@ struct diag_msg
 										 * was created by diag_allocmsg()*/
 };
 
-struct diag_msg	*diag_allocmsg(size_t datalen);	/* Alloc a new message */
-struct diag_msg	*diag_dupmsg(struct diag_msg *);	/* Duplicate a message */
-struct diag_msg	*diag_dupsinglemsg(struct diag_msg *); /* same, but just the 1st bit */
-void diag_freemsg(struct diag_msg *);	/* Free a msg that we dup'ed */
-uint8_t diag_cks1(const uint8_t *data, unsigned int len);	//calculate 8bit checksum on [len] bytes
+/** Allocate a new diag_msg
+ *
+ * Also allocates diag_msg-\>data if datalen\>0.
+ * @param datalen: if \>0, size of data buffer to allocate. Max 255.
+ * @return new struct diag_msg, must be freed with diag_freemsg().
+ */
+struct diag_msg	*diag_allocmsg(size_t datalen);
+/**	Duplicate a diag_msg, including all chained messages and their contents.
+ * @return new struct diag_msg, must be freed with diag_freemsg().
+ */
+struct diag_msg	*diag_dupmsg(struct diag_msg *);
+
+/** Duplicate a single diag_msg, without following the linked-list chain.
+ * @return new struct diag_msg, must be freed with diag_freemsg().
+ */
+struct diag_msg	*diag_dupsinglemsg(struct diag_msg *);
+
+/** Free a diag_msg
+ */
+void diag_freemsg(struct diag_msg *);
+
+/** Calculate 8bit checksum
+ * @param len: number of bytes in *data
+ * @return 8-bit sum of all bytes
+ */
+uint8_t diag_cks1(const uint8_t *data, unsigned int len);
 
 /*
  * General functions
@@ -204,8 +225,14 @@ int diag_init(void);
 //diag_end : must be called before exiting. Ret 0 if ok
 int diag_end(void);
 
-//diag_data_dump : print (len) uin8_t bytes from data[], to FILE (i.e. stderr, etc.)
+/** Print bytes in hex format
+ * @param out: output stream (file / stderr / etc.)
+ * @param len: # of bytes to print
+ *
+ * Prints bytes with "0x%02X" formatter, e.g. "0x55 0xAA 0x03 "
+ */
 void diag_data_dump(FILE *out, const void *data, size_t len);
+
 //smartcat : only verifies if s1 is not too large !
 void smartcat(char *p1, const size_t s1, const char *p2 );
 
@@ -251,10 +278,17 @@ int diag_flcalloc(const char *name, const int line,
 //diag_flmalloc : do not call directly !
 int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 
-/** diag_calloc: P=*ptr, N= num of (sizeof) elems to allocate */
+/** calloc() with logging.
+ * @param P: *ptr
+ * @param N: number of (sizeof) elems to allocate
+ */
 #define diag_calloc(P, N) diag_flcalloc(CURFILE, __LINE__, \
 	((void **)(P)), (N), sizeof(*(*P)))
 
+/** malloc() with logging.
+ * @param P: *ptr
+ * @param S: size
+ */
 #define diag_malloc(P, S) diag_flmalloc(CURFILE, __LINE__, \
 	((void **)(P)), (S))
 
