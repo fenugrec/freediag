@@ -34,7 +34,9 @@ extern "C" {
 #include "cconf.h"
 
 #ifdef WIN32
-	#define _WIN32_WINNT 0x0500	//use > winXP features...
+	#ifndef _WIN32_WINNT
+		#define _WIN32_WINNT 0x0500	//use > winXP features...
+	#endif
 	#include <time.h>
 	#include <basetsd.h>
 	#include <windows.h>
