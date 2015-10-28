@@ -189,8 +189,12 @@ int diag_l1_init(void);
 //diag_l1_end : opposite of diag_l1_init . does nothing for now
 int diag_l1_end(void);
 
-//diag_l1_initbus : calls ->diag_l0_initbus. Must return as soon as possible,
-//and restore original port settings (speed, etc). Ret 0 if ok
+/** Calls L0 -\>diag_l0_initbus.
+ *
+ * Must return as soon as possible,
+ * and restore original port settings (speed, etc).
+ * @return 0 if ok
+ */
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 
 //diag_l1_open : calls diag_l0_open with the specified L1 protocol; returns a
@@ -201,20 +205,35 @@ struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, 
 //diag_l1_close : calls diag_l0_close as required; always succeeds and returns 0. Close & free everything.
 int diag_l1_close(struct diag_l0_device **);
 
-//diag_l1_send : send data, ret 0 if ok, <0 failed
+/** Send data.
+ * @param p4 : inter-byte spacing (ms), if applicable.
+ * @return 0 if ok
+ */
 int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, unsigned int p4);
-//diag_l1_recv : return # of bytes read, DIAG_ERR_TIMEOUT or error if failed. DIAG_ERR_TIMEOUT is not a hard failure
-//since a lot of L2 code uses this to detect end of responses
+
+/** Receive data.
+ *
+ * @return # of bytes read, DIAG_ERR_TIMEOUT or \<0 if failed. DIAG_ERR_TIMEOUT is not a hard failure
+ * since a lot of L2 code uses this to detect end of responses
+ */
 int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, unsigned int timeout);
 
-//diag_l1_setspeed: returns 0 on success,  speed = speed, bits = data bits (5,6,7,8)
- //	 stopbits (1, 2), parflag as above
+/** Set serial settings
+ * @return 0 if ok
+ */
 int diag_l1_setspeed(struct diag_l0_device *dl0d,
 	const struct diag_serial_settings *pset);
 
-//getflags, gettype: get flags and type as defined above
+/** Get L0/L1 device flags (defined in diag_l1.h)
+ * @return bitmask of L0/L1 flags
+ */
 uint32_t diag_l1_getflags(struct diag_l0_device *);
+
+/** Get L1 type (supported protocols)
+ * @return bitmask of supported L1 protocols
+ */
 int diag_l1_gettype(struct diag_l0_device *);
+
 /**********/
 
 extern int diag_l1_debug;	//L1 debug flags (see diag.h)

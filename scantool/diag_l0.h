@@ -42,7 +42,7 @@ struct diag_l0
 	const char	*diag_l0_textname;	/* Useful textual name, unused at the moment */
 	const char	*diag_l0_name;	/* Short, unique text name for user interface */
 
-	int 	l1proto_mask;			/* supported L1protocols, defined above*/
+	int 	l1proto_mask;			/** supported L1protocols, defined in  diag_l1.h */
 
 	/* function pointers to L0 code */
 	/* diag_l0_new() : create new driver instance (no open, default params, etc) */
@@ -59,14 +59,25 @@ struct diag_l0
 	int	(*diag_l0_close)(struct diag_l0_device **);
 	int	(*diag_l0_initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);
-	//diag_l0_send: return 0 on success
+
+	/** Send bytes.
+	 * @return 0 on success
+	 */
 	int	(*diag_l0_send)(struct diag_l0_device *,
 		const char *subinterface, const void *data, size_t len);
-	//diag_l0_recv: ret # of bytes read
+
+	/** Receive bytes.
+	 * @param timeout: in ms
+	 * @return # of bytes read
+	 */
 	int	(*diag_l0_recv)(struct diag_l0_device *,
 		const char *subinterface, void *data, size_t len, unsigned int timeout);
 	int	(*diag_l0_setspeed)(struct diag_l0_device *,
 		const struct diag_serial_settings *pss);
+
+	/** Get L0 device flags
+	 * @return bitmask of flags defined in diag_l1.h
+	 */
 	uint32_t	(*diag_l0_getflags)(struct diag_l0_device *);
 };
 
