@@ -37,19 +37,17 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
-#define PROTO_NONE	"<not_used>"
-
 /** Global parameters **/
 /* struct global_cfg contains all global parameters */
 struct globcfg global_cfg;
 
-/** WIP : convert the following items **/
 struct diag_l0_device *test_dl0d;	//global dl0d test
 
 #define DEFAULT_INTERFACE CARSIM	//index into l0_names below
 const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM},
 			{"CARSIM", CARSIM}, {"DUMB", DUMB}, {"DUMBT", DUMBT}, {NULL,LAST}};
 
+/** WIP : convert the following items **/
 enum l0_nameindex set_interface;	//hw interface to use
 
 char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
@@ -129,37 +127,35 @@ const struct cmd_tbl_entry set_cmd_table[] =
 	{ "?", "help [command]", "Gives help for a command",
 		cmd_set_help, FLAG_HIDDEN, NULL},
 
-	{ "interface", "interface NAME [dev]", "Shows/Sets the interface to use. Use set interface ? to get a list of names",
+	{ "interface", "interface NAME [dev]", "Interface to use. Use set interface ? to get a list of names",
 		cmd_set_interface, 0, NULL},
 
-	{ "dumbopts", "dumbopts [opts]", "Sets dumb-interface-specific options. Use set dumbopts ? to get details.",
+	{ "dumbopts", "dumbopts [opts]", "Dumb interface specific options. Use set dumbopts ? to get details.",
 		cmd_set_dumbopts, 0, NULL},
 
-	{ "simfile", "simfile [filename]", "Select simulation file to use as data input. See freediag_carsim.db for an example",
+	{ "simfile", "simfile [filename]", "Simulation file to use as data input. See freediag_carsim.db for an example",
 		cmd_set_simfile, FLAG_FILE_ARG, NULL},
 
-	{ "display", "display [english/metric]", "Sets english or metric display",
+	{ "display", "display [english/metric]", "English or metric display",
 		cmd_set_display, 0, NULL},
 
-	{ "speed", "speed [speed]", "Shows/Sets the speed to connect",
+	{ "speed", "speed [speed]", "ECU communications speed",
 		cmd_set_speed, 0, NULL},
-	{ "testerid", "testerid [testerid]",
-		"Shows/Sets the source ID for us to use",
+	{ "testerid", "testerid [testerid]", "Source ID/address",
 		cmd_set_testerid, 0, NULL},
-	{ "destaddr", "destaddr [destaddr]",
-		"Shows/Sets the destination ID to connect",
+	{ "destaddr", "destaddr [destaddr]","Destination ID/address",
 		cmd_set_destaddr, 0, NULL},
 
-	{ "addrtype", "addrtype [func/phys]", "Shows/Sets the address type to use",
+	{ "addrtype", "addrtype [func/phys]", "Address type, physical or functional.",
 		cmd_set_addrtype, 0, NULL},
 
-	{ "l1protocol", "l1protocol [protocolname]", "Shows/Sets the hardware protocol to use. Use set l1protocol ? to get a list of protocols",
+	{ "l1protocol", "l1protocol [protocolname]", "Hardware (L1) protocol to use. Use 'set initmode ?' to show valid choices.",
 		cmd_set_l1protocol, 0, NULL},
 
-	{ "l2protocol", "l2protocol [protocolname]", "Shows/Sets the software protocol to use. Use set l2protocol ? to get a list of protocols",
+	{ "l2protocol", "l2protocol [protocolname]", "Software (L2) protocol to use. Use 'set initmode ?' to show valid choices.",
 		cmd_set_l2protocol, 0, NULL},
 
-	{ "initmode", "initmode [modename]", "Shows/Sets the initialisation mode to use. Use set initmode ? to get a list of protocols",
+	{ "initmode", "initmode [modename]", "Bus initialisation mode to use. Use 'set initmode ?' to show valid choices.",
 		cmd_set_initmode, 0, NULL},
 
 	{ "show", "show", "Shows all set'able values",
