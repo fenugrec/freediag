@@ -36,19 +36,17 @@ void diag_dtc_init(void)
 {
 }
 
-/*
- * DTC decoding routine
+/** DTC decoding routine.
  *
- *
- * Passed
- *	*data, len	:-	Data representing the DTC
- *	char *vehicle	:-	Vehicle name
- *	char *ecu	:-	ECU Name
- *	diag_dtc_protocl protocol	:-	Protocol (see include file)
- * 	char *buf : pointer to buf in which to write the output
- *	size_t bufsize : size of *buf
- * Output : writes description (or error) in *buf.
- * returns pointer to *buf, which may be useful to printf or fprintf...
+ * Generate description (or error) string for given DTCs.
+ * @param data: Data representing the DTC
+ * @param len: length of *data
+ * @param vehicle: (optional) Vehicle name; unused.
+ * @param ecu: ECU Name; unused
+ * @param protocol: Protocol (see include file)
+ * @param buf: Buffer to write the output
+ * @param bufsize: size of *buf
+ * @return pointer to *buf, which may be useful to printf or fprintf...
  */
 
 char * diag_dtc_decode(uint8_t *data, int len,

@@ -177,7 +177,6 @@ enum globstate {
 extern enum globstate global_state;
 
 /** Global parameters set by user interface **/
-extern const char*	set_vehicle;	/* Vehicle name */
 extern const char*	set_ecu;	/* ECU name */
 
 //XXX The following defs should probably go in an auto-generated l0_list.h file ... and they MUST match the list in scantool_set.c !

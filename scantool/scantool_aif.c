@@ -155,7 +155,7 @@ static void aif_monitor (UNUSED(void *data))
 					db[0] = msg->data[j];
 					db[1] = msg->data[j+1];
 
-					diag_dtc_decode(db, 2, set_vehicle, set_ecu,
+					diag_dtc_decode(db, 2, NULL, set_ecu,
 						dtc_proto_j2012, buf, sizeof(buf)) ;
 					//what do we do with the decoded DTC ?
 					//maybe just print it for now...

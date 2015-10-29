@@ -46,7 +46,6 @@ struct globcfg global_cfg;
 /** WIP : convert the following items **/
 struct diag_l0_device *test_dl0d;	//global dl0d test
 
-const char *	set_vehicle;	/* Vehicle */
 const char *	set_ecu;	/* ECU name */
 
 #define DEFAULT_INTERFACE CARSIM	//index into l0_names below
@@ -85,7 +84,6 @@ int set_init(void)
 
 	global_cfg.units = 0;		/* English (1), or Metric (0) */
 
-	set_vehicle = "ODBII";	/* Vehicle */
 	set_ecu = "ODBII";	/* ECU name */
 
 	set_interface_idx= DEFAULT_INTERFACE;
