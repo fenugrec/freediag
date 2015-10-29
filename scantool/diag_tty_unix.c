@@ -50,7 +50,7 @@ diag_tty_rw_timeout_handler(UNUSED(int sig), siginfo_t *si, UNUSED(void *uc))
 #endif
 
 int diag_tty_open(struct diag_l0_device *dl0d,
-	const char *subinterface)
+	const char *portname)
 {
 	int rv;
 	struct unix_tty_int *uti;
@@ -60,7 +60,8 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 	clockid_t timeout_clkid;
 #endif
 
-	if (!dl0d) return diag_iseterr(DIAG_ERR_GENERAL);
+	assert(dl0d != NULL);
+	if (dl0d->tty_int) return diag_iseterr(DIAG_ERR_GENERAL);
 
 	if ((rv=diag_calloc(&uti,1))) {
 		return diag_iseterr(rv);
@@ -92,17 +93,16 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 	}
 #endif
 
-	dl0d->tty_int = uti;
 	uti->fd = DL0D_INVALIDHANDLE;
 
-	size_t n = strlen(subinterface) + 1;
+	size_t n = strlen(portname) + 1;
 
 	if ((rv=diag_malloc(&uti->name, n))) {
 		free(uti);
 		return diag_iseterr(rv);
 	}
-	strncpy(uti->name, subinterface, n);
-
+	strncpy(uti->name, portname, n);
+	dl0d->tty_int = uti;
 	//past this point, we can call diag_tty_close(dl0d) to abort in case of errors
 
 	errno = 0;
@@ -122,7 +122,7 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 				fprintf(stderr,
 					FLFMT "Can't get flags with fcntl on fd %d: %s.\n",
 					FL, uti->fd, strerror(errno));
-				(void)diag_tty_close(dl0d);
+				diag_tty_close(dl0d);
 				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 			fl &= ~O_NONBLOCK;
@@ -131,7 +131,7 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 				fprintf(stderr,
 					FLFMT "Can't set flags with fcntl on fd %d: %s.\n",
 					FL, uti->fd, strerror(errno));
-				(void)diag_tty_close(dl0d);
+				diag_tty_close(dl0d);
 				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 		}
@@ -154,7 +154,7 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 			"Make sure the device specified corresponds to the "
 			"serial device your interface is connected to.\n",
 			FL, uti->name, strerror(errno));
-		(void)diag_tty_close(dl0d);
+		diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -178,7 +178,7 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 	if (ioctl(uti->fd, TIOCMGET, &uti->modemflags) < 0) {
 		fprintf(stderr,
 			FLFMT "open: TIOCMGET failed: %s\n", FL, strerror(errno));
-		(void)diag_tty_close(dl0d);
+		diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -190,7 +190,7 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 	if (rv != 0) {
 		fprintf(stderr, FLFMT "open: could not get orig settings: %s\n",
 			FL, strerror(errno));
-		(void)diag_tty_close(dl0d);
+		diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -232,7 +232,7 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 	if (rv != 0) {
 		fprintf(stderr, FLFMT "open: can't set input flags: %s.\n",
 				FL, strerror(errno));
-		(void)diag_tty_close(dl0d);
+		diag_tty_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -250,29 +250,29 @@ void diag_tty_close(struct diag_l0_device *dl0d)
 	if (!dl0d) return;
 
 	uti = (struct unix_tty_int *)dl0d->tty_int;
-	if(uti) {
-		if (uti->name) {
-			free(uti->name);
-		}
-#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
-		timer_delete(uti->timerid);
-#endif
-		if (uti->fd != DL0D_INVALIDHANDLE) {
-	#if defined(__linux__)
-			if (uti->tioc_works)
-				(void)ioctl(uti->fd, TIOCSSERIAL, &uti->ss_orig);
-	#endif
-	#ifdef USE_TERMIOS2
-			(void)ioctl(uti->fd, TCSETS2, &uti->st2_orig);
-	#else
-			(void)tcsetattr(uti->fd, TCSADRAIN, &uti->st_orig);
-	#endif
-			(void)ioctl(uti->fd, TIOCMSET, &uti->modemflags);
-			(void)close(uti->fd);
-		}
-
-		free(uti);
+	if (!uti) return;
+	if (uti->name) {
+		free(uti->name);
 	}
+#if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
+	timer_delete(uti->timerid);
+#endif
+	if (uti->fd != DL0D_INVALIDHANDLE) {
+#if defined(__linux__)
+		if (uti->tioc_works)
+			(void)ioctl(uti->fd, TIOCSSERIAL, &uti->ss_orig);
+#endif
+#ifdef USE_TERMIOS2
+		(void)ioctl(uti->fd, TCSETS2, &uti->st2_orig);
+#else
+		(void)tcsetattr(uti->fd, TCSADRAIN, &uti->st_orig);
+#endif
+		(void)ioctl(uti->fd, TIOCMSET, &uti->modemflags);
+		(void)close(uti->fd);
+	}
+
+	free(uti);
+	dl0d->tty_int = NULL;
 
 	return;
 }

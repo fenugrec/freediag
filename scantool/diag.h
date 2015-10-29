@@ -263,11 +263,8 @@ const char *diag_errlookup(const int code);
 /*
  * "calloc" and "malloc" that log errors when they fail.
  * As with the seterr functions, only "diag_calloc" and diag_malloc
- * are intended to be
- * called directly.
+ * are intended to be called directly.
  *
- * Note that diag_calloc is NOT passed in the size - it gets it directly
- * using sizeof. This makes it a little unusual, but reduces potential errors.
  */
 
 //diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
@@ -278,9 +275,11 @@ int diag_flcalloc(const char *name, const int line,
 //diag_flmalloc : do not call directly !
 int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 
-/** calloc() with logging.
+/** calloc() with logging (clears data)
  * @param P: *ptr
  * @param N: number of (sizeof) elems to allocate
+ * @note there is no size argument - it gets it directly
+ * using sizeof. This makes it a little unusual, but reduces potential errors.
  */
 #define diag_calloc(P, N) diag_flcalloc(CURFILE, __LINE__, \
 	((void **)(P)), (N), sizeof(*(*P)))

@@ -46,11 +46,17 @@ struct diag_serial_settings {
 
 /*** Public functions ***/
 
-/* Open, close device */
+/** Open serial port
+ * @param portname: serial / tty name
+ * @return 0 if ok
+ */
 int diag_tty_open(struct diag_l0_device *dl0d,
 	const char *portname);
 
-//diag_tty_close : free & close everything in ppdl0d (including dl0d itself)
+/** Close serial port associated with L0 device
+ *
+ * Also frees everything allocated in diag_tty_open().
+ */
 void diag_tty_close(struct diag_l0_device *dl0d);
 
 /** Set speed/parity.

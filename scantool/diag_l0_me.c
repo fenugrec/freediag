@@ -216,7 +216,7 @@ diag_l0_muleng_close(struct diag_l0_device **pdl0d)
 		if (dev)
 			free(dev);
 
-		(void) diag_tty_close(dl0d);
+		diag_tty_close(dl0d);
 		diag_l0_del(dl0d);
 	}
 

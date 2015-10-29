@@ -35,18 +35,18 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 	size_t n = strlen(portname) + 1;
 	COMMTIMEOUTS devtimeouts;
 
-	if (!dl0d) return diag_iseterr(DIAG_ERR_GENERAL);
+	assert(dl0d != NULL);
+	if (dl0d->tty_int) return diag_iseterr(DIAG_ERR_GENERAL);
 
 	if ((rv=diag_calloc(&wti,1))) {
 		return diag_iseterr(rv);
 	}
 
-	dl0d->tty_int = wti;
 	wti->fd = INVALID_HANDLE_VALUE;
 
 	//allocate space for portname name
 	if ((rv=diag_malloc(&wti->name, n))) {
-		free(dl0d->tty_int);
+		free(wti);
 		return diag_iseterr(rv);
 	}
 	//Now, in case of errors we can call diag_tty_close() on the dl0d since its members are alloc'ed
@@ -101,6 +101,7 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
+	dl0d->tty_int = wti;
 	return 0;
 } //diag_tty_open
 
@@ -126,6 +127,7 @@ void diag_tty_close(struct diag_l0_device *dl0d)
 	}
 
 	free(wti);
+	dl0d->tty_int = NULL;
 
 	return;
 } //diag_tty_close
