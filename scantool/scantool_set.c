@@ -256,7 +256,15 @@ static int cmd_set_interface(int argc, char **argv)
 		}
 		if (helping) {
 			//"?" was entered
-			printf("\n");
+			int numports, i;
+			char ** portlist = diag_tty_getportlist(&numports);
+			printf("\nValid ports:\n");
+			if (portlist) {
+				for (i=0; (i < numports); i++) {
+					printf("\t%s\n", portlist[i]);
+				}
+				strlist_free(portlist, numports);
+			}
 		} else if (!found) {
 			printf("interface: invalid interface %s\n", argv[1]);
 			printf("interface: use \"set interface ?\" to see list of names\n");

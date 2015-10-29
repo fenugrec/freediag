@@ -291,7 +291,16 @@ int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 #define diag_malloc(P, S) diag_flmalloc(CURFILE, __LINE__, \
 	((void **)(P)), (S))
 
-#include "diag_os.h"	/* OS wrappers specific definitions. */
+/** Add a string to array-of-strings (argv style)
+* @param elems: number of elements already in table
+* @return new table ptr, NULL if failed
+*/
+char ** strlist_add(char ** list, const char * news, int elems);
+
+/** Free argv-style string list
+* @param elems: number of strings in list
+*/
+void strlist_free(char ** slist, int elems);
 
 #if defined(__cplusplus)
 }

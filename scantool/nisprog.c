@@ -25,6 +25,7 @@
 
 
 #include <stdbool.h>
+#include "diag_os.h"
 
 /** fwd decls **/
 uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len);

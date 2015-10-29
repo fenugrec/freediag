@@ -30,6 +30,7 @@
 #include <assert.h>
 
 #include "diag.h"
+#include "diag_os.h"
 #include "diag_err.h"
 #include "diag_dtc.h"
 #include "diag_l1.h"
@@ -377,3 +378,33 @@ int diag_flmalloc(const char *name, const int line, void **pp, size_t s) {
 	return 0;
 }
 
+/* Add a string to array-of-strings (argv style)
+*/
+char ** strlist_add(char ** list, const char * news, int elems) {
+	char **templist;
+	char *temp;
+
+	assert( news != NULL );
+	templist = realloc(list, (elems + 1)* sizeof(char *));
+	if (!templist) {
+		return diag_pseterr(DIAG_ERR_NOMEM);
+	}
+	temp = malloc((strlen(news) * sizeof(char)) + 1);
+	if (!temp) {
+		return diag_pseterr(DIAG_ERR_NOMEM);
+	}
+	strcpy(temp, news);
+	templist[elems] = temp;
+	return templist;
+}
+
+/* Free argv-style list */
+void strlist_free(char ** list, int elems) {
+	if (!list) return;
+
+	while (elems > 0) {
+		if (list[elems - 1]) free(list[elems - 1]);
+		elems--;
+	}
+	free(list);
+}

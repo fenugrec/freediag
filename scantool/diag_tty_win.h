@@ -1,8 +1,8 @@
 #ifndef _DIAG_TTY_WIN_H_
 #define _DIAG_TTY_WIN_H_
 
-/* This is of course win32-exclusive. There's actually a microscopic chance that it may work on win64 but
- * it is entirely hypothetical and untested.  This should not be included by any file except diag_tty.h
+/* This should work on Win XP and above, both 32 and 64-bit.
+ * This file should only be included by diag_tty_win.c
  */
 #if defined(__cplusplus)
 extern "C" {

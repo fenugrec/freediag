@@ -46,6 +46,15 @@ struct diag_serial_settings {
 
 /*** Public functions ***/
 
+/** Get available serial ports
+ *
+ * @param[out] numports : will hold the # of ports found.
+ * @return argv-style list of full port names, that must be free'd with
+ * diag_tty_freeportlist()
+ *
+ */
+char ** diag_tty_getportlist(int *numports);
+
 /** Open serial port
  * @param portname: serial / tty name
  * @return 0 if ok

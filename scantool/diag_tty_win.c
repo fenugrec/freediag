@@ -11,6 +11,7 @@
 #include "diag.h"
 #include "diag_l1.h"
 #include "diag_err.h"
+#include "diag_os.h"
 #include "diag_tty_win.h"
 
 #include <windows.h>
@@ -261,7 +262,7 @@ diag_tty_setup(struct diag_l0_device *dl0d,
  * ret 0 if ok
  */
 int
-diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rts)
+diag_tty_control(struct diag_l0_device *dl0d, unsigned int dtr, unsigned int rts)
 {
 	unsigned int escapefunc;
 	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
@@ -298,7 +299,7 @@ diag_tty_control(struct diag_l0_device *dl0d,  unsigned int dtr, unsigned int rt
 
 //diag_tty_write : return # of bytes or <0 if error?
 //this is an intimidating function to design.
-//test #2 :  non-overlapped write (i.e. blocking AKA synchronous).
+//test #2 : non-overlapped write (i.e. blocking AKA synchronous).
 //
 //flush buffers before returning; we could also SetCommMask
 //to wait for "EV_TXEMPTY" which would give a better idea
@@ -319,7 +320,7 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (! WriteFile(wti->fd, buf, count, &byteswritten, pOverlap)) {
-		fprintf(stderr, FLFMT "WriteFile error:%s. %u bytes written, %u requested\n", FL, diag_os_geterr(0), (unsigned int) byteswritten, count);
+		fprintf(stderr, FLFMT "WriteFile error:%s. %u bytes written, %u requested\n", FL, diag_os_geterr(0), (unsigned int) byteswritten, (unsigned) count);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	if (!FlushFileBuffers(wti->fd)) {
@@ -559,3 +560,66 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	return 0;
 }	//diag_tty_fastbreak
 
+/* Find valid serial ports.
+ * Adapted from FreeSSM :
+ * https://github.com/Comer352L/FreeSSM
+ */
+
+char ** diag_tty_getportlist(int *numports) {
+	HKEY hKey;				// handle to registry key
+	DWORD index = 0;			// index registry-key: unsigned int (32bit)
+	char ValueName[256] = "";
+	unsigned long szValueName = 256;	// variable that specifies the size (in characters, including the terminating null char) of the buffer pointed to by the "ValueName" parameter.
+	unsigned char Data[256] = "";		// buffer that receives the data for the value entry. This parameter can be NULL if the data is not required
+	unsigned long szData = 256;		// variable that specifies the size, in bytes, of the buffer pointed to by the lpData parameter.
+	long cv;
+	HANDLE hCom_t = NULL;
+
+	char **portlist=NULL;
+	int elems=0;		//temp number of ports found
+
+	assert(numports != NULL);
+	*numports = 0;
+
+	// OPEN REGISTRY-KEY AND BROWSE ENTRYS:
+	cv = RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", 0, KEY_READ, &hKey);
+	if (cv == ERROR_SUCCESS) {
+		while ((RegEnumValueA(hKey, index, ValueName, &szValueName, NULL, NULL,Data,&szData)) == ERROR_SUCCESS) {
+			if (!strncmp((char*)Data,"COM",3)) {
+				// CHECK IF PORT IS AVAILABLE (not in use):
+				char NTdevName[30] = "\\\\.\\";	// => "\\.\"
+				strncpy(NTdevName+4, (char*)Data, 25);
+				/* NOTE: MS-DOS device names ("COMx") are not reliable if x is > 9 !!!
+					=> device can not be opened (error 2 "The system cannot find the file specified.")
+					Using NT device names instead ("\\.\COMx") which work in all cases.
+				*/
+				hCom_t = CreateFileA(NTdevName,				// device name of the port
+							GENERIC_READ | GENERIC_WRITE,	// read/write access
+							0,					// must be opened with exclusive-access
+							NULL,				// default security attributes
+							OPEN_EXISTING,			// must use OPEN_EXISTING
+							0,					// not overlapped I/O
+							NULL				// must be NULL for comm devices
+						 );
+				if (hCom_t != INVALID_HANDLE_VALUE) {
+					CloseHandle(hCom_t);
+					char **templist = strlist_add(portlist, NTdevName, elems);
+					if (!templist) {
+						strlist_free(portlist, elems);
+						return diag_pseterr(DIAG_ERR_NOMEM);
+					}
+					portlist = templist;
+					elems++;
+				}
+			}
+			szValueName = 256;		// because RegEnumValue has changed value
+			szData = 256;			// because RegEnumValue has changed value
+			index++;
+		}	//while
+		//std::sort(portlist.begin(), portlist.end());	// quicksort from <algorithm>
+		(void) RegCloseKey(hKey);
+	}
+
+	*numports = elems;
+	return portlist;
+}

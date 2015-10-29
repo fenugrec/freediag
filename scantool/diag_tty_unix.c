@@ -29,12 +29,17 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <dirent.h>
+#include <unistd.h>
+
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
 
 #include "diag.h"
+#include "diag_os.h"
 #include "diag_err.h"
 #include "diag_tty_unix.h"
 
@@ -290,7 +295,7 @@ void diag_tty_close(struct diag_l0_device *dl0d)
 	- OSX >10.4 : (unconfirmed, TODO)	: IOSSIOSPEED ioctl ?
 	- BSD ? (unconfirmed, TODO) : IOSSIOSPEED ioctl ?
 */
-int _tty_setspeed(struct diag_l0_device *dl0d, unsigned int spd) {
+static int _tty_setspeed(struct diag_l0_device *dl0d, unsigned int spd) {
 	struct unix_tty_int *uti = (struct unix_tty_int *)dl0d->tty_int;
 	unsigned int	spd_real;	//validate baud rate precision
 	struct termios st_new;
@@ -1253,3 +1258,91 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 	return 0;
 }
+
+//ret true if pname is a tty
+static bool test_ttyness(const char *pname) {
+	int testfd = -1;				// file descriptor for tested device files
+	bool yes=0;
+
+	testfd = open(pname, O_RDWR | O_NOCTTY | O_NDELAY);
+	if (testfd != -1) {
+		if (isatty(testfd)) yes=1;
+		close(testfd);
+	}
+	return yes;
+}
+
+/* To find available ports, iterate in /dev/ and /dev/usb/
+ * to find & test possible port names.
+ * Adapted from FreeSSM :
+ * https://github.com/Comer352L/FreeSSM
+ */
+char ** diag_tty_getportlist(int *numports) {
+	char ffn[256] = "";				// full filename incl. path
+	const char *devroot="/dev/";
+	const char *devusbroot="/dev/usb";
+	DIR *dp = NULL;
+	struct dirent *fp = NULL;
+	char **portlist = NULL;
+	int elems;	//temp number of ports
+
+	assert(numports != NULL);
+	*numports = 0;
+	elems = 0;
+
+	/* 1: iterate in /dev/ */
+	dp = opendir (devroot);
+	if (dp != NULL) {
+		while (1) {
+			fp = readdir (dp);	// get next file in directory
+			if (fp == NULL) break;
+			if ((!strncmp(fp->d_name,"ttyS",4)) ||
+					(!strncmp(fp->d_name,"ttyUSB",6)) ||
+					(!strncmp(fp->d_name,"ttyACM",6))) {
+				// CONSTRUCT FULL FILENAME:
+				strcpy(ffn, devroot);
+				strncat(ffn, fp->d_name, ARRAY_SIZE(ffn) - strlen(devroot) - 1);
+
+				if ( !test_ttyness(ffn)) continue;
+
+				char **templist = strlist_add(portlist, ffn, elems);
+				if (!templist) {
+					strlist_free(portlist, elems);
+					return diag_pseterr(DIAG_ERR_NOMEM);
+				}
+				portlist = templist;
+				elems++;
+			}
+		}
+		closedir (dp);
+	}
+
+	/* iterate in /dev/usb */
+	dp = opendir (devusbroot);
+	if (dp != NULL) {
+		while (1) {
+			fp = readdir (dp);	// get next file in directory
+			if (fp == NULL) break;
+			if (!strncmp(fp->d_name,"ttyUSB",6)) {
+				// CONSTRUCT FULL FILENAME:
+				strcpy(ffn, devusbroot);
+				strncat(ffn, fp->d_name, ARRAY_SIZE(ffn) - strlen(devusbroot) - 1);
+
+				if ( !test_ttyness(ffn)) continue;
+
+				char **templist = strlist_add(portlist, ffn, elems);
+				if (!templist) {
+					strlist_free(portlist, elems);
+					return diag_pseterr(DIAG_ERR_NOMEM);
+				}
+				portlist = templist;
+				elems++;
+			}
+		}	//while
+		closedir (dp);
+	}
+
+	*numports = elems;
+	return portlist;
+}
+

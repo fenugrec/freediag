@@ -32,7 +32,6 @@
 extern "C" {
 #endif
 
-
 #ifdef WIN32
 	typedef DWORD OS_ERRTYPE;
 #else
