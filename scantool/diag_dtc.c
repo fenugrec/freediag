@@ -42,7 +42,7 @@ void diag_dtc_init(void)
  * @param data: Data representing the DTC
  * @param len: length of *data
  * @param vehicle: (optional) Vehicle name; unused.
- * @param ecu: ECU Name; unused
+ * @param ecu: (optional) ECU Name; unused
  * @param protocol: Protocol (see include file)
  * @param buf: Buffer to write the output
  * @param bufsize: size of *buf

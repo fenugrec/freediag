@@ -46,8 +46,6 @@ struct globcfg global_cfg;
 /** WIP : convert the following items **/
 struct diag_l0_device *test_dl0d;	//global dl0d test
 
-const char *	set_ecu;	/* ECU name */
-
 #define DEFAULT_INTERFACE CARSIM	//index into l0_names below
 const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM},
 			{"CARSIM", CARSIM}, {"DUMB", DUMB}, {"DUMBT", DUMBT}, {NULL,LAST}};
@@ -83,8 +81,6 @@ int set_init(void)
 	global_cfg.initmode = DIAG_L2_TYPE_FASTINIT ;
 
 	global_cfg.units = 0;		/* English (1), or Metric (0) */
-
-	set_ecu = "ODBII";	/* ECU name */
 
 	set_interface_idx= DEFAULT_INTERFACE;
 	set_interface = l0_names[DEFAULT_INTERFACE].code;	/* Default H/w interface to use */

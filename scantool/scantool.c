@@ -1089,7 +1089,7 @@ print_single_dtc(databyte_type d0, databyte_type d1)
 	db[1] = d1;
 
 	fprintf(stderr, "%s",
-		diag_dtc_decode(db, 2, NULL, set_ecu, dtc_proto_j2012, buf,
+		diag_dtc_decode(db, 2, NULL, NULL, dtc_proto_j2012, buf,
 		sizeof(buf)));
 
 	return 0;
