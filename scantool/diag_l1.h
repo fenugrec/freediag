@@ -183,13 +183,13 @@ struct diag_l1_initbus_args
 
 /********** Public L1 interface **********/
 //diag_l1_init : parse through the l0dev_list linked list
-//and call diag_l0_init for each of them. returns 0 on success (always succeeds)
+//and call ->init for each of them. returns 0 on success (always succeeds)
 // must not be used to allocate memory or open handles !
 int diag_l1_init(void);
 //diag_l1_end : opposite of diag_l1_init . does nothing for now
 int diag_l1_end(void);
 
-/** Calls L0 -\>diag_l0_initbus.
+/** Calls L0 -\>initbus.
  *
  * Must return as soon as possible,
  * and restore original port settings (speed, etc).
@@ -197,7 +197,7 @@ int diag_l1_end(void);
  */
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 
-//diag_l1_open : calls diag_l0_open with the specified L1 protocol; returns a
+//diag_l1_open : calls l0 ->open with the specified L1 protocol; returns a
 // *diag_l0_device on success, 0 on failure (pseterr).
 //	Alloc + fill + return a new diag_l0_device
 //	struct if succesful.

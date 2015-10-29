@@ -53,7 +53,7 @@ int diag_l1_debug;	//debug flags for l1
 /* Global init flag */
 static int diag_l1_initdone=0;
 
-//diag_l1_init : parse through l0dev_list and call each ->diag_l0_init()
+//diag_l1_init : parse through l0dev_list and call each ->init()
 int
 diag_l1_init(void)
 {
@@ -66,15 +66,15 @@ diag_l1_init(void)
 
 	/* Now call the init routines for the L0 devices */
 
-	//NOTE : the diag_l0_init functions should NOT play any mem tricks (*alloc etc) or open handles.
+	//NOTE : ->init functions should NOT play any mem tricks (*alloc etc) or open handles.
 	//That way we won't need to add a diag_l0_end function.
 
 	const struct diag_l0 *dl0;
 	int i=0;
 	while (l0dev_list[i]) {
 		dl0=l0dev_list[i];
-		if (dl0->diag_l0_init) {
-			(void) dl0->diag_l0_init();	//TODO : forward errors up ?
+		if (dl0->init) {
+			(void) dl0->init();	//TODO : forward errors up ?
 		}
 		i++;
 	}
@@ -109,7 +109,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 	int i=0;
 	while (l0dev_list[i]) {
 		l0dev=l0dev_list[i];
-		if (strcmp(name, l0dev->diag_l0_name) == 0) {
+		if (strcmp(name, l0dev->shortname) == 0) {
 			/* Found it */
 
 			/* Check h/w supports this l1 protocol */
@@ -117,7 +117,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 				return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
 
 			/* Call the open routine with the requested L1 protocol */
-			return (l0dev->diag_l0_open)(subinterface, l1protocol);
+			return l0dev->open(subinterface, l1protocol);
 		}
 		i++;
 	}
@@ -126,7 +126,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 	return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 }
 
-//diag_l1_close : call the ->diag_l0_close member of the
+//diag_l1_close : call the ->close member of the
 //specified diag_l0_device.
 void
 diag_l1_close(struct diag_l0_device **ppdl0d)
@@ -135,7 +135,7 @@ diag_l1_close(struct diag_l0_device **ppdl0d)
 		fprintf(stderr, FLFMT "entering diag_l1_close: ppdl0d=%p\n", FL,
 			(void *) ppdl0d);
 	if (ppdl0d && *ppdl0d) {
-		(*ppdl0d)->dl0->diag_l0_close(*ppdl0d);
+		(*ppdl0d)->dl0->close(*ppdl0d);
 		*ppdl0d=NULL;
 	}
 	return;
@@ -149,7 +149,7 @@ diag_l1_close(struct diag_l0_device **ppdl0d)
 int
 diag_l1_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
-	return dl0d->dl0->diag_l0_initbus(dl0d, in);
+	return dl0d->dl0->initbus(dl0d, in);
 }
 
 /*
@@ -198,7 +198,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 		/*
 		 * Send the lot
 		 */
-		rv = (dl0->diag_l0_send)(dl0d, subinterface, data, len);
+		rv = dl0->send(dl0d, subinterface, data, len);
 
 		//optionally remove echos
 		if ((l0flags & DIAG_L1_BLOCKDUPLEX) && (rv==0)) {
@@ -220,7 +220,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 		const uint8_t *dp = (const uint8_t *)data;
 
 		while (len--) {
-			rv = (dl0->diag_l0_send)(dl0d, subinterface, dp, 1);
+			rv = dl0->send(dl0d, subinterface, dp, 1);
 			if (rv != 0)
 				break;
 
@@ -280,7 +280,7 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 	if (timeout==0)
 		fprintf(stderr, FLFMT "Interesting : L1 read with timeout=0. Report this !\n", FL);
 
-	rv=dl0d->dl0->diag_l0_recv(dl0d, subinterface, data, len, timeout);
+	rv=dl0d->dl0->recv(dl0d, subinterface, data, len, timeout);
 	if (!rv) {
 		fprintf(stderr, FLFMT "L0 returns with 0 bytes; returning TIMEOUT instead. Report this !\n", FL);
 		return DIAG_ERR_TIMEOUT;
@@ -305,13 +305,13 @@ int
 diag_l1_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset)
 {
-	return dl0d->dl0->diag_l0_setspeed(dl0d, pset);
+	return dl0d->dl0->setspeed(dl0d, pset);
 }
 
 //diag_l1_getflags: returns l0 flags
 uint32_t diag_l1_getflags(struct diag_l0_device *dl0d)
 {
-	return dl0d->dl0->diag_l0_getflags(dl0d);
+	return dl0d->dl0->getflags(dl0d);
 }
 
 //diag_l1_gettype: returns l1proto_mask :supported L1 protos
