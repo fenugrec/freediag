@@ -87,7 +87,7 @@ static int diag_l0_br_initialise(struct diag_l0_device *dl0d,
 static int diag_l0_br_writemsg(struct diag_l0_device *dl0d,
 	uint8_t type, const void *dp, size_t txlen);
 
-static void diag_l0_br_close(struct diag_l0_device **pdl0d);
+static void diag_l0_br_close(struct diag_l0_device *dl0d);
 
 /* Types for writemsg - corresponds to top bit values for the control byte */
 #define BR_WRTYPE_DATA	0x00
@@ -115,21 +115,20 @@ diag_l0_br_init(void)
 }
 
 static void
-diag_l0_br_close(struct diag_l0_device **pdl0d)
+diag_l0_br_close(struct diag_l0_device *dl0d)
 {
-	if (pdl0d && *pdl0d) {
-		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_br_device *dev =
-			(struct diag_l0_br_device *)dl0d->l0_int;
+	if (!dl0d) return;
 
-		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
+	struct diag_l0_br_device *dev =
+		(struct diag_l0_br_device *)dl0d->l0_int;
 
-		if (dev)
-			free(dev);
-		diag_tty_close(dl0d);
-		diag_l0_del(dl0d);
-	}
+	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
+		fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
+
+	if (dev)
+		free(dev);
+	diag_tty_close(dl0d);
+	diag_l0_del(dl0d);
 
 	return;
 }
@@ -198,7 +197,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 
 	if (diag_tty_setup(dl0d, &set)) {
 		fprintf(stderr, FLFMT "open: TTY setup failed\n", FL);
-		diag_l0_br_close(&dl0d);
+		diag_l0_br_close(dl0d);
 		return diag_pseterr(rv);
 	}
 
@@ -214,7 +213,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 			fprintf(stderr, FLFMT "CHIP CONNECT write failed link %p\n",
 				FL, (void *)dl0d);
 		}
-		diag_l0_br_close(&dl0d);
+		diag_l0_br_close(dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	/* And expect 0xff as a response */
@@ -224,7 +223,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 				FL, (void *)dl0d);
 		}
 
-		diag_l0_br_close(&dl0d);
+		diag_l0_br_close(dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	if (buf[0] != 0xff) {
@@ -233,7 +232,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 				FL, buf[0], (void *)dl0d);
 		}
 
-		diag_l0_br_close(&dl0d);
+		diag_l0_br_close(dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
@@ -253,7 +252,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 		break;
 	}
 	if (rv) {
-		diag_l0_br_close(&dl0d);
+		diag_l0_br_close(dl0d);
 		return diag_pseterr(rv);
 	}
 

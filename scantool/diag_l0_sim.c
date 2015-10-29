@@ -114,7 +114,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 void *data, size_t len, unsigned int timeout);
 
-static void diag_l0_sim_close(struct diag_l0_device **pdl0d);
+static void diag_l0_sim_close(struct diag_l0_device *dl0d);
 
 extern void
 diag_l0_sim_setfile(char * fname);
@@ -564,7 +564,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 	/* if a specific proto was set, refuse a mismatched connection */
 	if (dev->proto_restrict) {
 		if (dev->proto_restrict != iProtocol) {
-			diag_l0_sim_close(&dl0d);
+			diag_l0_sim_close(dl0d);
 			return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
 		}
 	}
@@ -575,27 +575,25 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 
 // Closes the simulator DB file; cleanup after _sim_open()
 static void
-diag_l0_sim_close(struct diag_l0_device **pdl0d)
+diag_l0_sim_close(struct diag_l0_device *dl0d)
 {
-	if (pdl0d && *pdl0d) {
-		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)dl0d->l0_int;
+	if (!dl0d) return;
 
-		sim_free_ecu_responses(&dev->sim_last_ecu_responses);
+	struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)dl0d->l0_int;
 
-		// If debugging, print to stderr.
-		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "dl0d=%p closing simfile\n", FL,
-				(void *)dl0d);
+	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
-		if (dev) {
-			if (dev->fp != NULL)
-				fclose(dev->fp);
-			free(dev);
-		}
-		diag_l0_del(dl0d);
-		*pdl0d=NULL;
+	// If debugging, print to stderr.
+	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
+		fprintf(stderr, FLFMT "dl0d=%p closing simfile\n", FL,
+			(void *)dl0d);
+
+	if (dev) {
+		if (dev->fp != NULL)
+			fclose(dev->fp);
+		free(dev);
 	}
+	diag_l0_del(dl0d);
 
 	return;
 }
@@ -610,7 +608,7 @@ sim_del(struct diag_l0_device * dl0d) {
 	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
 
 	diag_cfg_clear(&dev->simfile);
-	diag_l0_sim_close(&dl0d);
+	diag_l0_sim_close(dl0d);
 	return;
 }
 

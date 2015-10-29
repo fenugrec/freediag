@@ -90,7 +90,7 @@ static int elm_sendcmd(struct diag_l0_device *dl0d,
 static int elm_purge(struct diag_l0_device *dl0d);
 
 void elm_parse_cr(uint8_t *data, int len);	//change 0x0A to 0x0D
-static void diag_l0_elm_close(struct diag_l0_device **pdl0d);
+static void diag_l0_elm_close(struct diag_l0_device *dl0d);
 
 /*
  * Init must be callable even if no physical interface is
@@ -113,30 +113,27 @@ diag_l0_elm_init(void)
 	return 0;
 }
 
-//diag_l0_elm_close : free pdl0d->dl0 (dev), call diag_tty_close.
+//diag_l0_elm_close : free dl0d->dl0 (dev), call diag_tty_close.
 static void
-diag_l0_elm_close(struct diag_l0_device **pdl0d)
+diag_l0_elm_close(struct diag_l0_device *dl0d)
 {
-	assert(pdl0d != NULL);
-	assert(*pdl0d != NULL);
+	assert(dl0d != NULL);
 	uint8_t buf[]="ATPC\x0D";
-	elm_sendcmd(*pdl0d, buf, 5, 500, NULL);	//close protocol. So clean !
-	if (pdl0d && *pdl0d) {
-		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_elm_device *dev =
-			(struct diag_l0_elm_device *)dl0d->l0_int;
+	elm_sendcmd(dl0d, buf, 5, 500, NULL);	//close protocol. So clean !
 
-		/* If debugging, print to stderr */
-		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "link %p closing\n",
-				FL, (void *) dl0d);
+	struct diag_l0_elm_device *dev =
+		(struct diag_l0_elm_device *)dl0d->l0_int;
 
-		if (dev)
-			free(dev);
+	/* If debugging, print to stderr */
+	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
+		fprintf(stderr, FLFMT "link %p closing\n",
+			FL, (void *) dl0d);
 
-		diag_tty_close(dl0d);
-		diag_l0_del(*pdl0d);
-	}
+	if (dev)
+		free(dev);
+
+	diag_tty_close(dl0d);
+	diag_l0_del(dl0d);
 
 	return;
 }
@@ -334,7 +331,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	if ((rv=diag_tty_setup(dl0d, &sset))) {
 		fprintf(stderr, FLFMT "Error setting 38400;8N1 on %s\n",
 			FL, subinterface);
-		diag_l0_elm_close(&dl0d);
+		diag_l0_elm_close(dl0d);
 		return diag_pseterr(rv);
 	}
 
@@ -359,7 +356,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		if ((rv=diag_tty_setup(dl0d, &sset))) {
 			fprintf(stderr, FLFMT "Error setting 9600;8N1 on %s\n",
 				FL, subinterface);
-			diag_l0_elm_close(&dl0d);
+			diag_l0_elm_close(dl0d);
 			return diag_pseterr(rv);
 		}
 
@@ -367,7 +364,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		rv = elm_purge(dl0d);	//try ATI\r again
 		if (rv !=0) {
 			fprintf(stderr, FLFMT "sending ATI @ 9600 failed. Verify connection to ELM\n", FL);
-			diag_l0_elm_close(&dl0d);
+			diag_l0_elm_close(dl0d);
 			return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 		}
 	}
@@ -383,7 +380,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	rv=elm_sendcmd(dl0d, buf, 4, 2000, rxbuf);
 	if (rv) {
 		fprintf(stderr, FLFMT "elm_open : ATZ failed !\n", FL);
-		diag_l0_elm_close(&dl0d);
+		diag_l0_elm_close(dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
@@ -400,7 +397,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	} else {
 		fprintf(stderr, FLFMT "no valid version string !! Report this !. Got:\n%s\n", FL, rxbuf);
 		//no point in continuing...
-		diag_l0_elm_close(&dl0d);
+		diag_l0_elm_close(dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	// 2) identify valid VS clone devices.
@@ -445,7 +442,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATE0\" failed\n", FL);
 		}
-		diag_l0_elm_close(&dl0d);
+		diag_l0_elm_close(dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
@@ -455,7 +452,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATL0\" failed\n", FL);
 		}
-		diag_l0_elm_close(&dl0d);
+		diag_l0_elm_close(dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
@@ -465,7 +462,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "sending \"ATH1\" failed\n", FL);
 		}
-		diag_l0_elm_close(&dl0d);
+		diag_l0_elm_close(dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
@@ -476,7 +473,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 			if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 				fprintf(stderr, FLFMT "sending \"ATM0\" failed\n", FL);
 			}
-			diag_l0_elm_close(&dl0d);
+			diag_l0_elm_close(dl0d);
 			return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 		}
 	}
@@ -510,7 +507,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 			if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 				fprintf(stderr, FLFMT "sending \"ATTPx\" failed\n", FL);
 			}
-		diag_l0_elm_close(&dl0d);
+		diag_l0_elm_close(dl0d);
 		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
 		}
 	}

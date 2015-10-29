@@ -60,7 +60,7 @@ struct diag_l0
 	 *
 	 * Does not free the struct itself, to allow reuse.
 	 */
-	void	(*diag_l0_close)(struct diag_l0_device **);
+	void	(*diag_l0_close)(struct diag_l0_device *);
 	int	(*diag_l0_initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);
 

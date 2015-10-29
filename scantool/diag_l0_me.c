@@ -108,7 +108,7 @@ struct diag_l0_muleng_device
 #define MULENG_STATE_OPEN		0x20	/* Open and working */
 
 
-static void diag_l0_muleng_close(struct diag_l0_device **pdl0d);
+static void diag_l0_muleng_close(struct diag_l0_device *dl0d);
 
 /*
  * Init must be callable even if no physical interface is
@@ -187,13 +187,13 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 	set.parflag = diag_par_n;
 
 	if ((rv=diag_tty_setup(dl0d, &set))) {
-		diag_l0_muleng_close(&dl0d);
+		diag_l0_muleng_close(dl0d);
 		return diag_pseterr(rv);
 	}
 
 	/* And set DTR high and RTS low to power the device */
 	if ((rv=diag_tty_control(dl0d, 1, 0))) {
-		diag_l0_muleng_close(&dl0d);
+		diag_l0_muleng_close(dl0d);
 		return diag_pseterr(rv);
 	}
 
@@ -203,23 +203,21 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 }
 
 static void
-diag_l0_muleng_close(struct diag_l0_device **pdl0d)
+diag_l0_muleng_close(struct diag_l0_device *dl0d)
 {
-	if (pdl0d && *pdl0d) {
-		struct diag_l0_device *dl0d = *pdl0d;
-		struct diag_l0_muleng_device *dev =
-			(struct diag_l0_muleng_device *)dl0d->l0_int;
+	if (!dl0d) return;
+	struct diag_l0_muleng_device *dev =
+		(struct diag_l0_muleng_device *)dl0d->l0_int;
 
-		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "link %p closing\n",
-				FL, (void *)dl0d);
+	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
+		fprintf(stderr, FLFMT "link %p closing\n",
+			FL, (void *)dl0d);
 
-		if (dev)
-			free(dev);
+	if (dev)
+		free(dev);
 
-		diag_tty_close(dl0d);
-		diag_l0_del(dl0d);
-	}
+	diag_tty_close(dl0d);
+	diag_l0_del(dl0d);
 
 	return;
 }

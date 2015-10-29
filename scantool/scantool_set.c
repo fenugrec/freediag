@@ -261,7 +261,7 @@ static int cmd_set_interface(int argc, char **argv)
 			printf("\nValid ports:\n");
 			if (portlist) {
 				for (i=0; (i < numports); i++) {
-					printf("\t%s\n", portlist[i]);
+					printf("\t%02d : %s\n", i, portlist[i]);
 				}
 				strlist_free(portlist, numports);
 			}
@@ -289,9 +289,10 @@ static int cmd_set_interface(int argc, char **argv)
 		printf("interface: using %s on %s\n",
 			l0_names[set_interface_idx].longname, set_subinterface);
 	}
-	/* update current global dl0d. */
+	/* close + free current global dl0d. */
 	if (test_dl0d) {
-		/* XXX warn before breaking the (possibly) active L0-L2 chain */
+		/* XXX warn before breaking a (possibly) active L0-L2 chain */
+		test_dl0d->dl0->diag_l0_close(test_dl0d);
 		if (test_dl0d->dl0->diag_l0_del) test_dl0d->dl0->diag_l0_del(test_dl0d);
 		test_dl0d=NULL;
 	}
@@ -304,6 +305,7 @@ static int cmd_set_interface(int argc, char **argv)
 			if (strcmp(l0_names[set_interface_idx].longname, l0dev->diag_l0_name) == 0) {
 				/* Found it */
 				if (l0dev->diag_l0_new) test_dl0d = l0dev->diag_l0_new();
+				if (!test_dl0d) printf("Error loading interface %s.\n", l0dev->diag_l0_name);
 				break;
 			}
 		}

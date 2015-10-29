@@ -480,7 +480,7 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 //this should never be called : diag_l0_dt_open never returns a diag_l0_device !
 //returning !
 static void
-diag_l0_dt_close(UNUSED(struct diag_l0_device **pdl0d))
+diag_l0_dt_close(UNUSED(struct diag_l0_device *dl0d))
 {
 	fprintf(stderr, FLFMT "**** we're in diag_l0_dt_close()... how did this happen?\n", FL);
 
