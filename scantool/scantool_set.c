@@ -46,8 +46,6 @@ struct globcfg global_cfg;
 /** WIP : convert the following items **/
 struct diag_l0_device *test_dl0d;	//global dl0d test
 
-unsigned int set_speed;	/* Comms speed */
-
 const char *	set_vehicle;	/* Vehicle */
 const char *	set_ecu;	/* ECU name */
 
@@ -72,7 +70,7 @@ int set_init(void)
 {
 	/* Reset parameters to defaults. */
 
-	set_speed = 10400;	/* Comms speed; ECUs will probably send at 10416 bps (96us per bit) */
+	global_cfg.speed = 10400;	/* Comms speed; ECUs will probably send at 10416 bps (96us per bit) */
 
 	global_cfg.src = 0xf1;	/* Our tester ID */
 	global_cfg.addrtype = 1;	/* Use functional addressing */
@@ -206,7 +204,7 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 		printf("simfile: %s\n", set_simfile);
 	if (set_interface==DUMB)
 		printf("dumbopts: %#02x\n", diag_l0_dumb_getopts());
-	printf("speed:    Connect speed: %d\n", set_speed);
+	printf("speed:    Connect speed: %d\n", global_cfg.speed);
 	cmd_set_display(0,NULL);
 	cmd_set_testerid(0,NULL);
 	cmd_set_addrtype(0,NULL);
@@ -367,10 +365,10 @@ cmd_set_speed(int argc, char **argv)
 {
 	if (argc > 1)
 	{
-		set_speed = htoi(argv[1]);
+		global_cfg.speed = htoi(argv[1]);
 	}
 	else
-		printf("speed: Connect speed: %d\n", set_speed);
+		printf("speed: Connect speed: %d\n", global_cfg.speed);
 
 	return CMD_OK;
 }

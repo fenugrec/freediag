@@ -587,12 +587,12 @@ cmd_watch(int argc, char **argv)
 	}
 	if (rawmode) {
 		d_l2_conn = diag_l2_StartCommunications(dl0d, DIAG_L2_PROT_RAW,
-			0, set_speed,
+			0, global_cfg.speed,
 			global_cfg.tgt,
 			global_cfg.src);
 	} else {
 		d_l2_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
-			DIAG_L2_TYPE_MONINIT, set_speed, global_cfg.tgt, global_cfg.src);
+			DIAG_L2_TYPE_MONINIT, global_cfg.speed, global_cfg.tgt, global_cfg.src);
 	}
 
 	if (d_l2_conn == NULL) {

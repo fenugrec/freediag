@@ -780,7 +780,7 @@ do_l2_9141_start(int destaddr)
 	struct diag_l2_conn *d_conn;
 
 	d_conn = do_l2_common_start(DIAG_L1_ISO9141, DIAG_L2_PROT_ISO9141,
-		DIAG_L2_TYPE_SLOWINIT, set_speed, (uint8_t)destaddr,
+		DIAG_L2_TYPE_SLOWINIT, global_cfg.speed, (uint8_t)destaddr,
 		global_cfg.src);
 
 	if (d_conn == NULL)
@@ -811,7 +811,7 @@ do_l2_14230_start(int init_type)
 	flags |= (init_type & DIAG_L2_TYPE_INITMASK) ;
 
 	d_conn = do_l2_common_start(DIAG_L1_ISO14230, DIAG_L2_PROT_ISO14230,
-		flags, set_speed, global_cfg.tgt, global_cfg.src);
+		flags, global_cfg.speed, global_cfg.tgt, global_cfg.src);
 
 	if (d_conn == NULL)
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -832,7 +832,7 @@ do_l2_j1850_start(int l1_type)
 	struct diag_l2_conn *d_conn;
 
 	d_conn = do_l2_common_start(l1_type, DIAG_L2_PROT_SAEJ1850,
-		flags, set_speed, 0x6a, global_cfg.src);
+		flags, global_cfg.speed, 0x6a, global_cfg.src);
 
 	if (d_conn == NULL)
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -881,7 +881,7 @@ do_l2_generic_start(void)
 	flags |= (global_cfg.initmode & DIAG_L2_TYPE_INITMASK) ;
 
 	d_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
-		flags, set_speed, global_cfg.tgt, global_cfg.src);
+		flags, global_cfg.speed, global_cfg.tgt, global_cfg.src);
 
 	if (d_conn == NULL) {
 	rv=diag_geterr();

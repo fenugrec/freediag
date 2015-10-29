@@ -177,8 +177,6 @@ enum globstate {
 extern enum globstate global_state;
 
 /** Global parameters set by user interface **/
-extern unsigned int 	set_speed ;	/* Comms speed */
-
 extern const char*	set_vehicle;	/* Vehicle name */
 extern const char*	set_ecu;	/* ECU name */
 
@@ -204,6 +202,7 @@ extern struct globcfg {
 	uint8_t	tgt;	/* u8; target address */
 	uint8_t	src;	/* u8: source addr / tester ID */
 	bool	addrtype;	/* Address type, 1 = functional */
+	unsigned int speed;	/* ECU comms speed */
 
 	int	initmode;	/* Type of bus init (ISO9141/14230 only) */
 	int	L1proto;	/* L1 (H/W) Protocol type */
