@@ -90,7 +90,7 @@ static int elm_sendcmd(struct diag_l0_device *dl0d,
 static int elm_purge(struct diag_l0_device *dl0d);
 
 void elm_parse_cr(uint8_t *data, int len);	//change 0x0A to 0x0D
-static int diag_l0_elm_close(struct diag_l0_device **pdl0d);
+static void diag_l0_elm_close(struct diag_l0_device **pdl0d);
 
 /*
  * Init must be callable even if no physical interface is
@@ -114,7 +114,7 @@ diag_l0_elm_init(void)
 }
 
 //diag_l0_elm_close : free pdl0d->dl0 (dev), call diag_tty_close.
-static int
+static void
 diag_l0_elm_close(struct diag_l0_device **pdl0d)
 {
 	assert(pdl0d != NULL);
@@ -138,7 +138,7 @@ diag_l0_elm_close(struct diag_l0_device **pdl0d)
 		diag_l0_del(*pdl0d);
 	}
 
-	return 0;
+	return;
 }
 
 

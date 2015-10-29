@@ -87,7 +87,7 @@ static int diag_l0_br_initialise(struct diag_l0_device *dl0d,
 static int diag_l0_br_writemsg(struct diag_l0_device *dl0d,
 	uint8_t type, const void *dp, size_t txlen);
 
-static int diag_l0_br_close(struct diag_l0_device **pdl0d);
+static void diag_l0_br_close(struct diag_l0_device **pdl0d);
 
 /* Types for writemsg - corresponds to top bit values for the control byte */
 #define BR_WRTYPE_DATA	0x00
@@ -114,7 +114,7 @@ diag_l0_br_init(void)
 	return 0;
 }
 
-static int
+static void
 diag_l0_br_close(struct diag_l0_device **pdl0d)
 {
 	if (pdl0d && *pdl0d) {
@@ -131,7 +131,7 @@ diag_l0_br_close(struct diag_l0_device **pdl0d)
 		diag_l0_del(dl0d);
 	}
 
-	return 0;
+	return;
 }
 
 static int

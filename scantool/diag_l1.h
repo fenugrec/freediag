@@ -202,8 +202,8 @@ int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 //	Alloc + fill + return a new diag_l0_device
 //	struct if succesful.
 struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, int L1protocol);
-//diag_l1_close : calls diag_l0_close as required; always succeeds and returns 0. Close & free everything.
-int diag_l1_close(struct diag_l0_device **);
+//diag_l1_close : calls diag_l0_close as required; always succeeds. Close & free everything XXX.
+void diag_l1_close(struct diag_l0_device **);
 
 /** Send data.
  * @param p4 : inter-byte spacing (ms), if applicable.

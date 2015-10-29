@@ -96,7 +96,7 @@ static unsigned int dumb_flags=0;
 
 extern const struct diag_l0 diag_l0_dumb;
 
-static int diag_l0_dumb_close(struct diag_l0_device **pdl0d);
+static void diag_l0_dumb_close(struct diag_l0_device **pdl0d);
 
 /*
  * Init must be callable even if no physical interface is
@@ -174,7 +174,7 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 }
 
 //diag_l0_dumb_close : free the specified diag_l0_device and close TTY handle.
-static int
+static void
 diag_l0_dumb_close(struct diag_l0_device **pdl0d)
 {
 	if (pdl0d && *pdl0d) {
@@ -193,7 +193,7 @@ diag_l0_dumb_close(struct diag_l0_device **pdl0d)
 		diag_l0_del(dl0d);
 	}
 
-	return 0;
+	return;
 }
 
 /*

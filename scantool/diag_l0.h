@@ -56,7 +56,11 @@ struct diag_l0
 
 	struct diag_l0_device *(*diag_l0_open)(const char *subinterface,
 		int l1_proto);
-	int	(*diag_l0_close)(struct diag_l0_device **);
+	/** Close diag_l0_device
+	 *
+	 * Does not free the struct itself, to allow reuse.
+	 */
+	void	(*diag_l0_close)(struct diag_l0_device **);
 	int	(*diag_l0_initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);
 

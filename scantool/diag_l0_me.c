@@ -108,7 +108,7 @@ struct diag_l0_muleng_device
 #define MULENG_STATE_OPEN		0x20	/* Open and working */
 
 
-static int diag_l0_muleng_close(struct diag_l0_device **pdl0d);
+static void diag_l0_muleng_close(struct diag_l0_device **pdl0d);
 
 /*
  * Init must be callable even if no physical interface is
@@ -202,7 +202,7 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 	return dl0d ;
 }
 
-static int
+static void
 diag_l0_muleng_close(struct diag_l0_device **pdl0d)
 {
 	if (pdl0d && *pdl0d) {
@@ -221,7 +221,7 @@ diag_l0_muleng_close(struct diag_l0_device **pdl0d)
 		diag_l0_del(dl0d);
 	}
 
-	return 0;
+	return;
 }
 
 /*

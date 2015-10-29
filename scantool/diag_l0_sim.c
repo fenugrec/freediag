@@ -114,7 +114,7 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 void *data, size_t len, unsigned int timeout);
 
-static int diag_l0_sim_close(struct diag_l0_device **pdl0d);
+static void diag_l0_sim_close(struct diag_l0_device **pdl0d);
 
 extern void
 diag_l0_sim_setfile(char * fname);
@@ -574,7 +574,7 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 
 
 // Closes the simulator DB file; cleanup after _sim_open()
-static int
+static void
 diag_l0_sim_close(struct diag_l0_device **pdl0d)
 {
 	if (pdl0d && *pdl0d) {
@@ -597,7 +597,7 @@ diag_l0_sim_close(struct diag_l0_device **pdl0d)
 		*pdl0d=NULL;
 	}
 
-	return 0;
+	return;
 }
 
 /* XXX WIP, this should be run after _close() */

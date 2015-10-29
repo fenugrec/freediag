@@ -128,7 +128,7 @@ diag_l1_open(const char *name, const char *subinterface, int l1protocol)
 
 //diag_l1_close : call the ->diag_l0_close member of the
 //specified diag_l0_device.
-int
+void
 diag_l1_close(struct diag_l0_device **ppdl0d)
 {
 	if (diag_l1_debug & DIAG_DEBUG_CLOSE)
@@ -138,7 +138,7 @@ diag_l1_close(struct diag_l0_device **ppdl0d)
 		(*ppdl0d)->dl0->diag_l0_close(ppdl0d);
 		*ppdl0d=NULL;
 	}
-	return 0;
+	return;
 }
 
 /*
