@@ -106,6 +106,7 @@ void set_close(void)
 
 
 /* SET sub menu */
+static int cmd_set_custom(int argc, char **argv);
 static int cmd_set_help(int argc, char **argv);
 //static int cmd_exit(int argc, char **argv);
 static int cmd_set_show(int argc, char **argv);
@@ -123,6 +124,8 @@ static int cmd_set_simfile(int argc, char **argv);
 
 const struct cmd_tbl_entry set_cmd_table[] =
 {
+	{ "", "", "",
+		cmd_set_custom, FLAG_CUSTOM | FLAG_HIDDEN, NULL},
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_set_help, 0, NULL},
 	{ "?", "help [command]", "Gives help for a command",
@@ -185,6 +188,12 @@ const char * const l2_initmodes[] =
 	"5BAUD", "FAST", "CARB", NULL
 };
 
+// handle dynamic options
+static int cmd_set_custom(int argc, char **argv) {
+	printf("argc=%d\n", argc);
+	(void) argv;
+	return CMD_OK;
+}
 
 static int
 cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
@@ -250,7 +259,7 @@ static int cmd_set_interface(int argc, char **argv)
 			printf("\nValid ports:\n");
 			if (portlist) {
 				for (i=0; (i < numports); i++) {
-					printf("\t%02d : %s\n", i, portlist[i]);
+					printf("\t%2d : %s\n", i, portlist[i]);
 				}
 				strlist_free(portlist, numports);
 			}
@@ -277,6 +286,7 @@ static int cmd_set_interface(int argc, char **argv)
 	} else {
 		printf("interface: using %s on %s\n",
 			l0_names[set_interface_idx].longname, set_subinterface);
+		return CMD_OK;
 	}
 	/* close + free current global dl0d. */
 	if (0) {

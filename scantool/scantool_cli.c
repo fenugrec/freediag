@@ -906,6 +906,34 @@ cmd_ecus(UNUSED(int argc), UNUSED(char **argv))
 }
 
 
+/* Find matching cmd_tbl_entry for command *cmd in table *cmdt.
+ * Returns the command or the custom handler if
+ * no match was found and the custom handler exists.
+ */
+static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, const char *cmd) {
+	const struct cmd_tbl_entry *ctp;
+	const struct cmd_tbl_entry *custom_cmd;
+
+	assert(cmdt != NULL);
+
+	ctp = cmdt;
+	custom_cmd = NULL;
+
+	while (ctp->command) {
+		if (ctp->flags & FLAG_CUSTOM) {
+			// found a custom handler; save it
+			custom_cmd = ctp;
+		}
+
+		if (strcasecmp(ctp->command, cmd) == 0) {
+			return ctp;
+		}
+		ctp++;
+	}
+
+	return custom_cmd;
+}
+
 /*
  * CLI, returns results as CMD_xxx (such as CMD_EXIT)
  * If argc is supplied, then this is one shot cli, ie run the command
@@ -919,7 +947,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	char *cmd_argv[CLI_MAXARGS];
 	char *input = NULL;
 	int rv;
-	bool done;
+	bool done;	//when set, sub-command processing is ended and returns to upper level
 	int i;
 
 	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
@@ -930,7 +958,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	current_cmd_level = cmd_tbl;
 #endif
 
-	rv = 0, done = 0;
+	rv = CMD_FAILED, done = 0;
 	snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
 	while (!done) {
 		char *inptr, *s;
@@ -973,61 +1001,63 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 				cmd_argv[i] = argv[i];
 		}
 
-		if (cmd_argc != 0) {
-			ctp = cmd_tbl;
-			while (ctp->command) {
-				if (strcasecmp(ctp->command, cmd_argv[0]) == 0) {
-					if (ctp->sub_cmd_tbl) {
-						log_command(1, cmd_argv);
-						snprintf(promptbuf, PROMPTBUFSIZE,"%s/%s",
-							prompt, ctp->command);
-						/* Sub menu */
-						rv = do_cli(ctp->sub_cmd_tbl,
-							promptbuf,
-							cmd_argc-1,
-							&cmd_argv[1]);
-#ifdef HAVE_LIBREADLINE
-						//went out of the sub-menu, so update the command level for command completion
-						current_cmd_level = cmd_tbl;
-#endif
-						if (rv==CMD_EXIT)	//allow exiting prog. from a submenu
-							done=1;
-						snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
-					} else {
-						/* Found command */
-						log_command(cmd_argc, cmd_argv);
-						rv = ctp->routine(cmd_argc, cmd_argv);
-						switch (rv) {
-							case CMD_USAGE:
-								printf("Usage: %s\n", ctp->usage);
-								break;
-							case CMD_EXIT:
-								rv = CMD_EXIT;
-								done = 1;
-								break;
-							case CMD_UP:
-								rv = CMD_UP;
-								done = 1;
-								break;
-						}
-					}
-					break;
-				}
-				if (!done)
-					ctp++;
-			}
-			if (ctp->command == NULL) {
-				printf("Huh? Try \"help\"\n");
-			}
+		if (cmd_argc == 0) {
+			continue;
+		}
+		ctp = find_cmd(cmd_tbl, cmd_argv[0]);
+
+		if (ctp == NULL) {
+			printf("Unrecognized command. Try \"help\"\n");
 			if (argc) {
-				/* Single command */
+				//was a single command : exit this level of do_cli()
 				done = 1;
 				break;
+			} else {
+				//else : continue getting input
+				continue;
+			}
+
+		}
+
+		if (ctp->sub_cmd_tbl) {
+			/* has sub-commands */
+			log_command(1, cmd_argv);
+			snprintf(promptbuf, PROMPTBUFSIZE,"%s/%s",
+				prompt, ctp->command);
+			/* Sub menu */
+			rv = do_cli(ctp->sub_cmd_tbl,
+				promptbuf,
+				cmd_argc-1,
+				&cmd_argv[1]);
+#ifdef HAVE_LIBREADLINE
+			//went out of the sub-menu, so update the command level for command completion
+			current_cmd_level = cmd_tbl;
+#endif
+			if (rv==CMD_EXIT)	//allow exiting prog. from a submenu
+				done=1;
+			snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
+		} else {
+			// Regular command
+			log_command(cmd_argc, cmd_argv);
+			rv = ctp->routine(cmd_argc, cmd_argv);
+			switch (rv) {
+				case CMD_USAGE:
+					printf("Usage: %s\n", ctp->usage);
+					break;
+				case CMD_EXIT:
+				case CMD_UP:
+					done = 1;
+					break;
 			}
 		}
-		if (done)
+
+		if (argc) {
+			/* Single command */
+			done = 1;
 			break;
+		}
 	}	//while !done
+
 	if (input)
 			free(input);
 	if (rv == CMD_UP)

@@ -52,8 +52,9 @@ typedef struct cmd_tbl_entry
 #define CMD_EXIT	3	/* Exit called */
 #define CMD_UP		4	/* Go up one level in command tree */
 
-#define FLAG_HIDDEN	1	/* Hidden command */
-#define FLAG_FILE_ARG	2 /* Command accepts a filename as an argument*/
+#define FLAG_HIDDEN	(1 << 0)	/* Hidden command */
+#define FLAG_FILE_ARG (1 << 1) /* Command accepts a filename as an argument*/
+#define FLAG_CUSTOM (1 << 2)	/* Command handles other subcommands not in the subtable, max 1 per table */
 
 int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
 void wait_enter(const char *message);
