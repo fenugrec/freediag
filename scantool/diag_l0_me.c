@@ -85,6 +85,7 @@ static const unsigned int me_baud_table[] = { 0, 400000, 200000, 133333, 100000,
 
 struct diag_l0_muleng_device
 {
+	uint8_t dev_addr;	/* ME device address; default is 0x38. TODO : configurable */
 	int protocol;
 	int dev_wakeup;		/* Contains wakeup type for next packet */
 	int dev_state;		/* State for 5 baud startup stuff */
@@ -195,6 +196,7 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 		diag_l0_muleng_close(dl0d);
 		return diag_pseterr(rv);
 	}
+	dev->dev_addr = INTERFACE_ADDRESS;
 
 	diag_tty_iflush(dl0d);	/* Flush unread input */
 
@@ -272,7 +274,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 	unsigned int baud;
 
 	memset(txbuf, 0, sizeof(txbuf));
-	txbuf[0] = INTERFACE_ADDRESS;
+	txbuf[0] = dev->dev_addr;
 
 	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:
@@ -350,7 +352,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		 * response
 		 */
 		memset(txbuf, 0, sizeof(txbuf));
-		txbuf[0] = INTERFACE_ADDRESS;
+		txbuf[0] = dev->dev_addr;
 		txbuf[1] = 0x86;
 		(void)diag_l0_muleng_txcksum(txbuf);
 		rv = diag_l0_muleng_write(dl0d, txbuf, 15);
@@ -512,7 +514,7 @@ const void *data, size_t len)
 	 */
 	memset(txbuf, 0, sizeof(txbuf));
 
-	txbuf[0] = INTERFACE_ADDRESS;
+	txbuf[0] = dev->dev_addr;
 	txbuf[1] = cmd;
 	txbuf[2] = (uint8_t) len;
 	memcpy(&txbuf[3], data, len);
