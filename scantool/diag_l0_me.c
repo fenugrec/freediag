@@ -124,7 +124,7 @@ diag_l0_muleng_init(void)
 	if (diag_l0_muleng_initdone)
 		return 0;
 
-	/* Do required scheduling tweeks */
+	/* Do required scheduling tweaks */
 	diag_os_sched();
 	diag_l0_muleng_initdone = 1;
 
@@ -135,11 +135,10 @@ diag_l0_muleng_init(void)
 static int
 diag_l0_muleng_txcksum(uint8_t *data)
 {
-	int i, cksum;
+	uint8_t cksum;
 
-	for (i=1, cksum = 0; i < 14; i++)
-		cksum += data[i];
-	data[14] = (uint8_t)cksum;
+	cksum = diag_cks1(data, 14);
+	data[14] = cksum;
 	return cksum;
 }
 
@@ -419,11 +418,9 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
  */
 
 static int
-diag_l0_muleng_setspeed(struct diag_l0_device *dl0d,
-		const struct diag_serial_settings *pset)
+diag_l0_muleng_setspeed(UNUSED(struct diag_l0_device *dl0d),
+		UNUSED(const struct diag_serial_settings *pset))
 {
-	struct diag_serial_settings set;
-
 	fprintf(stderr, FLFMT "Warning: attempted to override com speed (%d)! Report this !\n", FL,pset->speed);
 	return 0;
 }
