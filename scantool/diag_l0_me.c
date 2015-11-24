@@ -415,10 +415,7 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 }
 
 /*
- * Set speed/parity etc
- *
- * If called by the user then we ignore what he says and use
- * 19200, 8, 1, none
+ * Set speed/parity etc : ignored.
  */
 
 static int
@@ -429,13 +426,6 @@ diag_l0_muleng_setspeed(struct diag_l0_device *dl0d,
 
 	fprintf(stderr, FLFMT "Warning: attempted to override com speed (%d)! Report this !\n", FL,pset->speed);
 	return 0;
-	// I see no need to force another diag_tty_setup
-	set.speed = 19200;
-	set.databits = diag_databits_8;
-	set.stopbits = diag_stopbits_1;
-	set.parflag = diag_par_n;
-
-	return diag_tty_setup(dl0d, &set);
 }
 
 /*
@@ -750,7 +740,7 @@ diag_l0_muleng_getflags(struct diag_l0_device *dl0d)
 
 	dev = (struct diag_l0_muleng_device *)dl0d->l0_int;
 
-	flags = 0;
+	flags = DIAG_L1_AUTOSPEED;
 	switch (dev->protocol)
 	{
 	case DIAG_L1_J1850_VPW:
