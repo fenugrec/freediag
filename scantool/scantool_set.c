@@ -195,7 +195,7 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 		printf("simfile: %s\n", set_simfile);
 	if (set_interface==DUMB)
 		printf("dumbopts: %#02x\n", diag_l0_dumb_getopts());
-	printf("speed:    Connect speed: %d\n", global_cfg.speed);
+	cmd_set_speed(0, NULL);
 	cmd_set_display(0,NULL);
 	cmd_set_testerid(0,NULL);
 	cmd_set_addrtype(0,NULL);
@@ -354,12 +354,11 @@ cmd_set_display(int argc, char **argv)
 static int
 cmd_set_speed(int argc, char **argv)
 {
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		global_cfg.speed = htoi(argv[1]);
-	}
-	else
+	} else {
 		printf("speed: Connect speed: %d\n", global_cfg.speed);
+	}
 
 	return CMD_OK;
 }
