@@ -257,7 +257,6 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 	// walk to the end of the list (last valid item).
 	LL_FOREACH(*resp_pp, resp_p) {
 		resp_count++;
-		if (resp_p->next == NULL) break;
 	}
 
 	// go to the beginning of the DB file.

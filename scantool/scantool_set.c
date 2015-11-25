@@ -36,6 +36,7 @@
 
 #include "scantool.h"
 #include "scantool_cli.h"
+#include "utlist.h"
 
 /** Global parameters **/
 /* struct global_cfg contains all global parameters */
@@ -205,8 +206,8 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 
 	/* Parse L0-specific config items */
 	if (test_dl0d && test_dl0d->dl0->diag_l0_getcfg) {
-		struct cfgi *cfgp= test_dl0d->dl0->diag_l0_getcfg(test_dl0d);
-		for (;cfgp; cfgp = cfgp->next) {
+		struct cfgi *cfgp;
+		LL_FOREACH(test_dl0d->dl0->diag_l0_getcfg(test_dl0d), cfgp) {
 			char *cs = diag_cfg_getstr(cfgp);
 			if (cfgp->shortname == NULL || cs==NULL) continue;
 

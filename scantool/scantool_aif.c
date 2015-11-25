@@ -41,6 +41,7 @@
 #include "scantool_cli.h"
 #include "scantool_aif.h"
 #include "freediag_aif.h"
+#include "utlist.h"
 
 static void do_aif_command (void) ;
 static int debugging = 0 ;
@@ -139,9 +140,8 @@ static void aif_monitor (UNUSED(void *data))
 	{
 		/* Currently monitored DTCs: */
 
-		for (i = 0 ; i < ecu_count ; i++)
-			for (msg = ecu_info[i].rxmsg ; msg ; msg = msg->next)
-			{
+		for (i = 0 ; i < ecu_count ; i++) {
+			LL_FOREACH(ecu_info[i].rxmsg, msg) {
 				int i, j ;
 
 				for (i = 0, j = 1 ; i < 3 ; i++, j += 2)
@@ -162,6 +162,7 @@ static void aif_monitor (UNUSED(void *data))
 					fprintf(stderr, FLFMT "decoded DTC : %s\n", FL, buf);
 				}
 			}
+		}
 	}	//if DIAG_ERR_TIMEOUT
 	}	//while 1
 

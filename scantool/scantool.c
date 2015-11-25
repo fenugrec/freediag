@@ -319,7 +319,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 					/* no Test support */
 					return;
 				}
-				for (tmsg = msg; tmsg; tmsg=tmsg->next) {
+				LL_FOREACH(msg, tmsg) {
 					int val, lim;
 					data = tmsg->data;
 
@@ -443,9 +443,9 @@ void
 j1979_watch_rcv(void *handle, struct diag_msg *msg)
 {
 	struct diag_msg *tmsg;
-	int i;
+	int i=0;
 
-	for ( tmsg = msg , i = 0; tmsg; tmsg=tmsg->next, i++ ) {
+	LL_FOREACH(msg, tmsg) {
 		print_msg_header(stderr, tmsg, 1, i);
 
 		if (handle != NULL) {
@@ -457,6 +457,7 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 			diag_data_dump(stderr, tmsg->data, tmsg->len);
 			fprintf(stderr, "\n");
 		}
+		i++;
 	}
 }
 
@@ -1128,7 +1129,7 @@ do_j1979_cms()
 	fprintf(stderr, "Currently monitored DTCs: ");
 
 	for (i=0; i<ecu_count;i++) {
-		for (msg=ecu_info[i].rxmsg; msg; msg=msg->next) {
+		LL_FOREACH(ecu_info[i].rxmsg, msg) {
 			print_dtcs(msg->data, msg->len);
 		}
 
@@ -1388,7 +1389,6 @@ do_j1979_getdtcs()
 {
 	int rv;
 	struct diag_l3_conn *d_conn;
-	struct diag_msg *msg;
 	ecu_data_t *ep;
 	unsigned int i;
 	int num_dtcs, readiness, mil;
@@ -1452,8 +1452,9 @@ do_j1979_getdtcs()
 		/* Go thru received msgs looking for DTC responses */
 		for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 			if ((ep->rxmsg) && (ep->rxmsg->data[0] == 0x43)) {
-				for (msg=ep->rxmsg; msg; msg=msg->next) {
-					print_dtcs(ep->rxmsg->data, ep->rxmsg->len);
+				struct diag_msg *msg;
+				LL_FOREACH(ep->rxmsg, msg) {
+					print_dtcs(msg->data, msg->len);
 				}
 				fprintf(stderr, "\n");
 			}
