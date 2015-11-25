@@ -82,6 +82,7 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 #include "scantool_aif.h"
+#include "utlist.h"
 
 
 //ugly, global data. Could be struct-ed together eventually
@@ -161,15 +162,16 @@ static void
 print_msg(FILE *fp, struct diag_msg *msg, bool timestamp)
 {
 	struct diag_msg *tmsg;
-	int i;
+	int i=0;
 
-	for (tmsg = msg, i = 0; tmsg; tmsg = tmsg->next, i++) {
+	LL_FOREACH(msg, tmsg) {
 		print_msg_header(fp, tmsg, timestamp, i);
 		diag_data_dump(fp, tmsg->data, tmsg->len);
 		if (tmsg->fmt & DIAG_FMT_BADCS)
 			fprintf(fp, " [BAD CKS]\n");
 		else
 			fprintf(fp, "\n");
+		i++;
 	}
 }
 
@@ -195,8 +197,7 @@ void
 j1979_data_rcv(void *handle, struct diag_msg *msg)
 {
 	assert(msg != NULL);
-	int len = msg->len;
-	uint8_t *data = msg->data;
+	uint8_t *data;
 	struct diag_msg *tmsg;
 	unsigned int i;
 	int ihandle;
@@ -222,9 +223,8 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 
 	if (diag_cli_debug & DIAG_DEBUG_DATA) {
 		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src=0x%X, dest=0x%X\n",
-			(void *)handle, len, msg->src, msg->dest);
+			(void *)handle, msg->len, msg->src, msg->dest);
 		print_msg(stdout, msg, 0);
-		data = msg->data;
 	}
 
 	/* Deal with the diag type responses (send/recv/watch) */
@@ -258,12 +258,13 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	 * We may get more than one msg here, as more than one
 	 * ECU may respond.
 	 */
-	for (tmsg = msg; tmsg != NULL; tmsg=tmsg->next) {
+	LL_FOREACH(msg, tmsg) {
 		uint8_t src = tmsg->src;
+		unsigned int ecu_idx;
 		struct diag_msg *rmsg;
-		int found;
+		bool found=0;
 
-		for (i=0, ep=ecu_info, found=0; i<MAX_ECU;i++, ep++) {
+		for (ecu_idx=0, ep=ecu_info; ecu_idx<MAX_ECU; ecu_idx++, ep++) {
 			if (ep->valid) {
 				if (ep->ecu_addr == src) {
 					found = 1;
@@ -277,9 +278,9 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 				break;
 			}
 		}
-		if (found == 0) {
+		if (!found) {
 			fprintf(stderr, "ERROR: Too many ECUs responded\n");
-			fprintf(stderr, "ERROR: Info from ECU addr 0x%X ignored\n", src);
+			fprintf(stderr, "ERROR: Info from ECU addr 0x%02X ignored\n", src);
 			return;
 		}
 
@@ -289,17 +290,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		rmsg = diag_dupsinglemsg(tmsg);
 		if (rmsg == NULL)
 			return;
-		if (ep->rxmsg) {
-			struct diag_msg *xmsg;
-			for (xmsg= ep->rxmsg; xmsg != NULL; xmsg = xmsg->next) {
-				if (xmsg->next == NULL) {
-					xmsg->next = rmsg;
-					break;
-				}
-			}
-		} else {
-			ep->rxmsg = rmsg;
-		}
+		LL_CONCAT(ep->rxmsg, rmsg);
 
 		/*
 		 * Deal with readiness tests, ncms and O2 sensor tests
@@ -328,10 +319,9 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 					/* no Test support */
 					return;
 				}
-				for (tmsg = msg , i = 0; tmsg; tmsg=tmsg->next, i++) {
+				for (tmsg = msg; tmsg; tmsg=tmsg->next) {
 					int val, lim;
 					data = tmsg->data;
-					len = tmsg->len;
 
 					val = (data[3]*255) + data[4];
 					lim = (data[5]*255) + data[6];
@@ -384,7 +374,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 				return;
 			case RQST_HANDLE_O2S:
 				if (ecu_count>1)
-					fprintf(stderr, "ECU %d ", i);
+					fprintf(stderr, "ECU %d ", ecu_idx);
 
 				/* O2 Sensor test results */
 				if (msg->data[0] != 0x45) {

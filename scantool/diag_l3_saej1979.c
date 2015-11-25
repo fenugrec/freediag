@@ -34,6 +34,7 @@
 #include "diag_l2.h"
 #include "diag_l3.h"
 #include "diag_l3_saej1979.h"
+#include "utlist.h"
 
 
 /*
@@ -327,7 +328,6 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 
 			/* Bad packet, or full packet, need to tell user */
 			uint8_t *data = NULL;
-			struct diag_msg *lmsg;
 
 			if (diag_calloc(&msg, 1)) {
 				/* Stuffed, no memory, cant do anything */
@@ -366,15 +366,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			msg->rxtime = diag_os_chronoms(0);
 
 			/* Add it to the list */
-			if (d_l3_conn->msg == NULL) {
-				d_l3_conn->msg = msg;
-			} else {
-				lmsg = d_l3_conn->msg;
-				while (lmsg->next != NULL) {
-					lmsg = lmsg->next;
-				}
-				lmsg->next = msg;
-			}
+			LL_CONCAT(d_l3_conn->msg, msg);
 			free(data);
 			free(msg);	//we don't use diag_freemsg() since we alloc'ed it manually
 			if (badpacket) {
