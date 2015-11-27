@@ -602,7 +602,7 @@ UNUSED(const char *subinterface),
 void *data, size_t len, unsigned int timeout)
 {
 	ssize_t xferd;
-	int i, rv;
+	int rv;
 	uint8_t *pdata = (uint8_t *)data;
 
 	struct diag_l0_muleng_device *dev;
@@ -718,26 +718,20 @@ void *data, size_t len, unsigned int timeout)
 	{
 		fprintf(stderr,
 			FLFMT "link %p received from ME: ", FL, (void *)dl0d);
-		for (i=0; i < dev->dev_rxlen; i++)
-				fprintf(stderr, "0x%X ",
-					dev->dev_rxbuf[i] & 0xff);
+		diag_data_dump(stderr, dev->dev_rxbuf, dev->dev_rxlen);
 		fprintf(stderr, "\n");
 	}
 	/*
 	 * Check the checksum, 2nd byte onward
 	 */
-	for (i=1, xferd = 0; i < 13; i++)
-		 xferd += dev->dev_rxbuf[i];
+	xferd = diag_cks1(&dev->dev_rxbuf[1], 13);
 	if ((xferd & 0xff) != dev->dev_rxbuf[13])
 	{
 /* XXX, we should deal with this properly rather than just printing a message */
 		fprintf(stderr,"Got bad checksum from ME device 0x%X != 0x%X\n",
 			(int) xferd & 0xff, dev->dev_rxbuf[13]);
-		fprintf(stderr,"PC Serial port probably out of spec.\n");
-		fprintf(stderr,"RX Data: ");
-		for (i=0; i < dev->dev_rxlen; i++)
-				fprintf(stderr, "0x%X ",
-					dev->dev_rxbuf[i] & 0xff);
+		fprintf(stderr,"PC Serial port probably out of spec.\nRX Data: ");
+		diag_data_dump(stderr, dev->dev_rxbuf, dev->dev_rxlen);
 		fprintf(stderr, "\n");
 	}
 
