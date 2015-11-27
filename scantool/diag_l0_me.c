@@ -83,6 +83,65 @@ static const unsigned int me_baud_table[] = { 0, 400000, 200000, 133333, 100000,
 	/* 240 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
 	/* 250 */ 1600, 1593, 1587, 1581, 1574, 1568, } ;
 
+/* interface error codes */
+static const struct {
+	int code;
+	const char *str;
+} me_errs[] = {
+	{0x00, "Request Message command not implemented in this interface."},
+	{0x01, "Request Message command is not used."},
+	{0x02, "Request Message sum check error."},
+	{0x03, "ISO or KWP - No sync or incorrect sync."},
+	{0x04, "Incorrect ISO inverted address received."},
+	{0x05, "No ISO response to the request message."},
+	{0x06, "J1850 message received was not a diagnostic message."},
+	{0x07, "No J1850 response to the request message."},
+	{0x08, "ISO checksum error detected in response message."},
+	{0x09, "J1850 CRC error detected in response message."},
+	{0x0A, "Unused"},
+	{0x0B, "KWP baud rate too slow"},
+	{0x0C, "No KWP response to the request message."},
+	{0x0D, "KWP incorrect inverted address returned by car"},
+	{0x0E, "PWM pulse width is too long"},
+	{0x0F, "Incorrect variable response counter"},
+	{0x10, "ISO not enabled"},
+	{0x11, "J1850 VPW not enabled"},
+	{0x12, "J1850 PWM not enabled"},
+	{0x13, "KWP not enabled"},
+	{0x14, "VW Pass-through mode not enabled"},
+	{0x15, "Repeated arbitration errors"},
+	{0x16, "CAN did not respond to request"},
+	{0x17, "CAN core command had a bad command count"},
+	{0x20, "CAN destination address byte error"},
+	{0x21, "CAN command byte error"},
+	{0x22, "CAN byte count byte error"},
+	{0x23, "CAN sum check byte error"},
+	{0x24, "CAN RS232 receive message - 100ms timeout error"},
+	{0x25, "CAN Configuration command address error"},
+	{0x26, "CAN stop bit error"},
+	{0x27, "CAN transmit message - 100ms timeout error"},
+	{0x28, "CAN transmit error"},
+	{0x29, "CAN transmit lost arbitration"},
+	{0x2A, "CAN receive message - 100ms timeout error"},
+	{0x2B, "CAN Mode Request - 100ms timeout error"},
+	{0x2C, "CAN invalid CAN byte count error"},
+	{0xF1, "Unimplemented USB command attempted"},
+	{0xF2, "Legacy (Non CAN) bus hardware did not respond to USB request"},
+	{0xF3, "CAN hardware did not respond to USB request"}
+};
+
+static const char *me_geterr(const int err)
+{
+	unsigned i;
+	for (i = 0; i < ARRAY_SIZE(me_errs); i++) {
+		if (me_errs[i].code == err) {
+			return me_errs[i].str;
+		}
+	}
+
+	return "[undefined]";
+}
+
 struct diag_l0_muleng_device
 {
 	uint8_t dev_addr;	/* ME device address; default is 0x38. TODO : configurable */
@@ -693,8 +752,8 @@ void *data, size_t len, unsigned int timeout)
 
 		if (diag_l0_debug & DIAG_DEBUG_READ)
 			fprintf(stderr,
-				FLFMT "link %p ME returns err 0x%X : s/w v 0x%X i/f cap. 0x%X\n",
-				FL, (void *)dl0d, dev->dev_rxbuf[3],
+				FLFMT "link %p ME returns err 0x%X : %s; s/w v 0x%X i/f cap. 0x%X\n",
+				FL, (void *)dl0d, dev->dev_rxbuf[3], me_geterr(dev->dev_rxbuf[3]),
 				dev->dev_rxbuf[2], dev->dev_rxbuf[4]);
 
 		switch (dev->dev_rxbuf[3])
@@ -706,6 +765,11 @@ void *data, size_t len, unsigned int timeout)
 			break;
 
 		default:
+			if ( !(diag_l0_debug & DIAG_DEBUG_READ)) {
+				//don't print the error twice
+				fprintf(stderr, FLFMT "ME : error 0x%0X, %s\n.", FL,
+					dev->dev_rxbuf[3], me_geterr(dev->dev_rxbuf[3]) );
+			}
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		/* NOTREACHED */
