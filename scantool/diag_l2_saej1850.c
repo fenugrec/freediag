@@ -219,6 +219,7 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  *
  * Will sleep until a complete set of responses has been received, or fail
  * with a timeout error
+ * Ret 0 if ok
  */
 static int
 diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
@@ -324,7 +325,7 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	struct diag_msg	*tmsg;
 
 	rv = diag_l2_proto_j1850_int_recv(d_l2_conn, timeout);
-	if (rv <= 0)	/* Failed */
+	if (rv < 0)	/* Failed */
 		return rv;
 
 	/*
