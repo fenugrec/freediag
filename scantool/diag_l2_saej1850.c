@@ -240,8 +240,8 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 	if (l1flags & DIAG_L1_DOESL2FRAME)
 	{
 		tout = timeout;
-		if (tout < 100)	/* Extend timeouts for clever interfaces */
-			tout = 100;
+		if (tout < SMART_TIMEOUT)	/* Extend timeouts for clever interfaces */
+			tout += SMART_TIMEOUT;
 
 		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
 				&dp->rxbuf[dp->rxoffset],
