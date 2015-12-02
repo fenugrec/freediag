@@ -585,7 +585,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 				return diag_iseterr(rv);
 			}
 			fprintf(stderr, "\tOK.\n");
-			return rv;
+			return DIAG_ERR_TIMEOUT;
 
 		}
 	}
