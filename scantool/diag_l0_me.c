@@ -31,11 +31,12 @@
 
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "diag.h"
 #include "diag_err.h"
-#include "diag_iso14230.h"
+#include "diag_iso14230.h"	//for TesterPresent SID
 #include "diag_os.h"
 #include "diag_tty.h"
 #include "diag_l0.h"
@@ -82,6 +83,14 @@ static const unsigned int me_baud_table[] = { 0, 400000, 200000, 133333, 100000,
 	/* 230 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
 	/* 240 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
 	/* 250 */ 1600, 1593, 1587, 1581, 1574, 1568, } ;
+
+/* Response message types */
+#define ME_RESP_14230 0x01	// Message from ISO14230 (KWP)
+#define ME_RESP_ERROR 0x80	// Error occurred (See Error Response Message Below)
+#define ME_RESP_ISO 0x81 // Message from ISO-9141-2 or ISO-14230 (KWP)
+#define ME_RESP_VPW 0x82 // Message from J1850 VPW
+#define ME_RESP_PWM 0x84 // Message from J1850 PWM
+#define ME_RESP_CAN 0x88 // Message from CAN
 
 /* interface error codes */
 static const struct {
@@ -152,8 +161,9 @@ struct diag_l0_muleng_device
 	uint8_t dev_kb2;
 
 	uint8_t	dev_rxbuf[14];	/* Receive buffer */
-	int		dev_rxlen;	/* Length of data in buffer */
-	int		dev_rdoffset;	/* Offset to read from to */
+	unsigned	dev_rxlen;	/* Length of data in buffer (complete response from ME) */
+	unsigned	resp_len;	/* length of actual bus message, including its checksum (but not the ME response checksum) */
+	unsigned	dev_rdoffset;	/* Offset to read from to */
 };
 
 #define MULENG_STATE_CLOSED		0x00
@@ -200,6 +210,86 @@ diag_l0_muleng_txcksum(uint8_t *data)
 	cksum = diag_cks1(data, 14);
 	data[14] = cksum;
 	return cksum;
+}
+
+/* Copied from diag_l2_proto_j1850_crc() in diag_l2_saej1850.c; I don't want L0 code to
+ * rely on L2 functions so there is some amount of code duplication. According to comments
+ * this algo is from  B. Roadman's website.
+ */
+static uint8_t
+j1850_crc(uint8_t *msg_buf, int nbytes)
+{
+	uint8_t crc_reg=0xff,poly,i,j;
+	uint8_t *byte_point;
+	uint8_t bit_point;
+
+	for (i=0, byte_point=msg_buf; i<nbytes; ++i, ++byte_point)
+	{
+		for (j=0, bit_point=0x80 ; j<8; ++j, bit_point>>=1)
+		{
+			if (bit_point & *byte_point)	// case for new bit = 1
+			{
+				if (crc_reg & 0x80)
+					poly=1;	// define the polynomial
+				else
+					poly=0x1c;
+				crc_reg= ( (crc_reg << 1) | 1) ^ poly;
+			}
+			else		// case for new bit = 0
+			{
+				poly=0;
+				if (crc_reg & 0x80)
+					poly=0x1d;
+				crc_reg= (crc_reg << 1) ^ poly;
+			}
+		}
+	}
+	return ~crc_reg;	// Return CRC
+}
+
+/* parse an ME response buffer, and return the actual payload length (including checksum / CRC byte) by
+ * trying to find the longest message with a valid checksum or CRC.
+ * Limitations :
+ * 1- ISO payloads that really have 0 as their checksum will be reported as maximum-length, i.e.
+ * the checksum for [0xFF 0x01] is 0; but the function will report the actual message is
+ * [FF 01 00 .... 00] which also has a valid checksum.
+ *
+ * 2- J1850 CRC is less problematic; not sure if there can be collisions such as
+ * [X1 ... Xn] where Xn is the valid CRC when calculated on X1..X(n-1) , while at the same time respecting
+ * [X1 ... Xn Z1 Z2 .. Zn] where Z1..Zn are 0, and that the CRC of X1...Z(n-1) is 0x00 !?
+ */
+static unsigned
+me_guess_rxlen(uint8_t *buf) {
+	/* Response format :
+	 * buf[1]=type; buf[2]: payload, padded with 0 bytes at the end; buf[13] : ME checksum (ignored here)
+	 */
+	unsigned len;
+
+	for (len=10; len > 0; len--) {
+		uint8_t msg_type = buf[1];
+		// verify if checksum/CRC works with this length:
+
+		switch (msg_type) {
+		case ME_RESP_PWM:
+		case ME_RESP_VPW:
+			if (j1850_crc(&buf[2], len) == buf[2 + len]) return len+1;
+			break;
+		case ME_RESP_14230:
+		case ME_RESP_ISO:
+			if (diag_cks1(&buf[2], len) == buf[2 + len]) return len+1;
+			break;
+		default:
+			break;
+		}
+
+		// was the last byte 0, therefore possibly just padding ?
+		if (buf[2+len] != 0) {
+			//not padding : can't continue.
+			break;
+		}
+	}
+	// no properly framed message found... let L2/L3 pick up the pieces
+	return 11;
 }
 
 /*
@@ -403,7 +493,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		if ((rv = diag_tty_read(dl0d, rxbuf, 14, 200)) < 0)
 			return diag_iseterr(rv);
 
-		if (rxbuf[1] == 0x80)
+		if (rxbuf[1] == ME_RESP_ERROR)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 
 		/*
@@ -421,7 +511,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		if ((rv = diag_tty_read(dl0d, rxbuf, 14, 200)) < 0)
 			return diag_iseterr(rv);
 
-		if (rxbuf[1] == 0x80)	/* Error */
+		if (rxbuf[1] == ME_RESP_ERROR)	/* Error */
 			return diag_iseterr(rv);
 		/*
 		 * Store the keybytes
@@ -594,6 +684,10 @@ const void *data, size_t len)
  * Messages received from the ME device are 14 bytes long, this will
  * always be called with enough "len" to receive the max 11 byte message
  * (there are 2 header and 1 checksum byte)
+
+ * Since messages are padded up to 11 bytes, this also attempts to guess
+ * the response length by
+ * finding the last non-padding byte that computes as a valid CRC / checksum.
  */
 
 static int
@@ -619,7 +713,7 @@ void *data, size_t len, unsigned int timeout)
 	/*
 	 * Deal with 5 Baud init states where first two bytes read by
 	 * user are the keybytes received from the interface, and where
-	 * we are using the interface in pass thru mode on ISO09141 protocols
+	 * we are using the interface in pass thru mode on ISO-9141 protocols
 	 */
 	switch (dev->dev_state)
 	{
@@ -675,18 +769,15 @@ void *data, size_t len, unsigned int timeout)
 		 * others are header from the ME device
 		 *
 		 * The amount of data remaining to be sent to user is
-		 * as below, -1 because the checksum is at the end
+		 * as below:
 		 */
-		size_t bufbytes = dev->dev_rxlen - dev->dev_rdoffset - 1;
+		size_t bufbytes = dev->resp_len - (dev->dev_rdoffset - 2);
 
-		if (bufbytes <= len)
-		{
+		if (bufbytes <= len) {
 			memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], bufbytes);
-			dev->dev_rxlen = dev->dev_rdoffset = 0;
+			dev->dev_rxlen = dev->dev_rdoffset = dev->resp_len = 0;
 			return (int) bufbytes;
-		}
-		else
-		{
+		} else {
 			memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], len);
 			dev->dev_rdoffset += len;
 			return (int) len;
@@ -695,38 +786,36 @@ void *data, size_t len, unsigned int timeout)
 
 	/*
 	 * There's either no data waiting, or only a partial read in the
-	 * buffer, read some more
+	 * buffer (incomplete ME frame), read some more.
 	 */
 
-	if (dev->dev_rxlen < 14) {
-		rv = diag_tty_read(dl0d, &dev->dev_rxbuf[dev->dev_rxlen],
-			(size_t)(14 - dev->dev_rxlen), timeout);
-		if (rv == DIAG_ERR_TIMEOUT) {
-			return DIAG_ERR_TIMEOUT;
-		}
-
-		if (rv <= 0) {
-			fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
-			return diag_iseterr(DIAG_ERR_GENERAL);
-		}
-
-		dev->dev_rxlen += rv;
+	rv = diag_tty_read(dl0d, &dev->dev_rxbuf[dev->dev_rxlen],
+		(size_t)(14 - dev->dev_rxlen), timeout);
+	if (rv == DIAG_ERR_TIMEOUT) {
+		return DIAG_ERR_TIMEOUT;
 	}
 
+	if (rv <= 0) {
+		fprintf(stderr, FLFMT "read returned EOF !!\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	dev->dev_rxlen += rv;
+	if (dev->dev_rxlen != 14) return DIAG_ERR_TIMEOUT;
+
 	/* OK, got whole message */
-	if (diag_l0_debug & DIAG_DEBUG_READ)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr,
 			FLFMT "link %p received from ME: ", FL, (void *)dl0d);
 		diag_data_dump(stderr, dev->dev_rxbuf, dev->dev_rxlen);
 		fprintf(stderr, "\n");
 	}
-	/*
-	 * Check the checksum, 2nd byte onward
-	 */
+
+	/* Verify ME response checksum, 2nd byte onward */
+
 	xferd = diag_cks1(&dev->dev_rxbuf[1], 12);
-	if ((xferd & 0xff) != dev->dev_rxbuf[13])
-	{
+	if ((xferd & 0xff) != dev->dev_rxbuf[13]) 	{
+
 /* XXX, we should deal with this properly rather than just printing a message */
 		fprintf(stderr,"Got bad checksum from ME device 0x%X != 0x%X\n",
 			(int) xferd & 0xff, dev->dev_rxbuf[13]);
@@ -739,10 +828,11 @@ void *data, size_t len, unsigned int timeout)
 	/*
 	 * Check the type
 	 */
-	if (dev->dev_rxbuf[1] == 0x80)
+	if (dev->dev_rxbuf[1] == ME_RESP_ERROR)
 	{
 		/* It's an error message not a data frame */
 		dev->dev_rxlen = 0;
+		dev->resp_len = 0;
 
 		if (diag_l0_debug & DIAG_DEBUG_READ)
 			fprintf(stderr,
@@ -769,19 +859,21 @@ void *data, size_t len, unsigned int timeout)
 		/* NOTREACHED */
 	}
 
+	/* get actual bus message length without padding 0x00 bytes */
+	dev->resp_len = me_guess_rxlen(dev->dev_rxbuf);
+
 	dev->dev_rdoffset = 2;		/* Skip the ME header */
 
 	/* Copy data to user */
-	xferd = (len>11) ? 11 : xferd;
-	xferd = (xferd>(13-dev->dev_rdoffset)) ? 13-dev->dev_rdoffset : xferd;
+	xferd = MIN(len, dev->resp_len);
 
 	memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], (size_t)xferd);
 	dev->dev_rdoffset += xferd;
-	if (dev->dev_rdoffset == 13)
-	{
+	if (dev->dev_rdoffset == dev->resp_len +2) {
 		/* End of message, reset pointers */
 		dev->dev_rxlen = 0;
 		dev->dev_rdoffset = 0;
+		dev->resp_len = 0;
 	}
 	return xferd;
 }
