@@ -724,7 +724,7 @@ void *data, size_t len, unsigned int timeout)
 	/*
 	 * Check the checksum, 2nd byte onward
 	 */
-	xferd = diag_cks1(&dev->dev_rxbuf[1], 13);
+	xferd = diag_cks1(&dev->dev_rxbuf[1], 12);
 	if ((xferd & 0xff) != dev->dev_rxbuf[13])
 	{
 /* XXX, we should deal with this properly rather than just printing a message */
