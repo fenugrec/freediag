@@ -278,14 +278,14 @@ static int cmd_set_interface(int argc, char **argv)
 			l0_names[set_interface_idx].longname, set_subinterface);
 	}
 	/* close + free current global dl0d. */
-	if (test_dl0d) {
+	if (0) {
 		/* XXX warn before breaking a (possibly) active L0-L2 chain */
 		test_dl0d->dl0->diag_l0_close(test_dl0d);
 		if (test_dl0d->dl0->diag_l0_del) test_dl0d->dl0->diag_l0_del(test_dl0d);
 		test_dl0d=NULL;
 	}
 
-	if (1) {
+	if (0) {
 		const struct diag_l0 *l0dev;
 		int i;
 		for (i=0; l0dev_list[i]; i++) {
