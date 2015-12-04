@@ -207,7 +207,7 @@ diag_l0_muleng_txcksum(uint8_t *data)
 {
 	uint8_t cksum;
 
-	cksum = diag_cks1(data, 14);
+	cksum = diag_cks1(&data[1], 12);
 	data[14] = cksum;
 	return cksum;
 }
