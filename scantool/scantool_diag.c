@@ -107,6 +107,19 @@ cmd_diag_addl3(int argc, char **argv)
 	const char *l3_protos[] = { "SAEJ1979", "VAG", "ISO14230", NULL };
 	const char *proto;
 
+	if (argc != 2) {
+		return CMD_USAGE;
+	}
+
+	if (strcmp(argv[1], "?") == 0) {
+		printf("Valid protocols are: ");
+		for (i=0; l3_protos[i] != NULL; i++) {
+			printf("%s ", l3_protos[i]);
+		}
+		printf("\n");
+		return CMD_OK;
+	}
+
 	/* Add a L3 stack above the open L2 */
 	if (global_state < STATE_CONNECTED) {
 		printf("Not connected to ECU\n");
@@ -121,19 +134,6 @@ cmd_diag_addl3(int argc, char **argv)
 	if (global_l3_conn != NULL) {
 		fprintf(stderr, FLFMT "Oops : there's a global L3 conn with an invalid global_state ! Report this !\n", FL);
 		return CMD_FAILED;
-	}
-
-	if (argc != 2) {
-		return CMD_USAGE;
-	}
-
-	if (strcmp(argv[1], "?") == 0) {
-		printf("Valid protocols are: ");
-		for (i=0; l3_protos[i] != NULL; i++) {
-			printf("%s ", l3_protos[i]);
-		}
-		printf("\n");
-		return CMD_OK;
 	}
 
 	//match specified L3proto with available protos
