@@ -265,7 +265,7 @@ static const struct {
 	{ DIAG_ERR_NOMEM, "Malloc/Calloc/Strdup/etc failed - ran out of memory " },
 
 	{ DIAG_ERR_INIT_NOTSUPP, "Initbus type not supported by H/W" },
-	{ DIAG_ERR_PROTO_NOTSUPP, "Initbus type not supported by H/W" },
+	{ DIAG_ERR_PROTO_NOTSUPP, "Protocol not supported by H/W" },
 	{ DIAG_ERR_IOCTL_NOTSUPP, "Ioctl type not supported" },
 	{ DIAG_ERR_BADIFADAPTER, "L0 adapter comms failed" },
 
