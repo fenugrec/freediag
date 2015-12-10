@@ -1,6 +1,7 @@
 #TODO
 #test a few permutations of good and bad response CRC
 
+CFG FRAMED
 CFG P_J1850P
 
 # SID 1 PID 0 with good response with crc

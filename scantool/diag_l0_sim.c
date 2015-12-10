@@ -89,6 +89,8 @@ struct diag_l0_sim_device
 	// from the DB file in use.
 	bool	dataonly;	/* messages are sent/received without headers or checksums; required for J1850 */
 	bool	nocksum;	/* messages are sent/received without checksums */
+	bool	framed;		/* responses must be considered as complete frames; dataonly and nocksum imply this */
+
 	bool	open;
 	int	proto_restrict;	/* (optional) only accept connections matching this proto */
 
@@ -411,6 +413,7 @@ void sim_read_cfg(struct diag_l0_sim_device *dev)
 #define TAG_CFG "CFG"
 #define CFG_DATAONLY "DATAONLY"
 #define CFG_NOL2CKSUM "NOL2CKSUM"
+#define CFG_FRAMED "FRAMED"
 #define CFG_P9141	"P_9141"
 #define CFG_P14230	"P_14230"
 #define CFG_P1850P	"P_J1850P"
@@ -441,6 +444,8 @@ void sim_read_cfg(struct diag_l0_sim_device *dev)
 		} else if (strncmp(p, CFG_NOL2CKSUM, strlen(CFG_NOL2CKSUM)) == 0) {
 			dev->nocksum = 1;
 			continue;
+		} else if (strncmp(p, CFG_FRAMED, strlen(CFG_FRAMED)) == 0) {
+			dev->framed = 1;
 		} else if (strncmp(p, CFG_P9141, strlen(CFG_P9141)) == 0) {
 			dev->proto_restrict=DIAG_L1_ISO9141;
 			continue;
@@ -767,19 +772,21 @@ diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 	int ret = 0;
 
 	ret = DIAG_L1_SLOW |
-	DIAG_L1_FAST |
-	DIAG_L1_PREFFAST |
-	DIAG_L1_DOESL2FRAME |
-	DIAG_L1_DOESP4WAIT |
-	DIAG_L1_AUTOSPEED |
-	DIAG_L1_NOTTY;
+		DIAG_L1_FAST |
+		DIAG_L1_PREFFAST |
+		DIAG_L1_DOESP4WAIT |
+		DIAG_L1_AUTOSPEED |
+		DIAG_L1_NOTTY;
 
-	/* both "no checksum" and "dataonly" modes take care of checksums */
+	/* both "no checksum" and "dataonly" modes take care of checksums, and imply framing. */
 	if (dev->nocksum || dev->dataonly)
-		ret |= DIAG_L1_DOESL2CKSUM | DIAG_L1_STRIPSL2CKSUM;
+		ret |= DIAG_L1_DOESL2CKSUM | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_DOESL2FRAME;
 
 	if (dev->dataonly)
-		ret |= 	DIAG_L1_NOHDRS | DIAG_L1_DATAONLY;
+		ret |= 	DIAG_L1_NOHDRS | DIAG_L1_DATAONLY | DIAG_L1_DOESL2FRAME;
+
+	if (dev->framed)
+		ret |= DIAG_L1_DOESL2FRAME;
 
 	return ret;
 }
