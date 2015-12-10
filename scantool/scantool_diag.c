@@ -447,7 +447,7 @@ cmd_diag_sendreq(int argc, char **argv)
 
 	memset(data, 0, sizeof(data));
 
-	for (i=1, j=0; i < (unsigned int) argc; i++, j++)
+	for (i=1, j=0; (i < (unsigned int) argc) && (i < sizeof(data)); i++, j++)
 		data[j] = (uint8_t) htoi(argv[i]);
 	len = j ;
 
