@@ -131,6 +131,7 @@ set(SCANTOOL_TESTS
 	l0_carsim_4
 	l2_14230_fast
 	l2_j1850p_crc
+	l2_9141_reconst
 	)
 set(TESTSRC "${CMAKE_SOURCE_DIR}/tests")
 
