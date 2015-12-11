@@ -28,6 +28,9 @@
  *
  */
 
+#include <stdbool.h>
+#include <stdint.h>
+
 /*
  * ISO 14230 specific data
  */
@@ -45,7 +48,7 @@ struct diag_l2_14230
 		STATE_ESTABLISHED=2,	/* Established */
 	} state;
 
-	uint8_t first_frame;	/* First frame flag, used mainly for
+	bool first_frame;	/* First frame flag, used mainly for
 					monitor mode when we need to find
 					out whether we see a CARB or normal
 					init */

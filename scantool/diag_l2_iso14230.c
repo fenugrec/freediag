@@ -515,7 +515,11 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	if (flags & DIAG_L2_TYPE_FUNCADDR)
 		dp->modeflags |= ISO14230_FUNCADDR;
 
-	dp->first_frame = 1;
+	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2FRAME) {
+		dp->first_frame = 0;
+	} else {
+		dp->first_frame = 1;
+	}
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr, FLFMT "_startcomms flags=0x%X tgt=0x%X src=0x%X\n",
 			FL, flags, target, source);
