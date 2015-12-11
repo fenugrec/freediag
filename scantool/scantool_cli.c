@@ -1168,6 +1168,7 @@ rc_file(void)
 void
 enter_cli(const char *name, const char *initscript)
 {
+	int rc_rv=CMD_OK;
 	global_logfp = NULL;
 	//progname = name;	//we use the supplied *name instead.
 
@@ -1189,16 +1190,17 @@ enter_cli(const char *name, const char *initscript)
 				return;
 		}
 	} else {
-		/* print banner only if running without an initscript */
+		/* print banner and load rc file, only if running without an initscript */
 		printf("%s: %s version %s\n", name, projname, PACKAGE_VERSION);
 		printf("%s: Type HELP for a list of commands\n", name);
 		printf("%s: Type SCAN to start ODBII Scan\n", name);
 		printf("%s: Then use MONITOR to monitor real-time data\n", name);
 		printf("%s: **** IMPORTANT : this is beta software ! Use at your own risk.\n", name);
 		printf("%s: **** Remember, \"debug all -1\" displays all debugging info.\n", name);
+		rc_rv = rc_file();
 	}
 
-	if (rc_file() != CMD_EXIT) {
+	if (rc_rv != CMD_EXIT) {
 		printf("\n");
 		/* And go start CLI */
 		instream = stdin;
