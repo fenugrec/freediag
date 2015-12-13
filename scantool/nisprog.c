@@ -363,6 +363,8 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 			if (!rqok) {
 				printf("\nhack mode : bad AC response %02X %02X\n", hackbuf[0], hackbuf[1]);
 				retryscore -= 25;
+				diag_os_millisleep(300);
+				diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
 				break;	//out of for()
 			}
 			//Here, we're guaranteed to have found 0xEC in the first 4 bytes we got. But we may
@@ -393,6 +395,8 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 						NULL, hackbuf, extra + 4, 25);
 				if (errval != extra+4) {
 					retryscore -=25;
+					diag_os_millisleep(300);
+					diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
 					break;	//out of for ()
 				}
 				//try to find 0x61 in the first bytes:
@@ -426,6 +430,8 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 					//either negative response or not enough data !
 					printf("\nhack mode : bad 61 response %02X %02X, i=%02X extra=%02X ev=%02X\n",
 							hackbuf[i], hackbuf[i+1], i, extra, errval);
+					diag_os_millisleep(300);
+					diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
 					retryscore -= 25;
 					break;	//out of for ()
 				}
@@ -434,6 +440,8 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 					//this checksum will not work with long headers...
 					printf("\nhack mode : bad 61 CS ! got %02X\n", hackbuf[i+2+linecur]);
 					diag_data_dump(stdout, &hackbuf[i], linecur+3);
+					diag_os_millisleep(300);
+					diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
 					retryscore -=20;
 					break;	//out of for ()
 				}
@@ -443,7 +451,7 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 				//We can now dump this to the file...
 			if (fwrite(&(hackbuf[i+2]), 1, linecur, outf) != linecur) {
 				printf("Error writing file!\n");
-				retryscore -= 50;
+				retryscore -= 101;	//fatal, sir
 				break;	//out of for ()
 			}
 			diag_data_dump(stdout, &hackbuf[i+2], linecur);
