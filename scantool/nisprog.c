@@ -259,6 +259,8 @@ static int np_4(FILE *outf, uint32_t start, uint32_t len) {
 		if (res != rsize) {
 			/* partial read; not necessarily fatal */
 			retryscore -= 25;
+			diag_os_millisleep(300);
+			diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
 		}
 		diag_data_dump(stderr, tbuf, res);
 		if (fwrite(tbuf, 1, res, outf) != res) {
