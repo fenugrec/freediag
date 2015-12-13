@@ -155,8 +155,9 @@ static int np_1(UNUSED(int argc), UNUSED(char **argv)) {
 	if (rxmsg==NULL)
 		return CMD_FAILED;
 	if (rxmsg->data[0] != 0x50) {
-		printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
-				rxmsg->len);
+		printf("got bad response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
 		diag_freemsg(rxmsg);
 		return CMD_OK;
 	}
@@ -223,8 +224,9 @@ static int np_2(int argc, char **argv) {
 	if (rxmsg==NULL)
 		return CMD_FAILED;
 	if ((rxmsg->data[0] != 0xE4) || (rxmsg->len != 6)) {
-		printf("got bad response: %02X, len=%u\n", rxmsg->data[0],
-			rxmsg->len);
+		printf("got bad A4 response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
 		diag_freemsg(rxmsg);
 		return CMD_OK;
 	}
@@ -497,8 +499,9 @@ static int np_6_7(UNUSED(int argc), UNUSED(char **argv), int keyalg, uint32_t sc
 	if (rxmsg==NULL)
 		return CMD_FAILED;
 	if ((rxmsg->len < 6) || (rxmsg->data[0] != 0x67)) {
-		printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
-				rxmsg->len);
+		printf("got bad 27 01 response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
 		diag_freemsg(rxmsg);
 		return CMD_OK;
 	}
@@ -529,8 +532,9 @@ static int np_6_7(UNUSED(int argc), UNUSED(char **argv), int keyalg, uint32_t sc
 	if (rxmsg==NULL)
 		return CMD_FAILED;
 	if (rxmsg->data[0] != 0x67) {
-		printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
-				rxmsg->len);
+		printf("got bad 27 02 response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
 		diag_freemsg(rxmsg);
 		return CMD_OK;
 	}
@@ -762,8 +766,9 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		if (rxmsg==NULL)
 			return CMD_FAILED;
 		if ((rxmsg->len < 7) || (rxmsg->data[0] != 0x5A)) {
-			printf("got bad response : %02X, len=%u\n", rxmsg->data[0],
-					rxmsg->len);
+			printf("got bad 1A response : ");
+			diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+			printf("\n");
 			diag_freemsg(rxmsg);
 			return CMD_OK;
 		}
