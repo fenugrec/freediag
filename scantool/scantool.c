@@ -510,19 +510,13 @@ l2_check_pid_bits(uint8_t *data, int pid)
 	return 0;
 }
 
-/*
- * Send a SAE J1979 request, and get a response, and part process it
- * J1979 messages are 7 data bytes long: mode(SID) byte + max 6 extra bytes
- * (J1979 5.3.2; table 8)
- * ret 0 if ok
-*/
 int
 l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t p2,
 	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle)
 {
 	assert(d_conn != NULL);
 	struct diag_msg msg={0};
-	uint8_t data[7];	//was 256?
+	uint8_t data[7];
 	int ihandle;
 	int rv;
 	ecu_data_t *ep;

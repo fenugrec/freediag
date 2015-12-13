@@ -108,9 +108,12 @@ extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
 struct diag_l2_conn;
 struct diag_l3_conn;
 
-/*
- * Do a J1979 request
- */
+/** Send a SAE J1979 request, get a response, and partially process it
+ *
+ * J1979 messages are 7 data bytes long: mode(SID) byte + max 6 extra bytes
+ * (J1979 5.3.2; table 8)
+ * @return 0 if ok
+*/
 int l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t p2,
 	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle);
 
