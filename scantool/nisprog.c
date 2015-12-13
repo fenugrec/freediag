@@ -268,13 +268,16 @@ static int np_4(FILE *outf, uint32_t start, uint32_t len) {
 			return CMD_FAILED;
 		}
 		chrono = diag_os_getms() - chrono;
+		if (!chrono) chrono += 1;
 
 		retryscore += (retryscore <= 95)? 5:0;
 
 		len -= res;
 		start += res;
-		printf("%u bytes remaining @ ~%lu Bps = %lu s.\n", len, (1000 * res) / chrono,
+		if (res) {
+			printf("%u bytes remaining @ ~%lu Bps = %lu s.\n", len, (1000 * res) / chrono,
 				len * chrono / (res * 1000));
+		}
 	}
 	if (retryscore <= 0) {
 		//there was an error inside and no retries left
