@@ -30,6 +30,8 @@
  *
  */
 
+#include <stdbool.h>
+
 #include <sys/stat.h>
 #include <time.h>
 #include <ctype.h>
@@ -154,7 +156,7 @@ static char *
 basic_get_input(const char *prompt)
 {
 	char *input;
-	int do_prompt;
+	bool do_prompt;
 
 	if (diag_malloc(&input, INPUT_MAX))
 			return NULL;
@@ -255,7 +257,7 @@ scantool_completion(const char *text, int start, UNUSED(int end))
 		//check all completed commands
 		while(cmd_length > 0 && cmd[cmd_length] == ' ') {
 			//find out what it might be...
-			int found = 0;
+			bool found = 0;
 			for(int i = 0; parsed_level[i].command != NULL; i++) {
 				//if found the command on the current level
 				if(!(parsed_level[i].flags & FLAG_HIDDEN) &&
@@ -281,7 +283,7 @@ scantool_completion(const char *text, int start, UNUSED(int end))
 				}
 			}
 			//went through all commands and didn't find anything? then it is an unknown command
-			if(found == 0) {
+			if(!found) {
 				rl_attempted_completion_over = 1;
 				return NULL;
 			}
@@ -550,9 +552,9 @@ cmd_watch(int argc, char **argv)
 	struct diag_l2_conn *d_l2_conn;
 	struct diag_l3_conn *d_l3_conn=NULL;
 	struct diag_l0_device *dl0d;
-	int rawmode = 0;
-	int nodecode = 0;
-	int nol3 = 0;
+	bool rawmode = 0;
+	bool nodecode = 0;
+	bool nol3 = 0;
 
 	if (argc > 1) {
 		if (strcasecmp(argv[1], "raw") == 0)
@@ -602,10 +604,10 @@ cmd_watch(int argc, char **argv)
 	}
 	//here we have a valid d_l2_conn over dl0d.
 
-	if (rawmode == 0) {
+	if (!rawmode) {
 		/* Put the SAE J1979 stack on top of the ISO device */
 
-		if (nol3 == 0) {
+		if (!nol3) {
 			d_l3_conn = diag_l3_start("SAEJ1979", d_l2_conn);
 			if (d_l3_conn == NULL) {
 				printf("Failed to enable SAEJ1979 mode\n");
@@ -633,7 +635,7 @@ cmd_watch(int argc, char **argv)
 				continue;
 		}
 	} else {
-		//rawmode !=0 here
+		//rawmode
 		/*
 		 * And just read stuff, callback routine will print out the data
 		 */
@@ -664,7 +666,7 @@ cmd_watch(int argc, char **argv)
  * units
  */
 static void
-print_current_data(int english)
+print_current_data(bool english)
 {
 	char buf[24];
 	ecu_data_t *ep;
@@ -750,7 +752,7 @@ static int
 cmd_monitor(int argc, char **argv)
 {
 	int rv;
-	int english = 0;
+	bool english = 0;
 
 
 	if (global_state < STATE_SCANDONE) {
@@ -915,7 +917,8 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	int cmd_argc;
 	char *cmd_argv[20];
 	char *input = NULL;
-	int rv, done;
+	int rv;
+	bool done;
 	int i;
 
 	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */

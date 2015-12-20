@@ -534,7 +534,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	uint8_t mode_lengths[] = { 0, 2, 3, 1, 1, 3, 2, 1, 7, 2 };
 #define J1979_MODE_MAX 9
 
-	if (diag_cli_debug > DIAG_DEBUG_DATA) {
+	if (diag_cli_debug & DIAG_DEBUG_DATA) {
 		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %#02X\n",
 			(void *)handle, (void *)d_conn, mode);
 
