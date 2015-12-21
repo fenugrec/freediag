@@ -596,7 +596,6 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 			break;
 	}
 
-
 	/*
 	 * Go thru the ecu_data and see what was received.
 	 */
@@ -606,6 +605,14 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 			rxmsg = ep->rxmsg;
 			rxdata = ep->rxmsg->data;
 
+			/* A bit of ugliness is required to bail out on NegativeResponse messages when using
+			 * an iso14230 L2.
+			 */
+			if (d_conn->d_l3l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_ISO14230) {
+				if (rxdata[0] == 0x7f) {
+					return DIAG_ERR_ECUSAIDNO;
+				}
+			}
 			switch (mode) {
 				case 1:
 					if (rxdata[0] != 0x41) {

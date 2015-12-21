@@ -175,6 +175,7 @@ int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	if (rv==0)
 		d_l3_conn->timer=diag_os_getms();
 
+	if (rv == DIAG_ERR_TIMEOUT) return rv;
 	return rv? diag_iseterr(rv):0;
 }
 
