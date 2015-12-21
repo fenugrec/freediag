@@ -132,6 +132,7 @@ set(SCANTOOL_TESTS
 	l2_14230_fast
 	l2_j1850p_crc
 	l2_9141_reconst
+	l2_14230_negresp
 	)
 set(TESTSRC "${CMAKE_SOURCE_DIR}/tests")
 
