@@ -77,9 +77,10 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 	switch (mode) {
 	case 0x41:
 	case 0x42:		//almost identical modes except PIDS 1,2
+		// Note : mode 2 responses will be +1 longer because of the frame_no byte.
 		if ((data[1] & 0x1f) == 0) {
-			/* PID 00 or 0x20 : return supported PIDs */
-			rv = 6;
+			/* return supported PIDs */
+			rv=6;	//6.1.2.2
 			break;
 		}
 
@@ -107,31 +108,35 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		case 0x07:
 		case 0x08:
 		case 0x09:
-			//XXX For PIDs 0x06 thru 0x09, there may be an additional data byte based on PID 0x13 / 0x1D results
+		case 0x55:
+		case 0x56:
+		case 0x57:
+		case 0x58:
+			//XXX For PIDs 0x06 thru 0x09 and 0x55-0x58, there may be an additional data byte based on PID 0x13 / 0x1D results
 			// (presence of a bank3 O2 sensor. Not implemented...
 			rv=3;
 			break;
 		case 0x0A:
-		case 0x0B:
+		case 0x0B:	//IMAP
 			rv=3;
 			break;
-		case 0x0C:
+		case 0x0C:	//RPM
 			rv=4;
 			break;
-		case 0x0D:
+		case 0x0D:	//VSS
 		case 0x0E:
-		case 0x0F:
+		case 0x0F:	//IAT
 			rv=3;
 			break;
-		case 0x10:
+		case 0x10:	//MAF
 			rv=4;
 			break;
-		case 0x11:
+		case 0x11:	//TPS
 		case 0x12:
-		case 0x13:
+		case 0x13:	//O2Sloc
 			rv = 3;
 			break;
-		case 0x14:
+		case 0x14:	//0x14-0x1B:O2 stuff
 		case 0x15:
 		case 0x16:
 		case 0x17:
@@ -141,50 +146,55 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
 		case 0x1B:
 			rv = 4;
 			break;
-		case 0x1C:
-		case 0x1D:
+		case 0x1C:	//OBD
+		case 0x1D:	//O2Sloc
 		case 0x1E:
-			rv = 3;
+			rv = 2;
 			break;
-		case 0x1F:
+		case 0x1F:	//RUNTM
 			rv = 4;
 			break;
+		//TODO : PIDS 0x21 etc
 		default:
 			/* Sometime add J2190 support (PID>0x1F) */
 			rv = DIAG_ERR_BADDATA;
 			break;
-		}
+		}	//PIDs for modes 1 and 2
+		//For mode 2 responses, actual length is 1 byte longer than Mode 1 resps because of Frame No
+		if (mode == 0x42 && rv) rv += 1;
 		break;
 	case 0x43:
-		rv=7;
+		rv=7;	//6.3.2.4
 		break;
 	case 0x44:
-		rv = 1;
+		rv = 1;	//6.4.2.2
 		break;
 	case 0x45:
 		if ((data[1] & 0x1f) == 0)
-			rv = 7;		// Read supported TIDs
+			rv = 7;		// Read supported TIDs, 6.5.2.2
 		else if (data[1] <= 4)
 			rv=4;			//J1979 sec 6.5.2.4 : conditional TIDs.
 		else
 			rv = 6;		//Request TID result
 		break;
 	case 0x46:
-		//J1979 sec6.6 : I think there are always 7 bytes. If we're
-		//requesting test results (min or max), I think the two last bytes
-		//are always included despited being marked "Conditional"
-	case 0x47:
-	case 0x48:
+		//6.6.2.2 supported PIDs : len=7
+		//6.6.2.4 : 7 bytes; last 2 are "conditional" in meaning only, always present ??
+	case 0x47:	//6.7.2.2
+	case 0x48:	//6.8.2.1
 		rv = 7;
 		break;
-	case 0x49:
-		if ((data[1] & 0x01) ==0) {
-			rv=7;	//7 bytes if even
-			break;
+	case 0x49:	//6.9.1
+		if ((data[1] & 0x1f) ==0) {
+			rv=7;	//supported INFOTYPES
+		} else if (data[1] & 1) {
+			//INFOTYPE is odd:
+			rv=7;
 		} else {
+			//even
 			rv=3;
-			break;
 		}
+		break;
 	default:
 		break;
 	}
