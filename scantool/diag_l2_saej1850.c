@@ -217,8 +217,10 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 /*
  * Protocol receive routine
  *
- * Will sleep until a complete set of responses has been received, or fail
- * with a timeout error
+ * Receive all messages until timeout has elapsed.
+ * This is implemented differently from the ISO L2s (9141 and 14230), in that
+ * timeout is measured starting at this function's entry.
+ *
  * Ret 0 if ok
  */
 static int
@@ -226,90 +228,113 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 {
 	int rv;
 	struct diag_l2_j1850 *dp;
-	unsigned int tout;
-	struct diag_msg	*tmsg;
+	unsigned long long t_done;	//time elapsed
+	unsigned long long t_us;	//total timeout, in us
+	unsigned long long t0;	//start time
+
 	int l1flags = d_l2_conn->diag_link->l1flags;
 
+	t0 = diag_os_gethrt();
+
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
+	diag_freemsg(d_l2_conn->diag_msg);
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,
-			FLFMT "diag_l2_j1850_int_recv offset 0x%X\n",
-				FL, dp->rxoffset);
+			FLFMT "diag_l2_j1850_int_recv offset 0x%X, timeout=%u\n",
+				FL, dp->rxoffset, timeout);
 
-	if (l1flags & DIAG_L1_DOESL2FRAME)
-	{
-		tout = timeout;
-		if (tout < SMART_TIMEOUT)	/* Extend timeouts for clever interfaces */
-			tout += SMART_TIMEOUT;
-
-		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
-				&dp->rxbuf[dp->rxoffset],
-				sizeof(dp->rxbuf) - dp->rxoffset,
-				tout);
-		if (rv < 0)
-		{
-			// Error
-			return rv;
-		}
-		dp->rxoffset += rv;
-	}
-	else
-	{
-		// No support for non framing L2 interfaces yet ...
+	// No support for non framing L2 interfaces yet ...
+	if (!(l1flags & DIAG_L1_DOESL2FRAME)) {
 		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 	}
 
-	// Ok, got a complete frame to send upward
+	/* Extend timeouts since L0/L1 does framing */
+	timeout += SMART_TIMEOUT;
+	t_us = timeout * 1000ULL;
+	t_done = 0;
 
-	if (dp->rxoffset)
-	{
-		// There is data left to add to the message list ..
-		tmsg = diag_allocmsg((size_t)dp->rxoffset);
-		if (tmsg == NULL)
+	dp->rxoffset = 0;
+
+	/* note : some of this is not necessary since we assume every L0/L1 does J1850 framing properly. */
+	while (t_done < t_us) {
+		//loop while there's time left
+		unsigned long tout;
+		struct diag_msg	*tmsg;
+		unsigned datalen;
+
+		tout = timeout - (t_done / 1000);
+
+		//Unofficially, smart L0s (like ME,SIM) return max 1 response per call to l1_recv()
+		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, NULL,
+				&dp->rxbuf[dp->rxoffset],
+				sizeof(dp->rxbuf) - dp->rxoffset,
+				tout);
+
+		if (rv == DIAG_ERR_TIMEOUT) break;
+
+		if (rv < 0) {
+			// Other errors are more serious.
+			diag_freemsg(d_l2_conn->diag_msg);
+			return rv;
+		}
+		dp->rxoffset += rv;
+
+		//update elapsed time
+		t_done = diag_os_hrtus(diag_os_gethrt() - t0);
+		if (rv == 0) continue;	//no data ?
+
+		datalen = dp->rxoffset;
+
+		// get data payload length
+		if (!(l1flags & DIAG_L1_NOHDRS)) {
+			//headers present
+			if (datalen <= 3) continue;
+			datalen -= 3;
+		}
+		if (!(l1flags & DIAG_L1_STRIPSL2CKSUM)) {
+			//CRC present
+			if (datalen <= 1) continue;
+			datalen -= 1;
+		}
+
+		//alloc msg and analyze
+		tmsg = diag_allocmsg(datalen);
+		if (tmsg == NULL) {
+			diag_freemsg(d_l2_conn->diag_msg);
 			return diag_iseterr(DIAG_ERR_NOMEM);
-		memcpy(tmsg->data, dp->rxbuf, (size_t)dp->rxoffset);
+		}
 
-		/*
-		 * Minimum message length is 3 header bytes
-		 * 1 data, 1 checksum
-		 */
-		if (tmsg->len >= 5)
-		{
-			if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0)
-			{
-				//XXX Not sure if I'm doing this properly. I don't have a J1850 ECU
-				//to test it
-				uint8_t tcrc=diag_l2_proto_j1850_crc(tmsg->data, tmsg->len -1);
-				if (tmsg->data[tmsg->len - 1] != tcrc) {
-					fprintf(stderr, "Bad checksum detected: needed %02X got %02X\n",
-							tcrc, tmsg->data[tmsg->len -1]);
-					tmsg->fmt |= DIAG_FMT_BADCS;
-				}
-				tmsg->len--;	//trim crc byte
+		if (!(l1flags & DIAG_L1_NOHDRS)) {
+			//get header content & trim
 
+			tmsg->dest = dp->rxbuf[1];
+			tmsg->src = dp->rxbuf[2];
+			//and copy, skipping header bytes.
+			memcpy(tmsg->data, &dp->rxbuf[3], datalen);
+		} else {
+			memcpy(tmsg->data, dp->rxbuf, datalen);
+		}
+
+		if (!(l1flags & DIAG_L1_STRIPSL2CKSUM)) {
+			//test & trim checksum
+			uint8_t tcrc=diag_l2_proto_j1850_crc(dp->rxbuf, dp->rxoffset - 1);
+			if (dp->rxbuf[dp->rxoffset - 1] != tcrc) {
+				fprintf(stderr, "Bad checksum detected: needed %02X got %02X\n",
+						tcrc, dp->rxbuf[dp->rxoffset - 1]);
+				tmsg->fmt |= DIAG_FMT_BADCS;
 			}
-			tmsg->fmt |= DIAG_FMT_CKSUMMED;	//either L1 did it or we just did
-			tmsg->dest = tmsg->data[1];
-			tmsg->src = tmsg->data[2];
-			tmsg->data +=3;
-			tmsg->len -=3;
+		}
 
-		}
-		else
-		{
-			diag_freemsg(tmsg);
-			return diag_iseterr(DIAG_ERR_BADDATA);
-		}
+		tmsg->fmt |= DIAG_FMT_CKSUMMED;	//either L1 did it or we just did
+		tmsg->fmt |= DIAG_FMT_FRAMED;
 
 		tmsg->rxtime = diag_os_chronoms(0);
 		dp->rxoffset = 0;
 
-		/*
-		 * ADD message to list
-		 */
 		diag_l2_addmsg(d_l2_conn, tmsg);
-	}
+
+	}	//while !timed out
 
 	dp->state = STATE_ESTABLISHED;
 	return 0;
@@ -325,8 +350,15 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	struct diag_msg	*tmsg;
 
 	rv = diag_l2_proto_j1850_int_recv(d_l2_conn, timeout);
-	if (rv < 0)	/* Failed */
+
+	if (rv < 0) {
+		/* Failed, or timed out */
 		return rv;
+	}
+
+	if (d_l2_conn->diag_msg == NULL) {
+		return DIAG_ERR_TIMEOUT;
+	}
 
 	/*
 	 * We now have data stored on the L2 descriptor
@@ -339,9 +371,6 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 
 	tmsg = d_l2_conn->diag_msg;
 	d_l2_conn->diag_msg = NULL;
-
-	tmsg->fmt |= DIAG_FMT_FRAMED;
-
 
 	/* Call used callback */
 	if (callback)
