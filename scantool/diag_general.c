@@ -196,7 +196,7 @@ diag_dupsinglemsg(struct diag_msg *msg)
 void
 diag_freemsg(struct diag_msg *msg)
 {
-	assert(msg != NULL);
+	if (msg == NULL) return;
 
 	if (msg->next != NULL) {
 		diag_freemsg(msg->next);	//recurse

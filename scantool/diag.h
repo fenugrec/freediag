@@ -208,6 +208,7 @@ struct diag_msg	*diag_dupmsg(struct diag_msg *);
 struct diag_msg	*diag_dupsinglemsg(struct diag_msg *);
 
 /** Free a diag_msg
+ * Safe to call with NULL arg
  */
 void diag_freemsg(struct diag_msg *);
 
