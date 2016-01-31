@@ -646,7 +646,7 @@ const void *data, size_t len)
 		break;
 
 	case DIAG_L1_J1850_PWM:
-		cmd = 0x04;
+		cmd = 0x80;
 		break;
 
 	case DIAG_L1_CAN:
