@@ -173,7 +173,6 @@ static void dtest_6(struct diag_l0_device *dl0d) {
 	const int iters=50;
 	fprintf(stderr, "Starting test 6: pulsing TXD=1, 50ms, TXD=0, 25ms:");
 	for (i=0; i<=iters; i++) {
-		diag_os_millisleep(25);
 		if (diag_tty_fastbreak(dl0d, 50)) {
 			fprintf(stderr, "fastbreak error\n");
 			break;
@@ -364,6 +363,32 @@ failed:
 	return;
 }
 
+//dtest_13 : simulate 14230 fastinit : 25ms low, tWUP=50ms, then send 0xAA @ 10.4k; with diag_tty_fastbreak
+
+static void dtest_13(struct diag_l0_device *dl0d) {
+	int i, pc=0;
+	const int iters=50;
+	const uint8_t db=0xAA;
+	fprintf(stderr, "Starting test 6: simulate fastinit:");
+	for (i=0; i<=iters; i++) {
+		if (diag_tty_fastbreak(dl0d, 50)) {
+			fprintf(stderr, "fastbreak error\n");
+			break;
+		}
+		if (diag_tty_write(dl0d, &db, 1) != 1) {
+			fprintf(stderr, "tty_write error\n");
+			break;
+		}
+		diag_tty_iflush(dl0d);	//purge echo(s)
+		if ((10*i/iters) != pc) {
+			pc +=1;
+			fprintf(stderr, ".");
+		}
+	}
+	fprintf(stderr, "\n");
+	return;
+}
+
 /*
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
@@ -464,6 +489,9 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		break;
 	case 12:
 		dtest_12(dl0d);
+		break;
+	case 13:
+		dtest_13(dl0d);
 		break;
 	default:
 		break;
