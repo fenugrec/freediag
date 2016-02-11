@@ -425,11 +425,17 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		return diag_pseterr(rv);
 	}
 
-	if (testnum == 10) {
+	switch (testnum) {
+	case 10:
 		pset.speed = 15000;
-	} else {
+		break;
+	case 14:
+		pset.speed = 360;
+		break;
+	default:
 		pset.speed=10400;
 	}
+
 	pset.databits = diag_databits_8;
 	pset.stopbits = diag_stopbits_1;
 	pset.parflag = diag_par_n;
@@ -492,6 +498,9 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		break;
 	case 13:
 		dtest_13(dl0d);
+		break;
+	case 14:
+		dtest_7(dl0d);	//same test, different speed
 		break;
 	default:
 		break;

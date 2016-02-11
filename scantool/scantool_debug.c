@@ -311,7 +311,7 @@ static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 //could interfere with ECUs, although very unlikely.
 
 static int cmd_debug_l0test(int argc, char **argv) {
-#define MAX_L0TEST 13
+#define MAX_L0TEST 14
 	unsigned int testnum=0;
 	if ((argc <= 1) || (strcmp(argv[1], "?") == 0) || (sscanf(argv[1],"%u", &testnum) != 1)) {
 		printf("usage: %s [testnum], where testnum is a number between 1 and %d.\n", argv[0], MAX_L0TEST);
@@ -326,7 +326,8 @@ static int cmd_debug_l0test(int argc, char **argv) {
 				"\t5 : fast pulse TXD (K) with diag_tty_break.\n"
 				"\t6 : fast pulse TXD (K) with diag_tty_fastbreak.\n"
 				"\t13: simulate iso14230 fastinit with diag_tty_fastbreak.\n"
-				"\t7 : simple half duplex removal speed test.\n"
+				"\t7 : simple half duplex removal speed test (10400bps)\n"
+				"\t14: simple half duplex removal speed test (360bps)\n"
 				"\t8 : block half duplex removal speed test.\n"
 				"\t9 : read timeout accuracy check\n"
 				"\t11: half duplex incomplete read timeout test.\n"
