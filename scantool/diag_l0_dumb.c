@@ -224,19 +224,25 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 			fprintf(stderr, FLFMT "Warning : not using L line for FAST_BREAK.\n", FL);
 			rv=diag_tty_fastbreak(dl0d, 50-WUPFLUSH);
 		} else {
+			unsigned long long tb0,tb1;	//WUP adjustment
 			//normal fast break on K and L.
 			//note : if LLINE_INV is 1, then we need to clear RTS to pull L down !
 			if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
 				fprintf(stderr, FLFMT "fastinit: Failed to set L\\_\n", FL);
 				return DIAG_ERR_GENERAL;
 				}
+			tb0 = diag_os_gethrt();
 			rv=diag_tty_break(dl0d, 25);	//K line low for 25ms
 				/* Now restore DTR/RTS */
 			if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 				fprintf(stderr, FLFMT "fastinit: Failed to restore DTR & RTS!\n",
 					FL);
 			}
-			diag_os_millisleep(25-WUPFLUSH);
+			tb1 = diag_os_gethrt() - tb0;
+			tb1 = diag_os_hrtus(tb1)/1000;	//elapsed ms so far within tWUP
+			tb1 = (50 - WUPFLUSH) - tb1;	//remaining time in WUP
+			if (tb1 > 25) return DIAG_ERR_GENERAL;	//should never happen !
+			diag_os_millisleep((unsigned int) tb1);
 		}	//if FAST_BREAK
 	} else {
 		// do K line only
@@ -244,8 +250,15 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 			rv=diag_tty_fastbreak(dl0d, 50-WUPFLUSH);
 		} else {
 			//normal break
+			unsigned long long tb0,tb1;	//WUP adjustment
+			tb0 = diag_os_gethrt();
 			rv=diag_tty_break(dl0d, 25);	//K line low for 25ms
-			diag_os_millisleep(25-WUPFLUSH);
+
+			tb1 = diag_os_gethrt() - tb0;
+			tb1 = diag_os_hrtus(tb1)/1000;	//elapsed ms so far within tWUP
+			tb1 = (50 - WUPFLUSH) - tb1;	//remaining time in WUP
+			if (tb1 > 25) return DIAG_ERR_GENERAL;	//should never happen !
+			diag_os_millisleep((unsigned int) tb1);
 		}
 	}	//if USE_LLINE
 	// here we have WUPFLUSH ms before tWUP is done; we use this
