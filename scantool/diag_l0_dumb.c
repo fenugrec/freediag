@@ -166,7 +166,7 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 	}
 
 	if (dumb_flags & DUMBDEFAULTS)
-		dumb_flags = DUMBDEFAULTS & MAN_BREAK;
+		dumb_flags = DUMBDEFAULTS | MAN_BREAK;
 
 	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
 
