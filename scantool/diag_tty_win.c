@@ -502,6 +502,7 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 	if (! WriteFile(dh, "\0", 1, &byteswritten, NULL)) {
 		fprintf(stderr, FLFMT "WriteFile error:%s\n", FL, diag_os_geterr(0));
+		SetCommState(dh, &origDCB);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	//get approx starting time. I think this is the closest we can
@@ -511,6 +512,7 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 	if (!FlushFileBuffers(dh)) {
 		fprintf(stderr, FLFMT "FFB error, %s\n", FL, diag_os_geterr(0));
+		SetCommState(dh, &origDCB);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
