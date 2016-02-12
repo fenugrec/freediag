@@ -201,7 +201,7 @@
   <p>The following commands are available. Other commands may be visible from
   the CLI but are not supported
 
-  <ul><table width="80%">
+  <ul><table width="90%">
     <tr><th colspan="2">Main Menu</th></tr>
     <tr>
       <td><code>scan</code></td>
@@ -345,7 +345,11 @@
           etc set, i.e does not try multiple protocols.</td>
     </tr>
     <tr>
-      <td><code>sendreq</code></td>
+      <td><code>disconnect</code></td>
+      <td>Breaks connection with the ECU.</td>
+    </tr>
+    <tr>
+      <td><code>sendreq [data]</code></td>
       <td>Send data on the bus using the active L2 or L3 (if available) connection.</td>
     </tr>
     <tr>
@@ -359,6 +363,22 @@
     <tr>
       <td><code>rx</code></td>
       <td>Same</td>
+    </tr>
+    <tr>
+      <td><code>addl3 [protocol]</code></td>
+      <td>Add an L3 layer on the current L2 connection.</td>
+    </tr>
+    <tr>
+      <td><code>reml3</code></td>
+      <td>Remove an active L3 layer, leaving the L2 connection intact.</td>
+    </tr>
+    <tr>
+      <td><code>probe start_addr [stop_addr]</code></td>
+      <td>Scan bus using ISO9141 5 baud (slow) init, using the global testerid and speed. Stops at the first succesful connection.</td>
+    </tr>
+    <tr>
+      <td><code>fastprobe start_addr [stop_addr [func]]</code></td>
+      <td>Scan bus using ISO14230 fast init with physical or functional addressing, using the global testerid and speed. Stops at the first succesful connection.</td>
     </tr>
     
     <tr><th colspan="2">Debug Sub-Menu</th></tr>

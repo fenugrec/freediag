@@ -81,8 +81,8 @@ const struct cmd_tbl_entry diag_cmd_table[] =
 	{ "reml3", "reml3", "Remove (stop) an L3 protocol",
 		cmd_diag_reml3, 0, NULL},
 
-	{ "probe", "probe start_addr stop_addr", "Scan bus using ISO9141 5 baud init [slow!]", cmd_diag_probe, 0, NULL},
-	{ "fastprobe", "fastprobe start_addr stop_addr [func]", "Scan bus using ISO14230 fast init with physical or functional addressing", cmd_diag_fastprobe, 0, NULL},
+	{ "probe", "probe start_addr [stop_addr]", "Scan bus using ISO9141 5 baud init [slow!]", cmd_diag_probe, 0, NULL},
+	{ "fastprobe", "fastprobe start_addr [stop_addr [func]]", "Scan bus using ISO14230 fast init with physical or functional addressing", cmd_diag_fastprobe, 0, NULL},
 	{ "np", "np [testnum]", "nisprog experimental Nissan tests. Do not use.", cmd_diag_nisprog, 0, NULL},
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -204,40 +204,38 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	struct diag_l2_conn *d_conn;
 	uint32_t funcmode = 0;
 
-	if (argc < 2)
+	if (argc < 2) {
 		return CMD_USAGE;
+	}
+	if  (strcmp(argv[1], "?") == 0) {
+		return CMD_USAGE;
+	}
 
 	start = htoi(argv[1]);
-	if (argc == 2)
-	{
+
+	if (argc == 2) {
 		end = start;
-	}
-	else
-	{
+	} else {
 		end = htoi(argv[2]);
 	}
 
 
-	if (fastflag && argc>=4)
-	{
+	if (fastflag && argc>=4) {
 		if (strcasecmp(argv[3], "func") == 0)
 			funcmode = DIAG_L2_TYPE_FUNCADDR;
 	}
 
-	if ((start > 255) || (end > 255))
-	{
+	if ((start > 255) || (end > 255)) {
 		printf("Values must be between 0 and 255\n");
 		return CMD_OK;
 	}
-	if (end < start)
-	{
+	if (end < start) {
 		printf("Start must not be greater than End address\n");
 		return CMD_OK;
 	}
 
 	rv = diag_init();
-	if (rv < 0)
-	{
+	if (rv < 0) {
 		printf("Failed to initialise diagnostic layer\n");
 		diag_end();
 		return CMD_OK;
@@ -259,8 +257,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	}
 
 	printf("Scanning:\n");
-	for (i=start; i<=end; i++)
-	{
+	for (i=start; i<=end; i++) {
 		printf("\t0x%X ", i);
 		fflush(stdout) ;
 
