@@ -368,64 +368,47 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 
 	//two methods of sending at 5bps. Most USB-serial converts don't support such a slow bitrate !
 	if (dumb_flags & MAN_BREAK) {
-		//MAN_BREAK means we bitbang K and optionally L as well.
-		if (dumb_flags & USE_LLINE) {
-			//do manual 5bps init on K and L.
-			//we need to send the byte at in->addr, bit by bit.
+		//MAN_BREAK means we bitbang 5bps init on K and optionally L as well.
 
-			int bitcounter;
-			uint8_t tempbyte=in->addr;
-			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));	//L is the logical opposite of RTS...
-			diag_tty_break(dl0d, BPS_PERIOD);	//start startbit
-			for (bitcounter=0; bitcounter<=7; bitcounter++) {
-				//LSB first.
-				if (tempbyte & 1) {
-					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & LLINE_INV));	//release L
-					diag_os_millisleep(BPS_PERIOD);
-				} else {
-					unsigned int lowtime=BPS_PERIOD;
-					//to prevent spurious breaks if we have a sequence of 0's :
-					//this is an RLE of sorts...
-					for (; bitcounter <=6; bitcounter++) {
-						if (tempbyte & 2) //test bit 1; we just tested bit 0 before getting here.
-							break;
-						lowtime += BPS_PERIOD;
-						tempbyte = tempbyte >>1;
-					}
-					//this way, we know for sure the next bit is 1 (either bit 7==1 or stopbit==1 !)
-					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));	//pull L down
-					diag_tty_break(dl0d, lowtime);
+		//send the byte at in->addr, bit by bit.
+		int bitcounter;
+		uint8_t tempbyte=in->addr;
+		bool curbit = 0;	//startbit
+		for (bitcounter=0; bitcounter<=8; bitcounter++) {
+			//LSB first.
+			if (curbit) {
+				if (dumb_flags & USE_LLINE) {
+						//release L
+						diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & LLINE_INV));
 				}
-				tempbyte = tempbyte >>1;
+				diag_os_millisleep(BPS_PERIOD);
+			} else {
+				unsigned int lowtime=BPS_PERIOD;
+				//to prevent spurious breaks if we have a sequence of 0's :
+				//this is an RLE of sorts...
+				for (; bitcounter <=7; bitcounter++) {
+					if (tempbyte & 1) //test bit 1; we just tested curbit before getting here.
+						break;
+					lowtime += BPS_PERIOD;
+					curbit = tempbyte & 1;
+					tempbyte = tempbyte >>1;
+				}
+				//this way, we know for sure the next bit is 1 (either bit 7==1 or stopbit==1 !)
+				if (dumb_flags & USE_LLINE) {
+					//L = 0
+					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));
+				}
+				diag_tty_break(dl0d, lowtime);
 			}
-			//at this point we just finished the last bit, we'll wait the duration of the stop bit.
+			curbit = tempbyte & 1;
+			tempbyte = tempbyte >>1;
+		}
+		//at this point we just finished the last bit, we'll wait the duration of the stop bit.
+		if (dumb_flags & USE_LLINE) {
 			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));	//release L
-			diag_os_millisleep(BPS_PERIOD);	//stop bit
-		} else {
-			//do manual break on K only.
-			int bitcounter;
-			uint8_t tempbyte=in->addr;
-			diag_tty_break(dl0d, BPS_PERIOD);	//start startbit
-			for (bitcounter=0; bitcounter<=7; bitcounter++) {
-				//LSB first.
-				if (tempbyte & 1) {
-					diag_os_millisleep(BPS_PERIOD);
-				} else {
-					unsigned int lowtime=BPS_PERIOD;
-					//to prevent spurious breaks if we have a sequence of 0's :
-					for (; bitcounter <=6; bitcounter++) {
-						if (tempbyte & 2)
-							break;	//test bit 1; we just tested bit 0 before getting here.
-						lowtime += BPS_PERIOD;
-						tempbyte = tempbyte >>1;
-					}
+		}
+		diag_os_millisleep(BPS_PERIOD);	//stop bit
 
-					diag_tty_break(dl0d, lowtime);
-				}
-				tempbyte = tempbyte >>1;
-			}	//for
-			diag_os_millisleep(BPS_PERIOD);	//stop bit
-		}	//if use_lline
 		//at this point the stop bit just finished. We could just purge the input buffer ?
 		//Usually the next thing to happen is the ECU will send the sync byte (0x55) within W1
 		// (60 to 300ms)
