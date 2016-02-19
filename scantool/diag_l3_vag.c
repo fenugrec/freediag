@@ -5,10 +5,13 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * Copyright (C) 2004 Steve Meisner <meisner@users.sourceforge.net>
+ * Copyright (C) 2014-2015 fenugrec <fenugrec@users.sourceforge.net>
+ * Copyright (C) 2015 - 2016 Tomasz Kaźmierczak <tomek-k@users.sourceforge.net>
  *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -17,32 +20,28 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *************************************************************************
  *
  * Diag
  *
- * L3 driver for Volkswagen Audi Group (VAG) protocol (on ISO9141 interface
+ * L3 driver for Volkswagen Aktiengesellschaft (VAG) protocol (on ISO9141 interface
  * with 5 baud init using specific keywords)
  *
  *
- * XXX NOT YET WRITTEN, is it the same thing as KWP1281 ?
+ * XXX NOT YET WRITTEN
  */
 
 #include <string.h>
 
 #include "diag.h"
 #include "diag_err.h"
-#include "diag_l1.h"
 #include "diag_l2.h"
 #include "diag_l3.h"
 
 #include "diag_vag.h"
 #include "diag_l3_vag.h"
-
-
 
 /*
  * Insert the L3 layer on top of the layer 2 connection
@@ -87,42 +86,30 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 	char buf2[128];
 	char buf3[16];
 	const char *s;
-	int i;
-
-	/* XXX What is supposed to go here for arguments?
-	 * The "sprintf(" that follows had no arguments for the format, I added the "0, 0".
-	 */
 
 	fprintf(stderr, FLFMT "Obviously broken code !\n", FL);
 
-	snprintf(buf, bufsize, "Block Len 0x%X, Counter 0x%X ", 0, 0);
-
-	switch (msg->data[2])
-	{
-	case 0x05:
+	switch(msg->type) {
+	case DIAG_VAG_CMD_DTC_CLEAR:
 		s = "Clear DTCs";
 		break;
-	case 0x06:
+	case DIAG_VAG_CMD_END_COMMS:
 		s = "End Comms";
 		break;
-	case 0x07:
+	case DIAG_VAG_CMD_DTC_RQST:
 		s = "Request DTCs";
 		break;
-	case 0x08:
+	case DIAG_VAG_CMD_READ_DATA:
 		s = "Read Data (single)";
 		break;
-	case 0x09:
-		s = "Ack";
-		break;
-	case 0xF6:
+	case DIAG_VAG_RSP_ASCII:
 		s = "ASCII Data";
 		break;
-	case 0xFC:
+	case DIAG_VAG_RSP_HEX:
 		s = "Hex Data";
 		break;
 	default:
-		/* XXX The argument Was "buf[2]" and not msg->data[2], which must be wrong. */
-		snprintf(buf3, sizeof(buf3), "0x%X", msg->data[2]);
+		snprintf(buf3, sizeof(buf3), "0x%X", msg->type);
 		s = buf3;
 		break;
 	}
@@ -132,8 +119,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 	snprintf(buf2, sizeof(buf2), "Data : ");
 	smartcat(buf, bufsize, buf2);
 
-	for (i=3; i < msg->data[0]; i++)
-	{
+	for(int i=3; i < msg->data[0]; i++) {
 		snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 		smartcat(buf, bufsize, buf2);
 	}

@@ -174,7 +174,7 @@ struct diag_msg
 	#define DIAG_FMT_CKSUMMED	0x08	/* Someone (L1/L2) checked the checksum */
 	#define DIAG_FMT_BADCS	0x10		// message has bad checksum
 
-	//uint8_t	type;		/* Type from received frame XXX? This was never used */
+	uint8_t	type;		/* Type from received frame */
 	uint8_t	dest;		/* Destination from received frame */
 	uint8_t	src;		/* Source from received frame */
 	uint8_t	len;		/* calculated data length */
