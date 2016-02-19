@@ -3,9 +3,6 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
- * Copyright (C) 2004 Steve Meisner <meisner@users.sourceforge.net>
- * Copyright (C) 2004 Vasco Nevoa <vnevoa@users.sourceforge.net>
- * Copyright (C) 2014-2015 fenugrec <fenugrec@users.sourceforge.net>
  * Copyright (C) 2015-2016 Tomasz Kaźmierczak <tomek-k@users.sourceforge.net>
  *
  * This program is free software: you can redistribute it and/or modify
