@@ -43,9 +43,7 @@
 #include "diag_l1.h"
 
 
-#define ELM_BUFSIZE 40	//longest data to be received during init is the version string, ~ 15 bytes,
-		// plus possible command echo. OBD data is 7 bytes, received as a 23-char string. 32 should be enough...
-		// XXX certain OBD commands (PID 06) return much more data !?
+#define ELM_BUFSIZE 1000	//fit even max-length iso14230 frames, at 3 ASCII chars per byte.
 #define ELM_SLOWNESS	100	//Add this many ms to read timeouts, because ELMs are sloooow
 #define ELM_PURGETIME	400	//Time to wait (ms) for a response to "ATI" command
 
