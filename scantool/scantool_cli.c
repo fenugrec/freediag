@@ -52,7 +52,8 @@
 #endif
 
 
-#define PROMPTBUFSIZE 80		//was 1024 !!
+#define PROMPTBUFSIZE 80		//Length of prompt before the '>' character.
+#define CLI_MAXARGS 300
 const char progname[]=SCANTOOL_PROGNAME;
 const char projname[]=PROJECT_NAME;
 
@@ -915,7 +916,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 	/* Build up argc/argv */
 	const struct cmd_tbl_entry *ctp;
 	int cmd_argc;
-	char *cmd_argv[20];
+	char *cmd_argv[CLI_MAXARGS];
 	char *input = NULL;
 	int rv;
 	bool done;
