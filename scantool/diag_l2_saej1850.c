@@ -175,28 +175,35 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 			FLFMT "diag_l2_j1850_send %p msg %p len %d called\n",
 				FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
+	if ((msg->len + 4) >= MAXRBUF) {
+		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
+
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
 	l1flags = d_l2_conn->diag_link->l1flags;
-
-	// Add the J1850 header to the data
-	// XXX 0x68 is no correct for all J1850 protocols
-
 	l1protocol = d_l2_conn->diag_link->l1proto;
 
-	if (l1protocol == DIAG_L1_J1850_PWM)
-		buf[0] = 0x61;
-	else
-		buf[0] = 0x68;
-	buf[1] = dp->dstaddr;
-	buf[2] = dp->srcaddr;
-	offset += 3;
+	if (l1flags & DIAG_L1_DATAONLY) {
+		//no headers to add, just the message
+		//nop
+	} else {
+		// Add the J1850 header to the data
 
-	// Now copy in data, should check for buffer overrun really
+		if (l1protocol == DIAG_L1_J1850_PWM)
+			buf[0] = 0x61;
+		else
+			buf[0] = 0x68;
+		buf[1] = dp->dstaddr;
+		buf[2] = dp->srcaddr;
+		offset += 3;
+	}
+
+	// Now copy in data
 	memcpy(&buf[offset], msg->data, msg->len);
 	offset += msg->len;
 
-	if ((l1flags & DIAG_L1_DOESL2CKSUM) == 0)
-	{
+	if (((l1flags & DIAG_L1_DOESL2CKSUM) == 0) &&
+		((l1flags & DIAG_L1_DATAONLY) == 0)) {
 		// Add in J1850 CRC
 		int curoff = offset;
 		buf[offset++] = diag_l2_proto_j1850_crc(buf, curoff);

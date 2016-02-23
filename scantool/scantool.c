@@ -1196,7 +1196,7 @@ do_j1979_ncms(int printall)
 				0x00, 0x00, 0x00, 0x00,
 				(void *)(printall? &_RQST_HANDLE_NCMS:&_RQST_HANDLE_NCMS2));
 			if (rv < 0) {
-				fprintf(stderr, "Mode 6 Test ID 0x%d failed\n", i);
+				fprintf(stderr, "Mode 6 Test ID 0x%02X failed\n", (unsigned int) i);
 			}
 		}
 	}
