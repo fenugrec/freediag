@@ -203,10 +203,10 @@ diag_l2_closelink(struct diag_l2_link *dl2l)
 	/* Remove from linked-list */
 	LL_DELETE(diag_l2_links, dl2l);
 
-	if (dl2l->diag_l2_dl0d == NULL)
+	if (dl2l->l2_dl0d == NULL)
 		fprintf(stderr, FLFMT "**** Corrupt DL2L !! Report this !!!\n", FL);
 	else
-		diag_l1_close(&dl2l->diag_l2_dl0d);
+		diag_l1_close(&dl2l->l2_dl0d);
 
 	free(dl2l);
 
@@ -249,7 +249,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 			dl2l=NULL;
 		} else 	{
 			/* Device was already open, with correct protocol  */
-			return dl2l->diag_l2_dl0d;
+			return dl2l->l2_dl0d;
 		}
 	}
 
@@ -268,7 +268,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 
 	dl0d->dl2_link=dl2l;	/* Associate ourselves with this */
 
-	dl2l->diag_l2_dl0d = dl0d;
+	dl2l->l2_dl0d = dl0d;
 	dl2l->l1flags = diag_l1_getflags(dl0d);
 	dl2l->l1type = diag_l1_gettype(dl0d);
 	dl2l->l1proto = L1protocol;
@@ -278,7 +278,7 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 	/* Put ourselves at the head of the list. */
 	LL_PREPEND(diag_l2_links, dl2l);
 
-	return dl2l->diag_l2_dl0d;
+	return dl2l->l2_dl0d;
 }
 
 /*
@@ -326,7 +326,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 	// this dl0d had no ->dl2_link; check in the linked-list anyway in case
 	// it was orphaned (i.e. dl0d->dl2_link was not set properly...)
 	LL_FOREACH(diag_l2_links, dl2l) {
-		if (dl2l->diag_l2_dl0d == dl0d) {
+		if (dl2l->l2_dl0d == dl0d) {
 			fprintf(stderr, FLFMT "Not closing dl0d: used by dl2link %p!\n", FL,
 				(void *) dl2l);
 			return 0;	//there's still a dl2link using it !
@@ -380,7 +380,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 		/* XXX not sure how possible this is */
 		LL_FOREACH(diag_l2_connections, d_l2_conn) {
 			if (d_l2_conn->diag_link == NULL) continue;
-			if (d_l2_conn->diag_link->diag_l2_dl0d == dl0d) {
+			if (d_l2_conn->diag_link->l2_dl0d == dl0d) {
 				reusing = 1;
 				break;
 			}
@@ -646,7 +646,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 				FL, (void *)d_l2_conn, cmd);
 
 
-	dl0d = d_l2_conn->diag_link->diag_l2_dl0d ;
+	dl0d = d_l2_conn->diag_link->l2_dl0d ;
 
 	switch (cmd)
 	{

@@ -260,7 +260,7 @@ static int np_4(FILE *outf, uint32_t start, uint32_t len) {
 			/* partial read; not necessarily fatal */
 			retryscore -= 25;
 			diag_os_millisleep(300);
-			diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
+			diag_tty_iflush(global_l2_conn->diag_link->l2_dl0d);
 		}
 		diag_data_dump(stderr, tbuf, res);
 		if (fwrite(tbuf, 1, res, outf) != res) {
@@ -353,7 +353,7 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 				// we'll request just 4 bytes so we return very fast;
 				// We should find 0xEC if it's in there no matter what kind of header.
 				// We'll "purge" the next bytes when we send SID 21
-				errval=diag_l1_recv(global_l2_conn->diag_link->diag_l2_dl0d,
+				errval=diag_l1_recv(global_l2_conn->diag_link->l2_dl0d,
 						NULL, hackbuf, 4, 25);
 				if (errval == 4) {
 					//try to find 0xEC in the first bytes:
@@ -369,7 +369,7 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 				printf("\nhack mode : bad AC response %02X %02X\n", hackbuf[0], hackbuf[1]);
 				retryscore -= 25;
 				diag_os_millisleep(300);
-				diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
+				diag_tty_iflush(global_l2_conn->diag_link->l2_dl0d);
 				break;	//out of for()
 			}
 			//Here, we're guaranteed to have found 0xEC in the first 4 bytes we got. But we may
@@ -396,12 +396,12 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 				//bytes still in buffer; we already calculated how many.
 				//By requesting (extra) + 4 with a short timeout, we'll return
 				//here very quickly and we're certain to "catch" 0x61.
-				errval=diag_l1_recv(global_l2_conn->diag_link->diag_l2_dl0d,
+				errval=diag_l1_recv(global_l2_conn->diag_link->l2_dl0d,
 						NULL, hackbuf, extra + 4, 25);
 				if (errval != extra+4) {
 					retryscore -=25;
 					diag_os_millisleep(300);
-					diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
+					diag_tty_iflush(global_l2_conn->diag_link->l2_dl0d);
 					break;	//out of for ()
 				}
 				//try to find 0x61 in the first bytes:
@@ -424,7 +424,7 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 					printf("\nhack mode : problem ! extra=%d\n",extra);
 					extra=0;
 				} else {
-					errval=diag_l1_recv(global_l2_conn->diag_link->diag_l2_dl0d,
+					errval=diag_l1_recv(global_l2_conn->diag_link->l2_dl0d,
 						NULL, &hackbuf[errval], extra, 25);
 				}
 
@@ -436,7 +436,7 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 					printf("\nhack mode : bad 61 response %02X %02X, i=%02X extra=%02X ev=%02X\n",
 							hackbuf[i], hackbuf[i+1], i, extra, errval);
 					diag_os_millisleep(300);
-					diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
+					diag_tty_iflush(global_l2_conn->diag_link->l2_dl0d);
 					retryscore -= 25;
 					break;	//out of for ()
 				}
@@ -446,7 +446,7 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 					printf("\nhack mode : bad 61 CS ! got %02X\n", hackbuf[i+2+linecur]);
 					diag_data_dump(stdout, &hackbuf[i], linecur+3);
 					diag_os_millisleep(300);
-					diag_tty_iflush(global_l2_conn->diag_link->diag_l2_dl0d);
+					diag_tty_iflush(global_l2_conn->diag_link->l2_dl0d);
 					retryscore -=20;
 					break;	//out of for ()
 				}

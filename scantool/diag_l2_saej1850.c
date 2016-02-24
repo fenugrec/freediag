@@ -215,7 +215,7 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 				FL, offset);
 
 	// And send data to Layer 1
-	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 				buf, (size_t)offset, 0);
 
 	return rv? diag_iseterr(rv):0 ;
@@ -273,7 +273,7 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 		tout = timeout - (t_done / 1000);
 
 		//Unofficially, smart L0s (like ME,SIM) return max 1 response per call to l1_recv()
-		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, NULL,
+		rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, NULL,
 				&dp->rxbuf[dp->rxoffset],
 				sizeof(dp->rxbuf) - dp->rxoffset,
 				tout);

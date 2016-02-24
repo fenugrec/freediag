@@ -269,7 +269,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 		if ( (state == ST_STATE2) && l1_doesl2frame )
 			rv = DIAG_ERR_TIMEOUT;
 		else
-			rv = diag_l1_recv(d_l2_conn->diag_link->diag_l2_dl0d, 0,
+			rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0,
 				&dp->rxbuf[dp->rxoffset],
 				sizeof(dp->rxbuf) - dp->rxoffset,
 				tout);
@@ -661,7 +661,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			break;
 
 		/* Mode bytes are in 7-Odd-1, read as 8N1 and ignore parity */
-		rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+		rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 			cbuf, 2, 100);
 		if (rv < 0)
 			break;
@@ -684,7 +684,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			 * Now transmit KB2 inverted
 			 */
 			cbuf[0] = ~ d_l2_conn->diag_l2_kb2;
-			rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+			rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 				cbuf, 1, d_l2_conn->diag_l2_p4min);
 
 			/*
@@ -692,7 +692,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			 */
 			//first init cbuf[0] to the wrong value in case l1_recv gets nothing
 			cbuf[0]= (uint8_t) target;
-			rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+			rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 				cbuf, 1, 350);
 
 			if (cbuf[0] != ((~target) & 0xFF) ) {
@@ -750,7 +750,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	if ((d_l2_conn->diag_l2_p4max * 5) > wait_time)
 		wait_time = d_l2_conn->diag_l2_p4max * 5;
 
-	while ( diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+	while ( diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		  data, sizeof(data), wait_time) != DIAG_ERR_TIMEOUT) ;
 
 	/* And we're done */
@@ -856,7 +856,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	//if L1 requires headerless data, send directly :
 	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DATAONLY) {
-		rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, NULL,
+		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
 				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
 		return rv? diag_iseterr(rv):0;
 	}
@@ -934,7 +934,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	if (dp->state == STATE_ESTABLISHED)
 		diag_os_millisleep(d_l2_conn->diag_l2_p3min);
 
-	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, NULL,
+	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
 		buf, len, d_l2_conn->diag_l2_p4min);
 
 	return rv? diag_iseterr(rv):0;

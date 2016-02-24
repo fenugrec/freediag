@@ -45,7 +45,7 @@ extern "C" {
 //one L1 proto and L1 flags.
 struct diag_l2_link
 {
-	struct diag_l0_device * 	diag_l2_dl0d;	/* Link we're using to talk to lower layer */
+	struct diag_l0_device * 	l2_dl0d;	/* Link we're using to talk to lower layer */
 	int	l1proto;		/* L1 protocol used; see diag_l1.h*/
 
 	char	diag_l2_name[DIAG_NAMELEN];	/* XXX this is set to the l0 driver shortname !? */

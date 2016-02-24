@@ -100,11 +100,11 @@ UNUSED(source_type source))
 	 * L0 code should have set correct baud rate now etc
 	 * Now read keybytes, ignoring parity
 	 */
-	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		cbuf, 1, 100);
 	if (rv < 0)
 		return diag_iseterr(rv);
-	rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		&cbuf[1], 1, 100);
 	if (rv < 0)
 	{
@@ -209,7 +209,7 @@ diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	tout = timeout;
 	msglen = 0;
 	readlen = 3;
-	while ( (rv = diag_l1_recv (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+	while ( (rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 			&data[rxoffset], readlen, tout)) > 0)
 	{
 		rxoffset += rv;
@@ -347,7 +347,7 @@ diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		fprintf(stderr, "\n");
 	}
 
-	rv = diag_l1_send (d_l2_conn->diag_link->diag_l2_dl0d, 0,
+	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 		txbuf, txbuf[2], d_l2_conn->diag_l2_p4min);
 
 

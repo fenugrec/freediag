@@ -106,7 +106,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 	while(1) {
 		//one byte at a time is sent by the ECU
 		uint8_t byte;
-		rv = diag_l1_recv(d_l2_conn->diag_link->diag_l2_dl0d, 0, &byte, 1, timeout);
+		rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, &byte, 1, timeout);
 		unsigned long long byte_recv_time = diag_os_gethrt();
 		//now set the timeout value for all the remaining awaited bytes
 		timeout = KWP1281_T_R8;
@@ -131,7 +131,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 				//complement byte, so the transmitter should re-start the message _within_
 				//_our_ another T_R8 time unit (which started later than the receiver's secont T_R8
 				//time unit);
-				rv = diag_l1_recv(d_l2_conn->diag_link->diag_l2_dl0d, 0, &byte, 1, KWP1281_T_R8);
+				rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, &byte, 1, KWP1281_T_R8);
 				if(rv < 0) {
 					//if we timed out again, then this means that the communication line
 					//has been broken or closed; but with one exception - if we were waiting for
@@ -212,7 +212,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 		unsigned long long elapsed_time = diag_os_hrtus(diag_os_gethrt() - byte_recv_time)/1000;
 		//give ECU some time before sending the complement byte
 		diag_os_millisleep(elapsed_time < KWP1281_T_R6_MIN ? KWP1281_T_R6_MIN-elapsed_time : 0);
-		rv = diag_l1_send(d_l2_conn->diag_link->diag_l2_dl0d, 0, &byte, 1, 0);
+		rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, 0, &byte, 1, 0);
 
 		if(diag_l2_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "after send, rv=%d\n", FL, rv);
@@ -439,13 +439,13 @@ diag_l2_proto_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type fl
 	}
 
 	//Mode bytes are in 7-Odd-1, read as 8N1 and ignore parity
-	rv = diag_l1_recv(d_l2_conn->diag_link->diag_l2_dl0d, 0, cbuf, 1, KWP1281_T_R2_MAX);
+	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, cbuf, 1, KWP1281_T_R2_MAX);
 	if(rv < 0) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
 		return diag_iseterr(rv);
 	}
-	rv = diag_l1_recv(d_l2_conn->diag_link->diag_l2_dl0d, 0, &cbuf[1], 1, KWP1281_T_R3_MAX);
+	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, &cbuf[1], 1, KWP1281_T_R3_MAX);
 	if(rv < 0) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
@@ -469,7 +469,7 @@ diag_l2_proto_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type fl
 		diag_os_millisleep(KWP1281_T_R4_MIN);
 		//Now transmit KB2 inverted
 		cbuf[0] = ~ d_l2_conn->diag_l2_kb2;
-		rv = diag_l1_send(d_l2_conn->diag_link->diag_l2_dl0d, 0, cbuf, 1, d_l2_conn->diag_l2_p4min);
+		rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, 0, cbuf, 1, d_l2_conn->diag_l2_p4min);
 		if(rv < 0) {
 			free(dp);
 			d_l2_conn->diag_l2_proto_data=NULL;
@@ -571,7 +571,7 @@ diag_l2_proto_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	//send the block to the ECU
 	while(1) {
 		//send one byte at a time
-		rv = diag_l1_send(d_l2_conn->diag_link->diag_l2_dl0d, 0, &dp->rxbuf[dp->rxoffset], 1,
+		rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, 0, &dp->rxbuf[dp->rxoffset], 1,
 		                  d_l2_conn->diag_l2_p4min);
 		unsigned long long byte_sent_time = diag_os_gethrt();
 
@@ -589,7 +589,7 @@ diag_l2_proto_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 		uint8_t recv_byte;
 		//ECU should respond with an inverted byte at most after t_r8
-		rv = diag_l1_recv(d_l2_conn->diag_link->diag_l2_dl0d, 0, &recv_byte, 1, KWP1281_T_R8);
+		rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, &recv_byte, 1, KWP1281_T_R8);
 		unsigned long long complement_recv_time = diag_os_gethrt();
 
 		if(diag_l2_debug & DIAG_DEBUG_PROTO)
