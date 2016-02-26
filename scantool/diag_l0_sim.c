@@ -39,6 +39,7 @@
  *
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h> // str**()
 #include <stdbool.h>
@@ -61,9 +62,7 @@
 
 
 extern const struct diag_l0 diag_l0_sim;
-const char *simfile=NULL;	//pointer to remote filename.
-//this must be set externally either through "set simfile" from the scantool cli, or
-//by calling _set_simfile thru libdiag.
+
 const char *simfile_default=DB_FILE;	//default filename
 
 
@@ -91,7 +90,6 @@ struct diag_l0_sim_device
 	bool	nocksum;	/* messages are sent/received without checksums */
 	bool	framed;		/* responses must be considered as complete frames; dataonly and nocksum imply this */
 
-	bool	open;
 	int	proto_restrict;	/* (optional) only accept connections matching this proto */
 
 	struct cfgi simfile;	/* WIP */
@@ -117,9 +115,6 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 		 void *data, size_t len, unsigned int timeout);
 
 static void diag_l0_sim_close(struct diag_l0_device *dl0d);
-
-extern void
-diag_l0_sim_setfile(char * fname);
 
 /**************************************************/
 // LOCAL FUNCTIONS:
@@ -476,88 +471,71 @@ void sim_read_cfg(struct diag_l0_sim_device *dev)
 static int
 diag_l0_sim_init(void)
 {
-	// Global init flag.
-	static int diag_l0_sim_initdone=0;
-
-	if (diag_l0_sim_initdone)
-	return 0;
-
-	if (simfile==NULL)
-		//not filled in yet : use default DB_FILE.
-		//TODO : use subinterface to fill in simfile ?
-		simfile=simfile_default;
-
-	diag_l0_sim_initdone = 1;
-
 	return 0;
 }
 
-/* create new simfile instance */
-/* XXX WIP, for testing new config API */
-/* this currently duplicates most of _open() */
-static struct diag_l0_device *
-sim_new(void) {
+/* fill & init new dl0d */
+int
+sim_new(struct diag_l0_device *dl0d) {
 	int rv;
-	struct diag_l0_device *dl0d;
 	struct diag_l0_sim_device *dev;
 
 	// Create diag_l0_sim_device:
 	if ((rv=diag_calloc(&dev, 1)))
-		return diag_pseterr(rv);
-
-	// Create diag_l0_device:
-	if ((rv=diag_calloc(&dl0d, 1))) {
-		free(dev);
-		return diag_pseterr(rv);
-	}
+		return diag_iseterr(rv);
 
 	dl0d->l0_int = dev;
-	dl0d->dl0 = &diag_l0_sim;
+
 	//init configurable params:
 	if (diag_cfgn_str(&dev->simfile, simfile_default,
 						"Simulation file to use as data input", "simfile")) {
 		free(dev);
-		free(dl0d);
-		return diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	dev->simfile.next = NULL;	//mark as first/only/last item in the list
-	return dl0d;
+	return 0;
 }
 
-// Opens the simulator DB file (uses global simfile var)
-static struct diag_l0_device *
-diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
-{
-	int rv;
-	struct diag_l0_device *dl0d;
+/* force close, and clear dl0d */
+static void
+sim_del(struct diag_l0_device * dl0d) {
 	struct diag_l0_sim_device *dev;
 
-	// If we're doing debugging, print to stderr
+	assert(dl0d !=NULL);
+
+	diag_l0_sim_close(dl0d);
+
+	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
+
+	if (!dev) return;
+
+	diag_cfg_clear(&dev->simfile);
+	free(dev);
+
+	return;
+}
+// Opens the simulator DB file
+int
+diag_l0_sim_open(struct diag_l0_device *dl0d, int iProtocol)
+{
+	struct diag_l0_sim_device *dev;
+	const char *simfile;
+
+	assert(dl0d != NULL);
+
+	dev = (struct diag_l0_sim_device *) dl0d->l0_int;
+	simfile = dev->simfile.val.str;
+
 	if (diag_l0_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr, FLFMT "open simfile %s proto=%d\n", FL, simfile, iProtocol);
-
-	diag_l0_sim_init();
-
-	// Create diag_l0_sim_device:
-	if ((rv=diag_calloc(&dev, 1)))
-		return diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 	dev->sim_last_ecu_responses = NULL;
 
-	// Create diag_l0_device:
-	dl0d = diag_l0_new(&diag_l0_sim, (void *)dev);
-	if (!dl0d) {
-		free(dev);
-		return diag_pseterr(rv);
-	}
-
 	// Open the DB file:
 	if ((dev->fp = fopen(simfile, "r")) == NULL) {
 		fprintf(stderr, FLFMT "Unable to open file \"%s\": ", FL, simfile);
-		free(dev);
-		diag_l0_del(dl0d);
-		return diag_pseterr(DIAG_ERR_GENERAL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	rewind(dev->fp);
@@ -565,15 +543,17 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 	// Read the configuration flags from the db file:
 	sim_read_cfg(dev);
 
+	dl0d->opened = 1;
+
 	/* if a specific proto was set, refuse a mismatched connection */
 	if (dev->proto_restrict) {
 		if (dev->proto_restrict != iProtocol) {
 			diag_l0_sim_close(dl0d);
-			return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
+			return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 		}
 	}
 
-	return dl0d;
+	return 0;
 }
 
 
@@ -581,40 +561,27 @@ diag_l0_sim_open(UNUSED(const char *subinterface), int iProtocol)
 static void
 diag_l0_sim_close(struct diag_l0_device *dl0d)
 {
-	if (!dl0d) return;
+	assert(dl0d != NULL);
+	//if (!dl0d) return;
 
 	struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)dl0d->l0_int;
-
-	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
+	assert(dev != NULL);
 
 	// If debugging, print to stderr.
 	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr, FLFMT "dl0d=%p closing simfile\n", FL,
 			(void *)dl0d);
 
-	if (dev) {
-		if (dev->fp != NULL)
-			fclose(dev->fp);
-		free(dev);
-	}
-	diag_l0_del(dl0d);
+	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
+
+	if (dev->fp != NULL)
+		fclose(dev->fp);
+
+	dl0d->opened = 0;
 	return;
 }
 
-/* XXX WIP, this should be run after _close() */
-static void
-sim_del(struct diag_l0_device * dl0d) {
-	struct diag_l0_sim_device *dev;
-
-	if (dl0d==NULL) return;
-
-	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
-
-	diag_cfg_clear(&dev->simfile);
-	diag_l0_sim_close(dl0d);
-	return;
-}
 
 // Simulates the bus initialization.
 static int
@@ -791,14 +758,6 @@ diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 }
 
 
-//called from outside to update local filename pointer.
-extern void
-diag_l0_sim_setfile(char * fname)
-{
-	simfile=fname;
-	return;
-}
-
 static struct cfgi*
 sim_getcfg(struct diag_l0_device *dl0d) {
 	struct diag_l0_sim_device *dev;
@@ -817,9 +776,6 @@ const struct diag_l0 diag_l0_sim =
 	"Car Simulator interface",
 	"CARSIM",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM | DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
-	sim_new,
-	sim_getcfg,
-	sim_del,
 	diag_l0_sim_init,
 	diag_l0_sim_open,
 	diag_l0_sim_close,
@@ -827,5 +783,8 @@ const struct diag_l0 diag_l0_sim =
 	diag_l0_sim_send,
 	diag_l0_sim_recv,
 	diag_l0_sim_setspeed,
-	diag_l0_sim_getflags
+	diag_l0_sim_getflags,
+	sim_new,
+	sim_getcfg,
+	sim_del
 };

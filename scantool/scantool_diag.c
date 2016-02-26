@@ -198,7 +198,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 {
 	unsigned int start, end, i;
 	int rv;
-	struct diag_l0_device *dl0d;
+	struct diag_l0_device *dl0d = global_dl0d;
 	struct diag_l2_conn *d_conn;
 	uint32_t funcmode = 0;
 
@@ -207,6 +207,11 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 	}
 	if  (strcmp(argv[1], "?") == 0) {
 		return CMD_USAGE;
+	}
+
+	if (!dl0d) {
+		printf("No global L0. Please select + configure L0 first\n");
+		return CMD_FAILED;
 	}
 
 	start = htoi(argv[1]);
@@ -239,11 +244,8 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 		return CMD_OK;
 	}
 	/* Open interface using hardware type ISO9141 */
-	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface,
-		DIAG_L1_ISO9141);
-	if (dl0d == NULL)
-	{
-		rv = diag_geterr();
+	rv = diag_l2_open(dl0d, DIAG_L1_ISO9141);
+	if (rv) {
 		printf("Failed to open hardware interface, error 0x%X",rv);
 		if (rv == DIAG_ERR_PROTO_NOTSUPP)
 			printf(", does not support requested L1 protocol\n");
@@ -280,7 +282,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 
 			global_state = STATE_CONNECTED;
 			global_l2_conn = d_conn;
-			global_l2_dl0d = dl0d;
+			global_dl0d = dl0d;
 
 			/* Get the keybytes */
 			diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_DATA, &d);
@@ -373,10 +375,10 @@ cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
 	if (global_l3_conn == NULL) {
 		// no other l3 conns, so stop the global L2 conn
 		diag_l2_StopCommunications(global_l2_conn);
-		diag_l2_close(global_l2_dl0d);
+		diag_l2_close(global_dl0d);
 
 		global_l2_conn = NULL;
-		global_l2_dl0d = NULL;
+		global_dl0d = NULL;
 		global_state = STATE_IDLE;
 	} else {
 		printf("There is another active L3 connection : %p\n : %s",

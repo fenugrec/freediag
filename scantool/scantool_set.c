@@ -42,7 +42,7 @@
 /* struct global_cfg contains all global parameters */
 struct globcfg global_cfg;
 
-struct diag_l0_device *test_dl0d;	//global dl0d test
+struct diag_l0_device *global_dl0d;	//global dl0d test
 
 #define DEFAULT_INTERFACE CARSIM	//index into l0_names below
 const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM},
@@ -54,10 +54,8 @@ enum l0_nameindex set_interface;	//hw interface to use
 char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
 
 /** deprecated : **/
-char *set_simfile;	//source for simulation data
-extern void diag_l0_sim_setfile(char * fname);
-extern unsigned int diag_l0_dumb_getopts(void);
-extern void diag_l0_dumb_setopts(unsigned int);
+//extern unsigned int diag_l0_dumb_getopts(void);
+//extern void diag_l0_dumb_setopts(unsigned int);
 
 /*
  * XXX All commands should probably have optional "init" hooks.
@@ -85,21 +83,15 @@ int set_init(void)
 	set_interface = l0_names[DEFAULT_INTERFACE].code;	/* Default H/w interface to use */
 
 	strncpy(set_subinterface,"/dev/null",SUBINTERFACE_MAX-1);
-	printf( "%s: Interface set to default: %s on %s\n", progname, l0_names[set_interface_idx].longname, set_subinterface);
+	printf( "%s: Interface set to default: %s on %s\n", progname, l0_names[set_interface_idx].shortname, set_subinterface);
 
-	if (diag_calloc(&set_simfile, strlen(DB_FILE)+1))
-		return diag_iseterr(DIAG_ERR_GENERAL);
-	strcpy(set_simfile, DB_FILE);			//default simfile for use with CARSIM
-	diag_l0_sim_setfile(set_simfile);
-	test_dl0d=NULL;
+	global_dl0d=NULL;
 
 	return 0;
 }
 
 void set_close(void)
 {
-	if (set_simfile)
-		free(set_simfile);
 	return;
 }
 
@@ -108,7 +100,6 @@ void set_close(void)
 /* SET sub menu */
 static int cmd_set_custom(int argc, char **argv);
 static int cmd_set_help(int argc, char **argv);
-//static int cmd_exit(int argc, char **argv);
 static int cmd_set_show(int argc, char **argv);
 static int cmd_set_speed(int argc, char **argv);
 static int cmd_set_testerid(int argc, char **argv);
@@ -120,7 +111,7 @@ static int cmd_set_initmode(int argc, char **argv);
 static int cmd_set_display(int argc, char **argv);
 static int cmd_set_interface(int argc, char **argv);
 static int cmd_set_dumbopts(int argc, char **argb);
-static int cmd_set_simfile(int argc, char **argv);
+//static int cmd_set_simfile(int argc, char **argv);
 
 const struct cmd_tbl_entry set_cmd_table[] =
 {
@@ -136,9 +127,6 @@ const struct cmd_tbl_entry set_cmd_table[] =
 
 	{ "dumbopts", "dumbopts [opts]", "Dumb interface specific options. Use set dumbopts ? to get details.",
 		cmd_set_dumbopts, 0, NULL},
-
-	{ "simfile", "simfile [filename]", "Simulation file to use as data input. See freediag_carsim.db for an example",
-		cmd_set_simfile, FLAG_FILE_ARG, NULL},
 
 	{ "display", "display [english/metric]", "English or metric display",
 		cmd_set_display, 0, NULL},
@@ -188,10 +176,70 @@ const char * const l2_initmodes[] =
 	"5BAUD", "FAST", "CARB", NULL
 };
 
-// handle dynamic options
+// handle dynamic options (L0-specific).
+// argv[0] is the config shortname, etc.
 static int cmd_set_custom(int argc, char **argv) {
-	printf("argc=%d\n", argc);
-	(void) argv;
+	struct cfgi *cfgp;
+	char *setstr;
+	bool helping=0;
+	bool show_current=0;
+
+	if (!global_dl0d) return CMD_FAILED;
+
+	if (argc >= 2) {
+		if (strcmp(argv[1], "?") == 0) {
+			helping = 1;
+		}
+	} else {
+		// no args: display current settings
+		 show_current = 1;
+	}
+
+	/* find the config item */
+	LL_FOREACH(diag_l0_getcfg(global_dl0d), cfgp) {
+		if (strcasecmp(cfgp->shortname, argv[0]) == 0) break;
+	}
+
+	if (!cfgp) {
+		printf("No such item !\n");
+		return CMD_FAILED;
+	}
+
+	if (show_current) {
+		char *val = diag_cfg_getstr(cfgp);
+		printf("%s: %s\n", argv[0], val);
+		free(val);
+		return CMD_OK;
+	}
+
+	if (helping) {
+		printf("%s\n", cfgp->descr);
+		//TODO : print possible vals ?
+		return CMD_OK;
+	}
+
+	/* normal mode : set param to argv[1] */
+/* TODO : move this to diag_cfg.* if it works */
+	switch (cfgp->type) {
+	case CFGT_STR:
+		diag_cfg_setstr(cfgp, argv[1]);
+		break;
+	case CFGT_U8:
+		diag_cfg_setu8(cfgp, (uint8_t) atoi(argv[1]));
+		break;
+	case CFGT_INT:
+		diag_cfg_setint(cfgp, atoi(argv[1]));
+		break;
+	case CFGT_BOOL:
+		diag_cfg_setbool(cfgp, (bool) atoi(argv[1]));
+		break;
+	default:
+		return CMD_FAILED;
+	}
+
+	setstr = diag_cfg_getstr(cfgp);
+	printf("%s set to: %s\n", cfgp->shortname, setstr);
+	free(setstr);
 	return CMD_OK;
 }
 
@@ -200,10 +248,8 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 {
 	/* Show stuff; calling the cmd_set_*() functions with argc=0 displays the current setting. */
 	cmd_set_interface(0,NULL);
-	if (set_interface==CARSIM)
-		printf("simfile: %s\n", set_simfile);
-	if (set_interface==DUMB)
-		printf("dumbopts: %#02x\n", diag_l0_dumb_getopts());
+	//if (set_interface==DUMB)
+//		printf("dumbopts: %#02x\n", diag_l0_dumb_getopts());
 	cmd_set_speed(0, NULL);
 	cmd_set_display(0,NULL);
 	cmd_set_testerid(0,NULL);
@@ -214,9 +260,9 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 	cmd_set_initmode(0,NULL);
 
 	/* Parse L0-specific config items */
-	if (test_dl0d && test_dl0d->dl0->diag_l0_getcfg) {
+	if (global_dl0d) {
 		struct cfgi *cfgp;
-		LL_FOREACH(test_dl0d->dl0->diag_l0_getcfg(test_dl0d), cfgp) {
+		LL_FOREACH(diag_l0_getcfg(global_dl0d), cfgp) {
 			char *cs = diag_cfg_getstr(cfgp);
 			if (cfgp->shortname == NULL || cs==NULL) continue;
 
@@ -243,9 +289,9 @@ static int cmd_set_interface(int argc, char **argv)
 		for (i=0; l0_names[i].code != LAST; i++) {
 			//loop through l0 interface names, either printing or comparing to argv[1]
 			if (helping)
-				printf("%s ", (l0_names[i].longname));
+				printf("%s ", (l0_names[i].shortname));
 			else
-				if (strcasecmp(argv[1], l0_names[i].longname) == 0) {
+				if (strcasecmp(argv[1], l0_names[i].shortname) == 0) {
 					set_interface = l0_names[i].code;
 					set_interface_idx=i;
 					found = 1;
@@ -253,6 +299,7 @@ static int cmd_set_interface(int argc, char **argv)
 				}
 		}
 		if (helping) {
+			//XXX CFG rework TODO : split out of here and into L0 cfgi
 			//"?" was entered
 			int numports, i;
 			char ** portlist = diag_tty_getportlist(&numports);
@@ -270,12 +317,12 @@ static int cmd_set_interface(int argc, char **argv)
 			if (argc > 2)	//there's also a "subinterface" aka devicename
 				strncpy(set_subinterface, argv[2], SUBINTERFACE_MAX-1);
 			printf("interface is now %s on %s\n",
-				l0_names[set_interface_idx].longname, set_subinterface);
+				l0_names[set_interface_idx].shortname, set_subinterface);
 			if (l0_names[set_interface_idx].code==DUMB) {
 				printf("Note concerning generic (dumb) interfaces : there are additional\n"
 					"options which can be set with \"set dumbopts\". By default\n"
 					"\"K-line only\" and \"MAN_BREAK\" are set. \n");
-					diag_l0_dumb_setopts(-1);	//this forces defaults.
+//					diag_l0_dumb_setopts(-1);	//this forces defaults.
 			}
 			if (l0_names[set_interface_idx].code==DUMBT)
 				printf("*** Warning ! The DUMBT driver is only for electrical ***\n"
@@ -285,38 +332,28 @@ static int cmd_set_interface(int argc, char **argv)
 		}
 	} else {
 		printf("interface: using %s on %s\n",
-			l0_names[set_interface_idx].longname, set_subinterface);
+			l0_names[set_interface_idx].shortname, set_subinterface);
 		return CMD_OK;
 	}
 	/* close + free current global dl0d. */
-	if (0) {
+	if (global_dl0d) {
 		/* XXX warn before breaking a (possibly) active L0-L2 chain */
-		test_dl0d->dl0->close(test_dl0d);
-		if (test_dl0d->dl0->diag_l0_del) test_dl0d->dl0->diag_l0_del(test_dl0d);
-		test_dl0d=NULL;
+		diag_l0_close(global_dl0d);
+		diag_l0_del(global_dl0d);
 	}
 
-	if (0) {
-		const struct diag_l0 *l0dev;
-		int i;
-		for (i=0; l0dev_list[i]; i++) {
-			l0dev = l0dev_list[i];
-			if (strcmp(l0_names[set_interface_idx].longname, l0dev->shortname) == 0) {
-				/* Found it */
-				if (l0dev->diag_l0_new) test_dl0d = l0dev->diag_l0_new();
-				if (!test_dl0d) printf("Error loading interface %s.\n", l0dev->shortname);
-				break;
-			}
-		}
-	}
+	global_dl0d = diag_l0_new(l0_names[set_interface_idx].shortname);
+	if (!global_dl0d) printf("Error loading interface %s.\n", l0_names[set_interface_idx].shortname);
+
 	return CMD_OK;
 }
 
-
+#if 0	//WIP for cfg rework
 //Update simfile name to be used.
 //Current behaviour : updates the simfile even if the interface isn't set to CARSIM.
 static int cmd_set_simfile(int argc, char **argv)
 {
+
 	if (argc > 1) {
 		if (strcmp(argv[1], "?") == 0) {
 			printf("Simulation file: with CARSIM interface, this file contains\n"
@@ -340,8 +377,10 @@ static int cmd_set_simfile(int argc, char **argv)
 		//no arguments
 		printf("Simulation file: using %s\n", set_simfile);
 	}
+
 	return CMD_OK;
 }
+#endif
 
 static int
 cmd_set_display(int argc, char **argv)
@@ -373,6 +412,7 @@ cmd_set_speed(int argc, char **argv)
 	return CMD_OK;
 }
 
+//XXX CFG rework, TODO : move to L0 custom CFGI
 static int cmd_set_dumbopts(int argc, char **argv) {
 	unsigned int tmp;
 	if (argc >1) {
@@ -396,10 +436,11 @@ static int cmd_set_dumbopts(int argc, char **argv) {
 			return CMD_OK;
 		}
 		tmp=htoi(argv[1]);
+		(void) tmp;
 		//we just set the l0 flags to whatever htoi parsed.
-		diag_l0_dumb_setopts(tmp);
+		//diag_l0_dumb_setopts(tmp);
 	}
-	printf("Current dumbopts=0x%X\n", diag_l0_dumb_getopts());
+	//printf("Current dumbopts=0x%X\n", diag_l0_dumb_getopts());
 
 	return CMD_OK;
 }

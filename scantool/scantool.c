@@ -90,7 +90,7 @@ struct diag_l2_conn *global_l2_conn;
 struct diag_l3_conn *global_l3_conn;
 enum globstate global_state = STATE_IDLE;
 uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
-struct diag_l0_device *global_l2_dl0d;		/* L2 dl0d */
+struct diag_l0_device *global_dl0d;
 
 
 /*
@@ -533,7 +533,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 
 	/* Put in src/dest etc, L3 or L2 may override/ignore them */
 	msg.src = global_cfg.src;
-	msg.dest = global_cfg.tgt;	/* Current set destination */
+	msg.dest = global_cfg.tgt;
 
 	/* XXX add funcmode flags */
 
@@ -708,9 +708,13 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 	flag_type type, unsigned int bitrate, target_type target, source_type source )
 {
 	int rv;
-	struct diag_l0_device *dl0d;
+	struct diag_l0_device *dl0d = global_dl0d;
 	struct diag_l2_conn *d_conn = NULL;
 
+	if (!global_dl0d) {
+		printf("No global L0. Please select + configure L0 first\n");
+		return NULL;
+	}
 	/* Clear out all ECU data as we're starting again */
 	clear_data();
 
@@ -721,9 +725,8 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 		return NULL;
 	}
 
-	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, L1protocol);
-	if (dl0d == NULL) {
-		rv = diag_geterr();
+	rv = diag_l2_open(dl0d, L1protocol);
+	if (rv) {
 		if ((rv != DIAG_ERR_BADIFADAPTER) &&
 			(rv != DIAG_ERR_PROTO_NOTSUPP))
 			fprintf(stderr, "Failed to open hardware interface\n");
@@ -742,7 +745,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 		return NULL;
 	}
 
-	global_l2_dl0d=dl0d;
+	global_dl0d=dl0d;
 
 	/*
 	 * Now Get the L2 flags, and if this is a network type where
@@ -843,9 +846,14 @@ int
 do_l2_generic_start(void)
 {
 	struct diag_l2_conn *d_conn;
-	struct diag_l0_device *dl0d;
+	struct diag_l0_device *dl0d = global_dl0d;
 	int rv;
 	flag_type flags = 0;
+
+	if (!dl0d) {
+		printf("No global L0. Please select + configure L0 first\n");
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	rv = diag_init();
 	if (rv != 0) {
@@ -855,13 +863,10 @@ do_l2_generic_start(void)
 	}
 
 	/* Open interface using current L1 proto and hardware */
-	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, global_cfg.L1proto);
-	if (dl0d == 0) {
-		//indicating an error
-		rv = diag_geterr();
-		//if ((rv != DIAG_ERR_BADIFADAPTER) && (rv != DIAG_ERR_PROTO_NOTSUPP))
-		fprintf(stderr, "l2_generic_start: open failed for protocol %d with %s on %s\n",
-			global_cfg.L1proto,l0_names[set_interface_idx].longname,set_subinterface);
+	rv = diag_l2_open(dl0d, global_cfg.L1proto);
+	if (rv) {
+		fprintf(stderr, "l2_generic_start: open failed for protocol %d on %s\n",
+			global_cfg.L1proto, dl0d->dl0->shortname);
 		return diag_iseterr(rv);
 	}
 
@@ -884,7 +889,7 @@ do_l2_generic_start(void)
 	/* Connected ! */
 
 	global_l2_conn = d_conn;
-	global_l2_dl0d = dl0d;	/* Saved for close */
+	global_dl0d = dl0d;	/* Saved for close */
 
 	return 0;
 }
@@ -1582,7 +1587,7 @@ ecu_connect(void)
 				fprintf(stderr, "Failed to enable SAEJ1979 mode\n");
 				//So we'll try another protocol. But close that L2 first:
 				diag_l2_StopCommunications(global_l2_conn);
-				diag_l2_close(global_l2_dl0d);
+				diag_l2_close(global_dl0d);
 
 				global_l2_conn = NULL;
 				global_state = STATE_IDLE;

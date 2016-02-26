@@ -70,6 +70,9 @@ int diag_cfg_setbool(struct cfgi *cfgp, bool val);
 int diag_cfg_setu8(struct cfgi *cfgp, uint8_t val);
 int diag_cfg_setint(struct cfgi *cfgp, int val);
 
+//interpret 'str' correctly and set param accordingly
+//int diag_cfg_set(struct cfgi *cfgp, const char *str);
+
 //set config value to one of the predefined options. Ret 0 if ok. Note: optid is 0-based
 int diag_cfg_setopt(struct cfgi *cfgp, int optid);
 

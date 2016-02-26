@@ -6,6 +6,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * 2009-2015 fenugrec
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -182,11 +183,15 @@ struct diag_l1_initbus_args
 #define DIAG_L1_INITBUS_2SLOW	3	/* 2 second low on bus, ISO9141-1989 style ? */
 
 /********** Public L1 interface **********/
-//diag_l1_init : parse through the l0dev_list linked list
-//and call ->init for each of them. returns 0 on success (always succeeds)
-// must not be used to allocate memory or open handles !
+/** Parse through the l0dev_list linked list
+ * and call ->init for each of them.
+ * @return 0 on success (always succeeds)
+ *
+ * must not be used to allocate memory or open handles !
+ */
 int diag_l1_init(void);
-//diag_l1_end : opposite of diag_l1_init . does nothing for now
+
+/** Opposite of diag_l1_init; does nothing for now */
 int diag_l1_end(void);
 
 /** Calls L0 -\>initbus.
@@ -197,13 +202,12 @@ int diag_l1_end(void);
  */
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 
-//diag_l1_open : calls l0 ->open with the specified L1 protocol; returns a
-// *diag_l0_device on success, 0 on failure (pseterr).
-//	Alloc + fill + return a new diag_l0_device
-//	struct if succesful.
-struct diag_l0_device *diag_l1_open(const char *name, const char *subinterface, int L1protocol);
-//diag_l1_close : calls diag_l0_close as required; always succeeds. Close & free everything XXX.
-void diag_l1_close(struct diag_l0_device **);
+/** calls l0 ->open with the specified L1 protocol;
+* @return 0 if ok
+*/
+int diag_l1_open(struct diag_l0_device *, int L1protocol);
+/** Calls diag_l0_close as required; always succeeds. */
+void diag_l1_close(struct diag_l0_device *);
 
 /** Send data.
  * @param p4 : inter-byte spacing (ms), if applicable.

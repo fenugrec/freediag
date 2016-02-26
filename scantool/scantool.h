@@ -103,7 +103,7 @@ extern unsigned int ecu_count;
 
 extern uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
 
-extern struct diag_l0_device *global_l2_dl0d;	/* L2 file descriptor */
+extern struct diag_l0_device *global_dl0d;	/* L2 file descriptor */
 
 struct diag_l2_conn;
 struct diag_l3_conn;
@@ -183,7 +183,7 @@ extern enum globstate global_state;
 enum l0_nameindex {MET16, BR1, ELM, CARSIM, DUMB, DUMBT, LAST};
 struct l0_name
 {
-	char * longname;
+	char * shortname;
 	enum l0_nameindex code;
 };
 
@@ -209,6 +209,8 @@ extern struct globcfg {
 	int	L1proto;	/* L1 (H/W) Protocol type */
 	int	L2proto;	/* L2 (S/W) Protocol type; value of ->diag_l2_protocol. */
 	int	L2idx;		/* index of that L2 proto in struct l2proto_list[] */
+
+	//struct diag_l0_device *dl0d;	/* L0 device to use */
 } global_cfg;
 
 /** J1979 PID structures + utils **/

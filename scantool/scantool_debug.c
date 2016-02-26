@@ -312,7 +312,9 @@ static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
 
 static int cmd_debug_l0test(int argc, char **argv) {
 #define MAX_L0TEST 14
+	struct diag_l0_device *dl0d = global_dl0d;
 	unsigned int testnum=0;
+
 	if ((argc <= 1) || (strcmp(argv[1], "?") == 0) || (sscanf(argv[1],"%u", &testnum) != 1)) {
 		printf("usage: %s [testnum], where testnum is a number between 1 and %d.\n", argv[0], MAX_L0TEST);
 		printf("you must have done \"set interface dumbt [port]\" and \"set dumbopts\" before proceding.\n");
@@ -339,6 +341,15 @@ static int cmd_debug_l0test(int argc, char **argv) {
 		return CMD_USAGE;
 	}
 
+	if (!dl0d) {
+		printf("No global L0. Please select + conf L0 first\n");
+		return CMD_FAILED;
+	}
+
+	if (strcmp(dl0d->dl0->shortname, "DUMBT") != 0) {
+		printf("Wrong global L0, please set to DUMBT\n");
+		return CMD_FAILED;
+	}
 	if (diag_init())
 		return CMD_FAILED;
 
@@ -347,7 +358,9 @@ static int cmd_debug_l0test(int argc, char **argv) {
 	// I think the easiest way to pass on "testnum" on to diag_l0_dumbtest.c is
 	// to pretend testnum is an L1protocol. Then we can use diag_l2_open to start the
 	// test.
-	(void) diag_l2_open("DUMBT", set_subinterface, (int) testnum);
+
+	(void) diag_l2_open(dl0d, (int) testnum);
+
 	//We don't need to _close anything since DUMBT is designed to "fail", i.e.
 	//return no new dl0d, etc.
 	return CMD_OK;

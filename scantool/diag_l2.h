@@ -6,6 +6,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * 2009-2015 fenugrec
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,17 +49,11 @@ struct diag_l2_link
 	struct diag_l0_device * 	l2_dl0d;	/* Link we're using to talk to lower layer */
 	int	l1proto;		/* L1 protocol used; see diag_l1.h*/
 
-	char	diag_l2_name[DIAG_NAMELEN];	/* XXX this is set to the l0 driver shortname !? */
-
 	uint32_t	l1flags;		/* L1 flags, filled with diag_l1_getflags in diag_l2_open*/
 	int	l1type;			/* L1 type (see diag_l1.h): mask of supported L1 protos. */
 
 	struct diag_l2_link *next;		/* linked list of all connections */
 
-	//these two elements are unused/not required right now. I don't see how they can possibly
-	//be used with the current structure of freediag, so they're commented out for the time being.
-//	struct diag_l2_link *l1_next;		/* linked list of all ECUs with same ID on different interfaces */
-//	struct diag_l2_link *l1_prev;		/* prev to make list removal easy */
 };
 
 struct diag_msg;
@@ -306,12 +301,6 @@ void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  * l2_Init()
  *	use:	call at start time to let layer 2 initialise itself
  *
- * l2_Open()
- *	use:	opens up a layer 1 device for usage, setting speed etc etc
- *		as requested.
-	params:	device - device name to open
-		id - device sub-ID
- *		L1protocol - Layer 1 protocol to use (Hardware layer)
  * l2_Close()
  *	use:	closes a L1 device -
  *
@@ -383,7 +372,15 @@ void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  */
 int diag_l2_init(void);
 int diag_l2_end(void);
-struct diag_l0_device * diag_l2_open(const char *device_name, const char *subinterface, int L1protocol);
+
+/** Opens a layer 1 device for usage
+
+ * Opens L1 + L0, setting speed etc etc as requested.
+ * @param dl0d L0 device to use
+ * @return 0 if ok
+ */
+int diag_l2_open(struct diag_l0_device *dl0d, int L1protocol);
+
 int diag_l2_close(struct diag_l0_device *);
 
 struct diag_l2_conn * diag_l2_StartCommunications(struct diag_l0_device *, int L2protocol,
@@ -404,7 +401,7 @@ int diag_l2_ioctl(struct diag_l2_conn *connection, unsigned int cmd, void *data)
 void diag_l2_timer(void);	/* Regular timer routine */
 
 extern int diag_l2_debug;
-extern struct diag_l2_conn  *global_l2_conn;
+extern struct diag_l2_conn  *global_l2_conn;	//TODO : move in globcfg struct
 
 /*
  * Interface to individual protocols

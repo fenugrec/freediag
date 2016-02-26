@@ -119,10 +119,12 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 {
 	int rv;
 	struct diag_l2_conn *d_conn;
-	struct diag_l0_device *dl0d;
+	struct diag_l0_device *dl0d = NULL;
 	flag_type flags = 0;
 
+#if 0	//XXX CFG_REWORK
 	dl0d = diag_l2_open("DUMB", set_subinterface, DIAG_L1_RAW);
+#endif
 	if (! dl0d) {
 		printf("could not open %s\n",set_subinterface);
 		return -1;
@@ -242,14 +244,16 @@ UNUSED(static int do_l1_test(void));
 static int
 do_l1_test(void)
 {
-	struct diag_l0_device *dl0d;
+	struct diag_l0_device *dl0d = NULL;
 	int rv;
 	uint8_t buf[MAXRBUF];
 	int rcvd;
 	struct diag_serial_settings set;
 
+#if 0	//XXX CFG_REWORK
 	dl0d = diag_l1_open("DUMB", set_subinterface, DIAG_L1_RAW);
-	if (dl0d==0)
+#endif
+	if (!dl0d)
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	printf("open dl0d = %p\n", (void *)dl0d);
 
@@ -283,7 +287,7 @@ do_l1_test(void)
 	printf("sleeping for 5\n");
 	diag_os_millisleep(5000);
 
-	diag_l1_close(&dl0d);
+	diag_l1_close(dl0d);
 	(void) diag_os_close();
 
 	return 0;

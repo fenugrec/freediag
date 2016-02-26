@@ -3,6 +3,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * 2009-2015 fenugrec
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +46,6 @@
 #include "diag_l1.h"
 
 
-int diag_l0_debug;	//debug flags for l0
 int diag_l1_debug;	//debug flags for l1
 
 
@@ -90,53 +90,34 @@ int diag_l1_end(void) {
 }
 
 /*
- * Open the diagnostic device, return a new diag_l0_device .
+ * Open the L0 device with L1 proto.
  *
- * Finds the unique name in the l0 device list (l0dev_list),
- * calls its diag_l0_open function.
- *
- * This is passed a L1 subinterface (ie, what type of physical interface
- * to run on)
  */
-struct diag_l0_device *
-diag_l1_open(const char *name, const char *subinterface, int l1protocol)
+int
+diag_l1_open(struct diag_l0_device *dl0d, int l1protocol)
 {
-	const struct diag_l0 *l0dev;
 	if (diag_l1_debug & DIAG_DEBUG_OPEN)
-		fprintf(stderr, FLFMT "diag_l1_open %s on %s with l1 proto %d\n", FL,
-				name, subinterface, l1protocol);
+		fprintf(stderr, FLFMT "diag_l1_open(0x%p, l1 proto=%d\n", FL,
+				(void *)dl0d, l1protocol);
 
-	int i=0;
-	while (l0dev_list[i]) {
-		l0dev=l0dev_list[i];
-		if (strcmp(name, l0dev->shortname) == 0) {
-			/* Found it */
+	/* Check h/w supports this l1 protocol */
+	if ((dl0d->dl0->l1proto_mask & l1protocol) == 0)
+		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 
-			/* Check h/w supports this l1 protocol */
-			if ((l0dev->l1proto_mask & l1protocol) == 0)
-				return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
-
-			/* Call the open routine with the requested L1 protocol */
-			return l0dev->open(subinterface, l1protocol);
-		}
-		i++;
-	}
-	fprintf(stderr, FLFMT "diag_l1_open: did not recognize %s\n", FL, name);
-	/* Not found */
-	return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+	/* Call the open routine with the requested L1 protocol */
+	return diag_l0_open(dl0d, l1protocol);
 }
 
 //diag_l1_close : call the ->close member of the
 //specified diag_l0_device.
 void
-diag_l1_close(struct diag_l0_device **ppdl0d)
+diag_l1_close(struct diag_l0_device *dl0d)
 {
 	if (diag_l1_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr, FLFMT "entering diag_l1_close: ppdl0d=%p\n", FL,
-			(void *) ppdl0d);
-	if (ppdl0d && *ppdl0d) {
-		(*ppdl0d)->dl0->close(*ppdl0d);
-		*ppdl0d=NULL;
+		fprintf(stderr, FLFMT "entering diag_l1_close: dl0d=%p\n", FL,
+			(void *) dl0d);
+	if (dl0d) {
+		diag_l0_close(dl0d);
 	}
 	return;
 }

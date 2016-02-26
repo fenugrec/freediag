@@ -248,7 +248,7 @@ static void aif_disconnect (UNUSED(void *data))
 	}
 
 	diag_l2_StopCommunications(global_l2_conn);
-	diag_l2_close(global_l2_dl0d);
+	diag_l2_close(global_dl0d);
 
 	global_l2_conn = NULL;
 	global_state = STATE_IDLE;

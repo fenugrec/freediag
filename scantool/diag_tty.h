@@ -50,7 +50,7 @@ struct diag_serial_settings {
  *
  * @param[out] numports : will hold the # of ports found.
  * @return argv-style list of full port names, that must be free'd with
- * diag_tty_freeportlist()
+ * strlist_free()
  *
  */
 char ** diag_tty_getportlist(int *numports);

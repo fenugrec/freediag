@@ -3,6 +3,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
+ * 2009-2015 fenugrec
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,18 +66,16 @@ static int diag_l2_init_done=0;	/* Init done */
  */
 static struct diag_l2_link *diag_l2_links;
 
-/*
- * Find our link to the L1 device, by name
- * (try to match dev_name with  ->diag_l2_name of one of the diag_l2_link
- * elements of the diag_l2_links linked-list.
+/** Find an existing L2 link using the specified L0 device.
+ * @return NULL if not found
  */
 static struct diag_l2_link *
-diag_l2_findlink(const char *dev_name)
+diag_l2_findlink(struct diag_l0_device *dl0d)
 {
 	struct diag_l2_link *dl2l=NULL;
 
 	LL_FOREACH(diag_l2_links, dl2l) {
-		if ( strcmp(dl2l->diag_l2_name , dev_name) == 0) break;
+		if ( dl2l->l2_dl0d == dl0d) break;
 	}
 
 	return dl2l;
@@ -206,7 +205,7 @@ diag_l2_closelink(struct diag_l2_link *dl2l)
 	if (dl2l->l2_dl0d == NULL)
 		fprintf(stderr, FLFMT "**** Corrupt DL2L !! Report this !!!\n", FL);
 	else
-		diag_l1_close(&dl2l->l2_dl0d);
+		diag_l1_close(dl2l->l2_dl0d);
 
 	free(dl2l);
 
@@ -214,56 +213,50 @@ diag_l2_closelink(struct diag_l2_link *dl2l)
 }
 
 /*
- * Open a link to a Layer 1 device, returns dl0d. If device is already
- * open but its l1 protocol is different, close and then re-open it;
- * if it matches L1proto return the existing dl0d.
+ * Open an L2 link over specified diag_l0_device.
+ * Aborts if the L1 protocol doesn't match.
+ * Ret 0 if ok
  *
- * The subinterface indicates the device to use
- *
- * We need to tell L1 what protocol we are going to use, because some L1
+ * We need to specify the L1 protocol, because some L1
  * interfaces are smart and can support multiple protocols, also L2 needs
  * to know later (and asks L1)
  */
-struct diag_l0_device *
-diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
+int
+diag_l2_open(struct diag_l0_device *dl0d, int L1protocol)
 {
 	int rv;
-	struct diag_l0_device *dl0d;
 	struct diag_l2_link *dl2l;
+
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
-			FLFMT "l2_open %s on %s, L1proto=%d\n",
-			FL, dev_name, subinterface, L1protocol);
+			FLFMT "l2_open %s on %p, L1proto=%d\n",
+			FL, dl0d->dl0->longname, (void *)dl0d, L1protocol);
 
 	/* try to find in linked list */
-	dl2l = diag_l2_findlink(dev_name);
+	dl2l = diag_l2_findlink(dl0d);
 
 	if (dl2l) {
 		if (diag_l2_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr, "\texisting L2 link \"%s\" found\n", dl2l->diag_l2_name);
+			fprintf(stderr, "\texisting L2 link \"%s\" found\n", dl2l->l2_dl0d->dl0->shortname);
 
 		if (dl2l->l1proto != L1protocol) {
-			/* Wrong L1 protocol, close link */
-			diag_l2_closelink(dl2l);
-			dl2l=NULL;
-		} else 	{
+			fprintf(stderr, "Problem : L0 open with wrong L1 proto...\n");
+			return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
+		} else {
 			/* Device was already open, with correct protocol  */
-			return dl2l->l2_dl0d;
+			return 0;
 		}
 	}
 
-
-	/* Else, create the link */
-	if ((rv=diag_calloc(&dl2l, 1))) {
-		return diag_pseterr(rv);
+	rv = diag_l1_open(dl0d, L1protocol);
+	if (rv) {
+		return diag_iseterr(rv);	//forward error to next level
 	}
 
-	dl0d = diag_l1_open(dev_name, subinterface, L1protocol);
-	if (dl0d == NULL) {
-		rv=diag_geterr();
-		free(dl2l);
-		return diag_pseterr(rv);	//forward error to next level
+	/* Create the L2 link */
+	if ((rv=diag_calloc(&dl2l, 1))) {
+		return diag_iseterr(rv);
 	}
 
 	dl0d->dl2_link=dl2l;	/* Associate ourselves with this */
@@ -273,12 +266,10 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 	dl2l->l1type = diag_l1_gettype(dl0d);
 	dl2l->l1proto = L1protocol;
 
-	strcpy(dl2l->diag_l2_name, dev_name);
-
 	/* Put ourselves at the head of the list. */
 	LL_PREPEND(diag_l2_links, dl2l);
 
-	return dl2l->l2_dl0d;
+	return 0;
 }
 
 /*
@@ -299,7 +290,6 @@ diag_l2_open(const char *dev_name, const char *subinterface, int L1protocol)
 int
 diag_l2_close(struct diag_l0_device *dl0d) {
 	struct diag_l2_conn *d_l2_conn;
-	struct diag_l2_link *dl2l;
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr,FLFMT "Entered diag_l2_close for dl0d=%p;\n",
@@ -307,36 +297,21 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 
 	assert(dl0d !=NULL);	//crash if it's null. We need to fix these problems.
 
-	if (dl0d->dl2_link != NULL) {
-		// Check if dl2_link is still referenced by someone in diag_l2_connections
-		LL_FOREACH(diag_l2_connections, d_l2_conn) {
-			if (d_l2_conn->diag_link == dl0d->dl2_link) {
-				fprintf(stderr, FLFMT "Not closing dl0d: used by dl2conn %p!\n", FL,
-					(void *) d_l2_conn);
-				return 0;	//there's still a dl2conn using it !
-			}
-		}
-		//So we found nobody in diag_l2_connections that uses this dl0d + dl2link.
-		if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, "\tclosing unused dl2link %p.\n", (void *) dl0d->dl2_link);
-		diag_l2_closelink(dl0d->dl2_link);	//closelink calls diag_l1_close() as required
-		//
-		return 0;
-	}
-	// this dl0d had no ->dl2_link; check in the linked-list anyway in case
-	// it was orphaned (i.e. dl0d->dl2_link was not set properly...)
-	LL_FOREACH(diag_l2_links, dl2l) {
-		if (dl2l->l2_dl0d == dl0d) {
-			fprintf(stderr, FLFMT "Not closing dl0d: used by dl2link %p!\n", FL,
-				(void *) dl2l);
-			return 0;	//there's still a dl2link using it !
+	// Check if dl0d is still used by someone in diag_l2_connections
+	LL_FOREACH(diag_l2_connections, d_l2_conn) {
+		if (d_l2_conn->diag_link->l2_dl0d == dl0d) {
+			fprintf(stderr, FLFMT "Not closing dl0d: used by dl2conn %p!\n", FL,
+				(void *) d_l2_conn);
+			return diag_iseterr(DIAG_ERR_GENERAL);	//there's still a dl2conn using it !
 		}
 	}
-	//So we parsed all d2 links and found no parents; let's close dl0d.
 
+	// XXX if no diag_l2_conn refers to dl0d, it's safe to assume it's unused ?
+
+	// The dl0d is unused : close
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr, "\tclosing unused dl0d.\n");
-	diag_l1_close(&dl0d);
+		fprintf(stderr, "\tclosing unused dl2link %p.\n", (void *) dl0d->dl2_link);
+	diag_l2_closelink(dl0d->dl2_link);	//closelink calls diag_l1_close() as required
 
 	return 0;
 }

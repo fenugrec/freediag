@@ -22,17 +22,17 @@ struct diag_l0;
 /*
  * L0 device structure
  * This is the structure to interface between the L1 code
- * and the interface-manufacturer dependent code (which is in diag_l0_<if>.c)
+ * and the interface-manufacturer dependent code (in diag_l0_<if>.c)
  * A "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
- * and a given serial port.
+ * and a hardware resource (serial port, file, etc.)
  */
 struct diag_l0_device
 {
 	void *l0_int;					/** Handle for internal L0 data */
 	const struct diag_l0 *dl0;		/** The L0 driver's diag_l0 */
 	struct diag_l2_link *dl2_link;	/** The L2 link using this dl0d */
-	//char *name;					/** XXX MOVED TO TTY INTERNAL device name, like /dev/ttyS0 or \\.\COM3 */
-	void *tty_int;			/** generic holder for internal tty stuff */
+	void *tty_int;			/** generic holder for internal tty stuff. TODO : move inside L0-managed l0_int */
+	bool opened;		/** L0 status */
 };
 
 
@@ -45,24 +45,17 @@ struct diag_l0
 	int 	l1proto_mask;			/** supported L1protocols, defined in  diag_l1.h */
 
 	/* function pointers to L0 code */
-	/* diag_l0_new() : create new driver instance (no open, default params, etc) */
-	struct diag_l0_device *(*diag_l0_new)(void);
-	/* diag_l0_getcfg() : get linked-list of config items. */
-	struct cfgi* (*diag_l0_getcfg)(struct diag_l0_device *dl0d);
-	/* diag_l0_del() : delete driver instance (XXX forces close ?) */
-	void (*diag_l0_del)(struct diag_l0_device *);
 
 	/** set up global/default state of driver */
 	int	(*init)(void);
 
-	struct diag_l0_device *(*open)(const char *subinterface,
-		int l1_proto);
+	int (*_open)(struct diag_l0_device *, int l1_proto);
 
 	/** Close diag_l0_device
 	 *
 	 * Does not free the struct itself, to allow reuse.
 	 */
-	void	(*close)(struct diag_l0_device *);
+	void	(*_close)(struct diag_l0_device *);
 
 	int	(*initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);
@@ -90,18 +83,37 @@ struct diag_l0
 	 * @return bitmask of flags defined in diag_l1.h
 	 */
 	uint32_t	(*getflags)(struct diag_l0_device *);
+
+	/*** Private funcs, do not call directly ! ***/
+	/* These are called from the "public funcs" listed below. */
+	int (*_new)(struct diag_l0_device *);
+	struct cfgi* (*_getcfg)(struct diag_l0_device *);
+	void (*_del)(struct diag_l0_device *);
+
 };
 
 
 
-/** Public funcs **/
-struct diag_l0_device *diag_l0_new(const struct diag_l0 *dl0, void *l0_int);
-void diag_l0_del(struct diag_l0_device *dl0d);
+/***** Public funcs *****/
 
+/** Alloc new dl0d and call L0's "_new";
+ * (no open, default params, etc)
+ * @return 0 if ok */
+struct diag_l0_device *diag_l0_new(const char *shortname);
+
+/** Get linked-list of config items.
+ * @return NULL if no items exist */
+struct cfgi* diag_l0_getcfg(struct diag_l0_device *);
+
+/** Delete driver instance (XXX forces close ?) */
+void diag_l0_del(struct diag_l0_device *);
+
+int diag_l0_open(struct diag_l0_device *, int l1protocol);
+void diag_l0_close(struct diag_l0_device *);
 
 /** globals **/
 
-extern int diag_l0_debug;	// debug flags; defined in l1.c (TODO : move to l0 somewhere)
+extern int diag_l0_debug;	// debug flags
 
 
 /*

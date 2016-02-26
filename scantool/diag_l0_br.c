@@ -173,11 +173,14 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	dev->dev_features = BR_FEATURE_SETADDR;
 
 	/* Get an L0 link */
-	dl0d = diag_l0_new(&diag_l0_br, (void *)dev);
+	dl0d = diag_l0_new();
 	if (!dl0d) {
 		free(dev);
 		return diag_pseterr(rv);
 	}
+	dl0d->dl0 = diag_l0_br;
+	dl0d->l0_int = dev;
+
 	/* try to open TTY */
 	if ((rv=diag_tty_open(dl0d, subinterface))) {
 		diag_l0_del(dl0d);

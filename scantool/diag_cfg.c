@@ -49,7 +49,7 @@ int diag_cfg_setstr(struct cfgi *cfgp, const char *str) {
 			return diag_iseterr(DIAG_ERR_NOMEM);
 		}
 		cfgp->dyn_val = 1;	//need to free
-		strncpy(cfgp->val.str, str, slen);
+		strncpy(cfgp->val.str, str, slen+1);
 		return 0;
 	}
 	return diag_iseterr(DIAG_ERR_BADCFG);

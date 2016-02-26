@@ -551,7 +551,7 @@ cmd_watch(int argc, char **argv)
 	int rv;
 	struct diag_l2_conn *d_l2_conn;
 	struct diag_l3_conn *d_l3_conn=NULL;
-	struct diag_l0_device *dl0d;
+	struct diag_l0_device *dl0d = global_dl0d;
 	bool rawmode = 0;
 	bool nodecode = 0;
 	bool nol3 = 0;
@@ -564,9 +564,14 @@ cmd_watch(int argc, char **argv)
 		else if (strcasecmp(argv[1], "nol3") == 0)
 			nol3 = 1;
 		else {
-			printf("Don't understand \"%s\"\n", argv[1]);
+			printf("Didn't understand \"%s\"\n", argv[1]);
 			return CMD_USAGE;
 		}
+	}
+
+	if (!dl0d) {
+		printf("No global L0. Please select + configure L0 first\n");
+		return CMD_FAILED;
 	}
 
 	rv = diag_init();
@@ -575,9 +580,8 @@ cmd_watch(int argc, char **argv)
 		diag_end();
 		return CMD_FAILED;
 	}
-	dl0d = diag_l2_open(l0_names[set_interface_idx].longname, set_subinterface, global_cfg.L1proto);
-	if (dl0d == NULL) {
-		rv = diag_geterr();
+	rv = diag_l2_open(dl0d, global_cfg.L1proto);
+	if (rv) {
 		printf("Failed to open hardware interface, ");
 		if (rv == DIAG_ERR_PROTO_NOTSUPP)
 			printf("does not support requested L1 protocol\n");
