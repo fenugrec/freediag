@@ -59,15 +59,12 @@
   Helgaas on enhancing the usability of the scantool, sanitising the comments in
   the code and adding functionality to the scantool.
   <p>
-  As of 2014, the project has been in a prolonged coma for the past years, with only a few commits
-  now and then. Some changes in >2.6 linux kernels caused some timing problems which are possibly not
-  entirely solved yet. Work done by current maintainer fenugrec enables freediag to run natively
-  on Windows; support for ELMxxx based interfaces has also  been added recently.
+  From around 2006 to 2014, the project was in a prolonged coma, with only a few commits now and then. Some changes in >2.6 linux kernels caused some timing issues, and the increasing popularity of USB-Serial converters (not handled properly in freediag, in large part due to the ugliness of the linux TTY API) also became a problem. Since 2014, the current maintainer (fenugrec) fixed most of those old issues, adapted freediag to run natively on Windows (i.e. no Cygwin / MSYS requirement), and added proper ELMxxx support.
   
 <p>
   <hr width="60%" align="center">
 
-  <p><b>Current Release:</b> 1.06  (2014-07-20)<br>
+  <p><b>Current Release:</b> 1.07 (2016-02-26)<br>
   Since release 1.01, freediag can run natively on Windows (i.e. without CYGWIN) as well as linux / unix-based platforms.
 
   <p>If the current packages available on <a href="http://www.sourceforge.net/projects/freediag/">SourceForge</a>
@@ -89,19 +86,26 @@
     <li>ISO 9141-2
     <li>ISO 14230
     <li>SAE J1850 (PWM and VPW)
+    <li>SAE J2818 / KWP1281 / VAG (over K line)
     <li>Mercedes Gearbox Protocol
   </ul>
 
+<p><b>Roadmap</b><br>
+"Roadmap" is a overly optimistic perhaps, but here are some possible future enhancements: :
+<ul>
+<li> J2534 device support ?
+<li> Maybe, finally, CAN / ISO15765 support ?
+</ul>
+
+Any help with the above, or any part of freediag, will of course be greatly appreciated.
+
   <p><b>Application Support:</b>
 
-  <ul>
-  <li>
-    SAE J1979 (ODBII) Scantool. See
-    <a href="Scantool-Manual.html">Scantool manual</a> document.
-  <li>
-    <A href="OBD_knowledge.html">
-    Miscellaneous technical documents on car interface standards.</A>
-  </ul>
+<ul>
+	<li> SAE J1979 (ODBII) Scantool. See <a href="Scantool-Manual.html">Scantool manual</a> document.
+	<li> <A href="OBD_knowledge.html"> Miscellaneous technical documents on car interface standards.</A>
+	<li> IRC channel #freediag on irc.freenode.net
+</ul>
   
   <hr width="60%" align="center">
 
