@@ -77,3 +77,4 @@ use the diag_*alloc wrappers defined in diag.h and diag_general.c
 
 13- End-of-line char is LF (0x0A).
 
+14- Linked-list handling : use the macros from "utlist.h"

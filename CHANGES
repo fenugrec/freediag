@@ -6,6 +6,19 @@ I took the liberty of modifying the version number format to MAJOR.MINOR, the MI
 written with 2 digits ( %02d if you will). Some early versions had a suffixed lower-case letter
 indicating a snapshot of the CVS source tree.
 
+*** Release 1.07 ; 2016-02-26
+** Tomek Kazmierczak
+- Added support for VAG KWP1281 (implemented according to SAE J2818) !!
+
+** fenugrec
+- lots of L0/TTY API rework for upcoming changes
+- tty : added code to show available serial ports
+- diag_tty_break() implementation on Win*: modified for more accuracy
+- minor cleanup of CLI code and global variables for upcoming changes
+- L0 Multiplex Engineering ME-T16 driver : many fixes to code rot due to lack of testing
+- Improved J1850 code
+
+
 *** Release 1.06 ; 2015-09-24
 ** Tomek Kazmierczak
 Merged readline completion from Tomasz Kazmierczak:
