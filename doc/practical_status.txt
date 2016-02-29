@@ -1,4 +1,16 @@
 #############################
+Tomasz Ka?mierczak
+-interface : DUMB k-line
+-car : 98? VW,
+-Used to develop KWP1281 (diag_l2_vag.c), so all of that works 100%
+
+#############################
+Camden Lindsay
+-interface : ME T16-002
+-car : ? J1850-PWM
+-now mostly works, some crashes during 'scan' - double free() etc. to be investigated
+
+#############################
 "jeronimo san" @ sf
 -interface : DUMB K-line only with transistors
 -serial port : USB ?, dumbopts=?
@@ -14,7 +26,7 @@
 -result: success except SID07 ? (clarify)
 
 #############################
-fenugrec - main dev, constant re-testing
+fenugrec
 -interface: DUMB K-line only with optocouplers
 -serial port : FTDI USB->serial converter; dumbopts=0x48
 -interface: DUMB K-line only (cheapo ebay "VAG KKL 409" USB->OBD cable)
