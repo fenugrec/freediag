@@ -37,7 +37,6 @@
 
 #include "scantool.h"
 #include "scantool_cli.h"
-#include "diag_l2_iso14230.h" 	//needed to force header type (nisprog)
 
 
 static int cmd_diag_help(int argc, char **argv);
@@ -477,6 +476,7 @@ cmd_diag_sendreq(int argc, char **argv)
 static int cmd_diag_nisprog(int argc, char **argv) {
 	(void) argc;
 	(void) argv;
-	return CMD_OK;
+	printf("Command not included in this build !\n");
+	return CMD_FAILED;
 }
 #endif // NISPROG

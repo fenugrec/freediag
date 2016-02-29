@@ -26,6 +26,7 @@
 
 #include <stdbool.h>
 #include "diag_os.h"
+#include "diag_l2_iso14230.h" 	//needed to force header type (nisprog)
 
 /** fwd decls **/
 uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len);
