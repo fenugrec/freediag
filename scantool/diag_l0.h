@@ -7,6 +7,10 @@
  * GPLv3
  */
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "diag_cfg.h"	//for cfgi
 
 /* Cheats for structs defined elsewhere;
@@ -164,4 +168,7 @@ extern int diag_l0_debug;	// debug flags
  */
 extern const struct diag_l0 *l0dev_list[];	/* defined in diag_config.c */
 
+#if defined(__cplusplus)
+}
+#endif
 #endif // _DIAG_L0_H_
