@@ -5,6 +5,7 @@
 
 /* common L0 code */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -54,6 +55,7 @@ struct diag_l0_device *diag_l0_new(const char *shortname) {
 	return dl0d;
 }
 
+
 /* Delete a diag_l0_device; XXX forces close ?
  *
  * Opposite of diag_l0_new()
@@ -74,3 +76,31 @@ struct cfgi* diag_l0_getcfg(struct diag_l0_device *dl0d) {
 	return NULL;
 }
 
+uint32_t diag_l0_getflags(struct diag_l0_device *dl0d) {
+	assert(dl0d);
+	return dl0d->dl0->_getflags(dl0d);
+}
+
+int diag_l0_recv(struct diag_l0_device *dl0d,
+				const char *subinterface, void *data, size_t len, unsigned int timeout) {
+	assert(dl0d);
+	return dl0d->dl0->_recv(dl0d, subinterface, data, len, timeout);
+}
+
+int	diag_l0_send(struct diag_l0_device *dl0d,
+		const char *subinterface, const void *data, size_t len) {
+	assert(dl0d);
+	return dl0d->dl0->_send(dl0d, subinterface, data, len);
+}
+
+/* TODO : delete this, move to cfgi inside L0s that need it
+ */
+int	diag_l0_setspeed(struct diag_l0_device * dl0d, const struct diag_serial_settings *pss) {
+	assert(dl0d);
+	return dl0d->dl0->_setspeed(dl0d, pss);
+}
+
+int	diag_l0_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
+	assert(dl0d);
+	return dl0d->dl0->_initbus(dl0d, in);
+}

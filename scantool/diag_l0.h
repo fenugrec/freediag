@@ -44,51 +44,37 @@ struct diag_l0
 
 	int 	l1proto_mask;			/** supported L1protocols, defined in  diag_l1.h */
 
-	/* function pointers to L0 code */
-
-	/** set up global/default state of driver */
-	int	(*init)(void);
-
-	int (*_open)(struct diag_l0_device *, int l1_proto);
-
-	/** Close diag_l0_device
+	/** set up global/default state of driver, if applicable
 	 *
-	 * Does not free the struct itself, to allow reuse.
-	 */
-	void	(*_close)(struct diag_l0_device *);
-
-	int	(*initbus)(struct diag_l0_device *,
-		struct diag_l1_initbus_args *in);
-
-	/** Send bytes.
-	 * @return 0 on success
-	 */
-	int	(*send)(struct diag_l0_device *,
-		const char *subinterface, const void *data, size_t len);
-
-	/** Receive bytes.
-	 * @param timeout: in ms
-	 * @return # of bytes read
-	 */
-	int	(*recv)(struct diag_l0_device *,
-		const char *subinterface, void *data, size_t len, unsigned int timeout);
-
-	/** Set serial port settings, if applicable.
 	 * @return 0 if ok
+	 *
+	 * Note: the implementation must not do any dynamic mem operation (*alloc etc) or open handles.
+	 * That way we won't need to add an _end function.
 	 */
-	int	(*setspeed)(struct diag_l0_device *,
-		const struct diag_serial_settings *pss);
+	int (*init)(void);
 
-	/** Get L0 device flags
-	 * @return bitmask of flags defined in diag_l1.h
-	 */
-	uint32_t	(*getflags)(struct diag_l0_device *);
 
 	/*** Private funcs, do not call directly ! ***/
 	/* These are called from the "public funcs" listed below. */
+
 	int (*_new)(struct diag_l0_device *);
 	struct cfgi* (*_getcfg)(struct diag_l0_device *);
 	void (*_del)(struct diag_l0_device *);
+	int (*_open)(struct diag_l0_device *, int l1_proto);
+	void (*_close)(struct diag_l0_device *);
+	uint32_t	(*_getflags)(struct diag_l0_device *);
+
+	int	(*_recv)(struct diag_l0_device *,
+		const char *subinterface, void *data, size_t len, unsigned int timeout);
+	int	(*_send)(struct diag_l0_device *,
+		const char *subinterface, const void *data, size_t len);
+
+	int	(*_initbus)(struct diag_l0_device *,
+		struct diag_l1_initbus_args *in);
+
+	int	(*_setspeed)(struct diag_l0_device *,
+		const struct diag_serial_settings *pss);
+
 
 };
 
@@ -101,17 +87,72 @@ struct diag_l0
  * @return 0 if ok */
 struct diag_l0_device *diag_l0_new(const char *shortname);
 
+
 /** Get linked-list of config items.
  * @return NULL if no items exist */
 struct cfgi* diag_l0_getcfg(struct diag_l0_device *);
 
+
 /** Delete driver instance (XXX forces close ?) */
 void diag_l0_del(struct diag_l0_device *);
 
+
+/** Open an L0 device with a given L1 proto
+ *
+ * @return 0 if ok
+ *
+ * L0 device must have been created with diag_l0_new() first
+ */
 int diag_l0_open(struct diag_l0_device *, int l1protocol);
+
+
+/** Close diag_l0_device
+ *
+ * Does not free the struct itself, to allow reuse.
+ */
 void diag_l0_close(struct diag_l0_device *);
 
-/** globals **/
+
+/** Get L0 device flags
+ * @return bitmask of flags defined in diag_l1.h
+ */
+uint32_t	diag_l0_getflags(struct diag_l0_device *);
+
+
+/** Receive bytes.
+ * @param timeout: in ms
+ * @return # of bytes read
+ */
+int diag_l0_recv(struct diag_l0_device *,
+				const char *subinterface, void *data, size_t len, unsigned int timeout);
+
+
+/** Send bytes.
+ * @param subinterface: ignored
+ * @return 0 on success
+ */
+int	diag_l0_send(struct diag_l0_device *,
+					const char *subinterface, const void *data, size_t len);
+
+
+/** Set serial port settings, if applicable.
+ * @return 0 if ok
+ * TODO : delete this, move to cfgi inside L0s that need it
+ */
+int	diag_l0_setspeed(struct diag_l0_device *,
+						const struct diag_serial_settings *pss);
+
+
+/** Initialize bus
+ *
+ * Implementation ust return as soon as possible,
+ * and restore original port settings (speed, etc).
+ * @return 0 if ok
+ */
+int	diag_l0_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
+
+
+/*** globals ***/
 
 extern int diag_l0_debug;	// debug flags
 

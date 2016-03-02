@@ -777,14 +777,14 @@ const struct diag_l0 diag_l0_sim =
 	"CARSIM",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM | DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
 	diag_l0_sim_init,
-	diag_l0_sim_open,
-	diag_l0_sim_close,
-	diag_l0_sim_initbus,
-	diag_l0_sim_send,
-	diag_l0_sim_recv,
-	diag_l0_sim_setspeed,
-	diag_l0_sim_getflags,
 	sim_new,
 	sim_getcfg,
-	sim_del
+	sim_del,
+	diag_l0_sim_open,
+	diag_l0_sim_close,
+	diag_l0_sim_getflags,
+	diag_l0_sim_recv,
+	diag_l0_sim_send,
+	diag_l0_sim_initbus,
+	diag_l0_sim_setspeed
 };

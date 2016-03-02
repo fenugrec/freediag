@@ -183,8 +183,8 @@ struct diag_l1_initbus_args
 #define DIAG_L1_INITBUS_2SLOW	3	/* 2 second low on bus, ISO9141-1989 style ? */
 
 /********** Public L1 interface **********/
-/** Parse through the l0dev_list linked list
- * and call ->init for each of them.
+/** Parses through the l0dev_list linked list
+ * and calls ->init for each of them.
  * @return 0 on success (always succeeds)
  *
  * must not be used to allocate memory or open handles !
@@ -206,6 +206,7 @@ int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 * @return 0 if ok
 */
 int diag_l1_open(struct diag_l0_device *, int L1protocol);
+
 /** Calls diag_l0_close as required; always succeeds. */
 void diag_l1_close(struct diag_l0_device *);
 
