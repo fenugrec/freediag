@@ -496,14 +496,12 @@ sim_new(struct diag_l0_device *dl0d) {
 	return 0;
 }
 
-/* force close, and clear dl0d */
+/* Clear + free dl0d and its contents, assumes L0 was closed first */
 static void
 sim_del(struct diag_l0_device * dl0d) {
 	struct diag_l0_sim_device *dev;
 
 	assert(dl0d !=NULL);
-
-	diag_l0_sim_close(dl0d);
 
 	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
 
@@ -514,6 +512,7 @@ sim_del(struct diag_l0_device * dl0d) {
 
 	return;
 }
+
 // Opens the simulator DB file
 int
 diag_l0_sim_open(struct diag_l0_device *dl0d, int iProtocol)
@@ -543,8 +542,6 @@ diag_l0_sim_open(struct diag_l0_device *dl0d, int iProtocol)
 	// Read the configuration flags from the db file:
 	sim_read_cfg(dev);
 
-	dl0d->opened = 1;
-
 	/* if a specific proto was set, refuse a mismatched connection */
 	if (dev->proto_restrict) {
 		if (dev->proto_restrict != iProtocol) {
@@ -553,6 +550,7 @@ diag_l0_sim_open(struct diag_l0_device *dl0d, int iProtocol)
 		}
 	}
 
+	dl0d->opened = 1;
 	return 0;
 }
 
@@ -575,8 +573,10 @@ diag_l0_sim_close(struct diag_l0_device *dl0d)
 	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
 
-	if (dev->fp != NULL)
+	if (dev->fp != NULL) {
 		fclose(dev->fp);
+		dev->fp = NULL;
+	}
 
 	dl0d->opened = 0;
 	return;
@@ -735,7 +735,7 @@ static uint32_t
 diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 {
 	struct diag_l0_sim_device * dev = dl0d->l0_int;
-	int ret = 0;
+	int ret;
 
 	ret = DIAG_L1_SLOW |
 		DIAG_L1_FAST |

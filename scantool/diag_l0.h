@@ -97,7 +97,10 @@ struct diag_l0_device *diag_l0_new(const char *shortname);
 struct cfgi* diag_l0_getcfg(struct diag_l0_device *);
 
 
-/** Delete driver instance (XXX forces close ?) */
+/** Delete L0 driver instance.
+ *
+ * Caller MUST have closed it first with diag_l0_close !
+ */
 void diag_l0_del(struct diag_l0_device *);
 
 

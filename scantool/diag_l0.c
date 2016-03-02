@@ -56,12 +56,15 @@ struct diag_l0_device *diag_l0_new(const char *shortname) {
 }
 
 
-/* Delete a diag_l0_device; XXX forces close ?
+/** Delete an L0 device.
+ * Must have been closed first !
  *
  * Opposite of diag_l0_new()
  */
 void diag_l0_del(struct diag_l0_device *dl0d) {
 	if (!dl0d) return;
+
+	assert(!dl0d->opened);
 
 	dl0d->dl0->_del(dl0d);
 
