@@ -53,10 +53,6 @@ enum l0_nameindex set_interface;	//hw interface to use
 
 char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
 
-/** deprecated : **/
-//extern unsigned int diag_l0_dumb_getopts(void);
-//extern void diag_l0_dumb_setopts(unsigned int);
-
 /*
  * XXX All commands should probably have optional "init" hooks.
  */
@@ -110,8 +106,6 @@ static int cmd_set_l2protocol(int argc, char **argv);
 static int cmd_set_initmode(int argc, char **argv);
 static int cmd_set_display(int argc, char **argv);
 static int cmd_set_interface(int argc, char **argv);
-static int cmd_set_dumbopts(int argc, char **argb);
-//static int cmd_set_simfile(int argc, char **argv);
 
 const struct cmd_tbl_entry set_cmd_table[] =
 {
@@ -124,9 +118,6 @@ const struct cmd_tbl_entry set_cmd_table[] =
 
 	{ "interface", "interface NAME [dev]", "Interface to use. Use set interface ? to get a list of names",
 		cmd_set_interface, 0, NULL},
-
-	{ "dumbopts", "dumbopts [opts]", "Dumb interface specific options. Use set dumbopts ? to get details.",
-		cmd_set_dumbopts, 0, NULL},
 
 	{ "display", "display [english/metric]", "English or metric display",
 		cmd_set_display, 0, NULL},
@@ -232,13 +223,13 @@ static int cmd_set_custom(int argc, char **argv) {
 		diag_cfg_setstr(cfgp, argv[1]);
 		break;
 	case CFGT_U8:
-		diag_cfg_setu8(cfgp, (uint8_t) atoi(argv[1]));
+		diag_cfg_setu8(cfgp, (uint8_t) htoi(argv[1]));
 		break;
 	case CFGT_INT:
-		diag_cfg_setint(cfgp, atoi(argv[1]));
+		diag_cfg_setint(cfgp, htoi(argv[1]));
 		break;
 	case CFGT_BOOL:
-		diag_cfg_setbool(cfgp, (bool) atoi(argv[1]));
+		diag_cfg_setbool(cfgp, (bool) htoi(argv[1]));
 		break;
 	default:
 		return CMD_FAILED;
@@ -255,8 +246,6 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 {
 	/* Show stuff; calling the cmd_set_*() functions with argc=0 displays the current setting. */
 	cmd_set_interface(0,NULL);
-	//if (set_interface==DUMB)
-//		printf("dumbopts: %#02x\n", diag_l0_dumb_getopts());
 	cmd_set_speed(0, NULL);
 	cmd_set_display(0,NULL);
 	cmd_set_testerid(0,NULL);
@@ -269,11 +258,12 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 	/* Parse L0-specific config items */
 	if (global_dl0d) {
 		struct cfgi *cfgp;
+		printf("L0 options:\n");
 		LL_FOREACH(diag_l0_getcfg(global_dl0d), cfgp) {
 			char *cs = diag_cfg_getstr(cfgp);
 			if (cfgp->shortname == NULL || cs==NULL) continue;
 
-			printf("L0 option: %s=%s\n",cfgp->shortname, cs);
+			printf("\t%s=%s\n",cfgp->shortname, cs);
 			free(cs);
 		}
 	}
@@ -364,40 +354,6 @@ cmd_set_speed(int argc, char **argv)
 
 	return CMD_OK;
 }
-
-//XXX CFG rework, TODO : move to L0 custom CFGI
-static int cmd_set_dumbopts(int argc, char **argv) {
-	unsigned int tmp;
-	if (argc >1) {
-		if ( argv[1][0]=='?' ) {
-			printf("dumbopts: use \"set dumbopts [opts]\" where [opts] is the addition of the desired flags:\n"
-				" 0x01 : USE_LLINE : use if the L line (driven by RTS) is required for init. Interface must support this\n"
-				"\t(VAGTOOL for example).\n"
-				" 0x02 : CLEAR_DTR : use if your interface needs DTR to be always clear (neg. voltage).\n"
-				"\tThis is unusual. By default DTR will always be SET (pos. voltage)\n"
-				" 0x04 : SET_RTS : use if your interface needs RTS to be always set (pos. voltage).\n"
-				"\tThis is unusual. By default RTS will always be CLEAR (neg. voltage)\n"
-				"\tThis option should not be used with USE_LLINE.\n"
-				" 0x08 : MAN_BREAK : essential for USB-serial converters that don't support 5bps\n"
-				"\tsuch as FTDI232*, P230* and other ICs (enabled by default).\n"
-				" 0x10: LLINE_INV : Invert polarity of the L line. see\n"
-				"\tdoc/dumb_interfaces.txt !! This is unusual.\n"
-				" 0x20: FAST_BREAK : use alternate iso14230 fastinit code.\n"
-				" 0x40: BLOCKDUPLEX : use message-based half duplex removal (if P4==0)\n\n"
-				"ex.: \"dumbopts 9\" for MAN_BREAK and USE_LLINE.\n"
-				"Note : these options are ignored on any non-DUMB interfaces.\n");
-			return CMD_OK;
-		}
-		tmp=htoi(argv[1]);
-		(void) tmp;
-		//we just set the l0 flags to whatever htoi parsed.
-		//diag_l0_dumb_setopts(tmp);
-	}
-	//printf("Current dumbopts=0x%X\n", diag_l0_dumb_getopts());
-
-	return CMD_OK;
-}
-
 
 static int
 cmd_set_testerid(int argc, char **argv)

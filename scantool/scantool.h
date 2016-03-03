@@ -44,7 +44,17 @@ extern int diag_cli_debug;
 
 extern const char progname[];
 
+/**
+ * Decimal/Octal/Hex to integer routine
+ * formats:
+ * [-]0[0-7] : octal
+ * [-]0x[0-9,A-F,a-f] : hex
+ * [-]$[0-9,A-F,a-f] : hex
+ * [-][0-9] : dec
+ * Returns 0 if unable to decode.
+ */
 int htoi(char *buf);
+
 int cmd_up(int argc, char **argv);
 int cmd_exit(int argc, char **argv);
 

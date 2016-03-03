@@ -123,7 +123,7 @@ int diag_cfgn_bps(struct cfgi *cfgp, int val, int def);
 
 /** new ordinary int param
  *
- * Uses caller's &val, and *dev as default value for reset().
+ * Uses caller's val, and def as default value for reset().
  * Doesn't fill descr and shortname
  */
 int diag_cfgn_int(struct cfgi *cfgp, int val, int def);
