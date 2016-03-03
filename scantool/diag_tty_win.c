@@ -1,6 +1,6 @@
 /* freediag
  * windows-specific tty code
- * (c) fenugrec 2014-2015
+ * (c) fenugrec 2014-2016
  * GPL3
  */
 
@@ -9,7 +9,6 @@
 #include <assert.h>
 
 #include "diag.h"
-#include "diag_l1.h"
 #include "diag_err.h"
 #include "diag_os.h"
 #include "diag_tty_win.h"
@@ -28,19 +27,17 @@ struct tty_int {
 };
 
 //diag_tty_open : open specified port for L0
-int diag_tty_open(struct diag_l0_device *dl0d,
-	const char *portname)
+void * diag_tty_open(const char *portname)
 {
 	int rv;
 	struct tty_int *wti;
 	size_t n = strlen(portname) + 1;
 	COMMTIMEOUTS devtimeouts;
 
-	assert(dl0d != NULL);
-	if (dl0d->tty_int) return diag_iseterr(DIAG_ERR_GENERAL);
+	assert(portname);
 
 	if ((rv=diag_calloc(&wti,1))) {
-		return diag_iseterr(rv);
+		return diag_pseterr(rv);
 	}
 
 	wti->fd = INVALID_HANDLE_VALUE;
@@ -48,9 +45,9 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 	//allocate space for portname name
 	if ((rv=diag_malloc(&wti->name, n))) {
 		free(wti);
-		return diag_iseterr(rv);
+		return diag_pseterr(rv);
 	}
-	//Now, in case of errors we can call diag_tty_close() on the dl0d since its members are alloc'ed
+	//Now, in case of errors we can call diag_tty_close() on wti since its members are alloc'ed
 	strncpy(wti->name, portname, n);
 
 	wti->fd=CreateFile(portname, GENERIC_READ | GENERIC_WRITE, 0, NULL,
@@ -72,8 +69,8 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 		fprintf(stderr,
 			FLFMT "serial device your interface is connected to.\n", FL);
 
-		diag_tty_close(dl0d);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+		diag_tty_close(wti);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	//purge & abort everything.
@@ -86,8 +83,8 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 	//and the DCB should contain coherent initial values
 	if (! GetCommState(wti->fd, &wti->dcb)) {
 		fprintf(stderr, FLFMT "Could not get comm state: %s\n",FL, diag_os_geterr(0));
-		diag_tty_close(dl0d);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+		diag_tty_close(wti);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	//Finally set COMMTIMEOUTS to reasonable values (all in ms) ?
@@ -98,22 +95,18 @@ int diag_tty_open(struct diag_l0_device *dl0d,
 	devtimeouts.WriteTotalTimeoutConstant=0;
 	if (! SetCommTimeouts(wti->fd,&devtimeouts)) {
 		fprintf(stderr, FLFMT "Could not set comm timeouts: %s\n",FL, diag_os_geterr(0));
-		diag_tty_close(dl0d);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+		diag_tty_close(wti);
+		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
-	dl0d->tty_int = wti;
-	return 0;
+	return wti;
 } //diag_tty_open
 
 /* Close up the TTY and restore. */
-void diag_tty_close(struct diag_l0_device *dl0d)
+void diag_tty_close(void *ttyh)
 {
-	struct tty_int *wti;
+	struct tty_int *wti = ttyh;
 
-	if (!dl0d) return;
-
-	wti = (struct tty_int *)dl0d->tty_int;
 	if (!wti) return;
 
 	if (wti->name) {
@@ -128,27 +121,25 @@ void diag_tty_close(struct diag_l0_device *dl0d)
 	}
 
 	free(wti);
-	dl0d->tty_int = NULL;
 
 	return;
 } //diag_tty_close
 
 
 /*
- * Set speed/parity etc of dl0d with settings in pset
+ * Set speed/parity etc of tty with settings in pset
  * ret 0 if ok
  */
 int
-diag_tty_setup(struct diag_l0_device *dl0d,
+diag_tty_setup(void *ttyh,
 	const struct diag_serial_settings *pset)
 {
 	HANDLE devhandle;		//just to clarify code
-	struct tty_int *wti;
+	struct tty_int *wti = ttyh;
 	DCB *devstate;
 	COMMPROP supportedprops;
 	DCB verif_dcb;
 
-	wti = (struct tty_int *)dl0d->tty_int;
 	devhandle = wti->fd;
 	devstate = &wti->dcb;
 
@@ -262,10 +253,10 @@ diag_tty_setup(struct diag_l0_device *dl0d,
  * ret 0 if ok
  */
 int
-diag_tty_control(struct diag_l0_device *dl0d, unsigned int dtr, unsigned int rts)
+diag_tty_control(void *ttyh, unsigned int dtr, unsigned int rts)
 {
 	unsigned int escapefunc;
-	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
+	struct tty_int *wti = ttyh;
 
 
 	if (wti->fd == INVALID_HANDLE_VALUE) {
@@ -305,10 +296,10 @@ diag_tty_control(struct diag_l0_device *dl0d, unsigned int dtr, unsigned int rts
 //to wait for "EV_TXEMPTY" which would give a better idea
 //of when the data has been sent.
 
-ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_t count) {
+ssize_t diag_tty_write(void *ttyh, const void *buf, const size_t count) {
 	DWORD byteswritten;
 	OVERLAPPED *pOverlap;
-	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
+	struct tty_int *wti = ttyh;
 	pOverlap=NULL;		//note : if overlap is eventually enabled, the CreateFile flags should be adjusted
 
 	if (wti->fd == INVALID_HANDLE_VALUE) {
@@ -342,11 +333,11 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d, const void *buf, const size_
 
 
 ssize_t
-diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int timeout) {
+diag_tty_read(void *ttyh, void *buf, size_t count, unsigned int timeout) {
 	DWORD bytesread;
 	ssize_t rv=DIAG_ERR_TIMEOUT;
 	OVERLAPPED *pOverlap;
-	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
+	struct tty_int *wti = ttyh;
 	pOverlap=NULL;
 	COMMTIMEOUTS devtimeouts;
 
@@ -362,7 +353,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-//	GetCommTimeouts(dl0d->fd, &devtimeouts);	//get current timeouts
+//	GetCommTimeouts(wti->, &devtimeouts);	//get current timeouts
 	//and modify them
 	devtimeouts.ReadIntervalTimeout= timeout ? 0:MAXDWORD;	//disabled unless timeout was 0.
 	devtimeouts.ReadTotalTimeoutMultiplier=0;	//timeout per requested byte
@@ -391,14 +382,14 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
  * ret 0 if ok
  *
  */
-int diag_tty_iflush(struct diag_l0_device *dl0d)
+int diag_tty_iflush(void *ttyh)
 {
 	uint8_t buf[MAXRBUF];
 	int rv;
-	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
+	struct tty_int *wti = ttyh;
 
 	/* Read any old data hanging about on the port */
-	rv = diag_tty_read(dl0d, buf, sizeof(buf), IFLUSH_TIMEOUT);
+	rv = diag_tty_read(wti, buf, sizeof(buf), IFLUSH_TIMEOUT);
 	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n", FL, rv, buf[0]);
 		// diag_data_dump(stderr, (void *) buf, (size_t) rv); //this could take a long time.
@@ -414,10 +405,10 @@ int diag_tty_iflush(struct diag_l0_device *dl0d)
 // diag_tty_break #1 : use Set / ClearCommBreak
 // and return as soon as break is cleared.
 // ret 0 if ok
-int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
+int diag_tty_break(void *ttyh, const unsigned int ms) {
 	LARGE_INTEGER qpc1, qpc2;	//for timing verification
 	long real_t;	//"real" duration
-	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
+	struct tty_int *wti = ttyh;
 	int errval=0;
 
 	if (wti->fd == INVALID_HANDLE_VALUE) {
@@ -452,13 +443,13 @@ int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms) {
 
 /*
  * diag_tty_fastbreak: send 0x00 at 360bps => fixed 25ms break; return [ms] after starting break.
- * This is for ISO14230 fast init : typically diag_tty_fastbreak(dl0d, 50)
+ * This is for ISO14230 fast init : typically diag_tty_fastbreak(tty_int, 50)
  * It assumes the interface is half-duplex.
  * Ret 0 if ok
  */
-int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
+int diag_tty_fastbreak(void *ttyh, const unsigned int ms) {
 	HANDLE dh;	//just to clarify code
-	struct tty_int *wti = (struct tty_int *)dl0d->tty_int;
+	struct tty_int *wti = ttyh;
 	DCB tempDCB; 	//for sabotaging the settings just to do the break
 	DCB origDCB;
 	LARGE_INTEGER qpc1, qpc2, qpc3;	//to time the break period
@@ -514,7 +505,7 @@ int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms) {
 	/*
 	 * And read back the single byte echo, which shows TX completes
  	 */
-	xferd = diag_tty_read(dl0d, &cbuf, 1, ms + 20);
+	xferd = diag_tty_read(wti, &cbuf, 1, ms + 20);
 
 	//we'll usually have a few ms left to wait; we'll use this
 	//to restore the port settings

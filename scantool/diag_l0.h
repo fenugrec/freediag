@@ -35,7 +35,6 @@ struct diag_l0_device
 	void *l0_int;					/** Handle for internal L0 data */
 	const struct diag_l0 *dl0;		/** The L0 driver's diag_l0 */
 	struct diag_l2_link *dl2_link;	/** The L2 link using this dl0d */
-	void *tty_int;			/** generic holder for internal tty stuff. TODO : move inside L0-managed l0_int */
 	bool opened;		/** L0 status */
 };
 

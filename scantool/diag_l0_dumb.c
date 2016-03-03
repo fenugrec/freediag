@@ -74,6 +74,8 @@ struct dumb_device
 
 	struct	cfgi port;
 
+	void *tty_int;			/** handle for tty stuff */
+
 };
 
 
@@ -156,7 +158,6 @@ static struct cfgi* dumb_getcfg(struct diag_l0_device *dl0d) {
 
 static int dumb_open(struct diag_l0_device *dl0d, int iProtocol)
 {
-	int rv;
 	struct dumb_device *dev;
 
 	assert(dl0d);
@@ -168,8 +169,9 @@ static int dumb_open(struct diag_l0_device *dl0d, int iProtocol)
 	}
 
 	/* try to open TTY */
-	if ((rv=diag_tty_open(dl0d, dev->port.val.str))) {
-		return diag_iseterr(rv);
+	dev->tty_int = diag_tty_open(dev->port.val.str);
+	if (dev->tty_int == NULL) {
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	dev->protocol = iProtocol;
 
@@ -178,7 +180,7 @@ static int dumb_open(struct diag_l0_device *dl0d, int iProtocol)
 	 * interfaces to work than need power from the DTR/RTS lines;
 	 * this is altered according to dumb_flags.
 	 */
-	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
+	if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 		dumb_close(dl0d);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -186,7 +188,7 @@ static int dumb_open(struct diag_l0_device *dl0d, int iProtocol)
 	if (dumb_flags & DUMBDEFAULTS)
 		dumb_flags = DUMBDEFAULTS | MAN_BREAK;
 
-	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
+	(void)diag_tty_iflush(dev->tty_int);	/* Flush unread input */
 
 	dl0d->opened = 1;
 
@@ -200,13 +202,13 @@ dumb_close(struct diag_l0_device *dl0d)
 	if (!dl0d) return;
 
 	struct dumb_device *dev = dl0d->l0_int;
-	(void) dev;	//XXX TODO : move tty_int inside dev
 
 	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr, FLFMT "l0 link %p closing\n",
 			FL, (void *)dl0d);
 
-	diag_tty_close(dl0d);
+	diag_tty_close(dev->tty_int);
+	dev->tty_int = NULL;
 	dl0d->opened = 0;
 
 	return;
@@ -222,6 +224,7 @@ dumb_close(struct diag_l0_device *dl0d)
 static int
 dumb_fastinit(struct diag_l0_device *dl0d)
 {
+	struct dumb_device *dev = dl0d->l0_int;
 	int rv=0;
 	uint8_t cbuf[MAXRBUF];
 
@@ -239,19 +242,19 @@ dumb_fastinit(struct diag_l0_device *dl0d)
 		if (dumb_flags & FAST_BREAK) {
 			//but we can't use diag_tty_fastbreak while doing the L-line.
 			fprintf(stderr, FLFMT "Warning : not using L line for FAST_BREAK.\n", FL);
-			rv=diag_tty_fastbreak(dl0d, 50-WUPFLUSH);
+			rv=diag_tty_fastbreak(dev->tty_int, 50-WUPFLUSH);
 		} else {
 			unsigned long long tb0,tb1;	//WUP adjustment
 			//normal fast break on K and L.
 			//note : if LLINE_INV is 1, then we need to clear RTS to pull L down !
-			if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
+			if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
 				fprintf(stderr, FLFMT "fastinit: Failed to set L\\_\n", FL);
 				return DIAG_ERR_GENERAL;
 				}
 			tb0 = diag_os_gethrt();
-			rv=diag_tty_break(dl0d, 25);	//K line low for 25ms
+			rv=diag_tty_break(dev->tty_int, 25);	//K line low for 25ms
 				/* Now restore DTR/RTS */
-			if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
+			if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 				fprintf(stderr, FLFMT "fastinit: Failed to restore DTR & RTS!\n",
 					FL);
 			}
@@ -264,12 +267,12 @@ dumb_fastinit(struct diag_l0_device *dl0d)
 	} else {
 		// do K line only
 		if (dumb_flags & FAST_BREAK) {
-			rv=diag_tty_fastbreak(dl0d, 50-WUPFLUSH);
+			rv=diag_tty_fastbreak(dev->tty_int, 50-WUPFLUSH);
 		} else {
 			//normal break
 			unsigned long long tb0,tb1;	//WUP adjustment
 			tb0 = diag_os_gethrt();
-			rv=diag_tty_break(dl0d, 25);	//K line low for 25ms
+			rv=diag_tty_break(dev->tty_int, 25);	//K line low for 25ms
 
 			tb1 = diag_os_gethrt() - tb0;
 			tb1 = diag_os_hrtus(tb1)/1000;	//elapsed ms so far within tWUP
@@ -282,7 +285,7 @@ dumb_fastinit(struct diag_l0_device *dl0d)
 	// short time to flush RX buffers. (L2 needs to send a StartComm
 	// request very soon.)
 
-	diag_tty_read(dl0d, cbuf, sizeof(cbuf), WUPFLUSH);
+	diag_tty_read(dev->tty_int, cbuf, sizeof(cbuf), WUPFLUSH);
 
 
 	//there may have been a problem in diag_tty_break, if so :
@@ -308,13 +311,14 @@ dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	 *
 	 */
 	int i, rv=0;
+	struct dumb_device *dev = dl0d->l0_int;
 //	uint8_t cbuf[10];
 
 	// We also toggle DTR to disable RXD (blocking it at logical 1).
 	// However, at least one system I tested doesn't react well to
 	// DTR-toggling.
 	/* Set RTS low, for 200ms (Start bit) */
-	if (diag_tty_control(dl0d, (dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
+	if (diag_tty_control(dev->tty_int, (dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
 		fprintf(stderr, FLFMT "_LLine: Failed to set DTR & RTS\n", FL);
 		return;
 	}
@@ -323,10 +327,10 @@ dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	for (i=0; i<8; i++) {
 		if (ecuaddr & (1<<i)) {
 			/* High */
-			rv |= diag_tty_control(dl0d, (dumb_flags & CLEAR_DTR), (dumb_flags & LLINE_INV));
+			rv |= diag_tty_control(dev->tty_int, (dumb_flags & CLEAR_DTR), (dumb_flags & LLINE_INV));
 		} else {
 			/* Low */
-			rv |= diag_tty_control(dl0d, (dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));
+			rv |= diag_tty_control(dev->tty_int, (dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));
 		}
 
 		if (rv < 0) {
@@ -337,7 +341,7 @@ dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 		diag_os_millisleep(BPS_PERIOD);		/* 200ms -5% */
 	}
 	/* And set high for the stop bit */
-	if (diag_tty_control(dl0d, (dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
+	if (diag_tty_control(dev->tty_int, (dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV)) < 0) {
 		fprintf(stderr, FLFMT "_LLine: Failed to set DTR & RTS\n",
 			FL);
 		return;
@@ -345,13 +349,13 @@ dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 	diag_os_millisleep(BPS_PERIOD);		/* 200ms -5% */
 
 	/* Now put DTR/RTS back correctly so RX side is enabled */
-	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
+	if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
 		fprintf(stderr, FLFMT "_LLine: Failed to restore DTR & RTS\n",
 			FL);
 	}
 
 	/* And clear out the break XXX no, _slowinit will do this for us after calling dumb_Lline*/
-//	diag_tty_read(dl0d, cbuf, sizeof(cbuf), 20);
+//	diag_tty_read(dev->tty_int, cbuf, sizeof(cbuf), 20);
 
 	return;
 }
@@ -396,7 +400,7 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 			if (curbit) {
 				if (dumb_flags & USE_LLINE) {
 						//release L
-						diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & LLINE_INV));
+						diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & LLINE_INV));
 				}
 				diag_os_millisleep(BPS_PERIOD);
 			} else {
@@ -413,16 +417,16 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 				//this way, we know for sure the next bit is 1 (either bit 7==1 or stopbit==1 !)
 				if (dumb_flags & USE_LLINE) {
 					//L = 0
-					diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));
+					diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), !(dumb_flags & LLINE_INV));
 				}
-				diag_tty_break(dl0d, lowtime);
+				diag_tty_break(dev->tty_int, lowtime);
 			}
 			curbit = tempbyte & 1;
 			tempbyte = tempbyte >>1;
 		}
 		//at this point we just finished the last bit, we'll wait the duration of the stop bit.
 		if (dumb_flags & USE_LLINE) {
-			diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));	//release L
+			diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));	//release L
 		}
 		diag_os_millisleep(BPS_PERIOD);	//stop bit
 
@@ -432,7 +436,7 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		// so we have 60ms to diag_tty_iflush, the risk is if it takes too long
 		// the "sync pattern byte" may be lost !
 		// TODO : add before+after timing check to see if diag_tty_iflush takes too long
-		diag_tty_iflush(dl0d);	//try it anyway
+		diag_tty_iflush(dev->tty_int);	//try it anyway
 	} else {	//so it's not a man_break
 		/* Set to 5 baud, 8 N 1 */
 
@@ -441,11 +445,11 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		set.stopbits = diag_stopbits_1;
 		set.parflag = diag_par_n;
 
-		diag_tty_setup(dl0d, &set);
+		diag_tty_setup(dev->tty_int, &set);
 
 
 		/* Send the address as a single byte message */
-		diag_tty_write(dl0d, &in->addr, 1);
+		diag_tty_write(dev->tty_int, &in->addr, 1);
 		//This supposes that diag_tty_write is non-blocking, i.e. returns before write is complete !
 		// 8 bits + start bit + stop bit @ 5bps = 2000 ms
 		/* Do the L line stuff as required*/
@@ -466,7 +470,7 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		 * echo
 		 */
 
-		if (diag_tty_read(dl0d, cbuf, 1,tout) != 1) {
+		if (diag_tty_read(dev->tty_int, cbuf, 1,tout) != 1) {
 			fprintf(stderr, FLFMT "_slowinit: address echo error\n", FL);
 			return DIAG_ERR_GENERAL;
 		}
@@ -474,7 +478,7 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "\tgot address echo 0x%X\n",
 					FL, cbuf[0]);
-		if (diag_tty_setup(dl0d, &dev->serial)) {
+		if (diag_tty_setup(dev->tty_int, &dev->serial)) {
 			//reset original settings
 			fprintf(stderr, FLFMT "_slowinit: could not reset serial settings !\n", FL);
 			return DIAG_ERR_GENERAL;
@@ -510,7 +514,7 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		tout=300;	//but try anyway
 	}
 
-	rv = diag_tty_read(dl0d, cbuf, 1, tout);
+	rv = diag_tty_read(dev->tty_int, cbuf, 1, tout);
 	if (rv <= 0) {
 		if (diag_l0_debug & DIAG_DEBUG_PROTO)
 			fprintf(stderr, FLFMT "\tdid not get Sync byte !\n", FL);
@@ -548,7 +552,7 @@ dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 		return diag_iseterr(DIAG_ERR_GENERAL);
 
 
-	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
+	(void)diag_tty_iflush(dev->tty_int);	/* Flush unread input */
 
 	switch (in->type) {
 		case DIAG_L1_INITBUS_FAST:
@@ -594,6 +598,7 @@ const void *data, size_t len)
 	 * bytes
 	 */
 	int rv;
+	struct dumb_device *dev = dl0d->l0_int;
 
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -606,7 +611,7 @@ const void *data, size_t len)
 		fprintf(stderr, "\n");
 	}
 
-	if ((rv = diag_tty_write(dl0d, data, len)) != (int) len) {
+	if ((rv = diag_tty_write(dev->tty_int, data, len)) != (int) len) {
 		fprintf(stderr, FLFMT "dumb_send: write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -626,6 +631,7 @@ UNUSED(const char *subinterface),
 void *data, size_t len, unsigned int timeout)
 {
 	int rv;
+	struct dumb_device *dev = dl0d->l0_int;
 
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -635,7 +641,7 @@ void *data, size_t len, unsigned int timeout)
 			FLFMT "_recv dl0d=%p req=%ld bytes timeout=%u\n",
 			FL, (void *)dl0d, (long)len, timeout);
 
-	if ((rv=diag_tty_read(dl0d, data, len, timeout)) <= 0) {
+	if ((rv=diag_tty_read(dev->tty_int, data, len, timeout)) <= 0) {
 		if (rv == DIAG_ERR_TIMEOUT)
 			return DIAG_ERR_TIMEOUT;
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -663,7 +669,7 @@ const struct diag_serial_settings *pset)
 
 	dev->serial = *pset;
 
-	return diag_tty_setup(dl0d, &dev->serial);
+	return diag_tty_setup(dev->tty_int, &dev->serial);
 }
 
 // Update interface options to customize particular interface type (K-line only or K&L)

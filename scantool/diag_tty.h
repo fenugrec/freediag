@@ -9,7 +9,7 @@
 
 
 #include "diag.h"
-#include "diag_l0.h"
+#include "diag_l0.h"	//needed for diag_l0_debug
 
 #define IFLUSH_TIMEOUT 30	//timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX buffer.
 		//must not be too long or diag_l0_dumb:slowinit() will not work
@@ -56,23 +56,22 @@ struct diag_serial_settings {
 char ** diag_tty_getportlist(int *numports);
 
 /** Open serial port
- * @param portname: serial / tty name
- * @return 0 if ok
+ * @param portname: serial port device / file / tty name
+ * @return new tty_int object if ok, NULL if failed
  */
-int diag_tty_open(struct diag_l0_device *dl0d,
-	const char *portname);
+void * diag_tty_open(const char *portname);
 
-/** Close serial port associated with L0 device
+/** Close serial port
  *
  * Also frees everything allocated in diag_tty_open().
  */
-void diag_tty_close(struct diag_l0_device *dl0d);
+void diag_tty_close(void *tty_int);
 
 /** Set speed/parity.
  *
  * @return 0 if ok.
  */
-int diag_tty_setup(struct diag_l0_device *dl0d,
+int diag_tty_setup(void *tty_int,
 	const struct diag_serial_settings *pss);
 
 /** Set DTR and RTS lines.
@@ -81,7 +80,7 @@ int diag_tty_setup(struct diag_l0_device *dl0d,
  * (opposite polarity of the TX/RX pins!!)
  * @return 0 if ok
  */
-int diag_tty_control(struct diag_l0_device *dl0d, unsigned int dtr, unsigned int rts);
+int diag_tty_control(void *tty_int, unsigned int dtr, unsigned int rts);
 
 
 /** Flush pending input.
@@ -89,7 +88,7 @@ int diag_tty_control(struct diag_l0_device *dl0d, unsigned int dtr, unsigned int
  * This probably always takes IFLUSH_TIMEOUT to complete since it calls diag_tty_read.
  * @return 0 if ok
  */
-int diag_tty_iflush(struct diag_l0_device *dl0d);
+int diag_tty_iflush(void *tty_int);
 
 // diag_tty_read : (count >0 && timeout >0)
 //	a) read up to (count) bytes until (timeout) expires; return the # of bytes read.
@@ -98,7 +97,7 @@ int diag_tty_iflush(struct diag_l0_device *dl0d);
 //	c) if there was a real error, return diag_iseterr(x)
 //	d) never return 0
 //	TODO : clarify if calling with timeout==0 is useful (probably not, nobody does).
-ssize_t diag_tty_read(struct diag_l0_device *dl0d,
+ssize_t diag_tty_read(void *tty_int,
 	void *buf, size_t count, unsigned int timeout);
 
 /** Write bytes to tty (blocking).
@@ -110,7 +109,7 @@ ssize_t diag_tty_read(struct diag_l0_device *dl0d,
  * or only that the data was flushed as far "downstream" as possible, for example
  * to a UART / device driver buffer.
  */
-ssize_t diag_tty_write(struct diag_l0_device *dl0d,
+ssize_t diag_tty_write(void *tty_int,
 	const void *buf, const size_t count);
 
 
@@ -118,16 +117,16 @@ ssize_t diag_tty_write(struct diag_l0_device *dl0d,
  * @param ms: duration (milliseconds)
  * @return 0 if ok, after clearing break
  */
-int diag_tty_break(struct diag_l0_device *dl0d, const unsigned int ms);
+int diag_tty_break(void *tty_int, const unsigned int ms);
 
 /** Send fixed 25ms break pattern on TXD.
  *
  * Sets break for 25ms and returns after requested duration.
- * This is for ISO14230 fast init : typically diag_tty_fastbreak(dl0d, 50)
+ * This is for ISO14230 fast init : typically diag_tty_fastbreak(tty_int, 50)
  * @param ms: Total pattern length (\>25ms)
  * @return 0 if ok; returns [ms] after starting the break.
  */
-int diag_tty_fastbreak(struct diag_l0_device *dl0d, const unsigned int ms);
+int diag_tty_fastbreak(void *tty_int, const unsigned int ms);
 
 
 #endif /* _DIAG_TTY_H_ */

@@ -13,8 +13,8 @@ a brief summary in here. Hopefully this will benefit someone else
 as well.
 *** general notes
 Physical interfaces (i.e. ELM323, dumb adaptor, etc) are connected to a serial port (usually called
-"subinterface" in the code). Only one L0 driver can use a given "subinterface", ex.: /dev/ttyUSB0
-(a subinterface) is used exclusively by diag_l0_elm (the L0 driver) to manage a physical ELM32x interface.
+"subinterface" in the code -> WIP, subinterface is about to disappear).
+Only one L0 driver can use a given "subinterface", ex.: /dev/ttyUSB0 (a subinterface) is used exclusively by diag_l0_elm (the L0 driver) to manage a physical ELM32x interface.
 This association is described in a "struct diag_l0_device", often named "dl0d" in the code.
 
 *** data structures
@@ -24,12 +24,12 @@ for instance) and a hardware resource (serial port, file, etc). The current impl
 only one L1 proto per L0 device; this will change. diag_l0_new() creates a new, empty, diag_l0_device
 struct that must be configured (diag_l0_getcfg() etc), then opened with diag_l0_open().
 
-struct diag_l0 : every diag_l0_???.c driver fills in one of these to describe itself. It includes
-its name, supported L1 protos, and pointers to "exposed" functions (diag_l0_initbus, _setspeed, etc).
+struct diag_l0 : every diag_l0_???.c driver fills (statically, at compile-time) in one of these to describe itself.
+It includes its name, supported L1 protos, and pointers to "exposed" functions (diag_l0_initbus, _setspeed, etc).
 Those diag_l0 structs are accessible only through the l0dev_list[] array in diag_config.c
 
-struct diag_l2_proto : every diag_l2_???.c handler fills in one of these to describe itself. As
-with 'struct diag_l0' above, these are accessible through l2proto_list[].
+struct diag_l2_proto : every diag_l2_???.c handler fills in one of these (statically, at compile-time) to describe itself.
+As with 'struct diag_l0' above, these are accessible through l2proto_list[].
 
 struct diag_l2_link : these are alloc'ed + filled by diag_l2_open; diag_l2_links is a linked-list
  of all the active l2 links. An l2 link associates a diag_l0_device with one L1 protocol. This
@@ -73,7 +73,7 @@ diag_l1_open: finds l0name in the linked list l0dev_list; calls the l0 driver's 
  it got from ->diag_l0_open.
 diag_l1_open is currently only called from diag_l2_open.
 
-->diag_l0_open(...) : this function, defined by each l0 driver, alloc's + fills a new diag_l0_device struct.
+diag_l0_open(...) : this function, defined by each l0 driver, opens the specified L0 device
  
 
 
@@ -96,10 +96,8 @@ cmd_diag_reml3 : does the opposite of addl3
 **** layer "tree"
 As of 1.01, here's roughly how the layers can be interconnected :
 
-"subinterface" : a physical serial port. The code calls this a subinterface for some unknown reason;
- I think it was an abstraction for something that is now absent in the code... -> NOPE ! in
- the distant past it was "int subinterface" and was unused. At some point it was changed to "char
- *subinterface" and (ab)used to specify serial ports. XXX irrelevant soon
+"subinterface" : a physical serial port. In the distant past it was "int subinterface" and was unused.
+At some point it was changed to "char *subinterface" and (ab)used to specify serial ports. XXX soon irrelevant !
 
 L0 :
 any "subinterface" can be associated with only one l0 driver. This link is defined in
@@ -124,7 +122,7 @@ L3 :
 
 **** Serial ports
 Two main issues : setting custom baud rates (essential for ISO9141/14230 traffic @ 10.4kbps), and
-enforcing precise timeouts (very useful for splitting ISO9141/14230 messages).
+enforcing precise timeouts (essential for splitting ISO9141/14230 messages).
 1. Custom baud rates
 1a. Linux : a super mess, see diag_tty_unix.c
 	http://www.downtowndougbrown.com/2013/11/linux-custom-serial-baud-rates/
