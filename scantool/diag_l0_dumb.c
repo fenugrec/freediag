@@ -35,6 +35,7 @@
 
 
 #include <stdlib.h>
+#include <assert.h>
 
 #include "diag.h"
 #include "diag_os.h"
@@ -43,9 +44,9 @@
 #include "diag_l0.h"
 #include "diag_l1.h"
 
-struct diag_l0_dumb_device
+struct dumb_device
 {
-	int	protocol;	//set in diag_l0_dumb_open with specified iProtocol
+	int	protocol;	//set in dumb_open with specified iProtocol
 	struct	diag_serial_settings serial;
 
 	/* "dumb_opts", conversion not complete */
@@ -96,7 +97,7 @@ static unsigned int dumb_flags=0;
 
 extern const struct diag_l0 diag_l0_dumb;
 
-static void diag_l0_dumb_close(struct diag_l0_device *dl0d);
+static void dumb_close(struct diag_l0_device *dl0d);
 
 /*
  * Init must be callable even if no physical interface is
@@ -104,56 +105,73 @@ static void diag_l0_dumb_close(struct diag_l0_device *dl0d);
  * variables etc
  */
 static int
-diag_l0_dumb_init(void)
+dumb_init(void)
 {
-	/* Global init flag */
-	static int diag_l0_dumb_initdone=0;
+	return 0;
+}
 
-	if (diag_l0_dumb_initdone)
-		return 0;
+/* fill & init new dl0d */
+static int
+dumb_new(struct diag_l0_device *dl0d) {
+	struct dumb_device *dev;
 
+	assert(dl0d);
 
-	/* Do required scheduling tweeks */
-	diag_os_sched();
-	diag_l0_dumb_initdone = 1;
+	if (diag_calloc(&dev, 1))
+		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	dl0d->l0_int = dev;
+
+	if (diag_cfgn_tty(&dev->port)) {
+		free(dev);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	dev->port.next=NULL;
 
 	return 0;
 }
 
-/*
- * Open the diagnostic device, returns a file descriptor
- * records original state of term interface so we can restore later
- */
-static struct diag_l0_device *
-diag_l0_dumb_open(const char *subinterface, int iProtocol)
+static void dumb_del(struct diag_l0_device *dl0d) {
+	struct dumb_device *dev;
+
+	assert(dl0d);
+
+	dev = dl0d->l0_int;
+	if (!dev) return;
+
+	diag_cfg_clear(&dev->port);
+	free(dev);
+	return;
+}
+
+static struct cfgi* dumb_getcfg(struct diag_l0_device *dl0d) {
+	struct dumb_device *dev;
+	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+
+	dev = dl0d->l0_int;
+	return &dev->port;
+}
+
+
+static int dumb_open(struct diag_l0_device *dl0d, int iProtocol)
 {
 	int rv;
-	struct diag_l0_device *dl0d;
-	struct diag_l0_dumb_device *dev;
+	struct dumb_device *dev;
+
+	assert(dl0d);
+	dev = dl0d->l0_int;
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
-			FL, subinterface, iProtocol);
+		fprintf(stderr, FLFMT "open port %s L1proto %d\n",
+			FL, dev->port.val.str, iProtocol);
 	}
 
-	diag_l0_dumb_init();	 //make sure it is initted
-
-	if ((rv=diag_calloc(&dev, 1)))
-		return diag_pseterr(DIAG_ERR_NOMEM);
-
-	dev->protocol = iProtocol;
-
-	dl0d = diag_l0_new(&diag_l0_dumb, (void *)dev);
-	if (!dl0d) {
-		free(dev);
-		return diag_pseterr(rv);
-	}
 	/* try to open TTY */
-	if ((rv=diag_tty_open(dl0d, subinterface))) {
-		diag_l0_del(dl0d);
-		free(dev);
-		return diag_pseterr(rv);
+	if ((rv=diag_tty_open(dl0d, dev->port.val.str))) {
+		return diag_iseterr(rv);
 	}
+	dev->protocol = iProtocol;
 
 	/*
 	 * We set RTS to low, and DTR high, because this allows some
@@ -161,8 +179,8 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 	 * this is altered according to dumb_flags.
 	 */
 	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
-		diag_l0_dumb_close(dl0d);
-		return diag_pseterr(DIAG_ERR_GENERAL);
+		dumb_close(dl0d);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	if (dumb_flags & DUMBDEFAULTS)
@@ -170,27 +188,26 @@ diag_l0_dumb_open(const char *subinterface, int iProtocol)
 
 	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
 
-	return dl0d;
+	dl0d->opened = 1;
+
+	return 0;
 }
 
-//diag_l0_dumb_close : free the specified diag_l0_device and close TTY handle.
+//dumb_close : close TTY handle.
 static void
-diag_l0_dumb_close(struct diag_l0_device *dl0d)
+dumb_close(struct diag_l0_device *dl0d)
 {
 	if (!dl0d) return;
 
-	struct diag_l0_dumb_device *dev =
-		(struct diag_l0_dumb_device *)dl0d->l0_int;
+	struct dumb_device *dev = dl0d->l0_int;
+	(void) dev;	//XXX TODO : move tty_int inside dev
 
 	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr, FLFMT "l0 link %p closing\n",
 			FL, (void *)dl0d);
 
-	if (dev)
-		free(dev);
-
 	diag_tty_close(dl0d);
-	diag_l0_del(dl0d);
+	dl0d->opened = 0;
 
 	return;
 }
@@ -203,7 +220,7 @@ diag_l0_dumb_close(struct diag_l0_device *dl0d)
  * Exceptionally we dont diag_iseterr on return since _initbus() takes care of that.
  */
 static int
-diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
+dumb_fastinit(struct diag_l0_device *dl0d)
 {
 	int rv=0;
 	uint8_t cbuf[MAXRBUF];
@@ -283,7 +300,7 @@ diag_l0_dumb_fastinit(struct diag_l0_device *dl0d)
 // Returns after stop bit is finished + time for diag_tty_read to flush echo. (max 20ms) (NOT the sync byte!)
 
 static void
-diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
+dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
 {
 	/*
 	 * The bus has been high for w0 ms already, now send the
@@ -352,8 +369,8 @@ diag_l0_dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
  *
  */
 static int
-diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
-	struct diag_l0_dumb_device *dev)
+dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
+	struct dumb_device *dev)
 {
 	uint8_t cbuf[10];
 	int rv;
@@ -433,7 +450,7 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
 		// 8 bits + start bit + stop bit @ 5bps = 2000 ms
 		/* Do the L line stuff as required*/
 		if (dumb_flags & USE_LLINE) {
-			diag_l0_dumb_Lline(dl0d, in->addr);
+			dumb_Lline(dl0d, in->addr);
 			tout=400;	//Shorter timeout to get back echo, as dumb_Lline exits after 5bps stopbit.
 		} else {
 			// If there's no manual L line to do, timeout needs to be longer to receive echo
@@ -515,13 +532,13 @@ diag_l0_dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *
  * responsible for waiting W5, W0 or Tidle before calling initbus().
  */
 static int
-diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
+dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
 	int rv = DIAG_ERR_INIT_NOTSUPP;
 
-	struct diag_l0_dumb_device *dev;
+	struct dumb_device *dev;
 
-	dev = (struct diag_l0_dumb_device *)dl0d->l0_int;
+	dev = (struct dumb_device *)dl0d->l0_int;
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n",
@@ -535,10 +552,10 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
 
 	switch (in->type) {
 		case DIAG_L1_INITBUS_FAST:
-			rv = diag_l0_dumb_fastinit(dl0d);
+			rv = dumb_fastinit(dl0d);
 			break;
 		case DIAG_L1_INITBUS_5BAUD:
-			rv = diag_l0_dumb_slowinit(dl0d, in, dev);
+			rv = dumb_slowinit(dl0d, in, dev);
 			break;
 		case DIAG_L1_INITBUS_2SLOW:
 			// iso 9141 - 1989 style init, not implemented.
@@ -567,7 +584,7 @@ diag_l0_dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *i
  */
 
 static int
-diag_l0_dumb_send(struct diag_l0_device *dl0d,
+dumb_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 const void *data, size_t len)
 {
@@ -604,7 +621,7 @@ const void *data, size_t len)
  */
 
 static int
-diag_l0_dumb_recv(struct diag_l0_device *dl0d,
+dumb_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 void *data, size_t len, unsigned int timeout)
 {
@@ -637,12 +654,12 @@ void *data, size_t len, unsigned int timeout)
  * ret 0 if ok
  */
 static int
-diag_l0_dumb_setspeed(struct diag_l0_device *dl0d,
+dumb_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset)
 {
-	struct diag_l0_dumb_device *dev;
+	struct dumb_device *dev;
 
-	dev = (struct diag_l0_dumb_device *)dl0d->l0_int;
+	dev = (struct dumb_device *)dl0d->l0_int;
 
 	dev->serial = *pset;
 
@@ -651,8 +668,8 @@ const struct diag_serial_settings *pset)
 
 // Update interface options to customize particular interface type (K-line only or K&L)
 // Not related to the "getflags" function which returns the interface capabilities.
-// To set default options, call diag_l0_dumb_setopts(-1) which makes sure DUMBDEFAULTS is set !
-void diag_l0_dumb_setopts(unsigned int newflags)
+// To set default options, call dumb_setopts(-1) which makes sure DUMBDEFAULTS is set !
+void dumb_setopts(unsigned int newflags)
 {
 
 	if (newflags & DUMBDEFAULTS) {
@@ -662,18 +679,18 @@ void diag_l0_dumb_setopts(unsigned int newflags)
 		dumb_flags = newflags;
 	}
 }
-unsigned int diag_l0_dumb_getopts(void) {
+unsigned int dumb_getopts(void) {
 	return dumb_flags & ~DUMBDEFAULTS;	//don't show our internal defaults flag.
 }
 
 
 static uint32_t
-diag_l0_dumb_getflags(struct diag_l0_device *dl0d)
+dumb_getflags(struct diag_l0_device *dl0d)
 {
-	struct diag_l0_dumb_device *dev;
+	struct dumb_device *dev;
 	int flags=0;
 
-	dev = (struct diag_l0_dumb_device *)dl0d->l0_int;
+	dev = (struct dumb_device *)dl0d->l0_int;
 
 	if (dumb_flags & BLOCKDUPLEX)
 		flags |= DIAG_L1_BLOCKDUPLEX;
@@ -696,15 +713,15 @@ const struct diag_l0 diag_l0_dumb = {
  	"Generic dumb serial interface",
 	"DUMB",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
-	NULL,
-	NULL,
-	NULL,
-	diag_l0_dumb_init,
-	diag_l0_dumb_open,
-	diag_l0_dumb_close,
-	diag_l0_dumb_initbus,
-	diag_l0_dumb_send,
-	diag_l0_dumb_recv,
-	diag_l0_dumb_setspeed,
-	diag_l0_dumb_getflags
+	dumb_init,
+	dumb_new,
+	dumb_getcfg,
+	dumb_del,
+	dumb_open,
+	dumb_close,
+	dumb_getflags,
+	dumb_recv,
+	dumb_send,
+	dumb_initbus,
+	dumb_setspeed
 };

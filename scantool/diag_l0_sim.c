@@ -92,7 +92,7 @@ struct diag_l0_sim_device
 
 	int	proto_restrict;	/* (optional) only accept connections matching this proto */
 
-	struct cfgi simfile;	/* WIP */
+	struct cfgi simfile;
 
 	struct sim_ecu_response* sim_last_ecu_responses;	// For keeping all the responses to the last request.
 };
@@ -496,7 +496,7 @@ sim_new(struct diag_l0_device *dl0d) {
 	return 0;
 }
 
-/* Clear + free dl0d and its contents, assumes L0 was closed first */
+/* Clear + free the contents of dl0d; assumes L0 was closed first */
 static void
 sim_del(struct diag_l0_device * dl0d) {
 	struct diag_l0_sim_device *dev;

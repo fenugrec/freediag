@@ -67,7 +67,6 @@ void diag_l0_del(struct diag_l0_device *dl0d) {
 	assert(!dl0d->opened);
 
 	dl0d->dl0->_del(dl0d);
-
 	free(dl0d);
 	return;
 }
