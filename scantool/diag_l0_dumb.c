@@ -130,6 +130,15 @@ dumb_new(struct diag_l0_device *dl0d) {
 	}
 
 	dev->port.next=NULL;
+	printf("Note concerning generic (dumb) interfaces : there are additional\n"
+			"options which can be set with \"set dumbopts\". By default\n"
+			"\"K-line only\" and \"MAN_BREAK\" are set. \n");
+
+	// To set default options, set to -1 which makes sure DUMBDEFAULTS is set !
+	//WIP. XXX TODO : boolify / cfgify
+
+	dumb_flags = DUMBDEFAULTS | MAN_BREAK;
+
 
 	return 0;
 }
@@ -670,23 +679,6 @@ const struct diag_serial_settings *pset)
 	dev->serial = *pset;
 
 	return diag_tty_setup(dev->tty_int, &dev->serial);
-}
-
-// Update interface options to customize particular interface type (K-line only or K&L)
-// Not related to the "getflags" function which returns the interface capabilities.
-// To set default options, call dumb_setopts(-1) which makes sure DUMBDEFAULTS is set !
-void dumb_setopts(unsigned int newflags)
-{
-
-	if (newflags & DUMBDEFAULTS) {
-		printf("Setting default dumb options.\n");
-		dumb_flags = DUMBDEFAULTS | MAN_BREAK;
-	} else {
-		dumb_flags = newflags;
-	}
-}
-unsigned int dumb_getopts(void) {
-	return dumb_flags & ~DUMBDEFAULTS;	//don't show our internal defaults flag.
 }
 
 

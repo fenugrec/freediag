@@ -389,6 +389,14 @@ static void dtest_13(struct diag_l0_device *dl0d) {
 	return;
 }
 
+/* WIP */
+void dt_new() {
+	printf("*** Warning ! The DUMBT driver is only for electrical ***\n"
+			"*** testing ! Do NOT use while connected to a vehicle! ***\n"
+			"*** refer to doc/scantool-manual.html ***\n");
+	return;
+}
+
 /*
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later

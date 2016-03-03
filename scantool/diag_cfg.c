@@ -11,16 +11,18 @@
 #include "diag.h"
 #include "diag_cfg.h"
 #include "diag_err.h"
+#include "diag_tty.h"	//for diag_tty_getportlist()
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static const char tty_descr[]="Serial/tty port";
-static const char tty_sn[]="port";
+static const char tty_descr[]="Serial/tty port, such as \"/dev/ttyS0\" or \"\\\\.\\COM11\"\n";
+static const char tty_sn[]="port";		/** tty cfg shortname */
+static const char tty_def[]="/dev/null";	/** last resort fallback */
 static const char bps_descr[]="Speed(bps)";
-static const char bps_sn[]="spd";
+static const char bps_sn[]="spd";	/** bps cfg shortname */
 
 /* top decls */
 void optarray_clear(struct cfgi *cfgp);
@@ -38,7 +40,7 @@ void diag_cfg_reset(struct cfgi *cfgp) {
 	return;
 }
 
-//set config value for a CFGT_STR param, copying contents of *str. Ret 0 if ok
+
 int diag_cfg_setstr(struct cfgi *cfgp, const char *str) {
 	if (cfgp->type == CFGT_STR) {
 		size_t slen=strlen(str);
@@ -169,12 +171,7 @@ void diag_cfg_clear(struct cfgi *cfgp) {
 void optarray_clear(struct cfgi *cfgp) {
 	if (cfgp->dyn_opt && (cfgp->opt != NULL)) {
 		/* Need to free every string, and the array of string ptrs */
-		for (int i=0; i < cfgp->numopts; i++) {
-			if (cfgp->opt[i] != NULL) {
-				free(cfgp->opt[i]);
-			}
-		}
-		free(cfgp->opt);
+		strlist_free(cfgp->opt, cfgp->numopts);
 	}
 	cfgp->dyn_opt = 0;
 	cfgp->opt=NULL;
@@ -191,13 +188,10 @@ void std_reset(struct cfgi *cfgp) {
 	case CFGT_STR:
 		if (cfgp->dval.str == NULL)
 			return;
-
 		if (cfgp->dyn_val && (cfgp->val.str != NULL)) {
 			free(cfgp->val.str);
 		}
-
-		cfgp->val.str = cfgp->dval.str;
-		cfgp->dyn_val = 0;	//don't free val, dval will be free'd
+		diag_cfg_setstr(cfgp, cfgp->dval.str);
 		break;
 	case CFGT_BOOL:
 		cfgp->val.b = cfgp->dval.b;
@@ -208,39 +202,44 @@ void std_reset(struct cfgi *cfgp) {
 }
 
 
-/** serial port **/
+/** Refresh list of known ports
+ *
+ * Keep current port; update default.
+ * If no ports are found, changes nothing
+ */
 void tty_refresh(struct cfgi *cfgp) {
-	//TODO : call diag_tty_find()
+	int numports;
+
 	if (cfgp->numopts > 0)
 		optarray_clear(cfgp);
 	cfgp->numopts = 0;
 
-	if (cfgp->val.str == cfgp->dval.str) {
-		//don't free val; alloc new copy
-		if (diag_malloc(&cfgp->val.str, strlen(cfgp->dval.str)+1)) {
-			return;
-		}
-		strcpy(cfgp->val.str, cfgp->dval.str);	//we just used strlen; strcpy is just as dangerous...
+	cfgp->opt = diag_tty_getportlist(&numports);
+
+	if (numports == 0) {
+		/* no ports found : change nothing */
+		return;
 	}
-	if (cfgp->dyn_dval && (cfgp->dval.str != NULL)) {
-		free(cfgp->dval.str);
+
+	/* Update default port */
+	cfgp->dyn_dval = 1;
+	if (diag_malloc(&cfgp->dval.str, strlen(cfgp->opt[0])+1)) {
+		return;
 	}
-	//XXX populate opt[], numopts, and dval
-	cfgp->dyn_dval = 0;
-	cfgp->dval.str=NULL;	//will depend on tty_find() output
+	strcpy(cfgp->dval.str, cfgp->opt[0]);	//we just used strlen; strcpy is just as dangerous...
+
 	return;
 }
 
 //new TTY / serial port config item
 int diag_cfgn_tty(struct cfgi *cfgp) {
-	//TODO : implement+call diag_tty_find()
-	if (diag_cfgn_str(cfgp, "/dev/null", tty_descr, tty_sn))	//XXX fill in default str
+
+	if (diag_cfgn_str(cfgp, tty_def, tty_descr, tty_sn))
 		return DIAG_ERR_GENERAL;
 
-	cfgp->numopts = 0;	//depending on tty_find()
-	cfgp->opt=NULL;
-
 	cfgp->refresh = &tty_refresh;
+	diag_cfg_refresh(cfgp);	//update default, etc
+
 	return 0;
 }
 

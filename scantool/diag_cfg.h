@@ -42,8 +42,13 @@ struct cfgi {
 		char *str;
 	} dval;		//default value;  used for reset()
 
-	bool dyn_val;	//if val must be free'd
-	bool dyn_dval;	//if dval must be free'd
+	/* these flags determine who owns & manages *val.str and *dval.str :
+	 * if set, diag_cfg_* functions take care of alloc / free calls.
+	 * if clear, caller must manage the allocation, diag_cfg_* functions
+	 * will not keep track of val.str/dval.str and may rewrite them.
+	 */
+	bool dyn_val;
+	bool dyn_dval;
 
 	int numopts;		//if > 0 : number of predefined string options / enum values. If ==0 : value set directly.
 	char **opt;	//description for each predefined option, i.e. numopts==1 means
@@ -61,10 +66,25 @@ struct cfgi {
 	void (*reset)(struct cfgi *_this);	//called by diag_cfg_reset()
 };
 
-void diag_cfg_refresh(struct cfgi *cfgp);	//Optional func to refresh opt[] and numopts (for tty, J2534, etc), doesn't change *val
-void diag_cfg_reset(struct cfgi *cfgp);	//Optional: func to reset *val to default; doesn't call refresh()
+/** Refresh opt[] and numopts (for tty, J2534, etc)
+ *
+ * Optional implementation; doesn't change *val
+ */
+void diag_cfg_refresh(struct cfgi *cfgp);
+
+/** Reset *val to default; doesn't call refresh()
+ *
+ * Optional implementation
+ */
+void diag_cfg_reset(struct cfgi *cfgp);
 
 //set config value for a param; caller must use the right func ... not super efficient
+/** Set value for a CFGT_STR param
+ *
+ * @return 0 if ok
+ *
+ * Copies contents of *str to a new string
+ */
 int diag_cfg_setstr(struct cfgi *cfgp, const char *str);
 int diag_cfg_setbool(struct cfgi *cfgp, bool val);
 int diag_cfg_setu8(struct cfgi *cfgp, uint8_t val);
@@ -73,39 +93,57 @@ int diag_cfg_setint(struct cfgi *cfgp, int val);
 //interpret 'str' correctly and set param accordingly
 //int diag_cfg_set(struct cfgi *cfgp, const char *str);
 
-//set config value to one of the predefined options. Ret 0 if ok. Note: optid is 0-based
+/** set config value to one of the predefined options.
+ * @return 0 if ok.
+ *
+ * Note: optid is 0-based
+ */
 int diag_cfg_setopt(struct cfgi *cfgp, int optid);
 
 //directly set param value (caller knows correct type and handles mem management, etc) BAD
 //void diag_cfg_setraw(struct cfgi *cfgp, void *val);
 
-//get param value: generates new string to be free'd by caller
+/** get param value: generates new string to be free'd by caller
+*/
 char * diag_cfg_getstr(struct cfgi *cfgp);
 
-//free contents of *cfgp but not the struct itself
+/** free contents of *cfgp but not the struct itself
+ */
 void diag_cfg_clear(struct cfgi *cfgp);
 
 /****** re-usable, typical configurable params ******/
 /* after alloc'ing a new struct cfgi, calling these funcs will prepare the struct */
 /* Ret 0 if ok. Some members of the struct may need to be filled after calling these. */
 
-//new TTY / serial port config item
+/** new TTY / serial port config item */
 int diag_cfgn_tty(struct cfgi *cfgp);
 
-//serial link speed;
+/** new serial link speed item */
 int diag_cfgn_bps(struct cfgi *cfgp, int val, int def);
 
-//ordinary int param using caller's &val, and *dev as default value for reset().
-//Doesn't fill descr and shortname
+/** new ordinary int param
+ *
+ * Uses caller's &val, and *dev as default value for reset().
+ * Doesn't fill descr and shortname
+ */
 int diag_cfgn_int(struct cfgi *cfgp, int val, int def);
 
-//ordinary u8 param (copy of _int code); use dval as default value for reset(). Don't fill descr and shortname
+/** new ordinary u8 param (copy of _int code)
+ * Uses dval as default value for reset().
+ * Doesn't fill descr and shortname
+ */
 int diag_cfgn_u8(struct cfgi *cfgp, uint8_t val, uint8_t def);
 
-//ordinary string, copies *def for its default value; sets descr and shortname ptrs
+/** new ordinary string param
+ *
+ * Copies *def for its default value; sets descr and shortname ptrs
+ */
 int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const char *sn);
 
-//ordinary bool (copy of _int code)
+/** new ordinary bool param
+ *
+ * (copy of _int code)
+ */
 int diag_cfgn_bool(struct cfgi *cfgp, bool val, bool def);
 
 #endif // DIAG_CFG_H

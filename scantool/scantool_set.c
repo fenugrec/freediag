@@ -277,64 +277,44 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 
 static int cmd_set_interface(int argc, char **argv)
 {
-	if (argc > 1) {
-		int i, helping = 0, found = 0;
-		if (strcmp(argv[1], "?") == 0) {
-			helping = 1;
-			printf("hardware interface: use \"set interface NAME [dev]\" .\n"
-			"NAME is the interface type and [dev] is\n"
-			"a complete device path such as \"/dev/ttyS0\" or \"\\\\.\\COM11\"\n"
-			"Valid NAMEs are: \n");
-		}
-		for (i=0; l0_names[i].code != LAST; i++) {
-			//loop through l0 interface names, either printing or comparing to argv[1]
-			if (helping)
-				printf("%s ", (l0_names[i].shortname));
-			else
-				if (strcasecmp(argv[1], l0_names[i].shortname) == 0) {
-					set_interface = l0_names[i].code;
-					set_interface_idx=i;
-					found = 1;
-					break;	//no use in continuing
-				}
-		}
-		if (helping) {
-			//XXX CFG rework TODO : split out of here and into L0 cfgi
-			//"?" was entered
-			int numports, i;
-			char ** portlist = diag_tty_getportlist(&numports);
-			printf("\nValid ports:\n");
-			if (portlist) {
-				for (i=0; (i < numports); i++) {
-					printf("\t%2d : %s\n", i, portlist[i]);
-				}
-				strlist_free(portlist, numports);
-			}
-		} else if (!found) {
-			printf("interface: invalid interface %s\n", argv[1]);
-			printf("interface: use \"set interface ?\" to see list of names\n");
-		} else {
-			if (argc > 2)	//there's also a "subinterface" aka devicename
-				strncpy(set_subinterface, argv[2], SUBINTERFACE_MAX-1);
-			printf("interface is now %s on %s\n",
-				l0_names[set_interface_idx].shortname, set_subinterface);
-			if (l0_names[set_interface_idx].code==DUMB) {
-				printf("Note concerning generic (dumb) interfaces : there are additional\n"
-					"options which can be set with \"set dumbopts\". By default\n"
-					"\"K-line only\" and \"MAN_BREAK\" are set. \n");
-//					diag_l0_dumb_setopts(-1);	//this forces defaults.
-			}
-			if (l0_names[set_interface_idx].code==DUMBT)
-				printf("*** Warning ! The DUMBT driver is only for electrical ***\n"
-						"*** testing ! Do NOT use while connected to a vehicle! ***\n"
-						"*** refer to doc/scantool-manual.html ***\n");
-
-		}
-	} else {
-		printf("interface: using %s on %s\n",
-			l0_names[set_interface_idx].shortname, set_subinterface);
+	if (argc <= 1) {
+		printf("interface: using %s\n",
+			l0_names[set_interface_idx].shortname);
 		return CMD_OK;
 	}
+
+	int i, helping = 0, found = 0;
+	if (strcmp(argv[1], "?") == 0) {
+		helping = 1;
+		printf("hardware interface: use \"set interface NAME\" .\n"
+		"NAME is the interface type. Valid NAMEs are: \n");
+	}
+	for (i=0; l0_names[i].code != LAST; i++) {
+		//loop through l0 interface names, either printing or comparing to argv[1]
+		if (helping)
+			printf("%s ", (l0_names[i].shortname));
+		else
+			if (strcasecmp(argv[1], l0_names[i].shortname) == 0) {
+				set_interface = l0_names[i].code;
+				set_interface_idx=i;
+				found = 1;
+				break;	//no use in continuing
+			}
+	}
+
+	if (helping) {
+		printf("\n");
+		return CMD_OK;
+	}
+
+	if (!found) {
+		printf("interface: invalid interface %s\n", argv[1]);
+		printf("interface: use \"set interface ?\" to see list of names\n");
+		return CMD_FAILED;
+	}
+
+	printf("interface is now %s\n", l0_names[set_interface_idx].shortname);
+
 	/* close + free current global dl0d. */
 	if (global_dl0d) {
 		/* XXX warn before breaking a (possibly) active L0-L2 chain */
