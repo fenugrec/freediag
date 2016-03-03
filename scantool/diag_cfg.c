@@ -12,6 +12,7 @@
 #include "diag_cfg.h"
 #include "diag_err.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -233,7 +234,7 @@ void tty_refresh(struct cfgi *cfgp) {
 //new TTY / serial port config item
 int diag_cfgn_tty(struct cfgi *cfgp) {
 	//TODO : implement+call diag_tty_find()
-	if (diag_cfgn_str(cfgp, NULL, tty_descr, tty_sn))	//XXX fill in default str
+	if (diag_cfgn_str(cfgp, "/dev/null", tty_descr, tty_sn))	//XXX fill in default str
 		return DIAG_ERR_GENERAL;
 
 	cfgp->numopts = 0;	//depending on tty_find()
@@ -302,6 +303,9 @@ int diag_cfgn_bool(struct cfgi *cfgp, bool val, bool def) {
 //ordinary string, copies *def for its default value; sets descr and shortname ptrs
 int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const char *sn) {
 	char *dval;
+
+	assert(def && descr && sn);
+
 	cfgp->type = CFGT_STR;
 	if (diag_malloc(&dval, strlen(def)+1))
 		return diag_iseterr(DIAG_ERR_NOMEM);
