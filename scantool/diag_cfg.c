@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char tty_descr[]="Serial/tty port, such as \"/dev/ttyS0\" or \"\\\\.\\COM11\"\n";
+static const char tty_descr[]="Serial/tty port, such as \"/dev/ttyS0\" or \"\\\\.\\COM11\"";
 static const char tty_sn[]="port";		/** tty cfg shortname */
 static const char tty_def[]="/dev/null";	/** last resort fallback */
 static const char bps_descr[]="Speed(bps)";
@@ -42,20 +42,24 @@ void diag_cfg_reset(struct cfgi *cfgp) {
 
 
 int diag_cfg_setstr(struct cfgi *cfgp, const char *str) {
-	if (cfgp->type == CFGT_STR) {
-		size_t slen=strlen(str);
-		if (cfgp->dyn_val && (cfgp->val.str != NULL)) {
-			free(cfgp->val.str);
-			cfgp->val.str = NULL;
-		}
-		if (diag_malloc(&cfgp->val.str, slen+1)) {
-			return diag_iseterr(DIAG_ERR_NOMEM);
-		}
-		cfgp->dyn_val = 1;	//need to free
-		strncpy(cfgp->val.str, str, slen+1);
-		return 0;
+	size_t slen;
+
+	if (cfgp->type != CFGT_STR) {
+		return diag_iseterr(DIAG_ERR_BADCFG);
 	}
-	return diag_iseterr(DIAG_ERR_BADCFG);
+
+	slen=strlen(str);
+	if (cfgp->dyn_val && (cfgp->val.str != NULL)) {
+		free(cfgp->val.str);
+		cfgp->val.str = NULL;
+	}
+	if (diag_malloc(&cfgp->val.str, slen+1)) {
+		return diag_iseterr(DIAG_ERR_NOMEM);
+	}
+	cfgp->dyn_val = 1;	//need to free
+	strcpy(cfgp->val.str, str);
+	return 0;
+
 }
 
 //set config value for a BOOL param
@@ -175,6 +179,7 @@ void optarray_clear(struct cfgi *cfgp) {
 	}
 	cfgp->dyn_opt = 0;
 	cfgp->opt=NULL;
+	cfgp->numopts = 0;
 }
 
 //stock reset() function
@@ -190,6 +195,7 @@ void std_reset(struct cfgi *cfgp) {
 			return;
 		if (cfgp->dyn_val && (cfgp->val.str != NULL)) {
 			free(cfgp->val.str);
+			cfgp->val.str = NULL;
 		}
 		diag_cfg_setstr(cfgp, cfgp->dval.str);
 		break;
@@ -208,15 +214,12 @@ void std_reset(struct cfgi *cfgp) {
  * If no ports are found, changes nothing
  */
 void tty_refresh(struct cfgi *cfgp) {
-	int numports;
 
-	if (cfgp->numopts > 0)
-		optarray_clear(cfgp);
-	cfgp->numopts = 0;
+	optarray_clear(cfgp);
 
-	cfgp->opt = diag_tty_getportlist(&numports);
+	cfgp->opt = diag_tty_getportlist(&cfgp->numopts);
 
-	if (numports == 0) {
+	if (cfgp->numopts == 0) {
 		/* no ports found : change nothing */
 		return;
 	}
@@ -224,9 +227,11 @@ void tty_refresh(struct cfgi *cfgp) {
 	/* Update default port */
 	cfgp->dyn_dval = 1;
 	if (diag_malloc(&cfgp->dval.str, strlen(cfgp->opt[0])+1)) {
+		optarray_clear(cfgp);
 		return;
 	}
 	strcpy(cfgp->dval.str, cfgp->opt[0]);	//we just used strlen; strcpy is just as dangerous...
+	cfgp->dyn_opt = 1;
 
 	return;
 }
@@ -238,7 +243,8 @@ int diag_cfgn_tty(struct cfgi *cfgp) {
 		return DIAG_ERR_GENERAL;
 
 	cfgp->refresh = &tty_refresh;
-	diag_cfg_refresh(cfgp);	//update default, etc
+	tty_refresh(cfgp);	//update default, etc
+	std_reset(cfgp);
 
 	return 0;
 }
@@ -301,19 +307,25 @@ int diag_cfgn_bool(struct cfgi *cfgp, bool val, bool def) {
 
 //ordinary string, copies *def for its default value; sets descr and shortname ptrs
 int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const char *sn) {
-	char *dval;
+	char *val, *dval;
 
 	assert(def && descr && sn);
 
 	cfgp->type = CFGT_STR;
 	if (diag_malloc(&dval, strlen(def)+1))
 		return diag_iseterr(DIAG_ERR_NOMEM);
+	if (diag_malloc(&val, strlen(def)+1)) {
+		free(dval);
+		return diag_iseterr(DIAG_ERR_NOMEM);
+	}
+
 	cfgp->dval.str = dval;
 	cfgp->dyn_dval = 1;
 	strcpy(dval, def);	//danger
 
-	cfgp->val.str = dval;
-	cfgp->dyn_val = 0;
+	cfgp->val.str = val;
+	cfgp->dyn_val = 1;
+	strcpy(val, def);	//danger
 
 	cfgp->descr = descr;
 	cfgp->shortname = sn;

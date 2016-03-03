@@ -214,7 +214,14 @@ static int cmd_set_custom(int argc, char **argv) {
 
 	if (helping) {
 		printf("%s\n", cfgp->descr);
-		//TODO : print possible vals ?
+		if (cfgp->numopts > 0) {
+			int i;
+			printf("Available options:\n");
+			for (i=0; i < cfgp->numopts; i++) {
+				printf("\t\t%2d: %s\n", i, cfgp->opt[i]);
+			}
+		}
+		//TODO : allow selection by optid !
 		return CMD_OK;
 	}
 
@@ -327,40 +334,6 @@ static int cmd_set_interface(int argc, char **argv)
 
 	return CMD_OK;
 }
-
-#if 0	//WIP for cfg rework
-//Update simfile name to be used.
-//Current behaviour : updates the simfile even if the interface isn't set to CARSIM.
-static int cmd_set_simfile(int argc, char **argv)
-{
-
-	if (argc > 1) {
-		if (strcmp(argv[1], "?") == 0) {
-			printf("Simulation file: with CARSIM interface, this file contains\n"
-			"message bytes to be transferred between host and ECU.\n"
-			"Defaults to " DB_FILE "\n");
-			return CMD_OK;
-		}
-
-		if (set_simfile)
-			free(set_simfile);		//free old simfile
-		if (diag_calloc(&set_simfile, strlen(argv[1])+1))
-			return CMD_FAILED;
-		strcpy(set_simfile, argv[1]);
-		diag_l0_sim_setfile(set_simfile);
-		printf("Simulation file: now using %s\n", set_simfile);
-
-		if (set_interface!=CARSIM) {
-			printf("Note: simfile only needed with CARSIM interface.\n");
-		}
-	} else {
-		//no arguments
-		printf("Simulation file: using %s\n", set_simfile);
-	}
-
-	return CMD_OK;
-}
-#endif
 
 static int
 cmd_set_display(int argc, char **argv)
