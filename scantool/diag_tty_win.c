@@ -352,6 +352,11 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 
 	if ((count <= 0) || (timeout <= 0)) return DIAG_ERR_BADLEN;
 
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
+		fprintf(stderr, FLFMT "tty_read: ttyh=%p, fd=%p, len=%u, t=%u\n", FL,
+					(void *)wti, (void *)wti->fd, count, timeout);
+	}
+
 	if (wti->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -364,7 +369,7 @@ diag_tty_read(struct diag_l0_device *dl0d, void *buf, size_t count, unsigned int
 	devtimeouts.ReadTotalTimeoutConstant=timeout;	// (tconst + mult*numbytes) = total timeout on read
 	devtimeouts.WriteTotalTimeoutMultiplier=0;	//probably useless as all flow control will be disabled ??
 	devtimeouts.WriteTotalTimeoutConstant=0;
-	if (! SetCommTimeouts(wti->fd,&devtimeouts)) {
+	if (! SetCommTimeouts(wti->fd, &devtimeouts)) {
 		fprintf(stderr, FLFMT "Could not set comm timeouts: %s\n",FL, diag_os_geterr(0));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
