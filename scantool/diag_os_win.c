@@ -261,20 +261,30 @@ diag_os_sched(void)
 //
 const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 	//to make this re-entrant, we would need CreateMutex OpenMutex etc.
-	static char errbuf[160]="";	//this has to be big enough, or else FormatMessage chokes!
-	//TODO : use FormatMessage differently so it allocates a buffer large enough for the whole string,
-	// then copy up to {sizeof(errbuf)} bytes from that new buffer to errbuf[], then LocalFree() the
-	// new buffer. win-win.
+	static char errbuf[160]="";
+
+	LPVOID errstr;
 
 	if (os_errno == 0)
 		os_errno=GetLastError();
 
 	if (os_errno !=0 ) {
-		if (! FormatMessage(0, NULL, os_errno, 0, errbuf, sizeof(errbuf), NULL)) {
+		DWORD elen = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+							NULL,
+							os_errno,
+							0,
+							(LPTSTR) &errstr,
+							0,
+							NULL);
+		if (elen) {
+			snprintf(errbuf, sizeof(errbuf), "%s", (const char *) errstr);
+			LocalFree(errstr);
+		} else {
+			//formatmessage failed...
 			snprintf(errbuf, sizeof(errbuf), "UNK:%u", (unsigned int) os_errno);
 		}
 	} else {
-		strcpy(errbuf, "NIL");
+		strcpy(errbuf, "No error");
 	}
 	return (const char *) errbuf;
 
