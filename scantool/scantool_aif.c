@@ -203,7 +203,7 @@ static void aif_set (void *data)
 				return ;
 			}
 
-			sprintf(set_subinterface, "%d", port) ;
+			fprintf(stderr, "ERROR - code not complete for CFG rework");
 			break ;
 		}
 		default :

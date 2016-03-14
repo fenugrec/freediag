@@ -203,9 +203,6 @@ extern enum l0_nameindex set_interface;	/* Physical interface name to use */
 int set_interface_idx;	//index into l0_names
 extern const struct l0_name l0_names[];	//filled in scantool_set.c
 
-#define SUBINTERFACE_MAX 256
-extern char	set_subinterface[SUBINTERFACE_MAX];	/* Sub interface (aka device name) */
-
 /* struct global_cfg contains all global parameters */
 extern struct globcfg {
 	bool units;	/* English(1) or Metric(0)  display */

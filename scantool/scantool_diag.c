@@ -282,7 +282,6 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 
 			global_state = STATE_CONNECTED;
 			global_l2_conn = d_conn;
-			global_dl0d = dl0d;
 
 			/* Get the keybytes */
 			diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_DATA, &d);
@@ -378,7 +377,6 @@ cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
 		diag_l2_close(global_dl0d);
 
 		global_l2_conn = NULL;
-		global_dl0d = NULL;
 		global_state = STATE_IDLE;
 	} else {
 		printf("There is another active L3 connection : %p\n : %s",

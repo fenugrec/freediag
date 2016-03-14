@@ -353,7 +353,7 @@ static int cmd_debug_l0test(int argc, char **argv) {
 	if (diag_init())
 		return CMD_FAILED;
 
-	printf("Trying test %u on %s...\n", testnum, set_subinterface);
+	printf("Trying test %u...\n", testnum);
 
 	// I think the easiest way to pass on "testnum" on to diag_l0_dumbtest.c is
 	// to pretend testnum is an L1protocol. Then we can use diag_l2_open to start the

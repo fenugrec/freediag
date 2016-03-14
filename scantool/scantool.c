@@ -745,7 +745,6 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
 		return NULL;
 	}
 
-	global_dl0d=dl0d;
 
 	/*
 	 * Now Get the L2 flags, and if this is a network type where
@@ -889,7 +888,6 @@ do_l2_generic_start(void)
 	/* Connected ! */
 
 	global_l2_conn = d_conn;
-	global_dl0d = dl0d;	/* Saved for close */
 
 	return 0;
 }

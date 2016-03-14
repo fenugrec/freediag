@@ -42,7 +42,7 @@
 /* struct global_cfg contains all global parameters */
 struct globcfg global_cfg;
 
-struct diag_l0_device *global_dl0d;	//global dl0d test
+struct diag_l0_device *global_dl0d;
 
 #define DEFAULT_INTERFACE CARSIM	//index into l0_names below
 const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM},
@@ -51,7 +51,6 @@ const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM}
 /** WIP : convert the following items **/
 enum l0_nameindex set_interface;	//hw interface to use
 
-char set_subinterface[SUBINTERFACE_MAX];		/* and sub-interface ID */
 
 /*
  * XXX All commands should probably have optional "init" hooks.
@@ -78,8 +77,7 @@ int set_init(void)
 	set_interface_idx= DEFAULT_INTERFACE;
 	set_interface = l0_names[DEFAULT_INTERFACE].code;	/* Default H/w interface to use */
 
-	strncpy(set_subinterface,"/dev/null",SUBINTERFACE_MAX-1);
-	printf( "%s: Interface set to default: %s on %s\n", progname, l0_names[set_interface_idx].shortname, set_subinterface);
+	printf( "%s: Interface set to default: %s\n", progname, l0_names[set_interface_idx].shortname);
 
 	global_dl0d=NULL;
 

@@ -50,7 +50,7 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype);
 
 uint8_t global_data[MAXRBUF];
 int global_datalen;
-char *set_subinterface;
+char *port;
 
 uint8_t	global_pids[0x100];	/* Pids supported by ECU */
 
@@ -63,7 +63,7 @@ main(int argc,  char **argv)
 		printf("Error : correct usage is : %s [dev]\nwhere [dev] looks like /dev/ttyS0 etc.\n",argv[0]);
 		return 0;
 	}
-	set_subinterface=argv[1];	//point to the device name string
+	port=argv[1];	//point to the device name string
 
 	diag_l0_debug = -1;
 	diag_l1_debug = -1;
@@ -123,10 +123,10 @@ do_l2_raw_test(int funcaddr, target_type destecu, int inittype)
 	flag_type flags = 0;
 
 #if 0	//XXX CFG_REWORK
-	dl0d = diag_l2_open("DUMB", set_subinterface, DIAG_L1_RAW);
+	dl0d = diag_l2_open("DUMB", DIAG_L1_RAW);
 #endif
 	if (! dl0d) {
-		printf("could not open %s\n",set_subinterface);
+		printf("could not open %s\n",port);
 		return -1;
 	}
 	printf("open dl0d = %p\n", (void *)dl0d);
@@ -251,7 +251,7 @@ do_l1_test(void)
 	struct diag_serial_settings set;
 
 #if 0	//XXX CFG_REWORK
-	dl0d = diag_l1_open("DUMB", set_subinterface, DIAG_L1_RAW);
+	dl0d = diag_l1_open("DUMB", port, DIAG_L1_RAW);
 #endif
 	if (!dl0d)
 		return diag_iseterr(DIAG_ERR_GENERAL);
