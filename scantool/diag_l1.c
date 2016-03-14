@@ -133,6 +133,12 @@ diag_l1_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 	return diag_l0_initbus(dl0d, in);
 }
 
+
+int diag_l1_iflush(struct diag_l0_device *dl0d) {
+	/* No buffering at the L1 level; forward this to L0. */
+	return diag_l0_iflush(dl0d);
+}
+
 /*
  * Send a load of data
  *
@@ -185,7 +191,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 			//try to read the same number of sent bytes; timeout=300ms + 1ms/byte
 			//This is plenty OK for typical 10.4kbps but should be changed
 			//if ever slow speeds are used.
-			if (diag_tty_read(dl0d, duplexbuf, len, 300+len) != (int) len) {
+			if (diag_l0_recv(dl0d, NULL, duplexbuf, len, 300+len) != (int) len) {
 				rv=DIAG_ERR_GENERAL;
 			}
 
@@ -214,7 +220,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 				uint8_t c;
 
 				c = *dp - 1; /* set it with wrong val. */
-				if (diag_tty_read(dl0d, &c, 1, 200) != 1) {
+				if (diag_l0_recv(dl0d, NULL, &c, 1, 200) != 1) {
 					rv=DIAG_ERR_GENERAL;
 					break;
 				}

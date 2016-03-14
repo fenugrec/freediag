@@ -786,5 +786,6 @@ const struct diag_l0 diag_l0_sim =
 	diag_l0_sim_recv,
 	diag_l0_sim_send,
 	diag_l0_sim_initbus,
+	NULL,
 	diag_l0_sim_setspeed
 };

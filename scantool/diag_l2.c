@@ -652,9 +652,8 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		break;
 	case DIAG_IOCTL_IFLUSH:
 		dl2l = dl0d->dl2_link;
-		if (dl2l->l1flags & DIAG_L1_NOTTY)
-			break;
-		rv = diag_tty_iflush(dl0d);
+		if (dl2l->l1flags & DIAG_L1_NOTTY) break;
+		rv = diag_l1_iflush(dl0d);
 		break;
 	default:
 		rv = 0;	/* Do nothing, quietly */

@@ -621,6 +621,11 @@ dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 }
 
 
+static int dumb_iflush(struct diag_l0_device *dl0d) {
+	struct dumb_device *dev = dl0d->l0_int;
+
+	return diag_tty_iflush(dev->tty_int);
+}
 
 /*
  * Send a load of data
@@ -754,5 +759,6 @@ const struct diag_l0 diag_l0_dumb = {
 	dumb_recv,
 	dumb_send,
 	dumb_initbus,
+	dumb_iflush,
 	dumb_setspeed
 };

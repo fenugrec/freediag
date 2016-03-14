@@ -74,10 +74,9 @@ struct diag_l0
 
 	int	(*_initbus)(struct diag_l0_device *,
 		struct diag_l1_initbus_args *in);
-
+	int (*_iflush)(struct diag_l0_device *);		//Optional
 	int	(*_setspeed)(struct diag_l0_device *,
 		const struct diag_serial_settings *pss);
-
 
 };
 
@@ -157,6 +156,11 @@ int	diag_l0_setspeed(struct diag_l0_device *,
  */
 int	diag_l0_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 
+/** Flush input buffers, if applicable
+ *
+ * @return 0 if ok
+ */
+int diag_l0_iflush(struct diag_l0_device *);
 
 /*** globals ***/
 

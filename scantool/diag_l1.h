@@ -202,6 +202,13 @@ int diag_l1_end(void);
  */
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 
+
+/** Flush input buffers, if applicable.
+ *
+ * @return 0 if ok
+ */
+int diag_l1_iflush(struct diag_l0_device *);
+
 /** calls l0 ->open with the specified L1 protocol;
 * @return 0 if ok
 */

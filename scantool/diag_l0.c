@@ -106,3 +106,12 @@ int	diag_l0_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 	assert(dl0d);
 	return dl0d->dl0->_initbus(dl0d, in);
 }
+
+int diag_l0_iflush(struct diag_l0_device *dl0d) {
+	assert(dl0d);
+	if (dl0d->dl0->_iflush) {
+		return dl0d->dl0->_iflush(dl0d);
+	}
+	return 0;
+}
+
