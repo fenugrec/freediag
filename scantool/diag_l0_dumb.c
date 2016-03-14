@@ -93,7 +93,7 @@ struct dumb_device
 				"ex.: \"dumbopts 9\" for MAN_BREAK and USE_LLINE.\n"
 
 
-	void *tty_int;			/** handle for tty stuff */
+	ttyp *tty_int;			/** handle for tty stuff */
 
 };
 

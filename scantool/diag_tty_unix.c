@@ -54,7 +54,7 @@ diag_tty_rw_timeout_handler(UNUSED(int sig), siginfo_t *si, UNUSED(void *uc))
 }
 #endif
 
-void * diag_tty_open(const char *portname)
+ttyp * diag_tty_open(const char *portname)
 {
 	int rv;
 	struct unix_tty_int *uti;
@@ -246,7 +246,7 @@ void * diag_tty_open(const char *portname)
 }
 
 /* Close up the TTY and restore. */
-void diag_tty_close(void *tty_int)
+void diag_tty_close(ttyp *tty_int)
 {
 	struct unix_tty_int *uti = tty_int;
 
@@ -289,7 +289,7 @@ void diag_tty_close(void *tty_int)
 	- OSX >10.4 : (unconfirmed, TODO)	: IOSSIOSPEED ioctl ?
 	- BSD ? (unconfirmed, TODO) : IOSSIOSPEED ioctl ?
 */
-static int _tty_setspeed(void *tty_int, unsigned int spd) {
+static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 	struct unix_tty_int *uti = tty_int;
 	unsigned int	spd_real;	//validate baud rate precision
 	struct termios st_new;
@@ -506,7 +506,7 @@ static int _tty_setspeed(void *tty_int, unsigned int spd) {
  * Set speed/parity etc, return 0 if ok
  */
 int
-diag_tty_setup(void *tty_int, const struct diag_serial_settings *pset)
+diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset)
 {
 	int rv;
 	int fd;
@@ -625,7 +625,7 @@ diag_tty_setup(void *tty_int, const struct diag_serial_settings *pset)
  * Set/Clear DTR and RTS lines, as specified
  */
 int
-diag_tty_control(void *tty_int,  unsigned int dtr, unsigned int rts)
+diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts)
 {
 	int flags;	/* Current flag values. */
 	struct unix_tty_int *uti = tty_int;
@@ -668,7 +668,7 @@ diag_tty_control(void *tty_int,  unsigned int dtr, unsigned int rts)
 // In addition, this calculates + enforces a write timeout based on the number of bytes.
 // But write timeouts should be very rare, and are considered an error
 ssize_t
-diag_tty_write(void *tty_int, const void *buf, const size_t count)
+diag_tty_write(ttyp *tty_int, const void *buf, const size_t count)
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 {
 	ssize_t rv;
@@ -810,7 +810,7 @@ diag_tty_write(void *tty_int, const void *buf, const size_t count)
 
 
 ssize_t
-diag_tty_read(void *tty_int, void *buf, size_t count, unsigned int timeout)
+diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout)
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 {
 	ssize_t rv;
@@ -1098,7 +1098,7 @@ finished:
  * diag_tty_read with IFLUSH_TIMEOUT.
  * Ret 0 if ok
  */
-int diag_tty_iflush(void *tty_int) {
+int diag_tty_iflush(ttyp *tty_int) {
 	uint8_t buf[MAXRBUF];
 	int rv;
 	struct unix_tty_int *uti = tty_int;
@@ -1129,7 +1129,7 @@ int diag_tty_iflush(void *tty_int) {
 
 
 // ideally use TIOCSBRK, if defined (probably in sys/ioctl.h)
-int diag_tty_break(void *tty_int, const unsigned int ms)
+int diag_tty_break(ttyp *tty_int, const unsigned int ms)
 {
 #ifdef TIOCSBRK
 // TIOCSBRK: set TX break until TIOCCBRK. Ideal for our use but not in POSIX.
@@ -1188,7 +1188,7 @@ int diag_tty_break(void *tty_int, const unsigned int ms)
  * we'll probably have to add a ->pset member to diag_l0_device to store the
  * "desired" setting. And use that to call diag_tty_setup to restore settings...
  */
-int diag_tty_fastbreak(void *tty_int, const unsigned int ms) {
+int diag_tty_fastbreak(ttyp *tty_int, const unsigned int ms) {
 	struct unix_tty_int *uti=tty_int;
 	uint8_t cbuf;
 	unsigned long long tv1,tv2,tvdiff;

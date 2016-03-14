@@ -27,7 +27,7 @@ struct tty_int {
 };
 
 //diag_tty_open : open specified port for L0
-void * diag_tty_open(const char *portname)
+ttyp * diag_tty_open(const char *portname)
 {
 	int rv;
 	struct tty_int *wti;
@@ -103,7 +103,7 @@ void * diag_tty_open(const char *portname)
 } //diag_tty_open
 
 /* Close up the TTY and restore. */
-void diag_tty_close(void *ttyh)
+void diag_tty_close(ttyp *ttyh)
 {
 	struct tty_int *wti = ttyh;
 
@@ -131,7 +131,7 @@ void diag_tty_close(void *ttyh)
  * ret 0 if ok
  */
 int
-diag_tty_setup(void *ttyh,
+diag_tty_setup(ttyp *ttyh,
 	const struct diag_serial_settings *pset)
 {
 	HANDLE devhandle;		//just to clarify code
@@ -253,7 +253,7 @@ diag_tty_setup(void *ttyh,
  * ret 0 if ok
  */
 int
-diag_tty_control(void *ttyh, unsigned int dtr, unsigned int rts)
+diag_tty_control(ttyp *ttyh, unsigned int dtr, unsigned int rts)
 {
 	unsigned int escapefunc;
 	struct tty_int *wti = ttyh;
@@ -296,7 +296,7 @@ diag_tty_control(void *ttyh, unsigned int dtr, unsigned int rts)
 //to wait for "EV_TXEMPTY" which would give a better idea
 //of when the data has been sent.
 
-ssize_t diag_tty_write(void *ttyh, const void *buf, const size_t count) {
+ssize_t diag_tty_write(ttyp *ttyh, const void *buf, const size_t count) {
 	DWORD byteswritten;
 	OVERLAPPED *pOverlap;
 	struct tty_int *wti = ttyh;
@@ -333,7 +333,7 @@ ssize_t diag_tty_write(void *ttyh, const void *buf, const size_t count) {
 
 
 ssize_t
-diag_tty_read(void *ttyh, void *buf, size_t count, unsigned int timeout) {
+diag_tty_read(ttyp *ttyh, void *buf, size_t count, unsigned int timeout) {
 	DWORD bytesread;
 	ssize_t rv=DIAG_ERR_TIMEOUT;
 	OVERLAPPED *pOverlap;
@@ -382,7 +382,7 @@ diag_tty_read(void *ttyh, void *buf, size_t count, unsigned int timeout) {
  * ret 0 if ok
  *
  */
-int diag_tty_iflush(void *ttyh)
+int diag_tty_iflush(ttyp *ttyh)
 {
 	uint8_t buf[MAXRBUF];
 	int rv;
@@ -405,7 +405,7 @@ int diag_tty_iflush(void *ttyh)
 // diag_tty_break #1 : use Set / ClearCommBreak
 // and return as soon as break is cleared.
 // ret 0 if ok
-int diag_tty_break(void *ttyh, const unsigned int ms) {
+int diag_tty_break(ttyp *ttyh, const unsigned int ms) {
 	LARGE_INTEGER qpc1, qpc2;	//for timing verification
 	long real_t;	//"real" duration
 	struct tty_int *wti = ttyh;
@@ -447,7 +447,7 @@ int diag_tty_break(void *ttyh, const unsigned int ms) {
  * It assumes the interface is half-duplex.
  * Ret 0 if ok
  */
-int diag_tty_fastbreak(void *ttyh, const unsigned int ms) {
+int diag_tty_fastbreak(ttyp *ttyh, const unsigned int ms) {
 	HANDLE dh;	//just to clarify code
 	struct tty_int *wti = ttyh;
 	DCB tempDCB; 	//for sabotaging the settings just to do the break

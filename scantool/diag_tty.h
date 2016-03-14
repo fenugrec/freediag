@@ -45,6 +45,7 @@ struct diag_serial_settings {
 
 
 /*** Public functions ***/
+typedef void ttyp;	//used as "(tty_internal_struct *) ttyp" in tty code
 
 /** Get available serial ports
  *
@@ -57,21 +58,21 @@ char ** diag_tty_getportlist(int *numports);
 
 /** Open serial port
  * @param portname: serial port device / file / tty name
- * @return new tty_int object if ok, NULL if failed
+ * @return new ttyp handle if ok, NULL if failed
  */
-void * diag_tty_open(const char *portname);
+ttyp * diag_tty_open(const char *portname);
 
 /** Close serial port
  *
  * Also frees everything allocated in diag_tty_open().
  */
-void diag_tty_close(void *tty_int);
+void diag_tty_close(ttyp *tty_int);
 
 /** Set speed/parity.
  *
  * @return 0 if ok.
  */
-int diag_tty_setup(void *tty_int,
+int diag_tty_setup(ttyp *tty_int,
 	const struct diag_serial_settings *pss);
 
 /** Set DTR and RTS lines.
@@ -80,7 +81,7 @@ int diag_tty_setup(void *tty_int,
  * (opposite polarity of the TX/RX pins!!)
  * @return 0 if ok
  */
-int diag_tty_control(void *tty_int, unsigned int dtr, unsigned int rts);
+int diag_tty_control(ttyp *tty_int, unsigned int dtr, unsigned int rts);
 
 
 /** Flush pending input.
@@ -88,7 +89,7 @@ int diag_tty_control(void *tty_int, unsigned int dtr, unsigned int rts);
  * This probably always takes IFLUSH_TIMEOUT to complete since it calls diag_tty_read.
  * @return 0 if ok
  */
-int diag_tty_iflush(void *tty_int);
+int diag_tty_iflush(ttyp *tty_int);
 
 // diag_tty_read : (count >0 && timeout >0)
 //	a) read up to (count) bytes until (timeout) expires; return the # of bytes read.
@@ -97,7 +98,7 @@ int diag_tty_iflush(void *tty_int);
 //	c) if there was a real error, return diag_iseterr(x)
 //	d) never return 0
 //	TODO : clarify if calling with timeout==0 is useful (probably not, nobody does).
-ssize_t diag_tty_read(void *tty_int,
+ssize_t diag_tty_read(ttyp *tty_int,
 	void *buf, size_t count, unsigned int timeout);
 
 /** Write bytes to tty (blocking).
@@ -109,7 +110,7 @@ ssize_t diag_tty_read(void *tty_int,
  * or only that the data was flushed as far "downstream" as possible, for example
  * to a UART / device driver buffer.
  */
-ssize_t diag_tty_write(void *tty_int,
+ssize_t diag_tty_write(ttyp *tty_int,
 	const void *buf, const size_t count);
 
 
@@ -117,7 +118,7 @@ ssize_t diag_tty_write(void *tty_int,
  * @param ms: duration (milliseconds)
  * @return 0 if ok, after clearing break
  */
-int diag_tty_break(void *tty_int, const unsigned int ms);
+int diag_tty_break(ttyp *tty_int, const unsigned int ms);
 
 /** Send fixed 25ms break pattern on TXD.
  *
@@ -126,7 +127,7 @@ int diag_tty_break(void *tty_int, const unsigned int ms);
  * @param ms: Total pattern length (\>25ms)
  * @return 0 if ok; returns [ms] after starting the break.
  */
-int diag_tty_fastbreak(void *tty_int, const unsigned int ms);
+int diag_tty_fastbreak(ttyp *tty_int, const unsigned int ms);
 
 
 #endif /* _DIAG_TTY_H_ */
