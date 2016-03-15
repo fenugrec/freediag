@@ -85,7 +85,7 @@ struct diag_l2_conn
 	//tlast is updated when diag_l2_send, _recv,
 	//  _request, or _startcomm is called succesfully.
 	unsigned long tlast;		// Time of last received || sent data, in ms.
-	unsigned long tinterval;	// How long before expiry (usually set by startcomms() once)
+	unsigned long tinterval;	// How long before expiry (usually set by startcomms() once). Set to -1 for "never"
 
 	const struct diag_l2_proto *l2proto;	/* Protocol handler */
 

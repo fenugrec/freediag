@@ -743,6 +743,313 @@ int np_8(int argc, char **argv) {
 	return CMD_OK;
 }
 
+/** encrypt buffer in-place
+ * @param len (count in bytes) is trimmed to align on 4-byte boundary, i.e. len=7 => len =4
+ *
+ * @return 16-bit checksum of buffer prior to encryption
+ *
+ */
+uint16_t encrypt_buf(uint8_t *buf, uint32_t len, uint32_t key) {
+	uint16_t cks;
+	if (!buf || !len) return 0;
+
+	len &= ~3;
+	cks = 0;
+	for (; len > 0; len -= 4) {
+		uint8_t tempbuf[4];
+		memcpy(tempbuf, buf, 4);
+		cks += tempbuf[0];
+		cks += tempbuf[1];
+		cks += tempbuf[2];
+		cks += tempbuf[3];
+		genkey1(tempbuf, key, buf);
+		buf += 4;
+	}
+	return cks;
+}
+
+// hax, get file length but restore position. taken from nislib
+static long flen(FILE *hf) {
+	long siz;
+	long orig;
+
+	if (!hf) return 0;
+	orig = ftell(hf);
+	if (orig < 0) return 0;
+
+	if (fseek(hf, 0, SEEK_END)) return 0;
+
+	siz = ftell(hf);
+	if (siz < 0) siz=0;
+	if (fseek(hf, orig, SEEK_SET)) return 0;
+	return siz;
+}
+
+/** do SID 34 80 transaction, ret 0 if ok
+ *
+ * Assumes everything is ok (conn state, etc)
+ */
+int sid3480(void) {
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+
+	txdata[0]=0x34;
+	txdata[1]=0x80;
+	nisreq.len=2;
+	nisreq.data=txdata;
+
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return -1;
+
+	if (rxmsg->data[0] != 0x74) {
+		printf("got bad 34 80 response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
+		diag_freemsg(rxmsg);
+		return -1;
+	}
+	diag_freemsg(rxmsg);
+	return 0;
+}
+
+/* transfer payload from *buf
+ * len must be multiple of 32
+ * Caller must have encrypted the payload
+ * ret 0 if ok
+ */
+int sid36(uint8_t *buf, uint32_t len) {
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+	uint16_t blockno;
+	uint16_t maxblocks;
+
+	len &= ~0x1F;
+	if (!buf || !len) return -1;
+
+	blockno = 0;
+	maxblocks = (len / 32) - 1;
+
+	txdata[0]=0x36;
+	//txdata[1] and [2] is the 16bit block #
+	txdata[3] = 0x20;		//block length; ignored by ECU
+	nisreq.data=txdata;
+	nisreq.len= 4 + 32;
+
+	for (; len > 0; len -= 32, blockno += 1) {
+
+		txdata[1] = blockno >> 8;
+		txdata[2] = blockno & 0xFF;
+
+		memcpy(&txdata[4], buf, 32);
+		buf += 32;
+
+		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+		if (rxmsg==NULL) {
+			printf("no response @ blockno %X\n", (unsigned) blockno);
+			return -1;
+		}
+
+		if (rxmsg->data[0] != 0x76) {
+			printf("got bad 36 response : ");
+			diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+			printf("\n");
+			diag_freemsg(rxmsg);
+			return -1;
+		}
+		printf("\rSID36 block 0x%04X/0x%04X done (%02X %02X %02X...)",
+				(unsigned) blockno, (unsigned) maxblocks, txdata[0], txdata[1], txdata[2]);
+		diag_freemsg(rxmsg);
+	}
+	printf("\n");
+	fflush(stdout);
+	return 0;
+}
+
+//send SID 37 transferexit request, ret 0 if ok
+int sid37(uint16_t cks) {
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+
+	txdata[0]=0x37;
+	txdata[1]=cks >> 8;
+	txdata[2]=cks & 0xFF;
+	nisreq.len=3;
+	nisreq.data=txdata;
+
+	printf("sid37: sending ");
+	diag_data_dump(stdout, txdata, 3);
+	printf("\n");
+
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return -1;
+
+	if (rxmsg->data[0] != 0x77) {
+		printf("got bad 37 response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
+		diag_freemsg(rxmsg);
+		return -1;
+	}
+	diag_freemsg(rxmsg);
+	return 0;
+}
+
+/* RAMjump, takes care of SIDs BF 00 + BF 01
+ * ret 0 if ok
+ */
+int sidBF(void) {
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+
+	txdata[0]=0xBF;
+	txdata[1]=0;
+	nisreq.len=2;
+	nisreq.data=txdata;
+
+	/* BF 00 : RAMjumpCheck */
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return -1;
+
+	if (rxmsg->data[0] != 0xFF) {
+		printf("got bad BF 00 response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
+		diag_freemsg(rxmsg);
+		return -1;
+	}
+	diag_freemsg(rxmsg);
+
+	/* BF 01 : RAMjumpCheck */
+	txdata[1] = 1;
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		return -1;
+
+	if (rxmsg->data[0] != 0xFF) {
+		printf("got bad BF 01 response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
+		diag_freemsg(rxmsg);
+		return -1;
+	}
+	diag_freemsg(rxmsg);
+	return 0;
+}
+
+
+/* Does a complete SID 27 + 34 + 36 + BF sequence to run the given kernel payload file.
+ * Pads the input payload up to multiple of 32 bytes to make SID36 happy
+ */
+int np_9(int argc, char **argv) {
+	uint32_t sid27key;
+	uint32_t sid36key;
+	uint32_t file_len;
+	uint32_t pl_len;
+	uint16_t old_p4;
+	FILE *fpl;
+	uint8_t *pl_encr;	//encrypted payload buffer
+
+	if (argc != 5) {
+		printf("Transfer + run payload. Usage: np 9 <payload file> <sid27key> <sid36key>\n");
+		return CMD_USAGE;
+	}
+
+	sid27key = (uint32_t) htoi(argv[3]);
+	sid36key = (uint32_t) htoi(argv[4]);
+
+	if ((fpl = fopen(argv[2], "rb"))==NULL) {
+		printf("Cannot open %s !\n", argv[2]);
+		return CMD_FAILED;
+	}
+
+	file_len = (uint32_t) flen(fpl);
+	/* pad up to next multiple of 32 */
+	pl_len = (file_len + 31) & ~31;
+
+	if (diag_malloc(&pl_encr, pl_len)) {
+		printf("malloc prob\n");
+		return CMD_FAILED;
+	}
+
+	if (fread(pl_encr, 1, file_len, fpl) != file_len) {
+		printf("fread prob, file_len=%u\n", file_len);
+		free(pl_encr);
+		fclose(fpl);
+		return CMD_FAILED;
+	}
+
+	if (file_len != pl_len) {
+		printf("Using %u byte payload, padding with garbage to %u (0x0%X) bytes.\n", file_len, pl_len, pl_len);
+	} else {
+		printf("Using %u (0x0%X) byte payload", file_len, file_len);
+	}
+
+	old_p4 = global_l2_conn->diag_l2_p4min;
+	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
+
+	/* re-use NP 7 to get the SID27 done */
+	if (np_6_7(1, argv, 1, sid27key) != CMD_OK) {
+		printf("sid27 problem\n");
+		goto badexit;
+	}
+
+	/* SID 34 80 : */
+	if (sid3480()) {
+		printf("sid 34 80 problem\n");
+		goto badexit;
+	}
+	printf("SID 34 80 done.\n");
+
+	/* encrypt + send payload with SID 36 */
+	uint16_t cks = 0;
+	cks = encrypt_buf(pl_encr, (uint32_t) pl_len, sid36key);
+
+	if (sid36(pl_encr, (uint32_t) pl_len)) {
+		printf("sid 36 problem\n");
+		goto badexit;
+	}
+	printf("SID 36 done.\n");
+
+    /* SID 37 TransferExit */
+    if (sid37(cks)) {
+		printf("sid 37 problem\n");
+		goto badexit;
+    }
+    printf("SID 37 done.\n");
+
+    /* shit gets real here : RAMjump ! */
+	if (sidBF()) {
+		printf("RAMjump problem\n");
+		goto badexit;
+	}
+
+	global_l2_conn->diag_l2_p4min = old_p4;
+	free(pl_encr);
+	fclose(fpl);
+
+	printf("SID BF done.\nECU now running from RAM ! Connection is now, most likely, dead or invalid.\n"
+			"Disabling periodic keepalive.\n");
+	global_l2_conn->tinterval = -1;
+	return CMD_OK;
+
+badexit:
+	global_l2_conn->diag_l2_p4min = old_p4;
+	free(pl_encr);
+	fclose(fpl);
+	return CMD_FAILED;
+}
+
 static int cmd_diag_nisprog(int argc, char **argv) {
 	unsigned testnum;
 	struct diag_msg nisreq={0};	//request to send
@@ -842,6 +1149,9 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		break;	//case 6,7 (sid27)
 	case 8:
 		return np_8(argc, argv);
+		break;
+	case 9:
+		return np_9(argc, argv);
 		break;
 	default:
 		return CMD_USAGE;
