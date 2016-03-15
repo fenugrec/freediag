@@ -644,7 +644,11 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			rv=DIAG_ERR_ECUSAIDNO;
 			break;
 		}	//switch data[0]
+		// finished with the response message:
+		diag_freemsg(d_l2_conn->diag_msg);
+		d_l2_conn->diag_msg = NULL;
 		break;	//case _FASTINIT
+
 	/* 5 Baud init */
 	case DIAG_L2_TYPE_SLOWINIT:
 		in.type = DIAG_L1_INITBUS_5BAUD;
@@ -1008,68 +1012,84 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	}
 
 	while (1) {
-		rv = diag_l2_proto_14230_int_recv(d_l2_conn,
-			d_l2_conn->diag_l2_p2max + 10);
+		/* do read only if no messages pending */
+		if (!d_l2_conn->diag_msg) {
+			rv = diag_l2_proto_14230_int_recv(d_l2_conn,
+				d_l2_conn->diag_l2_p2max + 10);
 
-		if (rv < 0) {
-			*errval = DIAG_ERR_TIMEOUT;
-			return diag_pseterr(rv);
+			if (rv < 0) {
+				*errval = DIAG_ERR_TIMEOUT;
+				if (rv == DIAG_ERR_TIMEOUT) {
+					return NULL;
+				} else {
+					return diag_pseterr(rv);
+				}
+			}
 		}
 
 		/*
-		 * The connection now has the received message data
-		 * stored, remove it and deal with it
+		 * The connection now has the received message(s)
+		 * stored. Temporarily remove from dl2c
 		 */
 		rmsg = d_l2_conn->diag_msg;
 		d_l2_conn->diag_msg = NULL;
 
-		/* Got a Error message */
-		if (rmsg->data[0] == DIAG_KW2K_RC_NR) {
-			if (rmsg->data[2] == DIAG_KW2K_RC_B_RR) {
-				/*
-				 * Msg is busyRepeatRequest
-				 * So do a send again (if retries>0)
-				 */
-
-				if (retries > 0) {
-					rv = diag_l2_send(d_l2_conn, msg);
-				} else {
-					rv=DIAG_ERR_GENERAL;
-					fprintf(stderr, FLFMT "got too many BusyRepeatRequest responses!\n", FL);
-				}
-
-				retries--;
-
-				if (rv < 0) {
-					*errval = rv;
-					return diag_pseterr(rv);
-				}
-				if (diag_l2_debug & DIAG_DEBUG_PROTO)
-					fprintf(stderr, FLFMT "got BusyRepeatRequest: retrying...\n", FL);
-
-				diag_freemsg(rmsg);
-				continue;
-			}
-
-			if (rmsg->data[2] == DIAG_KW2K_RC_RCR_RP) {
-				/*
-				 * Msg is a requestCorrectlyRcvd-RspPending
-				 * so do read again
-				 */
-				if (diag_l2_debug & DIAG_DEBUG_PROTO)
-					fprintf(stderr, FLFMT "got RspPending: retrying...\n", FL);
-
-				diag_freemsg(rmsg);
-				continue;
-			}
-			/* Some other type of error */
-			*errval= DIAG_ERR_ECUSAIDNO;
-			break;
-		} else {
+		/* Check for negative response */
+		if (rmsg->data[0] != DIAG_KW2K_RC_NR) {
 			/* Success */
 			break;
 		}
-	}
+
+		if (rmsg->data[2] == DIAG_KW2K_RC_B_RR) {
+			/*
+			 * Msg is busyRepeatRequest
+			 * So send again (if retries>0).
+			 *
+			 * Is there any possibility that we would have received 2 messages,
+			 * {busyrepeatrequest + a valid (unrelated) response} ?
+			 * Not sure, let's simply discard everything.
+			 */
+			diag_freemsg(rmsg);
+
+			if (retries > 0) {
+				rv = diag_l2_send(d_l2_conn, msg);
+			} else {
+				rv=DIAG_ERR_GENERAL;
+				fprintf(stderr, FLFMT "got too many BusyRepeatRequest responses!\n", FL);
+			}
+
+			retries--;
+
+			if (rv < 0) {
+				*errval = rv;
+				return diag_pseterr(rv);
+			}
+			if (diag_l2_debug & DIAG_DEBUG_PROTO)
+				fprintf(stderr, FLFMT "got BusyRepeatRequest: retrying...\n", FL);
+
+			continue;
+		}
+
+		if (rmsg->data[2] == DIAG_KW2K_RC_RCR_RP) {
+			/*
+			 * Msg is a requestCorrectlyRcvd-RspPending
+			 * so do read again
+			 */
+			if (diag_l2_debug & DIAG_DEBUG_PROTO)
+				fprintf(stderr, FLFMT "got RspPending: retrying...\n", FL);
+
+			/* reattach the rest of the chain, in case the good response
+			 * was already received
+			 */
+			d_l2_conn->diag_msg = rmsg->next;
+			rmsg->next = NULL;
+			diag_freemsg(rmsg);
+			continue;
+		}
+		/* Some other type of error */
+		*errval= DIAG_ERR_ECUSAIDNO;
+		break;
+	}	//while 1
 	/* Return the message to user, who is responsible for freeing it */
 	return rmsg;
 }
