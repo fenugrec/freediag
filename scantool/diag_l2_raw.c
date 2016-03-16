@@ -60,7 +60,7 @@ source_type source)
 	/* Set the speed as shown */
 	rv=diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set);
 
-	if (!rv)
+	if (rv)
 		return diag_iseterr(DIAG_ERR_GENERAL);
 
 	//set tgt and src address in d_l2_conn
