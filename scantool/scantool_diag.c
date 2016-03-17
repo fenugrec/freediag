@@ -207,6 +207,11 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 		return CMD_USAGE;
 	}
 
+	if (global_state != STATE_IDLE) {
+		printf("Cannot probe while there is an active global connection.\n");
+		return CMD_FAILED;
+	}
+
 	if (!dl0d) {
 		printf("No global L0. Please select + configure L0 first\n");
 		return CMD_FAILED;
