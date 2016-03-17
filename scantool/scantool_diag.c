@@ -154,9 +154,7 @@ cmd_diag_addl3(int argc, char **argv)
 	if (global_l3_conn !=NULL) {
 		global_state = STATE_L3ADDED ;
 		printf("Done\n");
-	}
-	else
-	{
+	} else {
 		printf("Failed to add L3 protocol\n");
 	}
 
@@ -273,39 +271,38 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 				DIAG_L2_TYPE_SLOWINIT,
 				global_cfg.speed, (target_type) i, global_cfg.src);
 
-		if (d_conn != NULL) {
-			int gotsome;
-			struct diag_l2_data d;
+		if (d_conn == NULL) continue;
 
-			printf(" connected !!\n");
-			fflush(stdout);
+		int gotsome;
+		struct diag_l2_data d;
 
-			global_state = STATE_CONNECTED;
-			global_l2_conn = d_conn;
+		printf(" connected !!\n");
+		fflush(stdout);
 
-			/* Get the keybytes */
-			diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_DATA, &d);
-			if (fastflag)
-				printf("Keybytes: 0x%X 0x%X\n", d.kb1, d.kb2);
-			else
-				printf("received: 0x%X 0x%X\n", d.kb1, d.kb2);
+		global_state = STATE_CONNECTED;
+		global_l2_conn = d_conn;
 
-			/* Now read some data */
+		/* Get the keybytes */
+		diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_DATA, &d);
+		if (fastflag)
+			printf("Keybytes: 0x%X 0x%X\n", d.kb1, d.kb2);
+		else
+			printf("received: 0x%X 0x%X\n", d.kb1, d.kb2);
 
-			rv = 0; gotsome = 0;
-			while (rv >= 0)
-			{
-				rv = diag_l2_recv(d_conn, 100, l2raw_data_rcv, NULL);
-				if (rv > 0)
-					gotsome = 1;
-			}
-			if (gotsome)
-				printf("\n");
-			else if (rv != DIAG_ERR_TIMEOUT)
-				printf("- read failed %d\n", rv);
+		/* Now read some data */
 
-			return CMD_OK;
-		} // d_con !=null
+		rv = 0; gotsome = 0;
+		while (rv >= 0) {
+			rv = diag_l2_recv(d_conn, 100, l2raw_data_rcv, NULL);
+			if (rv > 0)
+				gotsome = 1;
+		}
+		if (gotsome)
+			printf("\n");
+		else if (rv != DIAG_ERR_TIMEOUT)
+			printf("- read failed %d\n", rv);
+
+		return CMD_OK;
 	}	//for addresses
 	//Failed => clean up
 	diag_l2_close(dl0d);
@@ -339,13 +336,10 @@ cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 	}
 
 	rv = do_l2_generic_start();
-	if (rv==0)
-	{
+	if (rv==0) {
 		printf("Connection to ECU established!\n");
 		global_state = STATE_CONNECTED;
-	}
-	else
-	{
+	} else {
 		printf("\nConnection to ECU failed\n");
 		printf("Please check :\n");
 		printf("\tAdapter is connected to PC\n");
@@ -394,8 +388,7 @@ cmd_diag_read(int argc, char **argv)
 {
 	unsigned int timeout = 0;
 
-	if (global_state < STATE_CONNECTED)
-	{
+	if (global_state < STATE_CONNECTED) {
 		printf("Not connected to ECU\n");
 		return CMD_OK;
 	}
@@ -403,15 +396,12 @@ cmd_diag_read(int argc, char **argv)
 	if (argc > 1)
 		timeout = (unsigned int) atoi(argv[1]) * 1000;
 
-	if (global_state < STATE_L3ADDED)
-	{
+	if (global_state < STATE_L3ADDED) {
 		/* No L3 protocol, do L2 stuff */
 		(void)diag_l2_recv(global_l2_conn, timeout, l2raw_data_rcv,
 			NULL);
 
-	}
-	else
-	{
+	} else {
 		(void)diag_l3_recv(global_l3_conn, timeout, j1979_data_rcv,
 			(void *)&_RQST_HANDLE_WATCH);
 	}
@@ -428,39 +418,34 @@ cmd_diag_sendreq(int argc, char **argv)
 	unsigned int	i,j,len;
 	int	rv;
 
-	if (global_state < STATE_CONNECTED)
-	{
+	if (global_state < STATE_CONNECTED) {
 		printf("Not connected to ECU\n");
 		return CMD_OK;
 	}
 
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		printf("Too few arguments\n");
 		return CMD_USAGE;
 	}
 
 	memset(data, 0, sizeof(data));
 
-	for (i=1, j=0; (i < (unsigned int) argc) && (i < sizeof(data)); i++, j++)
+	for (i=1, j=0; (i < (unsigned int) argc) && (i < sizeof(data)); i++, j++) {
 		data[j] = (uint8_t) htoi(argv[i]);
+	}
 	len = j ;
 
 
-	if (global_state < STATE_L3ADDED)
-	{
+	if (global_state < STATE_L3ADDED) {
 		rv = l2_do_send( global_l2_conn, data, len,
 			(void *)&_RQST_HANDLE_DECODE);
-	}
-	else
-	{
+	} else {
 		/* Send data with handle to tell callback to print results */
 		rv = l3_do_send( global_l3_conn, data, len,
 			(void *)&_RQST_HANDLE_DECODE);
 	}
 
-	if (rv != 0)
-	{
+	if (rv != 0) {
 		if (rv == DIAG_ERR_TIMEOUT)
 			printf("No data received\n");
 		else
