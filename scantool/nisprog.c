@@ -160,7 +160,7 @@ static int np_1(UNUSED(int argc), UNUSED(char **argv)) {
 		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
 		printf("\n");
 		diag_freemsg(rxmsg);
-		return CMD_OK;
+		return CMD_FAILED;
 	}
 	printf("StartDiagsess: got ");
 	diag_data_dump(stdout, rxmsg->data, rxmsg->len);
@@ -229,7 +229,7 @@ static int np_2(int argc, char **argv) {
 		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
 		printf("\n");
 		diag_freemsg(rxmsg);
-		return CMD_OK;
+		return CMD_FAILED;
 	}
 	printf("Got: 0x%02X\n", rxmsg->data[5]);
 	diag_freemsg(rxmsg);
@@ -517,7 +517,7 @@ static int np_6_7(UNUSED(int argc), UNUSED(char **argv), int keyalg, uint32_t sc
 		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
 		printf("\n");
 		diag_freemsg(rxmsg);
-		return CMD_OK;
+		return CMD_FAILED;
 	}
 	printf("Trying SID 27, got seed: ");
 	diag_data_dump(stdout, &rxmsg->data[2], 4);
@@ -550,7 +550,7 @@ static int np_6_7(UNUSED(int argc), UNUSED(char **argv), int keyalg, uint32_t sc
 		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
 		printf("\n");
 		diag_freemsg(rxmsg);
-		return CMD_OK;
+		return CMD_FAILED;
 	}
 	printf("SUXXESS !!\n");
 
@@ -1091,7 +1091,7 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 			diag_data_dump(stdout, rxmsg->data, rxmsg->len);
 			printf("\n");
 			diag_freemsg(rxmsg);
-			return CMD_OK;
+			return CMD_FAILED;
 		}
 		memcpy(ECUID, rxmsg->data + 1, 6);	//skip 0x5A
 		ECUID[6]=0;	//null-terminate ecuid string !
