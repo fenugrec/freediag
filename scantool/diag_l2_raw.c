@@ -115,7 +115,7 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		rxbuf, sizeof(rxbuf), timeout);
 
-	if (rv <= 0 || rv > 255)		/* Failure, or 0 bytes (which cant happen) */
+	if (rv <= 0)		/* Failure, or 0 bytes (which cant happen) */
 		return rv;
 
 	msg.len = (uint8_t) rv;
@@ -152,8 +152,7 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	uint8_t rxbuf[MAXRBUF];
 
 	rv = diag_l2_send(d_l2_conn, msg);
-	if (rv < 0)
-	{
+	if (rv < 0) {
 		*errval = rv;
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -162,22 +161,21 @@ diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
 		0, rxbuf, sizeof(rxbuf), 1000);
 
-	if (rv <= 0 || rv>255)
-	{
+	if (rv <= 0) {
 		*errval = rv;
+		return NULL;
 	}
-	else
-	{
-		/*
-		 * Ok, alloc a message
-		 */
-		rmsg = diag_allocmsg((size_t)rv);
-		if (rmsg == NULL)
-			return diag_pseterr(DIAG_ERR_NOMEM);
-		memcpy(&rmsg->data, rxbuf, (size_t)rv);	/* Data */
-		rmsg->fmt = 0;
-		rmsg->rxtime = diag_os_chronoms(0);
-	}
+
+	/*
+	 * Ok, alloc a message
+	 */
+	rmsg = diag_allocmsg((size_t)rv);
+	if (rmsg == NULL)
+		return diag_pseterr(DIAG_ERR_NOMEM);
+	memcpy(&rmsg->data, rxbuf, (size_t)rv);	/* Data */
+	rmsg->fmt = 0;
+	rmsg->rxtime = diag_os_chronoms(0);
+
 	return rmsg;
 }
 

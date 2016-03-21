@@ -98,6 +98,8 @@ extern "C" {
  */
 #define MAXRBUF 1024
 
+#define DIAG_MAX_MSGLEN 4200	/** limit diag_allocmsg() message size. */
+
 typedef uint8_t target_type, source_type, databyte_type, command_type;
 typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
 			//only used for diag_l2_startcomms() arg
