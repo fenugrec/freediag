@@ -404,8 +404,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 
 	/* First send the message */
 	rv = diag_l2_send(d_l2_conn, msg);
-	if (rv < 0)
-	{
+	if (rv < 0) {
 		*errval = rv;
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -413,13 +412,16 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	/* And now wait for a response */
 	/* XXX, whats the correct timeout for this ??? */
 	rv = diag_l2_proto_j1850_int_recv(d_l2_conn, 250);
-	if (rv < 0)
-	{
+	if (rv < 0) {
 		*errval = rv;
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* Return the message to user, who is responsible for freeing it */
+	if (!d_l2_conn->diag_msg) {
+		//no response, but no error either
+		*errval = DIAG_ERR_TIMEOUT;
+	}
 	rmsg = d_l2_conn->diag_msg;
 	d_l2_conn->diag_msg = NULL;
 	return rmsg;
