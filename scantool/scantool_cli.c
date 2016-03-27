@@ -989,8 +989,10 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 			while ( (s = strtok(inptr, " \t")) != NULL ) {
 				cmd_argv[cmd_argc] = s;
 				inptr = NULL;
-				if (cmd_argc == (ARRAY_SIZE(cmd_argv)-1))
+				if (cmd_argc == (ARRAY_SIZE(cmd_argv)-1)) {
+					fprintf(stderr, "Warning : excessive # of arguments\n");
 					break;
+				}
 				cmd_argc++;
 			}
 			cmd_argv[cmd_argc] = nullstr;
