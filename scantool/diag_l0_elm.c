@@ -74,7 +74,7 @@ static const char * elm327_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DAT
 static const char * elm323_official[]={"2.0",NULL};	//authentic 323 firmware versions, possibly incomplete list
 static const char * elm323_clones[]={NULL};	//known cloned versions
 static const char * elm327_official[]={"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3a", "1.3", "1.4b", "2.0", NULL};
-static const char * elm327_clones[]={"1.4a", "1.5a", "1.5", "2.1", NULL};
+static const char * elm327_clones[]={"1.4", "1.4a", "1.5a", "1.5", "2.1", NULL};
 
 
 extern const struct diag_l0 diag_l0_elm;
@@ -402,7 +402,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	rv=0;	// temp "device identified" flag
 	for (i=0; elm_clones[i]; i++) {
 		if (strstr((char *)rxbuf, elm_clones[i])) {
-			printf("Clone ELM found, v%s\n", elm_clones[i]);
+			printf("Clone ELM found, v%s. Expect inferior performance\n", elm_clones[i]);
 			dev->elmflags |= ELM_32x_CLONE;
 			rv=1;
 			break;
@@ -422,7 +422,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	if (rv==0) {
 		//still not identified : assume clone.
 		dev->elmflags |= ELM_32x_CLONE;
-		printf("ELM version not recognized! Please report this ! Resp=%s\n", rxbuf);
+		printf("ELM version not recognized! Please report this ! Response was:\n%s\n", rxbuf);
 	}
 
 	if ((dev->elmflags & ELM_323_BASIC) && (dev->elmflags & ELM_32x_CLONE)) {
