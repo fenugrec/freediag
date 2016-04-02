@@ -545,7 +545,6 @@ cmd_play(int argc, char **argv)
 
 
 //cmd_watch : this creates a diag_l3_conn
-//TODO: "press any key to stop" ...
 static int
 cmd_watch(int argc, char **argv)
 {
@@ -604,6 +603,7 @@ cmd_watch(int argc, char **argv)
 		return CMD_FAILED;
 	}
 	//here we have a valid d_l2_conn over dl0d.
+	(void) diag_os_ipending();
 
 	if (!rawmode) {
 		/* Put the SAE J1979 stack on top of the ISO device */
@@ -620,8 +620,10 @@ cmd_watch(int argc, char **argv)
 			d_l3_conn = NULL;
 		}
 
-		printf("Waiting for data to be received\n");
+		printf("Monitoring started. Press Enter to end.\n");
 		while (1) {
+			if (diag_os_ipending()) break;
+
 			if (d_l3_conn != NULL) {
 				rv = diag_l3_recv(d_l3_conn, 10000,
 					j1979_watch_rcv,
@@ -640,8 +642,10 @@ cmd_watch(int argc, char **argv)
 		/*
 		 * And just read stuff, callback routine will print out the data
 		 */
-		printf("Waiting for data to be received\n");
+		printf("Monitoring started. Press Enter to end.\n");
 		while (1) {
+			if (diag_os_ipending()) break;
+
 			rv = diag_l2_recv(d_l2_conn, 10000,
 				j1979_data_rcv, (void *)&_RQST_HANDLE_WATCH);
 			if (rv == 0)
