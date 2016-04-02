@@ -224,11 +224,11 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 /*
  * Protocol receive routine
  *
- * Receive all messages until timeout has elapsed.
+ * Receive all messages until timeout has elapsed, split + save on d_l2_conn->diag_msg
  * This is implemented differently from the ISO L2s (9141 and 14230), in that
  * timeout is measured starting at this function's entry.
  *
- * Ret 0 if ok
+ * Ret 0 if ok, whether or not there were any messages.
  */
 static int
 diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
@@ -415,6 +415,12 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	if (rv < 0) {
 		*errval = rv;
 		return diag_pseterr(DIAG_ERR_GENERAL);
+	}
+
+	/* any responses ? */
+	if (!d_l2_conn->diag_msg) {
+		*errval = DIAG_ERR_TIMEOUT;
+		return NULL;
 	}
 
 	/* Return the message to user, who is responsible for freeing it */
