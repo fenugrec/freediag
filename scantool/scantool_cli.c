@@ -1331,8 +1331,5 @@ void wait_enter(const char *message)
  */
 int pressed_enter()
 {
-#ifdef WIN32
-	fprintf(stderr, "Warning : diag_os_ipending() called from pressed_enter !! Please report this !\n");
-#endif
 	return diag_os_ipending();
 }

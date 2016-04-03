@@ -31,6 +31,7 @@
 
 #include <process.h>
 #include <windows.h>
+#include <conio.h>	//for _kbhit, _getch
 #include <inttypes.h> 	//for PRIu64 formatters
 
 
@@ -203,20 +204,14 @@ diag_os_millisleep(unsigned int ms)
 
 }	//diag_os_millisleep
 
-/*
- * diag_os_ipending: Is input available on stdin. ret 1 if yes.
- *
- * currently (like 2014), it is only used a few places to break long loops ?
- * the effect is that diag_os_ipending returns immediately, and it returns 1 only if Enter was pressed.
- * the WIN32 version of this is clumsier : it returns 1 if Enter was pressed since the last time diag_os_ipending() was called.
- *
- */
+
 int
 diag_os_ipending(void) {
-	SHORT rv=GetAsyncKeyState(0x0D);	//sketchy !
-	//if LSB of rv ==1 :  key was pressed since the last call to GAKS.
-	return rv & 1;
-
+	if (_kbhit()) {
+		(void) _getch();
+		return 1;
+	}
+	return 0;
 }
 
 //diag_os_sched : set high priority for this thread/process.

@@ -57,10 +57,13 @@ int diag_os_close(void);
  */
 void diag_os_millisleep(unsigned int ms);
 
-/* diag_os_ipending:
- * currently (like 2014), it is only used in a few places to break long loops ?
- * the effect is that diag_os_ipending returns immediately, and it returns 1 only if Enter was pressed.
- * the WIN32 version of this is clumsier : it returns 1 if Enter was pressed since the last time diag_os_ipending() was called.
+/** Check if a key was pressed
+ *
+ * @return 0 if no key was pressed
+ *
+ * Currently, it is only used in a few places to break long loops, with "press any key to stop" semantics.
+ * This returns immediately, to allow polling within a loop.
+ * The linux/unix implementation needs an "Enter" keypress since stdin is buffered !
  */
 int diag_os_ipending(void);
 
