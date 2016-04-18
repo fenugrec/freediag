@@ -103,7 +103,6 @@ static int
 cmd_diag_addl3(int argc, char **argv)
 {
 	int i;
-	const char *l3_protos[] = { "SAEJ1979", "VAG", "ISO14230", NULL };
 	const char *proto;
 
 	if (argc != 2) {
@@ -112,8 +111,8 @@ cmd_diag_addl3(int argc, char **argv)
 
 	if (strcmp(argv[1], "?") == 0) {
 		printf("Valid protocols are: ");
-		for (i=0; l3_protos[i] != NULL; i++) {
-			printf("%s ", l3_protos[i]);
+		for (i=0; diag_l3_protocols[i] != NULL; i++) {
+			printf("%s ", diag_l3_protocols[i]->proto_name);
 		}
 		printf("\n");
 		return CMD_OK;
@@ -136,9 +135,9 @@ cmd_diag_addl3(int argc, char **argv)
 	}
 
 	//match specified L3proto with available protos
-	for (i=0, proto = NULL; l3_protos[i] != NULL; i++) {
-		if (strcasecmp(l3_protos[i], argv[1]) == 0) {
-			proto = l3_protos[i];
+	for (i=0, proto = NULL; diag_l3_protocols[i] != NULL; i++) {
+		if (strcasecmp(diag_l3_protocols[i]->proto_name, argv[1]) == 0) {
+			proto = diag_l3_protocols[i]->proto_name;
 			break;
 		}
 	}
