@@ -44,13 +44,6 @@ struct globcfg global_cfg;
 
 struct diag_l0_device *global_dl0d;
 
-#define DEFAULT_INTERFACE CARSIM	//index into l0_names below
-const struct l0_name l0_names[] = { {"MET16", MET16}, {"BR1", BR1}, {"ELM", ELM},
-			{"CARSIM", CARSIM}, {"DUMB", DUMB}, {"DUMBT", DUMBT}, {NULL,LAST}};
-
-/** WIP : convert the following items **/
-enum l0_nameindex set_interface;	//hw interface to use
-
 
 /*
  * XXX All commands should probably have optional "init" hooks.
@@ -74,10 +67,9 @@ int set_init(void)
 
 	global_cfg.units = 0;		/* English (1), or Metric (0) */
 
-	set_interface_idx= DEFAULT_INTERFACE;
-	set_interface = l0_names[DEFAULT_INTERFACE].code;	/* Default H/w interface to use */
+	global_cfg.l0name = l0dev_list[0]->shortname;	/* Default H/w interface to use */
 
-	printf( "%s: Interface set to default: %s\n", progname, l0_names[set_interface_idx].shortname);
+	printf( "%s: Interface set to default: %s\n", progname, global_cfg.l0name);
 
 	global_dl0d=NULL;
 
@@ -273,9 +265,11 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 
 static int cmd_set_interface(int argc, char **argv)
 {
+	const struct diag_l0 *iter;
+
 	if (argc <= 1) {
 		printf("interface: using %s\n",
-			l0_names[set_interface_idx].shortname);
+			global_cfg.l0name);
 		return CMD_OK;
 	}
 
@@ -285,14 +279,14 @@ static int cmd_set_interface(int argc, char **argv)
 		printf("hardware interface: use \"set interface NAME\" .\n"
 		"NAME is the interface type. Valid NAMEs are: \n");
 	}
-	for (i=0; l0_names[i].code != LAST; i++) {
+	for (i=0; l0dev_list[i]; i++) {
+		iter = l0dev_list[i];
 		//loop through l0 interface names, either printing or comparing to argv[1]
 		if (helping)
-			printf("%s ", (l0_names[i].shortname));
+			printf("%s ", iter->shortname);
 		else
-			if (strcasecmp(argv[1], l0_names[i].shortname) == 0) {
-				set_interface = l0_names[i].code;
-				set_interface_idx=i;
+			if (strcasecmp(argv[1], iter->shortname) == 0) {
+				global_cfg.l0name = iter->shortname;
 				found = 1;
 				break;	//no use in continuing
 			}
@@ -309,7 +303,7 @@ static int cmd_set_interface(int argc, char **argv)
 		return CMD_FAILED;
 	}
 
-	printf("interface is now %s\n", l0_names[set_interface_idx].shortname);
+	printf("interface is now %s\n", global_cfg.l0name);
 
 	/* close + free current global dl0d. */
 	if (global_dl0d) {
@@ -318,8 +312,8 @@ static int cmd_set_interface(int argc, char **argv)
 		diag_l0_del(global_dl0d);
 	}
 
-	global_dl0d = diag_l0_new(l0_names[set_interface_idx].shortname);
-	if (!global_dl0d) printf("Error loading interface %s.\n", l0_names[set_interface_idx].shortname);
+	global_dl0d = diag_l0_new(global_cfg.l0name);
+	if (!global_dl0d) printf("Error loading interface %s.\n", global_cfg.l0name);
 
 	return CMD_OK;
 }

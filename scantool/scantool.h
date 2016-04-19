@@ -189,19 +189,8 @@ enum globstate {
 };	//only for global_state !
 extern enum globstate global_state;
 
-//XXX The following defs should probably go in an auto-generated l0_list.h file ... and they MUST match the list in scantool_set.c !
-enum l0_nameindex {MET16, BR1, ELM, CARSIM, DUMB, DUMBT, LAST};
-struct l0_name
-{
-	char * shortname;
-	enum l0_nameindex code;
-};
 
 /** Global parameters set by user interface **/
-
-extern enum l0_nameindex set_interface;	/* Physical interface name to use */
-int set_interface_idx;	//index into l0_names
-extern const struct l0_name l0_names[];	//filled in scantool_set.c
 
 /* struct global_cfg contains all global parameters */
 extern struct globcfg {
@@ -217,6 +206,7 @@ extern struct globcfg {
 	int	L2proto;	/* L2 (S/W) Protocol type; value of ->diag_l2_protocol. */
 	int	L2idx;		/* index of that L2 proto in struct l2proto_list[] */
 
+	const char *l0name;	/* L0 interface name to use */
 	//struct diag_l0_device *dl0d;	/* L0 device to use */
 } global_cfg;
 
