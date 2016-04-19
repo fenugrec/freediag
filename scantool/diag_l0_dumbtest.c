@@ -15,6 +15,7 @@
  */
 
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>	//for memcmp
 
@@ -29,6 +30,9 @@ struct diag_l0_dt_device
 {
 	int protocol;	//set in diag_l0_dt_open with specified iProtocol
 	struct diag_serial_settings serial;
+
+	struct cfgi port;
+	ttyp *tty_int;			/** handle for tty stuff */
 };
 
 
@@ -78,10 +82,12 @@ diag_l0_dt_init(void)
 
 static void dtest_1(struct diag_l0_device *dl0d) {
 	int i;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
+
 	fprintf(stderr, "Starting test 1: pulsing TXD=1, 1s, TXD=0, 500ms:");
 	for (i=0; i<=4; i++) {
 		diag_os_millisleep(1000);
-		if (diag_tty_break(dl0d, 500)) break;
+		if (diag_tty_break(dev->tty_int, 500)) break;
 		fprintf(stderr, ".");
 	}
 	fprintf(stderr, "\n");
@@ -93,10 +99,11 @@ static void dtest_2(struct diag_l0_device *dl0d) {
 	int i, pc=0;
 	const int iters=300;
 	uint8_t patternbyte=0x55;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
 
 	fprintf(stderr, "Starting test 2: sending 0x55 with P4=5ms:");
 	for (i=0; i<=iters; i++) {
-		if (diag_tty_write(dl0d, &patternbyte, 1) != 1) {
+		if (diag_tty_write(dev->tty_int, &patternbyte, 1) != 1) {
 			fprintf(stderr, "write error\n");
 			break;
 		}
@@ -113,16 +120,17 @@ static void dtest_2(struct diag_l0_device *dl0d) {
 //dtest_3: slow pulse RTS
 static void dtest_3(struct diag_l0_device *dl0d) {
 	int i;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
 	fprintf(stderr, "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
-		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 1)) break;
+		if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), 1)) break;
 		diag_os_millisleep(1000);
-		if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), 0)) break;
+		if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), 0)) break;
 		diag_os_millisleep(500);
 		fprintf(stderr, ".");
 	}
-	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
+	diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
 	fprintf(stderr, "\n");
 	return;
 }
@@ -130,16 +138,17 @@ static void dtest_3(struct diag_l0_device *dl0d) {
 //dtest_4: slow pulse DTR
 static void dtest_4(struct diag_l0_device *dl0d) {
 	int i;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
 	fprintf(stderr, "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
-		if (diag_tty_control(dl0d, 1, (dumb_flags & SET_RTS))) break;
+		if (diag_tty_control(dev->tty_int, 1, (dumb_flags & SET_RTS))) break;
 		diag_os_millisleep(1000);
-		if (diag_tty_control(dl0d, 0, (dumb_flags & SET_RTS))) break;
+		if (diag_tty_control(dev->tty_int, 0, (dumb_flags & SET_RTS))) break;
 		diag_os_millisleep(500);
 		fprintf(stderr, ".");
 	}
-	diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
+	diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
 	fprintf(stderr, "\n");
 	return;
 }
@@ -149,11 +158,12 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 
 static void dtest_5(struct diag_l0_device *dl0d) {
 	int i, pc=0;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
 	const int iters=40;
 	fprintf(stderr, "Starting test 5: pulsing TXD=1, 50, TXD=0, 25ms:");
 	for (i=0; i<=iters; i++) {
 		diag_os_millisleep(50);
-		if (diag_tty_break(dl0d, 25)) {
+		if (diag_tty_break(dev->tty_int, 25)) {
 			fprintf(stderr, "break error\n");
 			break;
 		}
@@ -170,10 +180,11 @@ static void dtest_5(struct diag_l0_device *dl0d) {
 
 static void dtest_6(struct diag_l0_device *dl0d) {
 	int i, pc=0;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
 	const int iters=50;
 	fprintf(stderr, "Starting test 6: pulsing TXD=1, 50ms, TXD=0, 25ms:");
 	for (i=0; i<=iters; i++) {
-		if (diag_tty_fastbreak(dl0d, 50)) {
+		if (diag_tty_fastbreak(dev->tty_int, 50)) {
 			fprintf(stderr, "fastbreak error\n");
 			break;
 		}
@@ -193,6 +204,8 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 	uint8_t i, pc=0, echo;
 	int rv, badechos=0;
 	unsigned long long ti, tf=0; //measure inner time
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
+
 #define DT7_ITERS 100
 	fprintf(stderr, "Starting test 7: half duplex single echo removal:");
 
@@ -202,7 +215,7 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 		if (diag_l0_dt_send(dl0d, NULL, &i, 1))
 			break;
 
-		rv = diag_tty_read(dl0d, &echo, 1, 1000);
+		rv = diag_tty_read(dev->tty_int, &echo, 1, 1000);
 		if (rv != 1) {
 			fprintf(stderr, "\ndt7: tty_read rets %d.\n", rv);
 			break;
@@ -231,6 +244,8 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 	uint8_t tx[DT8_MSIZE], echo[DT8_MSIZE];
 	int i, rv = -1, badechos=0;
 	unsigned long long ti, tf=0;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
+
 #define DT8_ITERS 10
 	fprintf(stderr, "Starting test 8: half duplex block echo removal:");
 	//fill i[] first
@@ -243,7 +258,7 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 		if (diag_l0_dt_send(dl0d, NULL, tx, DT8_MSIZE))
 			break;
 
-		rv = diag_tty_read(dl0d, echo, DT8_MSIZE, 100 + 5*DT8_MSIZE);
+		rv = diag_tty_read(dev->tty_int, echo, DT8_MSIZE, 100 + 5*DT8_MSIZE);
 		if (rv != DT8_MSIZE) {
 			fprintf(stderr, "\ndt8: tty_read rets %d.\n", rv);
 			break;
@@ -277,13 +292,15 @@ static void dtest_9(struct diag_l0_device *dl0d) {
 	int iters;
 	uint8_t garbage[MAXRBUF];
 	unsigned long long t0, tf;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
+
 	fprintf(stderr, "Starting test 9: checking accuracy of read timeouts:\n");
-	diag_tty_iflush(dl0d);	//purge before starting
+	diag_tty_iflush(dev->tty_int);	//purge before starting
 
 	for (i=10; i<=200; i += 20) {
 		t0=diag_os_gethrt();
 		for (iters=0; iters < DT9_ITERS; iters++) {
-			diag_tty_read(dl0d, garbage, MAXRBUF, i);
+			diag_tty_read(dev->tty_int, garbage, MAXRBUF, i);
 		}
 		tf = (diag_os_gethrt() - t0) / DT9_ITERS;	//average measured timeout
 		printf("Timeout=%d: avg=%dms\n", i, (int) (diag_os_hrtus(tf)/1000));
@@ -301,8 +318,10 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 	int iters,rv;
 	uint8_t garbage[MAXRBUF];
 	unsigned long long t0, tf;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
+
 	fprintf(stderr, "Starting test 11: half-duplex incomplete read timeout accuracy:\n");
-	diag_tty_iflush(dl0d);	//purge before starting
+	diag_tty_iflush(dev->tty_int);	//purge before starting
 
 	for (i=10; i<=180; i += 20) {
 		tf=0;
@@ -310,10 +329,10 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 			uint8_t tc = i;
 			if ((rv=diag_l0_dt_send(dl0d, NULL, &tc, 1))) goto failed;
 			t0=diag_os_gethrt();
-			if ((rv=diag_tty_read(dl0d, garbage, MAXRBUF, i)) != 1) {
+			if ((rv=diag_tty_read(dev->tty_int, garbage, MAXRBUF, i)) != 1) {
 				// failed: purge + try next timeout value
 				fprintf(stderr, "failed @ timeout=%d : %s\n", i, diag_errlookup(rv));
-				diag_tty_iflush(dl0d);
+				diag_tty_iflush(dev->tty_int);
 				break;
 			}
 			tf = tf + diag_os_gethrt() - t0;
@@ -335,9 +354,10 @@ static void dtest_12(struct diag_l0_device *dl0d) {
 	uint8_t garbage[MAXRBUF];
 	unsigned long long t0, tf;	//measure inner time
 	unsigned long long ts1, ts2;	//measure overall loop
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
 
 	fprintf(stderr, "Starting test 12: diag_tty_write() duration:\n");
-	diag_tty_iflush(dl0d);	//purge before starting
+	diag_tty_iflush(dev->tty_int);	//purge before starting
 
 	for (i=1; i<=50; i += 5) {
 		tf=0;
@@ -350,7 +370,7 @@ static void dtest_12(struct diag_l0_device *dl0d) {
 			tt1 = diag_os_gethrt();
 			tf = tf + (tt1 - t0);
 			printf("\t%luus", (long unsigned int) (diag_os_hrtus(tt1-t0)));
-			(void) diag_tty_read(dl0d, garbage, MAXRBUF, 5);
+			(void) diag_tty_read(dev->tty_int, garbage, MAXRBUF, 5);
 		}
 		ts2= (diag_os_gethrt() - ts1) / DT12_ITERS;
 		tf = tf / DT12_ITERS;
@@ -369,17 +389,19 @@ static void dtest_13(struct diag_l0_device *dl0d) {
 	int i, pc=0;
 	const int iters=50;
 	const uint8_t db=0xAA;
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
+
 	fprintf(stderr, "Starting test 6: simulate fastinit:");
 	for (i=0; i<=iters; i++) {
-		if (diag_tty_fastbreak(dl0d, 50)) {
+		if (diag_tty_fastbreak(dev->tty_int, 50)) {
 			fprintf(stderr, "fastbreak error\n");
 			break;
 		}
-		if (diag_tty_write(dl0d, &db, 1) != 1) {
+		if (diag_tty_write(dev->tty_int, &db, 1) != 1) {
 			fprintf(stderr, "tty_write error\n");
 			break;
 		}
-		diag_tty_iflush(dl0d);	//purge echo(s)
+		diag_tty_iflush(dev->tty_int);	//purge echo(s)
 		if ((10*i/iters) != pc) {
 			pc +=1;
 			fprintf(stderr, ".");
@@ -389,49 +411,79 @@ static void dtest_13(struct diag_l0_device *dl0d) {
 	return;
 }
 
-/* WIP */
-void dt_new() {
+static int
+dt_new(struct diag_l0_device *dl0d) {
+	struct diag_l0_dt_device *dev;
+
+	assert(dl0d);
+
+	if (diag_calloc(&dev, 1))
+		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	dl0d->l0_int = dev;
+
+	if (diag_cfgn_tty(&dev->port)) {
+		free(dev);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	dev->port.next = NULL;
+
 	printf("*** Warning ! The DUMBT driver is only for electrical ***\n"
 			"*** testing ! Do NOT use while connected to a vehicle! ***\n"
 			"*** refer to doc/scantool-manual.html ***\n");
+
+	return 0;
+}
+
+static void dt_del(struct diag_l0_device *dl0d) {
+	struct diag_l0_dt_device *dev;
+
+	assert(dl0d);
+
+	dev = dl0d->l0_int;
+	if (!dev) return;
+
+	diag_cfg_clear(&dev->port);
+	free(dev);
 	return;
 }
+
+static struct cfgi* dt_getcfg(struct diag_l0_device *dl0d) {
+	struct diag_l0_dt_device *dev;
+	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+
+	dev = dl0d->l0_int;
+	return &dev->port;
+}
+
 
 /*
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
  */
-static struct diag_l0_device *
-diag_l0_dt_open(const char *subinterface, int testnum)
+static int diag_l0_dt_open(struct diag_l0_device *dl0d, int testnum)
 {
-	int rv;
-	struct diag_l0_device *dl0d;
 	struct diag_l0_dt_device *dev;
 	struct diag_serial_settings pset;
 
+	assert(dl0d);
+	dev = dl0d->l0_int;
+
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open subinterface %s test #%d\n",
-			FL, subinterface, testnum);
+		fprintf(stderr, FLFMT "open port %s test # %d\n",
+			FL, dev->port.val.str, testnum);
 	}
 
 	diag_l0_dt_init();	 //make sure it is initted
 
-	if ((rv=diag_calloc(&dev, 1)))
-		return diag_pseterr(DIAG_ERR_NOMEM);
+	/* try to open TTY */
+	dev->tty_int = diag_tty_open(dev->port.val.str);
+	if (dev->tty_int == NULL) {
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	dev->protocol = DIAG_L1_RAW;	//cheat !
-
-	dl0d = diag_l0_new(&diag_l0_dumbtest, (void *)dev);
-	if (!dl0d) {
-		free(dev);
-		return diag_pseterr(rv);
-	}
-	/* try to open TTY */
-	if ((rv=diag_tty_open(dl0d, subinterface))) {
-		free(dev);
-		diag_l0_del(dl0d);
-		return diag_pseterr(rv);
-	}
 
 	switch (testnum) {
 	case 10:
@@ -448,22 +500,18 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 	pset.stopbits = diag_stopbits_1;
 	pset.parflag = diag_par_n;
 
-	if (diag_tty_setup(dl0d, &pset)) {
-		diag_tty_close(dl0d);
-		free(dev);
-		diag_l0_del(dl0d);
-		return diag_pseterr(DIAG_ERR_GENERAL);
+	if (diag_tty_setup(dev->tty_int, &pset)) {
+		diag_tty_close(dev->tty_int);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	//set initial DTR and RTS lines before starting tests;
-	if (diag_tty_control(dl0d, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
-		diag_tty_close(dl0d);
-		free(dev);
-		diag_l0_del(dl0d);
-		return diag_pseterr(DIAG_ERR_GENERAL);
+	if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
+		diag_tty_close(dev->tty_int);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	(void)diag_tty_iflush(dl0d);	/* Flush unread input */
+	(void)diag_tty_iflush(dev->tty_int);	/* Flush unread input */
 
 	//printf("Press <enter> to stop the test.\n");
 	//Currently these run for a fixed time...
@@ -514,21 +562,16 @@ diag_l0_dt_open(const char *subinterface, int testnum)
 		break;
 	}
 
-	diag_tty_close(dl0d);
-	free(dev);
-	diag_l0_del(dl0d);
+	diag_tty_close(dev->tty_int);
+
 	fprintf(stderr, "L0 test finished. Ignore the following error.\n");
-	return NULL;
+	return 0;
 }
 
 
-//this should never be called : diag_l0_dt_open never returns a diag_l0_device !
-//returning !
 static void
 diag_l0_dt_close(UNUSED(struct diag_l0_device *dl0d))
 {
-	fprintf(stderr, FLFMT "**** we're in diag_l0_dt_close()... how did this happen?\n", FL);
-
 	return;
 }
 
@@ -567,6 +610,8 @@ diag_l0_dt_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 const void *data, size_t len)
 {
+	struct diag_l0_dt_device *dev = dl0d->l0_int;
+
 	/*
 	 * This will be called byte at a time unless P4 timing parameter is zero
 	 * as the L1 code that called this will be adding the P4 gap between
@@ -583,7 +628,7 @@ const void *data, size_t len)
 		fprintf(stderr, "\n");
 	}
 
-	if (diag_tty_write(dl0d, data, len) != (int) len) {
+	if (diag_tty_write(dev->tty_int, data, len) != (int) len) {
 		fprintf(stderr, FLFMT "dt_send: write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -624,7 +669,7 @@ const struct diag_serial_settings *pset)
 
 	dev->serial = *pset;
 
-	return diag_tty_setup(dl0d, &dev->serial);
+	return diag_tty_setup(dev->tty_int, &dev->serial);
 }
 
 // Update interface options to customize particular interface type (K-line only or K&L)
@@ -648,15 +693,16 @@ const struct diag_l0 diag_l0_dumbtest = {
  	"Dumb interface test suite",
 	"DUMBT",
 	-1,		//support "all" L1 protos...
-	NULL,
-	NULL,
-	NULL,
 	diag_l0_dt_init,
+	dt_new,
+	dt_getcfg,
+	dt_del,
 	diag_l0_dt_open,
 	diag_l0_dt_close,
-	diag_l0_dt_initbus,
-	diag_l0_dt_send,
+	diag_l0_dt_getflags,
 	diag_l0_dt_recv,
-	diag_l0_dt_setspeed,
-	diag_l0_dt_getflags
+	diag_l0_dt_send,
+	diag_l0_dt_initbus,
+	NULL,
+	diag_l0_dt_setspeed
 };
