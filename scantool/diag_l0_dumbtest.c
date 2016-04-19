@@ -26,9 +26,9 @@
 #include "diag_l0.h"
 #include "diag_l1.h"
 
-struct diag_l0_dt_device
+struct dt_device
 {
-	int protocol;	//set in diag_l0_dt_open with specified iProtocol
+	int protocol;	//set in dt_open with specified iProtocol
 	struct diag_serial_settings serial;
 
 	struct cfgi port;
@@ -49,7 +49,7 @@ static unsigned int dumb_flags=0;
 extern const struct diag_l0 diag_l0_dumbtest;
 
 static int
-diag_l0_dt_send(struct diag_l0_device *dl0d,
+dt_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 const void *data, size_t len);
 
@@ -59,18 +59,18 @@ const void *data, size_t len);
  * variables etc
  */
 static int
-diag_l0_dt_init(void)
+dt_init(void)
 {
 	/* Global init flag */
-	static int diag_l0_dt_initdone=0;
+	static int dt_initdone=0;
 
-	if (diag_l0_dt_initdone)
+	if (dt_initdone)
 		return 0;
 
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
-	diag_l0_dt_initdone = 1;
+	dt_initdone = 1;
 
 	return 0;
 }
@@ -82,7 +82,7 @@ diag_l0_dt_init(void)
 
 static void dtest_1(struct diag_l0_device *dl0d) {
 	int i;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 
 	fprintf(stderr, "Starting test 1: pulsing TXD=1, 1s, TXD=0, 500ms:");
 	for (i=0; i<=4; i++) {
@@ -99,7 +99,7 @@ static void dtest_2(struct diag_l0_device *dl0d) {
 	int i, pc=0;
 	const int iters=300;
 	uint8_t patternbyte=0x55;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 
 	fprintf(stderr, "Starting test 2: sending 0x55 with P4=5ms:");
 	for (i=0; i<=iters; i++) {
@@ -120,7 +120,7 @@ static void dtest_2(struct diag_l0_device *dl0d) {
 //dtest_3: slow pulse RTS
 static void dtest_3(struct diag_l0_device *dl0d) {
 	int i;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 	fprintf(stderr, "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
@@ -138,7 +138,7 @@ static void dtest_3(struct diag_l0_device *dl0d) {
 //dtest_4: slow pulse DTR
 static void dtest_4(struct diag_l0_device *dl0d) {
 	int i;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 	fprintf(stderr, "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
@@ -158,7 +158,7 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 
 static void dtest_5(struct diag_l0_device *dl0d) {
 	int i, pc=0;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 	const int iters=40;
 	fprintf(stderr, "Starting test 5: pulsing TXD=1, 50, TXD=0, 25ms:");
 	for (i=0; i<=iters; i++) {
@@ -180,7 +180,7 @@ static void dtest_5(struct diag_l0_device *dl0d) {
 
 static void dtest_6(struct diag_l0_device *dl0d) {
 	int i, pc=0;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 	const int iters=50;
 	fprintf(stderr, "Starting test 6: pulsing TXD=1, 50ms, TXD=0, 25ms:");
 	for (i=0; i<=iters; i++) {
@@ -204,7 +204,7 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 	uint8_t i, pc=0, echo;
 	int rv, badechos=0;
 	unsigned long long ti, tf=0; //measure inner time
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 
 #define DT7_ITERS 100
 	fprintf(stderr, "Starting test 7: half duplex single echo removal:");
@@ -212,7 +212,7 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 	for (i=0; i<DT7_ITERS; i++) {
 		echo=i-1;	//init to bad value
 		ti=diag_os_gethrt();	//get starting time.
-		if (diag_l0_dt_send(dl0d, NULL, &i, 1))
+		if (dt_send(dl0d, NULL, &i, 1))
 			break;
 
 		rv = diag_tty_read(dev->tty_int, &echo, 1, 1000);
@@ -244,7 +244,7 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 	uint8_t tx[DT8_MSIZE], echo[DT8_MSIZE];
 	int i, rv = -1, badechos=0;
 	unsigned long long ti, tf=0;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 
 #define DT8_ITERS 10
 	fprintf(stderr, "Starting test 8: half duplex block echo removal:");
@@ -255,7 +255,7 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 
 	for (i=0; i<=DT8_ITERS; i++) {
 		ti=diag_os_gethrt();	//get starting time.
-		if (diag_l0_dt_send(dl0d, NULL, tx, DT8_MSIZE))
+		if (dt_send(dl0d, NULL, tx, DT8_MSIZE))
 			break;
 
 		rv = diag_tty_read(dev->tty_int, echo, DT8_MSIZE, 100 + 5*DT8_MSIZE);
@@ -292,7 +292,7 @@ static void dtest_9(struct diag_l0_device *dl0d) {
 	int iters;
 	uint8_t garbage[MAXRBUF];
 	unsigned long long t0, tf;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 
 	fprintf(stderr, "Starting test 9: checking accuracy of read timeouts:\n");
 	diag_tty_iflush(dev->tty_int);	//purge before starting
@@ -318,7 +318,7 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 	int iters,rv;
 	uint8_t garbage[MAXRBUF];
 	unsigned long long t0, tf;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 
 	fprintf(stderr, "Starting test 11: half-duplex incomplete read timeout accuracy:\n");
 	diag_tty_iflush(dev->tty_int);	//purge before starting
@@ -327,7 +327,7 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 		tf=0;
 		for (iters=0; iters < DT11_ITERS; iters++) {
 			uint8_t tc = i;
-			if ((rv=diag_l0_dt_send(dl0d, NULL, &tc, 1))) goto failed;
+			if ((rv=dt_send(dl0d, NULL, &tc, 1))) goto failed;
 			t0=diag_os_gethrt();
 			if ((rv=diag_tty_read(dev->tty_int, garbage, MAXRBUF, i)) != 1) {
 				// failed: purge + try next timeout value
@@ -354,7 +354,7 @@ static void dtest_12(struct diag_l0_device *dl0d) {
 	uint8_t garbage[MAXRBUF];
 	unsigned long long t0, tf;	//measure inner time
 	unsigned long long ts1, ts2;	//measure overall loop
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 
 	fprintf(stderr, "Starting test 12: diag_tty_write() duration:\n");
 	diag_tty_iflush(dev->tty_int);	//purge before starting
@@ -366,7 +366,7 @@ static void dtest_12(struct diag_l0_device *dl0d) {
 		for (iters=0; iters < DT12_ITERS; iters++) {
 			unsigned long long tt1;
 			t0 = diag_os_gethrt();
-			if (diag_l0_dt_send(dl0d, NULL, garbage, i)) goto failed;
+			if (dt_send(dl0d, NULL, garbage, i)) goto failed;
 			tt1 = diag_os_gethrt();
 			tf = tf + (tt1 - t0);
 			printf("\t%luus", (long unsigned int) (diag_os_hrtus(tt1-t0)));
@@ -389,7 +389,7 @@ static void dtest_13(struct diag_l0_device *dl0d) {
 	int i, pc=0;
 	const int iters=50;
 	const uint8_t db=0xAA;
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 
 	fprintf(stderr, "Starting test 6: simulate fastinit:");
 	for (i=0; i<=iters; i++) {
@@ -413,7 +413,7 @@ static void dtest_13(struct diag_l0_device *dl0d) {
 
 static int
 dt_new(struct diag_l0_device *dl0d) {
-	struct diag_l0_dt_device *dev;
+	struct dt_device *dev;
 
 	assert(dl0d);
 
@@ -437,7 +437,7 @@ dt_new(struct diag_l0_device *dl0d) {
 }
 
 static void dt_del(struct diag_l0_device *dl0d) {
-	struct diag_l0_dt_device *dev;
+	struct dt_device *dev;
 
 	assert(dl0d);
 
@@ -450,7 +450,7 @@ static void dt_del(struct diag_l0_device *dl0d) {
 }
 
 static struct cfgi* dt_getcfg(struct diag_l0_device *dl0d) {
-	struct diag_l0_dt_device *dev;
+	struct dt_device *dev;
 	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
 
 	dev = dl0d->l0_int;
@@ -462,9 +462,9 @@ static struct cfgi* dt_getcfg(struct diag_l0_device *dl0d) {
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
  */
-static int diag_l0_dt_open(struct diag_l0_device *dl0d, int testnum)
+static int dt_open(struct diag_l0_device *dl0d, int testnum)
 {
-	struct diag_l0_dt_device *dev;
+	struct dt_device *dev;
 	struct diag_serial_settings pset;
 
 	assert(dl0d);
@@ -475,7 +475,7 @@ static int diag_l0_dt_open(struct diag_l0_device *dl0d, int testnum)
 			FL, dev->port.val.str, testnum);
 	}
 
-	diag_l0_dt_init();	 //make sure it is initted
+	dt_init();	 //make sure it is initted
 
 	/* try to open TTY */
 	dev->tty_int = diag_tty_open(dev->port.val.str);
@@ -570,7 +570,7 @@ static int diag_l0_dt_open(struct diag_l0_device *dl0d, int testnum)
 
 
 static void
-diag_l0_dt_close(UNUSED(struct diag_l0_device *dl0d))
+dt_close(UNUSED(struct diag_l0_device *dl0d))
 {
 	return;
 }
@@ -582,12 +582,12 @@ diag_l0_dt_close(UNUSED(struct diag_l0_device *dl0d))
  * return 0 on success,
  */
 static int
-diag_l0_dt_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
+dt_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
 
-	struct diag_l0_dt_device *dev;
+	struct dt_device *dev;
 
-	dev = (struct diag_l0_dt_device *)(dl0d->l0_int);
+	dev = (struct dt_device *)(dl0d->l0_int);
 
 	fprintf(stderr, FLFMT "device link %p info %p initbus type %d, doing nothing.\n",
 			FL, (void *)dl0d, (void *)dev, in->type);
@@ -606,11 +606,11 @@ diag_l0_dt_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
  */
 
 static int
-diag_l0_dt_send(struct diag_l0_device *dl0d,
+dt_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 const void *data, size_t len)
 {
-	struct diag_l0_dt_device *dev = dl0d->l0_int;
+	struct dt_device *dev = dl0d->l0_int;
 
 	/*
 	 * This will be called byte at a time unless P4 timing parameter is zero
@@ -641,11 +641,11 @@ const void *data, size_t len)
 	return 0;
 }
 
-/* dummy diag_l0_dt_recv
+/* dummy dt_recv
  */
 
 static int
-diag_l0_dt_recv(struct diag_l0_device *dl0d,
+dt_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 UNUSED(void *data), size_t len, unsigned int timeout)
 {
@@ -660,12 +660,12 @@ UNUSED(void *data), size_t len, unsigned int timeout)
  * Set speed/parity etc
  */
 static int
-diag_l0_dt_setspeed(struct diag_l0_device *dl0d,
+dt_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset)
 {
-	struct diag_l0_dt_device *dev;
+	struct dt_device *dev;
 
-	dev = (struct diag_l0_dt_device *)(dl0d->l0_int);
+	dev = (struct dt_device *)(dl0d->l0_int);
 
 	dev->serial = *pset;
 
@@ -674,17 +674,17 @@ const struct diag_serial_settings *pset)
 
 // Update interface options to customize particular interface type (K-line only or K&L)
 // Not related to the "getflags" function which returns the interface capabilities.
-void diag_l0_dt_setopts(unsigned int newflags)
+void dt_setopts(unsigned int newflags)
 {
 	dumb_flags=newflags;
 }
-unsigned int diag_l0_dt_getopts(void) {
+unsigned int dt_getopts(void) {
 	return dumb_flags;
 }
 
 
 static uint32_t
-diag_l0_dt_getflags(UNUSED(struct diag_l0_device *dl0d))
+dt_getflags(UNUSED(struct diag_l0_device *dl0d))
 {
 	return DIAG_L1_HALFDUPLEX;
 }
@@ -693,16 +693,16 @@ const struct diag_l0 diag_l0_dumbtest = {
  	"Dumb interface test suite",
 	"DUMBT",
 	-1,		//support "all" L1 protos...
-	diag_l0_dt_init,
+	dt_init,
 	dt_new,
 	dt_getcfg,
 	dt_del,
-	diag_l0_dt_open,
-	diag_l0_dt_close,
-	diag_l0_dt_getflags,
-	diag_l0_dt_recv,
-	diag_l0_dt_send,
-	diag_l0_dt_initbus,
+	dt_open,
+	dt_close,
+	dt_getflags,
+	dt_recv,
+	dt_send,
+	dt_initbus,
 	NULL,
-	diag_l0_dt_setspeed
+	dt_setspeed
 };
