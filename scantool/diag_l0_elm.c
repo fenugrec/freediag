@@ -49,8 +49,13 @@
 
 struct diag_l0_elm_device {
 	int protocol;		//current L1 protocol
-	struct diag_serial_settings serial;
+
 	int elmflags; 	//see defines below
+
+	struct	cfgi port;
+
+	struct diag_serial_settings serial;
+	ttyp *tty_int;			/** handle for tty stuff */
 };
 
 //flags for elmflags; set either 323_BASIC or 327_BASIC but not both;
@@ -111,27 +116,71 @@ diag_l0_elm_init(void)
 	return 0;
 }
 
+int elm_new(struct diag_l0_device * dl0d) {
+	struct diag_l0_elm_device *dev;
+
+	assert(dl0d);
+
+	if (diag_calloc(&dev, 1))
+		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	dl0d->l0_int = dev;
+
+	if (diag_cfgn_tty(&dev->port)) {
+		free(dev);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	dev->port.next = NULL;
+
+	return 0;
+}
+
+struct cfgi* elm_getcfg(struct diag_l0_device *dl0d) {
+	struct diag_l0_elm_device *dev;
+	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+
+	dev = dl0d->l0_int;
+	return &dev->port;
+}
+
+void elm_del(struct diag_l0_device *dl0d) {
+	struct diag_l0_elm_device *dev;
+
+	assert(dl0d);
+
+	dev = dl0d->l0_int;
+	if (!dev) return;
+
+	diag_cfg_clear(&dev->port);
+	free(dev);
+	return;
+}
+
+
 //diag_l0_elm_close : free dl0d->dl0 (dev), call diag_tty_close.
 static void
 diag_l0_elm_close(struct diag_l0_device *dl0d)
 {
-	assert(dl0d != NULL);
 	uint8_t buf[]="ATPC\x0D";
-	elm_sendcmd(dl0d, buf, 5, 500, NULL);	//close protocol. So clean !
+	struct diag_l0_elm_device *dev;
 
-	struct diag_l0_elm_device *dev =
-		(struct diag_l0_elm_device *)dl0d->l0_int;
+	assert(dl0d != NULL);
+
+	if (dl0d->opened) {
+		elm_sendcmd(dl0d, buf, 5, 500, NULL);	//close protocol. So clean !
+	}
+
+	 dev = (struct diag_l0_elm_device *)dl0d->l0_int;
 
 	/* If debugging, print to stderr */
 	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr, FLFMT "link %p closing\n",
 			FL, (void *) dl0d);
 
-	if (dev)
-		free(dev);
-
-	diag_tty_close(dl0d);
-	diag_l0_del(dl0d);
+	diag_tty_close(dev->tty_int);
+	dev->tty_int = NULL;
+	dl0d->opened = 0;
 
 	return;
 }
@@ -281,11 +330,10 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsign
  * Open the diagnostic device
  * ELM settings used : no echo (E0), headers on (H1), linefeeds off (L0), mem off (M0)
  */
-static struct diag_l0_device *
-diag_l0_elm_open(const char *subinterface, int iProtocol)
+static int
+diag_l0_elm_open(struct diag_l0_device *dl0d, int iProtocol)
 {
 	int i,rv;
-	struct diag_l0_device *dl0d;
 	struct diag_l0_elm_device *dev;
 	struct diag_serial_settings sset;
 	const uint8_t *buf;
@@ -294,29 +342,22 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	const char ** elm_official;
 	const char ** elm_clones;	//point to elm323_ or elm327_ clone and official version string lists
 
+	assert(dl0d);
+	dev = dl0d->l0_int;
+
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
-			FL, subinterface, iProtocol);
+		fprintf(stderr, FLFMT "open port %s L1proto %d\n",
+			FL, dev->port.val.str, iProtocol);
 	}
 
 	diag_l0_elm_init();
 
-	if ((rv=diag_calloc(&dev, 1)))
-		return diag_pseterr(rv);
-
-	dev->protocol = iProtocol;
-
-	dl0d = diag_l0_new(&diag_l0_elm, (void *)dev);
-	if (!dl0d) {
-		free(dev);
-		return diag_pseterr(rv);
-	}
 	/* try to open TTY */
-	if ((rv=diag_tty_open(dl0d, subinterface))) {
-		diag_l0_del(dl0d);
-		free(dev);
-		return diag_pseterr(rv);
+	dev->tty_int = diag_tty_open(dev->port.val.str);
+	if (dev->tty_int == NULL) {
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+	dev->protocol = iProtocol;
 
 	//set speed to 38400;8n1.
 	sset.speed=38400;
@@ -328,9 +369,9 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 	if ((rv=diag_tty_setup(dl0d, &sset))) {
 		fprintf(stderr, FLFMT "Error setting 38400;8N1 on %s\n",
-			FL, subinterface);
+			FL, dev->port.val.str);
 		diag_l0_elm_close(dl0d);
-		return diag_pseterr(rv);
+		return diag_iseterr(rv);
 	}
 
 	diag_tty_iflush(dl0d);	/* Flush unread input */
@@ -353,9 +394,9 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 
 		if ((rv=diag_tty_setup(dl0d, &sset))) {
 			fprintf(stderr, FLFMT "Error setting 9600;8N1 on %s\n",
-				FL, subinterface);
+				FL, dev->port.val.str);
 			diag_l0_elm_close(dl0d);
-			return diag_pseterr(rv);
+			return diag_iseterr(rv);
 		}
 
 		diag_tty_iflush(dl0d);	/* Flush unread input */
@@ -363,7 +404,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		if (rv !=0) {
 			fprintf(stderr, FLFMT "sending ATI @ 9600 failed. Verify connection to ELM\n", FL);
 			diag_l0_elm_close(dl0d);
-			return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+			return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 		}
 	}
 
@@ -379,7 +420,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	if (rv) {
 		fprintf(stderr, FLFMT "elm_open : ATZ failed !\n", FL);
 		diag_l0_elm_close(dl0d);
-		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
 	//Correct prompt received; try to identify device.
@@ -396,7 +437,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		fprintf(stderr, FLFMT "no valid version string !! Report this !. Got:\n%s\n", FL, rxbuf);
 		//no point in continuing...
 		diag_l0_elm_close(dl0d);
-		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	// 2) identify valid VS clone devices.
 	rv=0;	// temp "device identified" flag
@@ -434,6 +475,8 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 		fprintf(stderr, FLFMT "ELM reset success, elmflags=%#x\n", FL, dev->elmflags);
 	}
 
+	dl0d->opened = 1;		//TODO : use this flag to skip the clone detection next time
+
 	//now send "ATE0\n" command to disable echo.
 	buf=(uint8_t *)"ATE0\x0D";
 	if (elm_sendcmd(dl0d, buf, 5, 500, NULL)) {
@@ -441,7 +484,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 			fprintf(stderr, FLFMT "sending \"ATE0\" failed\n", FL);
 		}
 		diag_l0_elm_close(dl0d);
-		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
 	//ATL0 : disable linefeeds
@@ -451,7 +494,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 			fprintf(stderr, FLFMT "sending \"ATL0\" failed\n", FL);
 		}
 		diag_l0_elm_close(dl0d);
-		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
 	//ATH1 : always show header bytes
@@ -461,7 +504,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 			fprintf(stderr, FLFMT "sending \"ATH1\" failed\n", FL);
 		}
 		diag_l0_elm_close(dl0d);
-		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
 	//for elm327 only: disable memory
@@ -472,14 +515,14 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 				fprintf(stderr, FLFMT "sending \"ATM0\" failed\n", FL);
 			}
 			diag_l0_elm_close(dl0d);
-			return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+			return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 		}
 	}
 
 	//check if proto is really supported (323 supports only 9141 and 14230)
 	if ((dev->elmflags & ELM_323_BASIC) &&
 		((iProtocol != DIAG_L1_ISO9141) && (iProtocol != DIAG_L1_ISO14230)))
-			return diag_pseterr(DIAG_ERR_PROTO_NOTSUPP);
+			return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 
 	//if 327, set proto when possible; we won't if 14230, because init type (fast vs slow) isn't decided yet
 	// CAN is also not implemented here
@@ -506,7 +549,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 				fprintf(stderr, FLFMT "sending \"ATTPx\" failed\n", FL);
 			}
 		diag_l0_elm_close(dl0d);
-		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 		}
 	}
 
@@ -515,7 +558,7 @@ diag_l0_elm_open(const char *subinterface, int iProtocol)
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "ELM ready.\n", FL);
 	}
-	return dl0d;
+	return 0;
 }
 
 
@@ -954,15 +997,16 @@ const struct diag_l0 diag_l0_elm = {
 	"Scantool.net ELM32x Chipset Device",
 	"ELM",
 	DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_J1850_PWM | DIAG_L1_J1850_VPW | DIAG_L1_CAN,
-	NULL,
-	NULL,
-	NULL,
 	diag_l0_elm_init,
+	elm_new,
+	elm_getcfg,
+	elm_del,
 	diag_l0_elm_open,
 	diag_l0_elm_close,
-	diag_l0_elm_initbus,
-	diag_l0_elm_send,
+	diag_l0_elm_getflags,
 	diag_l0_elm_recv,
+	diag_l0_elm_send,
+	diag_l0_elm_initbus,
+	NULL,
 	diag_l0_elm_setspeed,
-	diag_l0_elm_getflags
 };
