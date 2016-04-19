@@ -48,15 +48,7 @@
 int diag_l2_debug;
 
 
-/*
- * The list of connections, not searched often so no need to hash
- * (maybe when we actually finish supporting talking to more than
- * one ECU on one interface at once)
- */
-#define CONBYIDSIZE 256
-
 static struct diag_l2_conn	*diag_l2_connections=NULL;	//linked-list of current diag_l2_conn's
-static struct diag_l2_conn	*diag_l2_conbyid[CONBYIDSIZE];	/* Look up by ECU address */
 
 static int diag_l2_init_done=0;	/* Init done */
 
@@ -167,9 +159,6 @@ int diag_l2_init()
 
 	if (diag_l2_debug & DIAG_DEBUG_INIT)
 		fprintf(stderr,FLFMT "entered diag_l2_init\n", FL);
-
-
-	memset(diag_l2_conbyid, 0, CONBYIDSIZE);
 
 	diag_l2_init_done = 1;
 	return 0;
@@ -438,9 +427,6 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	if ( reusing == 0 ) {
 		/* And attach connection info to our main list */
 		LL_PREPEND(diag_l2_connections, d_l2_conn);
-
-		diag_l2_conbyid[target] = d_l2_conn;
-
 	}
 	d_l2_conn->tlast=diag_os_getms();
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_OPEN;
@@ -458,7 +444,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
  * - some L2 protocols have an ordered mechanism to do this, others are
  * just timeout based (i.e don't send anything for 5 seconds)
  * this also free()s d_l2_conn (alloced in startcomm)
- * and removes it from diag_l2_connections and diag_l2_conbyid[]
+ * and removes it from diag_l2_connections
  */
 int
 diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
@@ -476,15 +462,6 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
 	//remove from the main linked list
 	diag_l2_rmconn(d_l2_conn);
 
-	//and remove from diag_l2_conbyid[]
-	int i;
-	for (i=0; i < CONBYIDSIZE; i++) {
-		if (diag_l2_conbyid[i] == d_l2_conn) {
-			diag_l2_conbyid[i]=NULL;
-			if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-				fprintf(stderr, FLFMT "l2_stopcomm: removing dl2 for ID=0x%X\n", FL, i);
-		}
-	}
 	//We assume the protocol-specific _stopcomms() cleared out anything it
 	//may have alloc'ed. inside the l2 connection struct.
 	// But we might still have some attached messages that
