@@ -6,9 +6,6 @@
  * Diag, Layer 0, interface tester. This should *NOT* be used while
  * a vehicle is connected; only for debugging the electrical interface itself.
 
- * The dumb_flags variable is set according to particular type (VAGtool, SE)
- * to enable certain features (L line on RTS, etc)
-
  * This is a dummy l0 driver : most functions do nothing except
  * _open which opens the subinterface, runs the specified test, and closes everything
  * before returning.
@@ -31,19 +28,67 @@ struct dt_device
 	int protocol;	//set in dt_open with specified iProtocol
 	struct diag_serial_settings serial;
 
-	struct cfgi port;
+	/* "dumbopts" flags. Copied from l0_dumb driver */
+	/* Using a struct cfgi for each of these really seems like overkill...
+	 * current approach is to have a cfgi for an "int dumbopts", that is parsed into
+	 * these flags in dumb_open(). Hence, the shortname + descriptions defined here are
+	 * unused for the moment.
+	 */
+	bool	use_L;
+		#define DD_USEL	"Use RTS to drive the L line for init. Interface must support this."
+		#define DS_USEL	"USEL"
+	bool	clr_dtr;
+		#define DD_CLRDTR	"Always keep DTR cleared (neg. voltage). Unusual."
+		#define DS_CLRDTR	"CLRDTR"
+	bool	set_rts;
+		#define DD_SETRTS	"Always keep RTS set (pos. voltage). Unusual; do not use with USE_L."
+		#define DS_SETRTS	"SETRTS"
+	bool	man_break;
+		#define DD_MANBRK	"Send manual breaks (essential for USB-serial ICs that don't support 5bps.)"
+		#define	DS_MANBRK	"MANBRK"
+	bool	lline_inv;
+		#define DD_INVL	"Invert polarity of the L line. Unusual."
+		#define DS_INVL	"INVL"
+	bool	fast_break;
+		#define DD_FASTBK	"Try alternate iso14230 fastinit code."
+		#define DS_FASTBK	"FASTB"
+	bool	blockduplex;
+		#define DD_BKDUPX	"Use message-based half duplex removal if P4==0."
+		#define	DS_BKDUPX	"BLKDUP"
+
+	struct	cfgi port;
+	struct	cfgi dumbopts;
+		#define DUMBOPTS_SN	"dumbopts"
+		#define DUMBOPTS_DESC "Dumb interface option flags; addition of the desired flags:\n" \
+				" 0x01 : USE_LLINE : use if the L line (driven by RTS) is required for init. Interface must support this\n" \
+				"\t(VAGTOOL for example).\n" \
+				" 0x02 : CLEAR_DTR : use if your interface needs DTR to be always clear (neg. voltage).\n" \
+				"\tThis is unusual. By default DTR will always be SET (pos. voltage)\n" \
+				" 0x04 : SET_RTS : use if your interface needs RTS to be always set (pos. voltage).\n" \
+				"\tThis is unusual. By default RTS will always be CLEAR (neg. voltage)\n" \
+				"\tThis option should not be used with USE_LLINE.\n" \
+				" 0x08 : MAN_BREAK : essential for USB-serial converters that don't support 5bps\n" \
+				"\tsuch as FTDI232*, P230* and other ICs (enabled by default).\n" \
+				" 0x10: LLINE_INV : Invert polarity of the L line. see\n" \
+				"\tdoc/dumb_interfaces.txt !! This is unusual.\n" \
+				" 0x20: FAST_BREAK : use alternate iso14230 fastinit code.\n" \
+				" 0x40: BLOCKDUPLEX : use message-based half duplex removal (if P4==0)\n\n" \
+				"ex.: \"dumbopts 9\" for MAN_BREAK and USE_LLINE.\n"
+
+
 	ttyp *tty_int;			/** handle for tty stuff */
 };
 
 
-// global flags set according to particular interface type (VAGtool vs SE etc.)
-static unsigned int dumb_flags=0;
+// dumbopts flags set according to particular interface type (VAGtool vs SE etc.)
 #define USE_LLINE	0x01		//interface maps L line to RTS : setting RTS normally pulls L down to 0 .
 #define CLEAR_DTR 0x02		//have DTR cleared constantly (unusual, disabled by default)
 #define SET_RTS 0x04			//have RTS set constantly (also unusual, disabled by default).
 #define MAN_BREAK 0x08		//force bitbanged breaks for inits; enabled by default
 #define LLINE_INV 0x10		//invert polarity of the L line if set. see doc/dumb_interfaces.txt
 #define FAST_BREAK 0x20		//do we use diag_tty_fastbreak for iso14230-style fast init.
+#define BLOCKDUPLEX 0x40	//This allows half duplex removal on a whole message if P4==0 (see diag_l1_send())
+#define DUMBDEFAULTS (MAN_BREAK | BLOCKDUPLEX)	//default set of flags
 
 
 extern const struct diag_l0 diag_l0_dumbtest;
@@ -124,13 +169,13 @@ static void dtest_3(struct diag_l0_device *dl0d) {
 	fprintf(stderr, "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
-		if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), 1)) break;
+		if (diag_tty_control(dev->tty_int, !(dev->clr_dtr), 1)) break;
 		diag_os_millisleep(1000);
-		if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), 0)) break;
+		if (diag_tty_control(dev->tty_int, !(dev->clr_dtr), 0)) break;
 		diag_os_millisleep(500);
 		fprintf(stderr, ".");
 	}
-	diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
+	diag_tty_control(dev->tty_int, !(dev->clr_dtr), dev->set_rts);
 	fprintf(stderr, "\n");
 	return;
 }
@@ -142,13 +187,13 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 	fprintf(stderr, "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
-		if (diag_tty_control(dev->tty_int, 1, (dumb_flags & SET_RTS))) break;
+		if (diag_tty_control(dev->tty_int, 1, dev->set_rts)) break;
 		diag_os_millisleep(1000);
-		if (diag_tty_control(dev->tty_int, 0, (dumb_flags & SET_RTS))) break;
+		if (diag_tty_control(dev->tty_int, 0, dev->set_rts)) break;
 		diag_os_millisleep(500);
 		fprintf(stderr, ".");
 	}
-	diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS));
+	diag_tty_control(dev->tty_int, !(dev->clr_dtr), dev->set_rts);
 	fprintf(stderr, "\n");
 	return;
 }
@@ -427,7 +472,17 @@ dt_new(struct diag_l0_device *dl0d) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	dev->port.next = NULL;
+	if (diag_cfgn_int(&dev->dumbopts, DUMBDEFAULTS, DUMBDEFAULTS)) {
+		diag_cfg_clear(&dev->port);
+		free(dev);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	/* finish filling the dumbopts cfgi */
+	dev->dumbopts.shortname = DUMBOPTS_SN;
+	dev->dumbopts.descr = DUMBOPTS_DESC;
+	dev->port.next = &dev->dumbopts;
+	dev->dumbopts.next = NULL;
 
 	printf("*** Warning ! The DUMBT driver is only for electrical ***\n"
 			"*** testing ! Do NOT use while connected to a vehicle! ***\n"
@@ -445,6 +500,7 @@ static void dt_del(struct diag_l0_device *dl0d) {
 	if (!dev) return;
 
 	diag_cfg_clear(&dev->port);
+	diag_cfg_clear(&dev->dumbopts);
 	free(dev);
 	return;
 }
@@ -466,6 +522,7 @@ static int dt_open(struct diag_l0_device *dl0d, int testnum)
 {
 	struct dt_device *dev;
 	struct diag_serial_settings pset;
+	int dumbopts;
 
 	assert(dl0d);
 	dev = dl0d->l0_int;
@@ -505,8 +562,19 @@ static int dt_open(struct diag_l0_device *dl0d, int testnum)
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
+	/* parse dumbopts to set flags */
+	dumbopts = dev->dumbopts.val.i;
+
+	dev->use_L = dumbopts & USE_LLINE;
+	dev->clr_dtr = dumbopts & CLEAR_DTR;
+	dev->set_rts = dumbopts & SET_RTS;
+	dev->man_break = dumbopts & MAN_BREAK;
+	dev->lline_inv = dumbopts & LLINE_INV;
+	dev->fast_break = dumbopts & FAST_BREAK;
+	dev->blockduplex = dumbopts & BLOCKDUPLEX;
+
 	//set initial DTR and RTS lines before starting tests;
-	if (diag_tty_control(dev->tty_int, !(dumb_flags & CLEAR_DTR), (dumb_flags & SET_RTS)) < 0) {
+	if (diag_tty_control(dev->tty_int, !(dev->clr_dtr), dev->set_rts) < 0) {
 		diag_tty_close(dev->tty_int);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -670,16 +738,6 @@ const struct diag_serial_settings *pset)
 	dev->serial = *pset;
 
 	return diag_tty_setup(dev->tty_int, &dev->serial);
-}
-
-// Update interface options to customize particular interface type (K-line only or K&L)
-// Not related to the "getflags" function which returns the interface capabilities.
-void dt_setopts(unsigned int newflags)
-{
-	dumb_flags=newflags;
-}
-unsigned int dt_getopts(void) {
-	return dumb_flags;
 }
 
 
