@@ -29,7 +29,7 @@
  *
  */
 
-
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -164,6 +164,9 @@ struct diag_l0_muleng_device
 	unsigned	dev_rxlen;	/* Length of data in buffer (complete response from ME) */
 	unsigned	resp_len;	/* length of actual bus message, including its checksum (but not the ME response checksum) */
 	unsigned	dev_rdoffset;	/* Offset to read from to */
+
+	struct	cfgi port;		/** serial port */
+	ttyp *tty_int;			/** handle for tty stuff */
 };
 
 #define MULENG_STATE_CLOSED		0x00
@@ -296,36 +299,28 @@ me_guess_rxlen(uint8_t *buf) {
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
  */
-static struct diag_l0_device *
-diag_l0_muleng_open(const char *subinterface, int iProtocol)
+static int diag_l0_muleng_open(struct diag_l0_device *dl0d, int iProtocol)
 {
 	int rv;
-	struct diag_l0_device *dl0d;
 	struct diag_l0_muleng_device *dev;
 	struct diag_serial_settings set;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open subinterface %s protocol %d\n",
-			FL, subinterface, iProtocol);
-	}
-
 	diag_l0_muleng_init();
 
-	if ((rv=diag_calloc(&dev, 1)))
-		return diag_pseterr(rv);
+	assert(dl0d);
+	dev = dl0d->l0_int;
+
+	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+		fprintf(stderr, FLFMT "open port %s L1proto %d\n",
+			FL, dev->port.val.str, iProtocol);
+	}
 
 	dev->protocol = iProtocol;
 
-	dl0d = diag_l0_new(&diag_l0_me, (void *)dev);
-	if (!dl0d) {
-		free(dev);
-		return diag_pseterr(rv);
-	}
 	/* try to open TTY */
-	if ((rv=diag_tty_open(dl0d, subinterface))) {
-		diag_l0_del(dl0d);
-		free(dev);
-		return diag_pseterr(rv);
+	dev->tty_int = diag_tty_open(dev->port.val.str);
+	if (dev->tty_int == NULL) {
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	/* And set to 19200 baud , 8N1 */
@@ -335,39 +330,82 @@ diag_l0_muleng_open(const char *subinterface, int iProtocol)
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
 
-	if ((rv=diag_tty_setup(dl0d, &set))) {
+	if ((rv=diag_tty_setup(dev->tty_int, &set))) {
 		diag_l0_muleng_close(dl0d);
-		return diag_pseterr(rv);
+		return diag_iseterr(rv);
 	}
 
 	/* And set DTR high and RTS low to power the device */
-	if ((rv=diag_tty_control(dl0d, 1, 0))) {
+	if ((rv=diag_tty_control(dev->tty_int, 1, 0))) {
 		diag_l0_muleng_close(dl0d);
-		return diag_pseterr(rv);
+		return diag_iseterr(rv);
 	}
 	dev->dev_addr = INTERFACE_ADDRESS;
 
-	diag_tty_iflush(dl0d);	/* Flush unread input */
+	diag_tty_iflush(dev->tty_int);	/* Flush unread input */
+	dl0d->opened = 1;
 
-	return dl0d ;
+	return 0 ;
 }
+
+
+static int
+muleng_new(struct diag_l0_device *dl0d) {
+	struct diag_l0_muleng_device *dev;
+
+	assert(dl0d);
+
+	if (diag_calloc(&dev, 1))
+		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	dl0d->l0_int = dev;
+
+	if (diag_cfgn_tty(&dev->port)) {
+		free(dev);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	dev->port.next = NULL;
+
+	return 0;
+}
+
+static void muleng_del(struct diag_l0_device *dl0d) {
+	struct diag_l0_muleng_device *dev;
+
+	assert(dl0d);
+
+	dev = dl0d->l0_int;
+	if (!dev) return;
+
+	diag_cfg_clear(&dev->port);
+	free(dev);
+	return;
+}
+
+static struct cfgi* muleng_getcfg(struct diag_l0_device *dl0d) {
+	struct diag_l0_muleng_device *dev;
+	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+
+	dev = dl0d->l0_int;
+	return &dev->port;
+}
+
 
 static void
 diag_l0_muleng_close(struct diag_l0_device *dl0d)
 {
 	if (!dl0d) return;
-	struct diag_l0_muleng_device *dev =
-		(struct diag_l0_muleng_device *)dl0d->l0_int;
+	struct diag_l0_muleng_device *dev = dl0d->l0_int;
 
 	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr, FLFMT "link %p closing\n",
 			FL, (void *)dl0d);
 
-	if (dev)
-		free(dev);
+	diag_tty_close(dev->tty_int);
+	dev->tty_int = NULL;
 
-	diag_tty_close(dl0d);
-	diag_l0_del(dl0d);
+	dl0d->opened = 0;
 
 	return;
 }
@@ -378,6 +416,8 @@ diag_l0_muleng_close(struct diag_l0_device *dl0d)
 static int
 diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 {
+	struct diag_l0_muleng_device *dev = dl0d->l0_int;
+
 	if (txlen <=0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
@@ -393,7 +433,7 @@ diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 	/*
 	 * And send it to the interface
 	 */
-	if (diag_tty_write(dl0d, dp, txlen) != (int) txlen) {
+	if (diag_tty_write(dev->tty_int, dp, txlen) != (int) txlen) {
 		fprintf(stderr, FLFMT "muleng_write error!!\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -455,14 +495,14 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		 * to match that speed. Remember it takes 2 seconds to send
 		 * the 10 bit (1+8+1) address at 5 baud
 		 */
-		rv = diag_tty_read(dl0d, rxbuf, 1, 2350);
+		rv = diag_tty_read(dev->tty_int, rxbuf, 1, 2350);
 		if (rv != 1)
 			return diag_iseterr(DIAG_ERR_GENERAL);
 
 		if (rxbuf[0] == 0x40) {
 			/* Problem ..., got an error message */
 
-			diag_tty_iflush(dl0d); /* Empty the receive buffer */
+			diag_tty_iflush(dev->tty_int); /* Empty the receive buffer */
 
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
@@ -480,7 +520,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 			set.parflag = diag_par_n;
 
 			/* And set the baud rate */
-			diag_tty_setup(dl0d, &set);
+			diag_tty_setup(dev->tty_int, &set);
 		}
 
 		dev->dev_state = MULENG_STATE_RAW;
@@ -490,7 +530,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		/* XXX
 		 * Should get an ack back, rather than an error response
 		 */
-		if ((rv = diag_tty_read(dl0d, rxbuf, 14, 200)) < 0)
+		if ((rv = diag_tty_read(dev->tty_int, rxbuf, 14, 200)) < 0)
 			return diag_iseterr(rv);
 
 		if (rxbuf[1] == ME_RESP_ERROR)
@@ -508,7 +548,7 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		if (rv < 0)
 			return diag_iseterr(rv);
 
-		if ((rv = diag_tty_read(dl0d, rxbuf, 14, 200)) < 0)
+		if ((rv = diag_tty_read(dev->tty_int, rxbuf, 14, 200)) < 0)
 			return diag_iseterr(rv);
 
 		if (rxbuf[1] == ME_RESP_ERROR)	/* Error */
@@ -550,7 +590,7 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d proto %d\n",
 			FL, (void *)dl0d, (void *)dev, in->type, dev->protocol);
 
-	diag_tty_iflush(dl0d); /* Empty the receive buffer, wait for idle bus */
+	diag_tty_iflush(dev->tty_int); /* Empty the receive buffer, wait for idle bus */
 
 	if (in->type == DIAG_L1_INITBUS_5BAUD)
 		rv = diag_l0_muleng_slowinit(dl0d, in, dev);
@@ -745,7 +785,7 @@ void *data, size_t len, unsigned int timeout)
 
 
 	case MULENG_STATE_RAW:
-		xferd = diag_tty_read(dl0d, data, len, timeout);
+		xferd = diag_tty_read(dev->tty_int, data, len, timeout);
 		if (diag_l0_debug & DIAG_DEBUG_READ)
 			fprintf(stderr, FLFMT "link %p read %ld bytes\n", FL,
 				(void *)dl0d, (long)xferd);
@@ -789,7 +829,7 @@ void *data, size_t len, unsigned int timeout)
 	 * buffer (incomplete ME frame), read some more.
 	 */
 
-	rv = diag_tty_read(dl0d, &dev->dev_rxbuf[dev->dev_rxlen],
+	rv = diag_tty_read(dev->tty_int, &dev->dev_rxbuf[dev->dev_rxlen],
 		(size_t)(14 - dev->dev_rxlen), timeout);
 	if (rv == DIAG_ERR_TIMEOUT) {
 		return DIAG_ERR_TIMEOUT;
@@ -924,15 +964,17 @@ const struct diag_l0 diag_l0_me = {
 	"MET16",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
 		DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
-	NULL,
-	NULL,
-	NULL,
 	diag_l0_muleng_init,
+	muleng_new,
+	muleng_getcfg,
+	muleng_del,
 	diag_l0_muleng_open,
 	diag_l0_muleng_close,
-	diag_l0_muleng_initbus,
-	diag_l0_muleng_send,
+	diag_l0_muleng_getflags,
 	diag_l0_muleng_recv,
+	diag_l0_muleng_send,
+	diag_l0_muleng_initbus,
+	NULL,
 	diag_l0_muleng_setspeed,
-	diag_l0_muleng_getflags
+
 };

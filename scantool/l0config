@@ -2,7 +2,7 @@
 # Any of these may be commented out before running make
 # lines beginning with a # are ignored
 
-#me
+me
 dumb
 #br
 elm
