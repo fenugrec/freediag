@@ -172,6 +172,7 @@ static int cmd_set_custom(int argc, char **argv) {
 	char *setstr;
 	bool helping=0;
 	bool show_current=0;
+	int newval;
 
 	if (!global_dl0d) return CMD_FAILED;
 
@@ -203,31 +204,31 @@ static int cmd_set_custom(int argc, char **argv) {
 
 	if (helping) {
 		printf("%s\n", cfgp->descr);
+		diag_cfg_refresh(cfgp);
 		if (cfgp->numopts > 0) {
 			int i;
 			printf("Available options:\n");
 			for (i=0; i < cfgp->numopts; i++) {
-				printf("\t\t%2d: %s\n", i, cfgp->opt[i]);
+				printf("\t\t%s\n", cfgp->opt[i]);
 			}
 		}
-		//TODO : allow selection by optid !
 		return CMD_OK;
 	}
 
-	/* normal mode : set param to argv[1] */
 /* TODO : move this to diag_cfg.* if it works */
+	newval = htoi(argv[1]);
 	switch (cfgp->type) {
 	case CFGT_STR:
 		diag_cfg_setstr(cfgp, argv[1]);
 		break;
 	case CFGT_U8:
-		diag_cfg_setu8(cfgp, (uint8_t) htoi(argv[1]));
+		diag_cfg_setu8(cfgp, (uint8_t) newval);
 		break;
 	case CFGT_INT:
-		diag_cfg_setint(cfgp, htoi(argv[1]));
+		diag_cfg_setint(cfgp, newval);
 		break;
 	case CFGT_BOOL:
-		diag_cfg_setbool(cfgp, (bool) htoi(argv[1]));
+		diag_cfg_setbool(cfgp, (bool) newval);
 		break;
 	default:
 		return CMD_FAILED;
