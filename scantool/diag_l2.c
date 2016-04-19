@@ -181,9 +181,7 @@ int diag_l2_end() {
 	return 0;
 }
 
-/*
- * diag_l2_closelink :
- * remove it from the linked list,
+/** Remove a dl2l from the linked list,
  * close its dl0d link with diag_l1_close and free
  * the dl2l.
  * This should only be called if we're sure the dl2l
@@ -259,8 +257,6 @@ diag_l2_open(struct diag_l0_device *dl0d, int L1protocol)
 		return diag_iseterr(rv);
 	}
 
-	dl0d->dl2_link=dl2l;	/* Associate ourselves with this */
-
 	dl2l->l2_dl0d = dl0d;
 	dl2l->l1flags = diag_l1_getflags(dl0d);
 	dl2l->l1type = diag_l1_gettype(dl0d);
@@ -290,6 +286,7 @@ diag_l2_open(struct diag_l0_device *dl0d, int L1protocol)
 int
 diag_l2_close(struct diag_l0_device *dl0d) {
 	struct diag_l2_conn *d_l2_conn;
+	struct diag_l2_link *dl2l;
 
 	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr,FLFMT "Entered diag_l2_close for dl0d=%p;\n",
@@ -306,12 +303,13 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 		}
 	}
 
-	// XXX if no diag_l2_conn refers to dl0d, it's safe to assume it's unused ?
-
-	// The dl0d is unused : close
-	if (diag_l2_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr, "\tclosing unused dl2link %p.\n", (void *) dl0d->dl2_link);
-	diag_l2_closelink(dl0d->dl2_link);	//closelink calls diag_l1_close() as required
+	while ((dl2l = diag_l2_findlink(dl0d)) != NULL) {
+		/* can't just "LL_FOREACH" since we're removing stuff from the list as we go */
+		if (diag_l2_debug & DIAG_DEBUG_CLOSE) {
+			fprintf(stderr, "\tclosing dl2link %p.\n", (void *) dl2l);
+		}
+		diag_l2_closelink(dl2l);	//closelink calls diag_l1_close() as required
+	}
 
 	return 0;
 }
@@ -343,40 +341,32 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 			FL, (void *)dl0d, L2protocol, flags ,
 			bitrate, target&0xff, source&0xff);
 
+	/* there must be a dl2l with the desired dl0d. */
+	dl2l = diag_l2_findlink(dl0d);
+	if (!dl2l) {
+		fprintf(stderr, "No dl2l with requested dl0 !?\n");
+		return diag_pseterr(DIAG_ERR_GENERAL);
+	}
+
 	/*
 	 * Check connection doesn't exist already, if it does, then use it
-	 * but reinitialise ECU - when checking connection, we look at the
-	 * target and the dl0d
+	 * but reinitialise ECU
 	 */
-	d_l2_conn = diag_l2_conbyid[target];
 
-	if (d_l2_conn == NULL) {
-		/* no connection to this ECU address, but maybe another connection with the same dl0d ? */
-		/* XXX not sure how possible this is */
-		LL_FOREACH(diag_l2_connections, d_l2_conn) {
-			if (d_l2_conn->diag_link == NULL) continue;
-			if (d_l2_conn->diag_link->l2_dl0d == dl0d) {
-				reusing = 1;
-				break;
-			}
+	LL_FOREACH(diag_l2_connections, d_l2_conn) {
+		if (d_l2_conn->diag_link == dl2l) {
+			reusing = 1;
+			break;
 		}
 	}
 
 	if (d_l2_conn == NULL) {
 		/* Still nothing -> new connection */
-		if (diag_calloc(&d_l2_conn, 1))
+		if (diag_calloc(&d_l2_conn, 1)) {
 			return diag_pseterr(DIAG_ERR_NOMEM);
-		reusing = 0;
+		}
+		d_l2_conn->diag_link = dl2l;
 	}
-
-	dl2l = dl0d->dl2_link;
-	if (dl2l == NULL) {
-		free(d_l2_conn);
-		return diag_pseterr(DIAG_ERR_GENERAL);
-	}
-
-	/* Link to the L1 device info that we keep (name, type, flags, dl0d) */
-	d_l2_conn->diag_link = dl2l;
 
 	/* Look up the protocol we want to use */
 
@@ -393,7 +383,9 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	if (d_l2_conn->l2proto == NULL) {
 		fprintf(stderr,
 			FLFMT "Protocol %d not installed.\n", FL, L2protocol);
-		free(d_l2_conn);
+		if (!reusing) {
+			free(d_l2_conn);
+		}
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -426,8 +418,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	rv = d_l2_conn->l2proto->diag_l2_proto_startcomms(d_l2_conn,
 	flags, bitrate, target, source);
 
-	if (rv < 0)
-	{
+	if (rv < 0) {
 		/* Something went wrong */
 		if (diag_l2_debug & DIAG_DEBUG_OPEN)
 			fprintf(stderr,FLFMT "protocol startcomms returned %d\n", FL, rv);
@@ -444,8 +435,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	 * - unless we're re-using a established connection, then no need
 	 * to re-note.
 	 */
-	if ( reusing == 0 )
-	{
+	if ( reusing == 0 ) {
 		/* And attach connection info to our main list */
 		LL_PREPEND(diag_l2_connections, d_l2_conn);
 
@@ -621,7 +611,8 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 				FL, (void *)d_l2_conn, cmd);
 
 
-	dl0d = d_l2_conn->diag_link->l2_dl0d ;
+	dl2l = d_l2_conn->diag_link;
+	dl0d = dl2l->l2_dl0d ;
 
 	switch (cmd)
 	{
@@ -641,7 +632,6 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		d->kb2 = d_l2_conn->diag_l2_kb2;
 		break;
 	case DIAG_IOCTL_SETSPEED:
-		dl2l = dl0d->dl2_link;
 		if (dl2l->l1flags & (DIAG_L1_AUTOSPEED | DIAG_L1_NOTTY))
 			break;
 		ic = (struct diag_serial_settings *)data;
@@ -651,7 +641,6 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		rv = diag_l1_initbus(dl0d, (struct diag_l1_initbus_args *)data);
 		break;
 	case DIAG_IOCTL_IFLUSH:
-		dl2l = dl0d->dl2_link;
 		if (dl2l->l1flags & DIAG_L1_NOTTY) break;
 		rv = diag_l1_iflush(dl0d);
 		break;
