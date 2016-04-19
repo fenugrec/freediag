@@ -31,6 +31,7 @@
  *
  */
 
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -68,6 +69,9 @@ struct diag_l0_br_device
 	unsigned int		dev_txlen;	/* And length */
 
 	uint8_t	dev_framenr;	/* Frame nr for vpw/pwm */
+
+	struct	cfgi port;
+	ttyp *tty_int;			/** handle for tty stuff */
 };
 
 /*
@@ -114,21 +118,61 @@ diag_l0_br_init(void)
 	return 0;
 }
 
+static int
+br_new(struct diag_l0_device *dl0d) {
+	struct diag_l0_br_device *dev;
+
+	assert(dl0d);
+
+	if (diag_calloc(&dev, 1))
+		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	dl0d->l0_int = dev;
+
+	if (diag_cfgn_tty(&dev->port)) {
+		free(dev);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	dev->port.next = NULL;
+
+	return 0;
+}
+
+static void br_del(struct diag_l0_device *dl0d) {
+	struct diag_l0_br_device *dev;
+
+	assert(dl0d);
+
+	dev = dl0d->l0_int;
+	if (!dev) return;
+
+	diag_cfg_clear(&dev->port);
+	free(dev);
+	return;
+}
+
+static struct cfgi* br_getcfg(struct diag_l0_device *dl0d) {
+	struct diag_l0_br_device *dev;
+	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+
+	dev = dl0d->l0_int;
+	return &dev->port;
+}
+
 static void
 diag_l0_br_close(struct diag_l0_device *dl0d)
 {
 	if (!dl0d) return;
 
-	struct diag_l0_br_device *dev =
-		(struct diag_l0_br_device *)dl0d->l0_int;
+	struct diag_l0_br_device *dev = dl0d->l0_int;
 
 	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
 
-	if (dev)
-		free(dev);
-	diag_tty_close(dl0d);
-	diag_l0_del(dl0d);
+	diag_tty_close(dev->tty_int);
+	dev->tty_int = NULL;
+	dl0d->opened = 0;
 
 	return;
 }
@@ -136,10 +180,12 @@ diag_l0_br_close(struct diag_l0_device *dl0d)
 static int
 diag_l0_br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 {
+	struct diag_l0_br_device *dev = dl0d->l0_int;
+
 	if (txlen <=0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
-	if (diag_tty_write(dl0d, dp, txlen) != (int) txlen) {
+	if (diag_tty_write(dev->tty_int, dp, txlen) != (int) txlen) {
 		fprintf(stderr, FLFMT "br_write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -151,19 +197,14 @@ diag_l0_br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
  * Open the diagnostic device, return a file descriptor,
  * record the original state of term interface so we can restore later
  */
-static struct diag_l0_device *
-diag_l0_br_open(const char *subinterface, int iProtocol)
+static int diag_l0_br_open(struct diag_l0_device *dl0d, int iProtocol)
 {
-	struct diag_l0_device *dl0d;
-	struct diag_l0_br_device *dev;
+	struct diag_l0_br_device *dev = dl0d->l0_int;
 	int rv;
 	uint8_t buf[4];	/* Was MAXRBUF. We only use 1! */
 	struct diag_serial_settings set;
 
 	diag_l0_br_init();
-
-	if ((rv=diag_calloc(&dev, 1)))
-		return diag_pseterr(rv);
 
 	dev->protocol = iProtocol;
 	dev->dev_rdoffset = 0;
@@ -172,20 +213,10 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	dev->dev_state = BR_STATE_CLOSED;
 	dev->dev_features = BR_FEATURE_SETADDR;
 
-	/* Get an L0 link */
-	dl0d = diag_l0_new();
-	if (!dl0d) {
-		free(dev);
-		return diag_pseterr(rv);
-	}
-	dl0d->dl0 = diag_l0_br;
-	dl0d->l0_int = dev;
-
 	/* try to open TTY */
-	if ((rv=diag_tty_open(dl0d, subinterface))) {
-		diag_l0_del(dl0d);
-		free(dev);
-		return diag_pseterr(rv);
+	dev->tty_int = diag_tty_open(dev->port.val.str);
+	if (dev->tty_int == NULL) {
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
@@ -198,13 +229,13 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
 
-	if (diag_tty_setup(dl0d, &set)) {
+	if (diag_tty_setup(dev->tty_int, &set)) {
 		fprintf(stderr, FLFMT "open: TTY setup failed\n", FL);
 		diag_l0_br_close(dl0d);
-		return diag_pseterr(rv);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	diag_tty_iflush(dl0d);	/* Flush unread input data */
+	diag_tty_iflush(dev->tty_int);	/* Flush unread input data */
 
 	/*
 	 * Initialise the BR1 interface by sending the CHIP CONNECT
@@ -217,17 +248,17 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 				FL, (void *)dl0d);
 		}
 		diag_l0_br_close(dl0d);
-		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	/* And expect 0xff as a response */
-	if (diag_tty_read(dl0d, buf, 1, 100) != 1) {
+	if (diag_tty_read(dev->tty_int, buf, 1, 100) != 1) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "CHIP CONNECT read failed link %p\n",
 				FL, (void *)dl0d);
 		}
 
 		diag_l0_br_close(dl0d);
-		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	if (buf[0] != 0xff) {
 		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
@@ -236,7 +267,7 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 		}
 
 		diag_l0_br_close(dl0d);
-		return diag_pseterr(DIAG_ERR_BADIFADAPTER);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
 	/* If it's J1850, send initialisation string now */
@@ -256,14 +287,16 @@ diag_l0_br_open(const char *subinterface, int iProtocol)
 	}
 	if (rv) {
 		diag_l0_br_close(dl0d);
-		return diag_pseterr(rv);
+		return diag_iseterr(rv);
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open succeeded link %p features 0x%X\n",
 			FL, (void *)dl0d, dev->dev_features);
 	}
-	return dl0d;
+
+	dl0d->opened = 1;
+	return 0;
 }
 
 
@@ -419,7 +452,7 @@ diag_l0_br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 	if (!dev)
 		return diag_iseterr(DIAG_ERR_GENERAL);
 
-	diag_tty_iflush(dl0d); /* Flush unread input */
+	diag_tty_iflush(dev->tty_int); /* Flush unread input */
 
 	switch (in->type)
 	{
@@ -458,7 +491,9 @@ static int
 diag_l0_br_setspeed(struct diag_l0_device *dl0d,
 const struct diag_serial_settings *pset)
 {
+	struct diag_l0_br_device *dev = dl0d->l0_int;
 	struct diag_serial_settings sset;
+
 	fprintf(stderr, FLFMT "Warning: attempted to over-ride serial settings (%d). 19200;8N1 maintained\n", FL, pset->speed);
 	return 0;
 	//XXX we could probably remove the rest of this
@@ -467,7 +502,7 @@ const struct diag_serial_settings *pset)
 	sset.stopbits = diag_stopbits_1;
 	sset.parflag = diag_par_n;
 
-	return diag_tty_setup(dl0d, &sset);
+	return diag_tty_setup(dev->tty_int, &sset);
 }
 
 /*
@@ -484,6 +519,7 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout
 	uint8_t firstbyte;
 	size_t readlen;
 	int rv;
+	struct diag_l0_br_device *dev = dl0d->l0_int;
 
 	if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
@@ -494,7 +530,7 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout
 	/*
 	 * First read the 1st byte, using the supplied timeout
 	 */
-	rv = diag_tty_read(dl0d, &firstbyte, 1, timeout);
+	rv = diag_tty_read(dev->tty_int, &firstbyte, 1, timeout);
 	if (rv != 1) {
 		if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
@@ -514,7 +550,7 @@ diag_l0_br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout
 	 * Reasonable timeout here as the interface told us how
 	 * much data to expect, so it should arrive
 	 */
-	rv = diag_tty_read(dl0d, dp, readlen, 100);
+	rv = diag_tty_read(dev->tty_int, dp, readlen, 100);
 	if (rv != (int)readlen) {
 		fprintf(stderr, FLFMT "br_getmsg error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -770,7 +806,7 @@ void *data, size_t len, unsigned int timeout)
 	case DIAG_L1_ISO9141:
 	case DIAG_L1_ISO14230:
 		/* Raw mode */
-		xferd = diag_tty_read(dl0d, data, len, timeout);
+		xferd = diag_tty_read(dev->tty_int, data, len, timeout);
 		break;
 	default:
 		/*
@@ -892,16 +928,17 @@ const struct diag_l0 diag_l0_br = {
 	"BR1",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
 		DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
-	NULL,
-	NULL,
-	NULL,
 	diag_l0_br_init,
+	br_new,
+	br_getcfg,
+	br_del,
 	diag_l0_br_open,
 	diag_l0_br_close,
-	diag_l0_br_initbus,
-	diag_l0_br_send,
+	diag_l0_br_getflags,
 	diag_l0_br_recv,
-	diag_l0_br_setspeed,
-	diag_l0_br_getflags
+	diag_l0_br_send,
+	diag_l0_br_initbus,
+	NULL,
+	diag_l0_br_setspeed
 };
 
