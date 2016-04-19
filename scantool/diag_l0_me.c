@@ -151,7 +151,7 @@ static const char *me_geterr(const int err)
 	return "[undefined]";
 }
 
-struct diag_l0_muleng_device
+struct muleng_device
 {
 	uint8_t dev_addr;	/* ME device address; default is 0x38. TODO : configurable */
 	int protocol;
@@ -181,7 +181,7 @@ struct diag_l0_muleng_device
 #define MULENG_STATE_OPEN		0x20	/* Open and working */
 
 
-static void diag_l0_muleng_close(struct diag_l0_device *dl0d);
+static void muleng_close(struct diag_l0_device *dl0d);
 
 /*
  * Init must be callable even if no physical interface is
@@ -189,24 +189,24 @@ static void diag_l0_muleng_close(struct diag_l0_device *dl0d);
  * variables etc
  */
 static int
-diag_l0_muleng_init(void)
+muleng_init(void)
 {
 /* Global init flag */
-	static int diag_l0_muleng_initdone=0;
+	static int muleng_initdone=0;
 
-	if (diag_l0_muleng_initdone)
+	if (muleng_initdone)
 		return 0;
 
 	/* Do required scheduling tweaks */
 	diag_os_sched();
-	diag_l0_muleng_initdone = 1;
+	muleng_initdone = 1;
 
 	return 0;
 }
 
 /* Put in the ME checksum at the correct place */
 static int
-diag_l0_muleng_txcksum(uint8_t *data)
+muleng_txcksum(uint8_t *data)
 {
 	uint8_t cksum;
 
@@ -299,13 +299,13 @@ me_guess_rxlen(uint8_t *buf) {
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
  */
-static int diag_l0_muleng_open(struct diag_l0_device *dl0d, int iProtocol)
+static int muleng_open(struct diag_l0_device *dl0d, int iProtocol)
 {
 	int rv;
-	struct diag_l0_muleng_device *dev;
+	struct muleng_device *dev;
 	struct diag_serial_settings set;
 
-	diag_l0_muleng_init();
+	muleng_init();
 
 	assert(dl0d);
 	dev = dl0d->l0_int;
@@ -331,13 +331,13 @@ static int diag_l0_muleng_open(struct diag_l0_device *dl0d, int iProtocol)
 	set.parflag = diag_par_n;
 
 	if ((rv=diag_tty_setup(dev->tty_int, &set))) {
-		diag_l0_muleng_close(dl0d);
+		muleng_close(dl0d);
 		return diag_iseterr(rv);
 	}
 
 	/* And set DTR high and RTS low to power the device */
 	if ((rv=diag_tty_control(dev->tty_int, 1, 0))) {
-		diag_l0_muleng_close(dl0d);
+		muleng_close(dl0d);
 		return diag_iseterr(rv);
 	}
 	dev->dev_addr = INTERFACE_ADDRESS;
@@ -351,7 +351,7 @@ static int diag_l0_muleng_open(struct diag_l0_device *dl0d, int iProtocol)
 
 static int
 muleng_new(struct diag_l0_device *dl0d) {
-	struct diag_l0_muleng_device *dev;
+	struct muleng_device *dev;
 
 	assert(dl0d);
 
@@ -371,7 +371,7 @@ muleng_new(struct diag_l0_device *dl0d) {
 }
 
 static void muleng_del(struct diag_l0_device *dl0d) {
-	struct diag_l0_muleng_device *dev;
+	struct muleng_device *dev;
 
 	assert(dl0d);
 
@@ -384,7 +384,7 @@ static void muleng_del(struct diag_l0_device *dl0d) {
 }
 
 static struct cfgi* muleng_getcfg(struct diag_l0_device *dl0d) {
-	struct diag_l0_muleng_device *dev;
+	struct muleng_device *dev;
 	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
 
 	dev = dl0d->l0_int;
@@ -393,10 +393,10 @@ static struct cfgi* muleng_getcfg(struct diag_l0_device *dl0d) {
 
 
 static void
-diag_l0_muleng_close(struct diag_l0_device *dl0d)
+muleng_close(struct diag_l0_device *dl0d)
 {
 	if (!dl0d) return;
-	struct diag_l0_muleng_device *dev = dl0d->l0_int;
+	struct muleng_device *dev = dl0d->l0_int;
 
 	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr, FLFMT "link %p closing\n",
@@ -414,9 +414,9 @@ diag_l0_muleng_close(struct diag_l0_device *dl0d)
  * Safe write routine; return 0 on success
  */
 static int
-diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
+muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
 {
-	struct diag_l0_muleng_device *dev = dl0d->l0_int;
+	struct muleng_device *dev = dl0d->l0_int;
 
 	if (txlen <=0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -450,8 +450,8 @@ diag_l0_muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
  * a tester present message
  */
 static int
-diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
-		struct diag_l0_muleng_device *dev)
+muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
+		struct muleng_device *dev)
 {
 	/*
 	 * Slow init
@@ -480,8 +480,8 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 	/*
 	 * Calculate the checksum, and send the request
 	 */
-	(void)diag_l0_muleng_txcksum(txbuf);
-	if ((rv = diag_l0_muleng_write(dl0d, txbuf, 15)))
+	(void)muleng_txcksum(txbuf);
+	if ((rv = muleng_write(dl0d, txbuf, 15)))
 		return diag_iseterr(rv);
 
 	/*
@@ -543,8 +543,8 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
 		memset(txbuf, 0, sizeof(txbuf));
 		txbuf[0] = dev->dev_addr;
 		txbuf[1] = 0x86;
-		(void)diag_l0_muleng_txcksum(txbuf);
-		rv = diag_l0_muleng_write(dl0d, txbuf, 15);
+		(void)muleng_txcksum(txbuf);
+		rv = muleng_write(dl0d, txbuf, 15);
 		if (rv < 0)
 			return diag_iseterr(rv);
 
@@ -576,12 +576,12 @@ diag_l0_muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_arg
  * fastinit, and doing slowinit now
  */
 static int
-diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
+muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
 	int rv = 0;
-	struct diag_l0_muleng_device *dev;
+	struct muleng_device *dev;
 
-	dev = (struct diag_l0_muleng_device *)dl0d->l0_int;
+	dev = (struct muleng_device *)dl0d->l0_int;
 
 	if (!dev)
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -593,7 +593,7 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 	diag_tty_iflush(dev->tty_int); /* Empty the receive buffer, wait for idle bus */
 
 	if (in->type == DIAG_L1_INITBUS_5BAUD)
-		rv = diag_l0_muleng_slowinit(dl0d, in, dev);
+		rv = muleng_slowinit(dl0d, in, dev);
 	else
 	{
 		/* Do wakeup on first TX */
@@ -609,7 +609,7 @@ diag_l0_muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
  */
 
 static int
-diag_l0_muleng_setspeed(UNUSED(struct diag_l0_device *dl0d),
+muleng_setspeed(UNUSED(struct diag_l0_device *dl0d),
 		UNUSED(const struct diag_serial_settings *pset))
 {
 	fprintf(stderr, FLFMT "Warning: attempted to override com speed (%d)! Report this !\n", FL,pset->speed);
@@ -625,7 +625,7 @@ diag_l0_muleng_setspeed(UNUSED(struct diag_l0_device *dl0d),
  * will have been done by the slowinit() code
  */
 static int
-diag_l0_muleng_send(struct diag_l0_device *dl0d,
+muleng_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 const void *data, size_t len)
 {
@@ -633,9 +633,9 @@ const void *data, size_t len)
 	uint8_t cmd;
 
 	uint8_t txbuf[MAXRBUF];
-	struct diag_l0_muleng_device *dev;
+	struct muleng_device *dev;
 
-	dev = (struct diag_l0_muleng_device *)dl0d->l0_int;
+	dev = (struct muleng_device *)dl0d->l0_int;
 
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -659,7 +659,7 @@ const void *data, size_t len)
 	if (dev->dev_state == MULENG_STATE_RAW)
 	{
 		/* Raw mode, no pretty processing */
-		rv = diag_l0_muleng_write(dl0d, data, len);
+		rv = muleng_write(dl0d, data, len);
 		return rv;
 	}
 
@@ -708,8 +708,8 @@ const void *data, size_t len)
 	txbuf[2] = (uint8_t) len;
 	memcpy(&txbuf[3], data, len);
 
-	(void)diag_l0_muleng_txcksum(txbuf);
-	rv = diag_l0_muleng_write(dl0d, txbuf, 15);
+	(void)muleng_txcksum(txbuf);
+	rv = muleng_write(dl0d, txbuf, 15);
 
 	return rv;
 }
@@ -731,7 +731,7 @@ const void *data, size_t len)
  */
 
 static int
-diag_l0_muleng_recv(struct diag_l0_device *dl0d,
+muleng_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
 void *data, size_t len, unsigned int timeout)
 {
@@ -739,8 +739,8 @@ void *data, size_t len, unsigned int timeout)
 	int rv;
 	uint8_t *pdata = (uint8_t *)data;
 
-	struct diag_l0_muleng_device *dev;
-	dev = (struct diag_l0_muleng_device *)dl0d->l0_int;
+	struct muleng_device *dev;
+	dev = (struct muleng_device *)dl0d->l0_int;
 
 	if (!len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -919,15 +919,15 @@ void *data, size_t len, unsigned int timeout)
 }
 
 static uint32_t
-diag_l0_muleng_getflags(struct diag_l0_device *dl0d)
+muleng_getflags(struct diag_l0_device *dl0d)
 {
 	/*
 	 * ISO14230/J1850 protocol does L2 framing, ISO9141 doesn't
 	 */
-	struct diag_l0_muleng_device *dev;
+	struct muleng_device *dev;
 	int flags;
 
-	dev = (struct diag_l0_muleng_device *)dl0d->l0_int;
+	dev = (struct muleng_device *)dl0d->l0_int;
 
 	flags = DIAG_L1_AUTOSPEED;
 	switch (dev->protocol)
@@ -964,17 +964,17 @@ const struct diag_l0 diag_l0_me = {
 	"MET16",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
 		DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
-	diag_l0_muleng_init,
+	muleng_init,
 	muleng_new,
 	muleng_getcfg,
 	muleng_del,
-	diag_l0_muleng_open,
-	diag_l0_muleng_close,
-	diag_l0_muleng_getflags,
-	diag_l0_muleng_recv,
-	diag_l0_muleng_send,
-	diag_l0_muleng_initbus,
+	muleng_open,
+	muleng_close,
+	muleng_getflags,
+	muleng_recv,
+	muleng_send,
+	muleng_initbus,
 	NULL,
-	diag_l0_muleng_setspeed,
+	muleng_setspeed,
 
 };
