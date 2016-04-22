@@ -644,6 +644,7 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 	int errval;
 	uint32_t addr;
 	uint32_t sent;	//count
+	uint32_t goodbytes;
 
 	if (!dest || (len==0)) return 0;
 
@@ -659,7 +660,7 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 	nisreq.data=txdata;
 	txi=2;
 	linecur = 0;
-
+	goodbytes = 0;
 	for (sent=0; sent < len; sent++, addr++) {
 		txdata[txi++]= 0x83;		//field type
 		txdata[txi++]= (uint8_t) (addr >> 24) & 0xFF;
@@ -710,6 +711,7 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 		//Now we got the reply to SID 21 : 61 81 x x x ...
 		memcpy(dest, &(rxmsg->data[2]), linecur);
 		dest = &dest[linecur];
+		goodbytes = sent;
 
 		if (rxmsg)
 			diag_freemsg(rxmsg);
@@ -724,7 +726,7 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 
 	}	//for
 
-	return sent;
+	return goodbytes;
 }
 
 //np 8 : (WIP) watch 4 bytes @ specified addr, using SID AC.
