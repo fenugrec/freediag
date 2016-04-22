@@ -816,6 +816,10 @@ cmd_scan(UNUSED(int argc), UNUSED(char **argv))
 	if (argc > 1)
 		return CMD_USAGE;
 
+	if (global_state == STATE_SCANDONE) {
+		printf("scan already done !\n");
+		return CMD_OK;
+	}
 	if (global_state == STATE_L3ADDED) {
 		if (global_l3_conn != NULL) {
 			if (strcmp(global_l3_conn->d_l3_proto->proto_name, "SAEJ1979") ==0) {
