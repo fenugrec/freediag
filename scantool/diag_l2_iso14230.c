@@ -840,8 +840,6 @@ static int
 diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int rv;
-	uint8_t csum;
-	unsigned int i;
 	size_t len;
 	uint8_t buf[MAXRBUF];
 	int offset=0;	//data payload starts at buf[offset}
@@ -922,9 +920,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 	if ((d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2CKSUM) == 0) {
 		/* We must add checksum, which is sum of bytes */
-		for (i = 0, csum = 0; i < len; i++)
-			csum += buf[i];
-		buf[len] = csum;
+		buf[len] = diag_cks1(buf, len);
 		len++;				/* + checksum */
 	}
 
