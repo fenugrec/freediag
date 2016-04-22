@@ -607,7 +607,8 @@ static int dumpmem(const char *froot, uint32_t start, uint32_t len, bool hackmod
 		printf("Using short headers.\n");
 		dlproto->modeflags &= ~ISO14230_LONGHDR;	//deactivate long headers
 	} else {
-		printf("cannot use hackmode; short headers not supported !\n");
+		printf("cannot use hackmode; short headers not supported ! Have you \"set addrtype phys\" ?\n"
+				"Using slow np_4 method as fallback.\n");
 		hackmode=0;	//won't work without short headers
 	}
 
