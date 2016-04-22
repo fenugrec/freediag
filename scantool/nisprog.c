@@ -346,26 +346,37 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 
 			printf("\n%08X: ", nextaddr);
 
-			int i, rqok=0;	//default to fail
+			int i, rqok;
 			//send the request "properly"
-			if (diag_l2_send(global_l2_conn, &nisreq)==0) {
-				//and get a response; we already know the max expected length:
-				// 0xEC 0x81 + 2 (short hdr) or +4 (full hdr).
-				// we'll request just 4 bytes so we return very fast;
-				// We should find 0xEC if it's in there no matter what kind of header.
-				// We'll "purge" the next bytes when we send SID 21
-				errval=diag_l1_recv(global_l2_conn->diag_link->l2_dl0d,
-						NULL, hackbuf, 4, 25);
-				if (errval == 4) {
-					//try to find 0xEC in the first bytes:
-					for (i=0; i<=3 && i<errval; i++) {
-						if (hackbuf[i] == 0xEC) {
-							rqok=1;
-							break;
-						}
+
+			rqok = diag_l2_send(global_l2_conn, &nisreq);
+			if (rqok) {
+				printf("\nhack mode : bad l2_send\n");
+				retryscore -= 25;
+				diag_os_millisleep(300);
+				(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+				break;	//out of for()
+			}
+
+			rqok=0;	//default to fail
+
+			//and get a response; we already know the max expected length:
+			// 0xEC 0x81 + 2 (short hdr) or +4 (full hdr).
+			// we'll request just 4 bytes so we return very fast;
+			// We should find 0xEC if it's in there no matter what kind of header.
+			// We'll "purge" the next bytes when we send SID 21
+			errval=diag_l1_recv(global_l2_conn->diag_link->l2_dl0d,
+					NULL, hackbuf, 4, 25);
+			if (errval == 4) {
+				//try to find 0xEC in the first bytes:
+				for (i=0; i<=3 && i<errval; i++) {
+					if (hackbuf[i] == 0xEC) {
+						rqok=1;
+						break;
 					}
 				}
-			}	// if l2_send ok
+			}
+
 			if (!rqok) {
 				printf("\nhack mode : bad AC response %02X %02X\n", hackbuf[0], hackbuf[1]);
 				retryscore -= 25;
