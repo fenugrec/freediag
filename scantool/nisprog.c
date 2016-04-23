@@ -300,7 +300,6 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 		// RX: {61 81 <n*data>} (4 + n) bytes.
 		// Total traffic : (6*n + 18) bytes on bus for <n> bytes RX'd
 	struct diag_msg nisreq={0};	//request to send
-	struct diag_msg *rxmsg=NULL;	//pointer to the reply
 	uint8_t txdata[64];	//data for nisreq
 	int errval;
 	int retryscore=100;	//successes increase this up to 100; failures decrease it.
@@ -484,8 +483,6 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 			nisreq.len=2;
 			txi=2;
 
-			if (rxmsg)
-				diag_freemsg(rxmsg);
 		}	//for
 		if (addr <= maxaddr) {
 			//the for loop didn't complete;
