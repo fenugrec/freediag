@@ -295,82 +295,17 @@ struct	diag_l2_data
 /* Add a msg to a L2 connection */
 void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
 
-/*
- * Public interface
- *
- * l2_Init()
- *	use:	call at start time to let layer 2 initialise itself
- *
- * l2_Close()
- *	use:	closes a L1 device -
- *
- * l2_startCommunication()
- *	use: 	starts up a session between here and an ECU
- *	params:	fd - l1 file descriptor, obtained from l2 open()
- *		L2protocol - see above - Type of L2 session this is (ISO14230,
- *				OBDII etc etc)
- *		type - see above
- *		bitrate - bit rate to use (bps) for normal communication
- *		target - target initialisation address
- *		source - source initialisation address
- *		rcv_call_back	L3 Routine to call with L2 messages as received
- * 	returns: struct diag_l2_conn for representing the connection
- *
- * l2_stopCommunications()
- *	use:	stop talking to an ECU;
- * 		undo anything done by l2_startcommunicatio()
- *
- * AccessTimingParameters()	//XXX This disappeared from 0.3 !?
- *	use:	change access timing parameter defaults
- *	params:	connection - the connection
- *
- *
- * send()
- *	use:	send a message
- *	params: connection  - The connection info, obtained from
- *			diag_l2_StartCommunication() routine
- *		msg	The message to send - NOTE, the source address MAY
- *			be ignored, the one specified to StartCommunications
- *			is used for certain L2 protocols
- *	returns: 0 on success, diag error number (<0) on error
- *
- * recv()
- *	use:	checks if there's anything to receive (and sleeps)
- *		should use select on the fd, and call this when it's ready
- *	params: connection  - The connection info, obtained from
- *			diag_l2_StartCommunication() routine
- *		timeout - approximate timeout in milliseconds
- *		callback Callback routine
- *		handle	Handle passed to callback routine
- *	returns: 0 always  or diag error on error
- *
- * request()
- * use: Send a message, and wait the appropriate time for a response and return
- *		that message or an error indicator. This calls the
- *		diag_l2_proto_request() function.
- *		This is important because some L2 protocols such as ISO
- *		will return a "request not yet complete", and this deals
- *		with that .. it also deals with getting the timeouts and
- *		everything else correct.
- *		It is also coded to return the received message, rather than
- *		use callbacks, so it's a different type of API to send/recv.
- *	params:	connection	- The L2 connection info
- *		msg		- The message to send
- *		*errval		- Place for error to be stored
- *
- *	returns: msg or NULL
- *
- * ioctl()
- *	use:	allows l3 to manipulate l1 info (speed, flags etc)
- *		mainly for raw interface
- *	params: connection  - The connection info, obtained from
- *			diag_l2_StartCommunication() routine
- *		command	- the thing to do
- *		data	- where to get (or put) the data
- *	returns: 0 if OK, diag error num (<0) on error
- *
+
+/* Public functions */
+
+/** Initialize L2 layer
+ * Must be called once before using any L2 function
  */
 int diag_l2_init(void);
+
+/** De-initialize L2 layer
+ * opposite of diag_l2_init(); call before unloading / exiting
+ */
 int diag_l2_end(void);
 
 /** Opens a layer 1 device for usage
@@ -381,30 +316,85 @@ int diag_l2_end(void);
  */
 int diag_l2_open(struct diag_l0_device *dl0d, int L1protocol);
 
+/** Close an L1 device
+ * @return 0 if ok
+ */
 int diag_l2_close(struct diag_l0_device *);
 
+/** Starts up a session with ECU
+ * @param L2protocol - see diag_l2.h - Type of L2 session (ISO14230,
+ *			SAE J1850, etc)
+ *	@param flags flags / type: see diag_l2.h
+ *	@param bitrate - bit rate to use (bps)
+ *	@param target - target initialisation address
+ *	@param source - source (tester) initialisation address
+ * 	@return a new struct diag_l2_conn for representing the connection
+ */
 struct diag_l2_conn * diag_l2_StartCommunications(struct diag_l0_device *, int L2protocol,
-	flag_type type, unsigned int bitrate, target_type target, source_type source );
+	flag_type flags, unsigned int bitrate, target_type target, source_type source );
 
+/** Stop talking to an ECU;
+ *
+ *	@return 0 if ok
+ *
+ *	This will undo anything done by l2_startcommunications()
+ */
 int diag_l2_StopCommunications(struct diag_l2_conn *);
 
+/** Send a message (blocking)
+ *	@param connection self-explanatory
+ *	@param msg same. NOTE, the source address MAY
+ *			be ignored, the one specified to StartCommunications
+ *			is used for certain L2 protocols
+ *	@return 0 on success, <0 on error
+*/
 int diag_l2_send(struct diag_l2_conn *connection, struct diag_msg *msg);
 
+/** Checks if there's anything to receive (blocking).
+ *	@param timeout in milliseconds
+ *	@param callback Callback routine if read succesful
+ *	@param handle : generic handle passed to callback
+ *	@return 0 on success
+ */
 int diag_l2_recv(struct diag_l2_conn *connection, unsigned int timeout,
 	void (* rcv_call_back)(void *, struct diag_msg *), void *handle );
 
+
+/** Send a message, and wait the appropriate time for a response.
+ *
+ *		This calls the
+ *		diag_l2_proto_request() function.
+ *		This is important because some L2 protocols such as ISO
+ *		will return a "request not yet complete", requiring a retry.
+ *		This function deals with that behavior, as well as getting the timeouts and
+ *		everything else correct.
+ *		It is also coded to return the received message, rather than
+ *		use callbacks; this provides a different (but non conflicting)
+ *		type of API compared to send / recv calls.
+ *
+ *	@param errval	Pointer to error result if applicable
+ *
+ *	@return a new msg if successful, or NULL + sets *errval if failed.
+ *
+ */
 struct diag_msg *diag_l2_request(struct diag_l2_conn *connection, struct diag_msg *msg,
 		int *errval);
 
+/** Send IOCTL to L2/L1
+ *	@param command : IOCTL #, defined in diag.h
+ *	@param data	optional input/output data
+ *	@return 0 if OK, diag error num (<0) on error
+ */
 int diag_l2_ioctl(struct diag_l2_conn *connection, unsigned int cmd, void *data);
+
 
 void diag_l2_timer(void);	/* Regular timer routine */
 
 extern int diag_l2_debug;
 extern struct diag_l2_conn  *global_l2_conn;	//TODO : move in globcfg struct
 
-/*
- * Interface to individual protocols
+/** L2 protocol descriptor
+ *
  * each diag_l2_???.c handler fills in one of these.
  */
 struct diag_l2_proto {
