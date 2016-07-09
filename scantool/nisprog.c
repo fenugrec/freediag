@@ -13,14 +13,14 @@
 
 
 //cmd_diag_nisprog : test Nissan-specific SIDs.
-//This is highly experimental, and only tested on a 2004 Sentra Spec V
+//This is experimental, and only tested on a handful of ECUs. So far it hasn't caused any permanent damage.
+//
 //My goal is to make a "nisprog" standalone program
 //that compiles against libdiag and packages these and other features, aimed
 //at dumping + reflashing ROMs.
 //
 //As-is, this is hack quality (low) code that "trespasses" levels to go faster, skips some
-//checks, and is generally not robust. But it does works on an old Win XP laptop, with a
-//USB->serial converter + dumb interface, so there's hope yet.
+//checks, and is generally not robust. But it does work on a few different hardware setups and ECUs.
 //Uses the global l2 connection.
 
 
@@ -834,7 +834,6 @@ int sid3480(void) {
 int sid36(uint8_t *buf, uint32_t len) {
 	uint8_t txdata[64];	//data for nisreq
 	struct diag_msg nisreq={0};	//request to send
-	struct diag_msg *rxmsg=NULL;	//pointer to the reply
 	int errval;
 	uint16_t blockno;
 	uint16_t maxblocks;
@@ -852,6 +851,7 @@ int sid36(uint8_t *buf, uint32_t len) {
 	nisreq.len= 4 + 32;
 
 	for (; len > 0; len -= 32, blockno += 1) {
+		uint8_t rxbuf[10];	//can't remember what the actual sid 36 response looks like
 
 		txdata[1] = blockno >> 8;
 		txdata[2] = blockno & 0xFF;
@@ -859,22 +859,36 @@ int sid36(uint8_t *buf, uint32_t len) {
 		memcpy(&txdata[4], buf, 32);
 		buf += 32;
 
-		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
-		if (rxmsg==NULL) {
-			printf("no response @ blockno %X\n", (unsigned) blockno);
+		//rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+		errval = diag_l2_send(global_l2_conn, &nisreq);
+		if (errval) {
+			printf("l2_send error!\n");
 			return -1;
 		}
 
-		if (rxmsg->data[0] != 0x76) {
-			printf("got bad 36 response : ");
-			diag_data_dump(stdout, rxmsg->data, rxmsg->len);
-			printf("\n");
-			diag_freemsg(rxmsg);
+		/* this will always time out since the response is probably always 5 bytes */
+		errval = diag_l1_recv(global_l2_conn->diag_link->l2_dl0d, NULL, rxbuf, sizeof(rxbuf), 25);
+		if (errval <= 3) {
+			printf("no response @ blockno %X\n", (unsigned) blockno);
+			(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 			return -1;
 		}
-		printf("\rSID36 block 0x%04X/0x%04X done (%02X %02X %02X...)",
-				(unsigned) blockno, (unsigned) maxblocks, txdata[0], txdata[1], txdata[2]);
-		diag_freemsg(rxmsg);
+
+		if (rxbuf[0] & 0x80) {
+			//with address : response looks like "<len | 0x80> <src> <dest> <resp>"
+			rxbuf[0] = rxbuf[3];
+		} else {
+			//no address : "<len> <resp> <cks>"
+			rxbuf[0] = rxbuf[1];
+		}
+		if (rxbuf[0] != 0x76) {
+			printf("got bad 36 response : ");
+			diag_data_dump(stdout, rxbuf, errval);
+			printf("\n");
+			return -1;
+		}
+		printf("\rSID36 block 0x%04X/0x%04X done",
+				(unsigned) blockno, (unsigned) maxblocks);
 	}
 	printf("\n");
 	fflush(stdout);
