@@ -243,7 +243,6 @@ int diag_cfgn_tty(struct cfgi *cfgp) {
 		return DIAG_ERR_GENERAL;
 
 	cfgp->refresh = &tty_refresh;
-	tty_refresh(cfgp);	//update default, etc
 	std_reset(cfgp);
 
 	return 0;
