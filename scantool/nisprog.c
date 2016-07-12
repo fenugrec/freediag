@@ -1075,6 +1075,227 @@ badexit:
 	return CMD_FAILED;
 }
 
+
+/** set speed + do startcomms,
+ * ret 0 if ok
+ */
+static int npkern_init(void) {
+	struct diag_serial_settings set;
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+
+	nisreq.data=txdata;
+
+	/* Assume kernel is freshly booted : setspeed first */
+
+	set.speed = 62500;
+	set.databits = diag_databits_8;
+	set.stopbits = diag_stopbits_1;
+	set.parflag = diag_par_n;
+
+	errval=diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_SETSPEED, (void *) &set);
+	if (errval) {
+		printf("could not setspeed\n");
+		return -1;
+	}
+
+
+	/* StartComm */
+	txdata[0] = 0x81;
+	nisreq.len = 1;
+	rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (!rxmsg) {
+		printf("npk startcomm failed : %d\n", errval);
+		return -1;
+	}
+	if (rxmsg->data[0] != 0xC1) {
+		printf("got bad SC response\n");
+		diag_freemsg(rxmsg);
+		return -1;
+	}
+	diag_freemsg(rxmsg);
+	return 0;
+}
+
+/** receive a bunch of dumpblocks (caller already send the dump request).
+ * doesn't write the first "skip_start" bytes
+ */
+static int npk_rxrawdump(uint8_t *dest, uint32_t skip_start, uint32_t numblocks) {
+	uint8_t rxbuf[260];
+	int errval;
+	uint32_t bi;
+
+	for(bi = 0; bi < numblocks; bi ++) {
+		//loop for every 32-byte response
+
+		/* grab header. Assumes we only get "FMT PRC <data> cks" replies */
+		errval = diag_l1_recv(global_l2_conn->diag_link->l2_dl0d, NULL, rxbuf, 3 + 32, 25);
+		if (errval < 0) {
+			printf("dl1recv err\n");
+			goto badexit;
+		}
+		uint8_t cks = diag_cks1(rxbuf, 2 + 32);
+		if ((errval != 35) || (rxbuf[0] != 0x21) || (rxbuf[1] != 0xFD) || (cks != rxbuf[34])) {
+			printf("no / incomplete / bad response\n");
+			diag_data_dump(stdout, rxbuf, errval);
+			printf("\n");
+			goto badexit;
+		}
+		uint32_t datapos = 2;	//position inside rxbuf
+		if (skip_start) {
+			datapos += skip_start;	//because start addr wasn't aligned
+			skip_start = 0;
+		}
+
+		uint32_t cplen = 34 - datapos;
+		memcpy(dest, &rxbuf[datapos], cplen);
+		dest += cplen;
+	}	//for
+	return 0;
+
+badexit:
+	return -1;
+}
+
+/* npkern-based fastdump (EEPROM / ROM) */
+/* np_9 must have been run first */
+/* TODO : add SID23 fallback for RAM */
+static int np_10(int argc, char **argv) {
+	uint32_t start, len;
+	uint16_t old_p4;
+	FILE *fpl;
+
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	int errval;
+
+	bool eep = 0;
+
+	nisreq.data=txdata;
+
+	if (argc < 5) {
+		printf("npk-fastdump. Usage: np 10 <output file> <start> <len> [eep]\n"
+				"ex.: \"np 10 eeprom_dump.bin 0 512 eep\"\n"
+				"ex.: \"np 10 romdump_ivt.bin 0 0x400\"\n");
+		return CMD_USAGE;
+	}
+
+	start = (uint32_t) htoi(argv[3]);
+	len = (uint32_t) htoi(argv[4]);
+	if (start > (0xFFFF * 32UL)) {
+		printf("start addr probably out of bounds\n");
+		return CMD_FAILED;
+	}
+	if (argc == 6) {
+		if (strcmp("eep", argv[5]) == 0) eep = 1;
+	}
+
+	if ((fpl = fopen(argv[2], "wb"))==NULL) {
+		printf("Cannot open %s !\n", argv[2]);
+		return CMD_FAILED;
+	}
+	old_p4 = global_l2_conn->diag_l2_p4min;
+	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
+
+	if (npkern_init()) {
+		printf("npk init failed\n");
+		goto badexit;
+	}
+
+	uint32_t skip_start = start & (32 - 1);	//if unaligned, we'll be receiving this many extra bytes
+	uint32_t iter_addr = start - skip_start;
+	uint32_t willget = (skip_start + len + 31) & ~(32 - 1);
+	uint32_t len_done = 0;	//total data written to file
+
+	txdata[0] = 0xBD;
+	txdata[1] = eep? 0 : 1;
+#define NP10_MAXBLKS	8	//# of blocks to request per loop. Too high might flood us
+	nisreq.len = 6;
+
+	while (willget) {
+		uint8_t buf[NP10_MAXBLKS * 32];
+
+		uint32_t numblocks;
+
+		numblocks = willget / 32;
+
+		if (numblocks > NP10_MAXBLKS) numblocks = NP10_MAXBLKS;	//ceil
+
+		txdata[2] = numblocks >> 8;
+		txdata[3] = numblocks >> 0;
+
+		uint32_t curblock = (iter_addr / 32);
+		txdata[4] = curblock >> 8;
+		txdata[5] = curblock >> 0;
+
+		errval = diag_l2_send(global_l2_conn, &nisreq);
+		if (errval) {
+			printf("l2_send error!\n");
+			goto badexit;
+		}
+
+		if (npk_rxrawdump(buf, skip_start, numblocks)) {
+			printf("rxrawdump failed\n");
+			goto badexit;
+		}
+
+		/* don't count skipped first bytes */
+		uint32_t cplen = (numblocks * 32) - skip_start;	//this is the actual # of valid bytes in buf[]
+		skip_start = 0;
+
+		/* and drop extra bytes at the end */
+		uint32_t extrabytes = (cplen + len_done);	//hypothetical new length
+		if (extrabytes > len) {
+			cplen -= (extrabytes - len);
+			//thus, (len_done + cplen) will not exceed len
+		}
+		uint32_t done = fwrite(buf, 1, cplen, fpl);
+		if (done != cplen) {
+			printf("fwrite error\n");
+			goto badexit;
+		}
+
+		/* increment addr, len, etc */
+		len_done += cplen;
+		iter_addr += (numblocks * 32);
+		willget -= (numblocks * 32);
+
+	}	//while
+
+
+
+	fclose(fpl);
+	global_l2_conn->diag_l2_p4min = old_p4;
+	return CMD_OK;
+
+badexit:
+	(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+	fclose(fpl);
+	global_l2_conn->diag_l2_p4min = old_p4;
+	return CMD_FAILED;
+}
+
+
+/* npkernel : reset ECU */
+static int np_11(UNUSED(int argc), UNUSED(char **argv)) {
+	uint8_t txdata[1];
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+
+	txdata[0]=0x11;
+	nisreq.len=1;
+	nisreq.data=txdata;
+
+	rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL) return CMD_FAILED;
+
+	(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+	return CMD_OK;
+}
+
 static int cmd_diag_nisprog(int argc, char **argv) {
 	unsigned testnum;
 	struct diag_msg nisreq={0};	//request to send
@@ -1177,6 +1398,12 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		break;
 	case 9:
 		return np_9(argc, argv);
+		break;
+	case 10:
+		return np_10(argc, argv);
+		break;
+	case 11:
+		return np_11(argc, argv);
 		break;
 	default:
 		return CMD_USAGE;
