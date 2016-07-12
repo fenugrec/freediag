@@ -1119,6 +1119,66 @@ static int npkern_init(void) {
 	return 0;
 }
 
+
+/** npkernel SID 23 ReadMemoryByAddress
+ * Supports addresses in two ranges :
+ * [0 - 0x7F FFFF]	(bottom 8MB)
+ * [0xFF80 0000 - 0xFFFF FFFF] (top 8MB)
+ * that's 24 bits of addressing space of course.
+ *
+ * Assumes init was done before
+ * ret 0 if ok
+ */
+static int npk_RMBA(uint8_t *dest, uint32_t addr, uint32_t len) {
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	struct diag_msg *rxmsg=NULL;	//pointer to the reply
+	int errval;
+
+	nisreq.data=txdata;
+
+	bool start_ROM = (addr < 0x800000);
+	bool not_ROM = !start_ROM;
+	bool start_RAM = (addr >= 0xFF800000);
+	bool not_RAM = !start_RAM;
+
+	if (((start_ROM) && ((addr + len) > 0x800000)) ||
+		(not_ROM && not_RAM)) {
+		printf("npk RMBA addr out of bounds\n");
+		return -1;
+	}
+
+	txdata[0] = 0x23;
+	nisreq.len = 5;
+
+	while (len) {
+		uint8_t curlen;
+		txdata[1] = addr >> 16;
+		txdata[2] = addr >> 8;
+		txdata[3] = addr >> 0;
+		curlen = len;
+		if (curlen > 251) curlen = 251;	//SID 23 limitation
+		txdata[4] = curlen;
+
+		rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+		if (!rxmsg) {
+			printf("npk sid23 failed : %d\n", errval);
+			return -1;
+		}
+		if ((rxmsg->data[0] != 0x63) || (rxmsg->len != curlen + 4)) {
+			printf("got bad / incomplete SID23 response\n");
+			diag_freemsg(rxmsg);
+			return -1;
+		}
+		memcpy(dest, &rxmsg->data[1], curlen);
+		diag_freemsg(rxmsg);
+		len -= curlen;
+	}
+	return 0;
+
+}
+
+
 /** receive a bunch of dumpblocks (caller already send the dump request).
  * doesn't write the first "skip_start" bytes
  */
@@ -1159,9 +1219,8 @@ badexit:
 	return -1;
 }
 
-/* npkern-based fastdump (EEPROM / ROM) */
+/* npkern-based fastdump (EEPROM / ROM / RAM) */
 /* np_9 must have been run first */
-/* TODO : add SID23 fallback for RAM */
 static int np_10(int argc, char **argv) {
 	uint32_t start, len;
 	uint16_t old_p4;
@@ -1172,6 +1231,7 @@ static int np_10(int argc, char **argv) {
 	int errval;
 
 	bool eep = 0;
+	bool ram = 0;
 
 	nisreq.data=txdata;
 
@@ -1184,12 +1244,16 @@ static int np_10(int argc, char **argv) {
 
 	start = (uint32_t) htoi(argv[3]);
 	len = (uint32_t) htoi(argv[4]);
-	if (start > (0xFFFF * 32UL)) {
-		printf("start addr probably out of bounds\n");
-		return CMD_FAILED;
-	}
+
+	if (start > 0xFF800000) ram = 1;
+
 	if (argc == 6) {
 		if (strcmp("eep", argv[5]) == 0) eep = 1;
+	}
+
+	if (ram && eep) {
+		printf("bad args\n");
+		return CMD_FAILED;
 	}
 
 	if ((fpl = fopen(argv[2], "wb"))==NULL) {
@@ -1230,15 +1294,22 @@ static int np_10(int argc, char **argv) {
 		txdata[4] = curblock >> 8;
 		txdata[5] = curblock >> 0;
 
-		errval = diag_l2_send(global_l2_conn, &nisreq);
-		if (errval) {
-			printf("l2_send error!\n");
-			goto badexit;
-		}
-
-		if (npk_rxrawdump(buf, skip_start, numblocks)) {
-			printf("rxrawdump failed\n");
-			goto badexit;
+		if (ram) {
+			errval = npk_RMBA(buf, iter_addr + skip_start, (numblocks * 32) - skip_start);
+			if (errval) {
+				printf("RMBA error!\n");
+				goto badexit;
+			}
+		} else {
+			errval = diag_l2_send(global_l2_conn, &nisreq);
+			if (errval) {
+				printf("l2_send error!\n");
+				goto badexit;
+			}
+			if (npk_rxrawdump(buf, skip_start, numblocks)) {
+				printf("rxrawdump failed\n");
+				goto badexit;
+			}
 		}
 
 		/* don't count skipped first bytes */
