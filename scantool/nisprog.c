@@ -1170,7 +1170,9 @@ static int npk_RMBA(uint8_t *dest, uint32_t addr, uint32_t len) {
 			return -1;
 		}
 		if ((rxmsg->data[0] != 0x63) || (rxmsg->len != curlen + 4)) {
-			printf("got bad / incomplete SID23 response\n");
+			printf("got bad / incomplete SID23 response:\n");
+			diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+			printf("\n");
 			diag_freemsg(rxmsg);
 			return -1;
 		}
@@ -1185,6 +1187,7 @@ static int npk_RMBA(uint8_t *dest, uint32_t addr, uint32_t len) {
 
 /** receive a bunch of dumpblocks (caller already send the dump request).
  * doesn't write the first "skip_start" bytes
+ * ret 0 if ok
  */
 static int npk_rxrawdump(uint8_t *dest, uint32_t skip_start, uint32_t numblocks) {
 	uint8_t rxbuf[260];
@@ -1396,7 +1399,9 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 	/* 2- program 128-byte chunks + verify each
 	 * 3- verify all
 	 */
-	 uint32_t remain = len;
+	uint8_t *orig_src = src;
+	uint32_t remain = len;
+	uint32_t orig_start = start;
 
 	uint8_t txdata[134];	//data for nisreq
 	struct diag_msg nisreq={0};	//request to send
@@ -1439,9 +1444,36 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 		start += 128;
 		src += 128;
 
-     }	//while len
-     printf("\n\tdone!\n");
-     return 0;
+	}	//while len
+    printf("\nWrite complete.\n");
+
+	/* verify */
+	remain = len;
+	start = orig_start;
+	src = orig_src;
+	while (remain) {
+		#define NP12_VBUFSIZ 4096
+		uint8_t vbuf[NP12_VBUFSIZ];
+		uint32_t vlen;
+		vlen = remain;
+		if (vlen > NP12_VBUFSIZ) vlen = NP12_VBUFSIZ;
+		errval = npk_RMBA(vbuf, start, vlen);
+		if (errval) {
+			printf("RMBA failed @ 0x%06X?\n", start);
+			return -1;
+		}
+		if (memcmp(vbuf, src, vlen) != 0) {
+			printf("Verify failed @ 0x%06X !\n", start);
+			return -1;
+		}
+		printf("\rVerifying 0x%06X (%3u %%)", start, (unsigned) 100 * (len - remain) / len);
+		remain -= vlen;
+		start += vlen;
+		src += vlen;
+	}
+	printf("\nDone !\n");
+
+	return 0;
 }
 
 #include "flashdefs.h"
