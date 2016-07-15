@@ -1156,13 +1156,13 @@ static int npk_RMBA(uint8_t *dest, uint32_t addr, uint32_t len) {
 	nisreq.len = 5;
 
 	while (len) {
-		uint8_t curlen;
+		uint32_t curlen;
 		txdata[1] = addr >> 16;
 		txdata[2] = addr >> 8;
 		txdata[3] = addr >> 0;
 		curlen = len;
 		if (curlen > 251) curlen = 251;	//SID 23 limitation
-		txdata[4] = curlen;
+		txdata[4] = (uint8_t) curlen;
 
 		rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
 		if (!rxmsg) {
