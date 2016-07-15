@@ -1076,11 +1076,12 @@ badexit:
 }
 
 
-/** set speed + do startcomms,
+/** set speed + do startcomms, sabotage L2 modeflags for short headers etc
  * ret 0 if ok
  */
 static int npkern_init(void) {
 	struct diag_serial_settings set;
+	struct diag_l2_14230 *dlproto;
 	uint8_t txdata[64];	//data for nisreq
 	struct diag_msg nisreq={0};	//request to send
 	struct diag_msg *rxmsg=NULL;	//pointer to the reply
@@ -1116,6 +1117,9 @@ static int npkern_init(void) {
 		return -1;
 	}
 	diag_freemsg(rxmsg);
+
+	dlproto = (struct diag_l2_14230 *)global_l2_conn->diag_l2_proto_data;
+	dlproto->modeflags = ISO14230_SHORTHDR | ISO14230_LENBYTE | ISO14230_FMTLEN;
 	return 0;
 }
 
@@ -1367,6 +1371,210 @@ static int np_11(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
+
+/* special checksum for reflash blocks:
+ * "one's complement" checksum; if adding causes a carry, add 1 to sum. Slightly better than simple 8bit sum
+ */
+static uint8_t cks_add8(uint8_t *data, unsigned len) {
+	uint16_t sum = 0;
+	for (; len; len--, data++) {
+		sum += *data;
+		if (sum & 0x100) sum += 1;
+		sum = (uint8_t) sum;
+	}
+	return sum;
+}
+
+
+/* ret 0 if ok. For use by np_12,
+ * assumes parameters have been validated,
+ * and appropriate block has been erased
+ */
+
+static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
+
+	/* 2- program 128-byte chunks + verify each
+	 * 3- verify all
+	 */
+	 uint32_t remain = len;
+
+	uint8_t txdata[134];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	int errval;
+	struct diag_msg *rxmsg;
+	nisreq.data = txdata;
+
+
+	 if ((len & (128 - 1)) ||
+		 (start & (128 - 1))) {
+		printf("error: misaligned start / length ! \n");
+		return -1;
+	 }
+
+	 txdata[0]=0xBC;
+	 txdata[1]=0x02;
+	 nisreq.len = 134;	//2 (header) + 3 (addr) + 128 (payload) + 1 (extra CRC)
+
+     while (remain) {
+        printf("\rwriting chunk @ 0x%06X (%3u %%)", start, (unsigned) 100 * (len - remain) / len);
+
+		txdata[2] = start >> 16;
+		txdata[3] = start >> 8;
+		txdata[4] = start >> 0;
+		memcpy(&txdata[5], src, 128);
+		txdata[133] = cks_add8(&txdata[2], 131);
+
+		rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+		if (rxmsg==NULL)
+			return -1;
+		if (rxmsg->data[0] != 0xFC) {
+			printf("got bad RequestDownload response : ");
+			diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+			printf("\n");
+			diag_freemsg(rxmsg);
+			return -1;
+		}
+
+		remain -= 128;
+		start += 128;
+		src += 128;
+
+     }	//while len
+     printf("\n\tdone!\n");
+     return 0;
+}
+
+#include "flashdefs.h"
+/* reflash a given block !
+ * XXX TODO : add last-chance cancel possibilty + warnings etc
+ */
+static int np_12(int argc, char **argv) {
+	uint16_t old_p4;
+
+	uint8_t txdata[64];	//data for nisreq
+	struct diag_msg nisreq={0};	//request to send
+	int errval;
+	struct diag_msg *rxmsg;
+
+	FILE *fpl;
+	uint8_t *newdata;	//file will be copied to this
+
+	unsigned blockno;
+	uint32_t start;
+	uint32_t len;
+
+	nisreq.data=txdata;
+
+	if (argc != 4) {
+		printf("npk-blockwrite. Usage: np 12 <data.bin> <blockno>\n"
+				"ex.: \"np 12 blk_0xE0000-0xFFFFF.bin 15\"\n");
+		return CMD_FAILED;
+	}
+
+	blockno = (unsigned) htoi(argv[3]);
+
+	if (blockno >= ARRAY_SIZE(fblocks_7058)) {
+		printf("block # out of range !\n");
+		return CMD_FAILED;
+	}
+
+	start = fblocks_7058[blockno].start;
+	len = fblocks_7058[blockno].len;
+
+	if ((fpl = fopen(argv[2], "rb"))==NULL) {
+		printf("Cannot open %s !\n", argv[2]);
+		return CMD_FAILED;
+	}
+
+	if ((uint32_t) flen(fpl) != len) {
+		printf("error : data file doesn't match expected block length %uk\n", (unsigned) len / 1024);
+		goto badexit_nofree;
+	}
+
+	if (diag_malloc(&newdata, len)) {
+		printf("malloc prob\n");
+		goto badexit_nofree;
+	}
+
+	if (fread(newdata, 1, len, fpl) != len) {
+		printf("fread prob !?\n");
+		goto badexit;
+	}
+
+	old_p4 = global_l2_conn->diag_l2_p4min;
+	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
+
+	if (npkern_init()) {
+		printf("npk init failed\n");
+		goto badexit;
+	}
+
+	/*for now, run in "practice mode" without calling the Unprotect SID.
+	*/
+
+	/* 1- requestdownload */
+	txdata[0]=0x34;
+	nisreq.len = 1;
+	rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		goto badexit;
+	if (rxmsg->data[0] != 0x74) {
+		printf("got bad RequestDownload response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
+		diag_freemsg(rxmsg);
+		goto badexit;
+	}
+
+	/* 2- Unprotect. TODO : use SID defines here and after */
+	txdata[0]=0xBC;
+	txdata[1]=0x55;
+	txdata[2]=0xaa;
+	nisreq.len = 3;
+	//rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+	printf("skipping Unprotect command\n");
+
+	/* 3- erase block */
+	printf("Erasing block %u (0x%06X-0x%06X)...\n",
+			blockno, (unsigned) start, (unsigned) start + len - 1);
+	txdata[0] = 0xBC;
+	txdata[1] = 0x01;
+	txdata[2] = blockno;
+	nisreq.len = 3;
+	rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		goto badexit;
+	if (rxmsg->data[0] != 0xFC) {
+		printf("got bad ERASE_BLOCK response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
+		diag_freemsg(rxmsg);
+		goto badexit;
+	}
+
+	/* 4- write */
+	errval = npk_raw_flashblock(newdata, start, len);
+	if (errval) {
+		printf("reflash error ! Do not panic, do not reset the ECU immediately. The kernel is "
+				"most likely still running and receiving commands !\n");
+		goto badexit;
+	}
+
+	printf("Reflash complete; you may dump the ROM again to be extra sure\n");
+	free(newdata);
+	fclose(fpl);
+	global_l2_conn->diag_l2_p4min = old_p4;
+	return CMD_OK;
+
+
+badexit:
+	free(newdata);
+badexit_nofree:
+	global_l2_conn->diag_l2_p4min = old_p4;
+	fclose(fpl);
+	return CMD_FAILED;
+}
+
 static int cmd_diag_nisprog(int argc, char **argv) {
 	unsigned testnum;
 	struct diag_msg nisreq={0};	//request to send
@@ -1475,6 +1683,9 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		break;
 	case 11:
 		return np_11(argc, argv);
+		break;
+	case 12:
+		return np_12(argc, argv);
 		break;
 	default:
 		return CMD_USAGE;
