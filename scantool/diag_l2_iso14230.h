@@ -52,6 +52,7 @@ struct diag_l2_14230
 					monitor mode when we need to find
 					out whether we see a CARB or normal
 					init */
+	bool monitor_mode;	/* if set, expect possible spurious 0x00 bytes caused by fastinit break */
 
 	uint8_t rxbuf[MAXRBUF];	/* Receive buffer, for building message in */
 	int rxoffset;		/* Offset to write into buffer */

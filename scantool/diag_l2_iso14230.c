@@ -339,7 +339,13 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 		/* Data received OK */
 		dp->rxoffset += rv;
 
-		if (dp->rxoffset && (dp->rxbuf[0] == '\0')) {
+		/* This was wrong : some valid 14230 frames can start with 0x00, and
+		 * would have their first byte deleted systematically.
+		 * Note, this is still wrong (monitor mode will still drop some valid frames),
+		 * but arguably less so.
+		 */
+		if (dp->monitor_mode &&
+			(dp->rxoffset && (dp->rxbuf[0] == 0))) {
 			/*
 			 * We get this when in
 			 * monitor mode and there is
@@ -516,6 +522,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		dp->modeflags |= ISO14230_FUNCADDR;
 
 	dp->first_frame = 0;
+	dp->monitor_mode = 0;
 
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr, FLFMT "_startcomms flags=0x%X tgt=0x%X src=0x%X\n",
@@ -713,6 +720,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	case DIAG_L2_TYPE_MONINIT:
 		/* Monitor mode, don't send anything */
 		dp->first_frame = 1;
+		dp->monitor_mode = 1;
 		dp->state = STATE_ESTABLISHED ;
 		rv = 0;
 		break;
