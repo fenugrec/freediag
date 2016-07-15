@@ -515,11 +515,8 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	if (flags & DIAG_L2_TYPE_FUNCADDR)
 		dp->modeflags |= ISO14230_FUNCADDR;
 
-	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2FRAME) {
-		dp->first_frame = 0;
-	} else {
-		dp->first_frame = 1;
-	}
+	dp->first_frame = 0;
+
 	if (diag_l2_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr, FLFMT "_startcomms flags=0x%X tgt=0x%X src=0x%X\n",
 			FL, flags, target, source);
@@ -715,6 +712,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		break;	//case _SLOWINIT
 	case DIAG_L2_TYPE_MONINIT:
 		/* Monitor mode, don't send anything */
+		dp->first_frame = 1;
 		dp->state = STATE_ESTABLISHED ;
 		rv = 0;
 		break;
