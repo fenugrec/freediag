@@ -179,7 +179,8 @@ struct diag_msg
 	uint8_t	type;		/* Type from received frame */
 	uint8_t	dest;		/* Destination from received frame */
 	uint8_t	src;		/* Source from received frame */
-	uint8_t	len;		/* calculated data length */
+
+	unsigned	len;		/* calculated data length */
 	uint8_t	*data;		/* The data; can be dynamically alloc'ed */
 
 	unsigned long	 rxtime;	/* Processed time, in ms given by diag_os_chronoms(0) */
@@ -195,7 +196,7 @@ struct diag_msg
 /** Allocate a new diag_msg
  *
  * Also allocates diag_msg-\>data if datalen\>0.
- * @param datalen: if \>0, size of data buffer to allocate. Max 255.
+ * @param datalen: if \>0, size of data buffer to allocate. Max DIAG_MAX_MSGLEN.
  * @return new struct diag_msg, must be freed with diag_freemsg().
  */
 struct diag_msg	*diag_allocmsg(size_t datalen);

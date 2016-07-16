@@ -309,7 +309,7 @@ diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	unsigned int sleeptime;
 	uint8_t txbuf[MAXRBUF];
 	uint16_t cksum;
-	int i;
+	unsigned i;
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,

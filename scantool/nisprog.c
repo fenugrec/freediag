@@ -1076,7 +1076,8 @@ badexit:
 }
 
 
-/** set speed + do startcomms, sabotage L2 modeflags for short headers etc
+/** set speed + do startcomms, sabotage L2 modeflags for short headers etc.
+ * Also disables keepalive
  * ret 0 if ok
  */
 static int npkern_init(void) {
@@ -1118,6 +1119,7 @@ static int npkern_init(void) {
 	}
 	diag_freemsg(rxmsg);
 
+	global_l2_conn->tinterval = -1;
 	dlproto = (struct diag_l2_14230 *)global_l2_conn->diag_l2_proto_data;
 	dlproto->modeflags = ISO14230_SHORTHDR | ISO14230_LENBYTE | ISO14230_FMTLEN;
 	return 0;

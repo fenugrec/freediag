@@ -388,14 +388,14 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 				&hdrlen, &datalen, &source, &dest,
 				dp->first_frame);
 
-			if (rv <= 0 || rv>255)		/* decode failure */
+			if (rv <= 0 || rv>260)		/* decode failure */
 				return diag_iseterr(rv);
 
 			// check for sufficient data: (rv = expected len = hdrlen + datalen + ckslen)
 			if (l1_doesl2frame == 0) {
-				if ((!(l1flags & DIAG_L1_STRIPSL2CKSUM) && (tmsg->len < rv)) ||
-						((l1flags & DIAG_L1_STRIPSL2CKSUM) && (tmsg->len < (rv-1))))
-					return diag_iseterr(DIAG_ERR_INCDATA);
+				unsigned expected_len = rv;
+				if (l1flags & DIAG_L1_STRIPSL2CKSUM) expected_len -= 1;
+				if (expected_len > tmsg->len) return diag_iseterr(DIAG_ERR_INCDATA);
 			}
 		}
 
@@ -406,7 +406,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 		 * we have misframed this message and it is infact
 		 * more than one message, so see if we can decode it
 		 */
-		if ((l1_doesl2frame == 0) && (rv < tmsg->len)) {
+		if ((l1_doesl2frame == 0) && (rv < (int) tmsg->len)) {
 			/*
 			 * This message contains more than one
 			 * data frame (because it arrived with

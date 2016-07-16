@@ -532,7 +532,7 @@ static char *
 diag_l3_j1979_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
 struct diag_msg *msg, char *buf, size_t bufsize)
 {
-	int i, j;
+	unsigned i, j;
 
 	char buf2[16];
 

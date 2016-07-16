@@ -99,7 +99,7 @@ diag_allocmsg(size_t datalen)
 {
 	struct diag_msg *newmsg;
 
-	if (datalen >= DIAG_MAX_MSGLEN) {
+	if (datalen > DIAG_MAX_MSGLEN) {
 		fprintf(stderr, FLFMT "_allocmsg with >%d bytes !? report this !\n", FL, DIAG_MAX_MSGLEN);
 		return diag_pseterr(DIAG_ERR_BADLEN);
 	}
