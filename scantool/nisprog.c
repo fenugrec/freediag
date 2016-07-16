@@ -1046,14 +1046,14 @@ int np_9(int argc, char **argv) {
 	}
 	printf("SID 36 done.\n");
 
-    /* SID 37 TransferExit */
-    if (sid37(cks)) {
+	/* SID 37 TransferExit */
+	if (sid37(cks)) {
 		printf("sid 37 problem\n");
 		goto badexit;
-    }
-    printf("SID 37 done.\n");
+	}
+	printf("SID 37 done.\n");
 
-    /* shit gets real here : RAMjump ! */
+	/* shit gets real here : RAMjump ! */
 	if (sidBF()) {
 		printf("RAMjump problem\n");
 		goto badexit;
@@ -1410,22 +1410,22 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 	uint8_t txdata[134];	//data for nisreq
 	struct diag_msg nisreq={0};	//request to send
 	int errval;
-	struct diag_msg *rxmsg;
 	nisreq.data = txdata;
 
 
-	 if ((len & (128 - 1)) ||
-		 (start & (128 - 1))) {
+	if ((len & (128 - 1)) ||
+		(start & (128 - 1))) {
 		printf("error: misaligned start / length ! \n");
 		return -1;
-	 }
+	}
 
-	 txdata[0]=0xBC;
-	 txdata[1]=0x02;
-	 nisreq.len = 134;	//2 (header) + 3 (addr) + 128 (payload) + 1 (extra CRC)
+	txdata[0]=0xBC;
+	txdata[1]=0x02;
+	nisreq.len = 134;	//2 (header) + 3 (addr) + 128 (payload) + 1 (extra CRC)
 
-     while (remain) {
-        printf("\rwriting chunk @ 0x%06X (%3u %%)", start, (unsigned) 100 * (len - remain) / len);
+	while (remain) {
+		uint8_t rxbuf[10];
+		printf("\rwriting chunk @ 0x%06X (%3u %%)", start, (unsigned) 100 * (len - remain) / len);
 
 		txdata[2] = start >> 16;
 		txdata[3] = start >> 8;
@@ -1433,14 +1433,26 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 		memcpy(&txdata[5], src, 128);
 		txdata[133] = cks_add8(&txdata[2], 131);
 
-		rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
-		if (rxmsg==NULL)
+		errval = diag_l2_send(global_l2_conn, &nisreq);
+		if (errval) {
+			printf("l2_send error!\n");
 			return -1;
-		if (rxmsg->data[0] != 0xFC) {
-			printf("got bad RequestDownload response : ");
-			diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		}
+
+		/* expect exactly 3 bytes, but with generous timeout */
+		//rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+		errval = diag_l1_recv(global_l2_conn->diag_link->l2_dl0d, NULL, rxbuf, 3, 300);
+		if (errval <= 0) {
+			printf("no response @ %X\n", (unsigned) start);
+			(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+			return -1;
+		}
+		if ((errval < 3) ||
+			(rxbuf[1] != 0xFC)) {
+			printf("no/incomplete/bad response @ %X\n", (unsigned) start);
+			(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+			diag_data_dump(stdout, rxbuf, errval);
 			printf("\n");
-			diag_freemsg(rxmsg);
 			return -1;
 		}
 
@@ -1449,7 +1461,7 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 		src += 128;
 
 	}	//while len
-    printf("\nWrite complete.\n");
+	printf("\nWrite complete.\n");
 
 	/* verify */
 	remain = len;
@@ -1663,7 +1675,7 @@ static int cmd_diag_nisprog(int argc, char **argv) {
 		return np_1(argc, argv);
 		break;
 	case 2:
-        return np_2(argc, argv);
+		return np_2(argc, argv);
 		break;
 	case 3:
 		//SID A4: dump the first 256-byte page,
