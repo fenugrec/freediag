@@ -1181,6 +1181,8 @@ static int npk_RMBA(uint8_t *dest, uint32_t addr, uint32_t len) {
 		memcpy(dest, &rxmsg->data[1], curlen);
 		diag_freemsg(rxmsg);
 		len -= curlen;
+		dest += curlen;
+		addr += curlen;
 	}
 	return 0;
 
