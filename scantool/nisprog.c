@@ -1102,7 +1102,7 @@ static int npkern_init(void) {
 		printf("could not setspeed\n");
 		return -1;
 	}
-
+	(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 
 	/* StartComm */
 	txdata[0] = 0x81;
@@ -1487,6 +1487,15 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 		uint32_t vlen;
 		unsigned curspeed, tleft;
 
+			chrono = diag_os_getms() - t0;
+		if (!chrono) chrono += 1;
+		curspeed = 1000 * (len - remain) / chrono;	//avg B/s
+		if (!curspeed) curspeed += 1;
+		tleft = remain / curspeed;	//s
+
+		printf("\rVerifying 0x%06X (%3u%% done, %4u B/s, ~ %4u s remaining)\t", start, (unsigned) 100 * (len - remain) / len,
+				curspeed, tleft);
+
 		vlen = remain;
 		if (vlen > NP12_VBUFSIZ) vlen = NP12_VBUFSIZ;
 		errval = npk_RMBA(vbuf, start, vlen);
@@ -1499,14 +1508,6 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 			return -1;
 		}
 
-		chrono = diag_os_getms() - t0;
-		if (!chrono) chrono += 1;
-		curspeed = 1000 * (len - remain) / chrono;	//avg B/s
-		if (!curspeed) curspeed += 1;
-		tleft = remain / curspeed;	//s
-
-		printf("\rVerifying 0x%06X (%3u%% done, %4u B/s, ~ %4u s remaining)\t", start, (unsigned) 100 * (len - remain) / len,
-				curspeed, tleft);
 		remain -= vlen;
 		start += vlen;
 		src += vlen;
