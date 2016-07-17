@@ -1120,6 +1120,7 @@ static int npkern_init(void) {
 	diag_freemsg(rxmsg);
 
 	global_l2_conn->tinterval = -1;
+	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
 	dlproto = (struct diag_l2_14230 *)global_l2_conn->diag_l2_proto_data;
 	dlproto->modeflags = ISO14230_SHORTHDR | ISO14230_LENBYTE | ISO14230_FMTLEN;
 	return 0;
@@ -1231,10 +1232,10 @@ badexit:
 }
 
 /* npkern-based fastdump (EEPROM / ROM / RAM) */
-/* np_9 must have been run first */
+/* kernel must be running first (np 9)*/
 static int np_10(int argc, char **argv) {
 	uint32_t start, len;
-	uint16_t old_p4;
+	uint16_t old_p3;
 	FILE *fpl;
 
 	uint8_t txdata[64];	//data for nisreq
@@ -1271,8 +1272,8 @@ static int np_10(int argc, char **argv) {
 		printf("Cannot open %s !\n", argv[2]);
 		return CMD_FAILED;
 	}
-	old_p4 = global_l2_conn->diag_l2_p4min;
-	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
+	old_p3 = global_l2_conn->diag_l2_p3min;
+	global_l2_conn->diag_l2_p3min = 0;	//0 delay before sending new request
 
 	if (npkern_init()) {
 		printf("npk init failed\n");
@@ -1359,13 +1360,13 @@ static int np_10(int argc, char **argv) {
 	printf("\n");
 
 	fclose(fpl);
-	global_l2_conn->diag_l2_p4min = old_p4;
+	global_l2_conn->diag_l2_p3min = old_p3;
 	return CMD_OK;
 
 badexit:
 	(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 	fclose(fpl);
-	global_l2_conn->diag_l2_p4min = old_p4;
+	global_l2_conn->diag_l2_p3min = old_p3;
 	return CMD_FAILED;
 }
 
@@ -1532,8 +1533,6 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
  * XXX TODO : add last-chance cancel possibilty + warnings etc
  */
 static int np_12(int argc, char **argv) {
-	uint16_t old_p4;
-
 	uint8_t txdata[64];	//data for nisreq
 	struct diag_msg nisreq={0};	//request to send
 	int errval;
@@ -1593,9 +1592,6 @@ static int np_12(int argc, char **argv) {
 		printf("fread prob !?\n");
 		goto badexit;
 	}
-
-	old_p4 = global_l2_conn->diag_l2_p4min;
-	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
 
 	if (npkern_init()) {
 		printf("npk init failed\n");
@@ -1682,7 +1678,6 @@ static int np_12(int argc, char **argv) {
 	printf("Reflash complete; you may dump the ROM again to be extra sure\n");
 	free(newdata);
 	fclose(fpl);
-	global_l2_conn->diag_l2_p4min = old_p4;
 	return CMD_OK;
 
 badexit_reprotect:
@@ -1690,7 +1685,6 @@ badexit_reprotect:
 badexit:
 	free(newdata);
 badexit_nofree:
-	global_l2_conn->diag_l2_p4min = old_p4;
 	fclose(fpl);
 	return CMD_FAILED;
 }
