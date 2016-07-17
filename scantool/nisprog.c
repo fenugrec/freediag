@@ -1412,6 +1412,7 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 	int errval;
 	nisreq.data = txdata;
 
+	unsigned long t0, chrono;
 
 	if ((len & (128 - 1)) ||
 		(start & (128 - 1))) {
@@ -1423,9 +1424,21 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 	txdata[1]=0x02;
 	nisreq.len = 134;	//2 (header) + 3 (addr) + 128 (payload) + 1 (extra CRC)
 
+	t0 = diag_os_getms();
+
+
 	while (remain) {
 		uint8_t rxbuf[10];
-		printf("\rwriting chunk @ 0x%06X (%3u %%)", start, (unsigned) 100 * (len - remain) / len);
+		unsigned curspeed, tleft;
+
+		chrono = diag_os_getms() - t0;
+		if (!chrono) chrono += 1;
+		curspeed = 1000 * (len - remain) / chrono;	//avg B/s
+		if (!curspeed) curspeed += 1;
+		tleft = remain / curspeed;	//s
+
+		printf("\rwriting chunk @ 0x%06X (%3u %%, %4u B/s, ~ %4u s remaining)", start, (unsigned) 100 * (len - remain) / len,
+				curspeed, tleft);
 
 		txdata[2] = start >> 16;
 		txdata[3] = start >> 8;
@@ -1467,10 +1480,13 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 	remain = len;
 	start = orig_start;
 	src = orig_src;
+	t0 = diag_os_getms();
 	while (remain) {
 		#define NP12_VBUFSIZ 4096
 		uint8_t vbuf[NP12_VBUFSIZ];
 		uint32_t vlen;
+		unsigned curspeed, tleft;
+
 		vlen = remain;
 		if (vlen > NP12_VBUFSIZ) vlen = NP12_VBUFSIZ;
 		errval = npk_RMBA(vbuf, start, vlen);
@@ -1482,7 +1498,15 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 			printf("Verify failed @ 0x%06X !\n", start);
 			return -1;
 		}
-		printf("\rVerifying 0x%06X (%3u %%)", start, (unsigned) 100 * (len - remain) / len);
+
+		chrono = diag_os_getms() - t0;
+		if (!chrono) chrono += 1;
+		curspeed = 1000 * (len - remain) / chrono;	//avg B/s
+		if (!curspeed) curspeed += 1;
+		tleft = remain / curspeed;	//s
+
+		printf("\rVerifying 0x%06X (%3u%% done, %4u B/s, ~ %4u s remaining)\t", start, (unsigned) 100 * (len - remain) / len,
+				curspeed, tleft);
 		remain -= vlen;
 		start += vlen;
 		src += vlen;
