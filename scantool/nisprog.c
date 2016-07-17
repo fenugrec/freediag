@@ -981,6 +981,7 @@ int np_9(int argc, char **argv) {
 	uint32_t sid36key;
 	uint32_t file_len;
 	uint32_t pl_len;
+	uint16_t old_p3;
 	uint16_t old_p4;
 	FILE *fpl;
 	uint8_t *pl_encr;	//encrypted payload buffer
@@ -1022,6 +1023,8 @@ int np_9(int argc, char **argv) {
 
 	old_p4 = global_l2_conn->diag_l2_p4min;
 	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
+	old_p3 = global_l2_conn->diag_l2_p3min;
+	global_l2_conn->diag_l2_p3min = 5;	//0 delay before new req
 
 	/* re-use NP 7 to get the SID27 done */
 	if (np_6_7(1, argv, 1, sid27key) != CMD_OK) {
@@ -1060,6 +1063,7 @@ int np_9(int argc, char **argv) {
 	}
 
 	global_l2_conn->diag_l2_p4min = old_p4;
+	global_l2_conn->diag_l2_p3min = old_p3;
 	free(pl_encr);
 	fclose(fpl);
 
@@ -1070,6 +1074,7 @@ int np_9(int argc, char **argv) {
 
 badexit:
 	global_l2_conn->diag_l2_p4min = old_p4;
+	global_l2_conn->diag_l2_p3min = old_p3;
 	free(pl_encr);
 	fclose(fpl);
 	return CMD_FAILED;
@@ -1531,7 +1536,6 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 
 #include "flashdefs.h"
 /* reflash a given block !
- * XXX TODO : add last-chance cancel possibilty + warnings etc
  */
 static int np_12(int argc, char **argv) {
 	uint8_t txdata[64];	//data for nisreq
