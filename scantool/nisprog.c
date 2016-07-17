@@ -1536,11 +1536,14 @@ static int np_12(int argc, char **argv) {
 	uint32_t start;
 	uint32_t len;
 
+	bool for_real = 0;	//actually erase + write flash if set
+
 	nisreq.data=txdata;
 
-	if (argc != 4) {
-		printf("npk-blockwrite. Usage: np 12 <data.bin> <blockno>\n"
-				"ex.: \"np 12 blk_0xE0000-0xFFFFF.bin 15\"\n");
+	if (argc <= 3) {
+		printf("npk-blockwrite. Usage: np 12 <data.bin> <blockno> [Y]\n"
+				"If 'Y' is absent, will run in \"practice\" mode (no erase / write).\n"
+				"ex.: \"np 12 blk_0xE0000-0xFFFFF.bin 15 Y\"\n");
 		return CMD_FAILED;
 	}
 
@@ -1562,6 +1565,13 @@ static int np_12(int argc, char **argv) {
 	if ((uint32_t) flen(fpl) != len) {
 		printf("error : data file doesn't match expected block length %uk\n", (unsigned) len / 1024);
 		goto badexit_nofree;
+	}
+
+	if (argc == 5) {
+		if (argv[4][0] == 'Y') printf("*** FLASH WILL BE MODIFIED ***\n");
+		for_real = 1;
+	} else {
+		printf("*** Running in practice mode, flash will not be modified ***\n");
 	}
 
 	if (diag_malloc(&newdata, len)) {
@@ -1605,7 +1615,19 @@ static int np_12(int argc, char **argv) {
 	txdata[2]=0xaa;
 	nisreq.len = 3;
 	//rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
-	printf("skipping Unprotect command\n");
+	if (for_real) {
+		(void) diag_os_ipending();	//must be done outside the loop first
+		printf("*** Last chance : operation will be safely aborted in 3 seconds. ***\n"
+				"*** Press enter (within 3 seconds) to MODIFY FLASH ***\n");
+		diag_os_millisleep(3000);
+		if (diag_os_ipending()) {
+			printf("Proceeding with flash process.\n");
+		} else {
+			printf("Operation aborted; flash was not modified.\n");
+			goto badexit;
+		}
+
+	}
 
 	/* 3- erase block */
 	printf("Erasing block %u (0x%06X-0x%06X)...\n",
