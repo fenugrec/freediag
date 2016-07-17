@@ -1620,11 +1620,6 @@ static int np_12(int argc, char **argv) {
 	}
 
 	/* 2- Unprotect. TODO : use SID defines here and after */
-	txdata[0]=0xBC;
-	txdata[1]=0x55;
-	txdata[2]=0xaa;
-	nisreq.len = 3;
-	//rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
 	if (for_real) {
 		(void) diag_os_ipending();	//must be done outside the loop first
 		printf("*** Last chance : operation will be safely aborted in 3 seconds. ***\n"
@@ -1638,6 +1633,21 @@ static int np_12(int argc, char **argv) {
 		}
 
 	}
+	txdata[0]=0xBC;
+	txdata[1]=0x55;
+	txdata[2]=0xaa;
+	nisreq.len = 3;
+	rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+	if (rxmsg==NULL)
+		goto badexit_reprotect;
+	if (rxmsg->data[0] != 0xFC) {
+		printf("got bad RequestDownload response : ");
+		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+		printf("\n");
+		diag_freemsg(rxmsg);
+		goto badexit_reprotect;
+	}
+	printf("Entered flashing_enabled mode\n");
 
 	/* 3- erase block */
 	printf("Erasing block %u (0x%06X-0x%06X)...\n",
@@ -1646,15 +1656,19 @@ static int np_12(int argc, char **argv) {
 	txdata[1] = 0x01;
 	txdata[2] = blockno;
 	nisreq.len = 3;
+	/* Problem : erasing can take a lot more than the default P2max for iso14230 */
+	uint16_t old_p2max = global_l2_conn->diag_l2_p2max;
+	global_l2_conn->diag_l2_p2max = 1000;
 	rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+	global_l2_conn->diag_l2_p2max = old_p2max;	//restore p2max; the rest should be OK
 	if (rxmsg==NULL)
-		goto badexit;
+		goto badexit_reprotect;
 	if (rxmsg->data[0] != 0xFC) {
 		printf("got bad ERASE_BLOCK response : ");
 		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
 		printf("\n");
 		diag_freemsg(rxmsg);
-		goto badexit;
+		goto badexit_reprotect;
 	}
 
 	/* 4- write */
@@ -1662,7 +1676,7 @@ static int np_12(int argc, char **argv) {
 	if (errval) {
 		printf("reflash error ! Do not panic, do not reset the ECU immediately. The kernel is "
 				"most likely still running and receiving commands !\n");
-		goto badexit;
+		goto badexit_reprotect;
 	}
 
 	printf("Reflash complete; you may dump the ROM again to be extra sure\n");
@@ -1671,7 +1685,8 @@ static int np_12(int argc, char **argv) {
 	global_l2_conn->diag_l2_p4min = old_p4;
 	return CMD_OK;
 
-
+badexit_reprotect:
+	npkern_init();	//forces the kernel to disable write mode
 badexit:
 	free(newdata);
 badexit_nofree:
