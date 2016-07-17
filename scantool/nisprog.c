@@ -1121,6 +1121,7 @@ static int npkern_init(void) {
 
 	global_l2_conn->tinterval = -1;
 	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
+	global_l2_conn->diag_l2_p3min = 5;	//5ms before sending new requests
 	dlproto = (struct diag_l2_14230 *)global_l2_conn->diag_l2_proto_data;
 	dlproto->modeflags = ISO14230_SHORTHDR | ISO14230_LENBYTE | ISO14230_FMTLEN;
 	return 0;
