@@ -1289,10 +1289,21 @@ static int np_10(int argc, char **argv) {
 #define NP10_MAXBLKS	8	//# of blocks to request per loop. Too high might flood us
 	nisreq.len = 6;
 
+	unsigned t0 = diag_os_getms();
+
 	while (willget) {
 		uint8_t buf[NP10_MAXBLKS * 32];
-
 		uint32_t numblocks;
+
+		unsigned curspeed, tleft;
+		unsigned long chrono;
+
+		chrono = diag_os_getms() - t0;
+		if (!chrono) chrono += 1;
+		curspeed = 1000 * len_done / chrono;	//avg B/s
+		if (!curspeed) curspeed += 1;
+		tleft = willget / curspeed;	//s
+		printf("\rnpk dump @ 0x%08X, %5u B/s, %5u s remaining", iter_addr, curspeed, tleft);
 
 		numblocks = willget / 32;
 
@@ -1345,8 +1356,7 @@ static int np_10(int argc, char **argv) {
 		willget -= (numblocks * 32);
 
 	}	//while
-
-
+	printf("\n");
 
 	fclose(fpl);
 	global_l2_conn->diag_l2_p4min = old_p4;
@@ -1487,7 +1497,7 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 		uint32_t vlen;
 		unsigned curspeed, tleft;
 
-			chrono = diag_os_getms() - t0;
+		chrono = diag_os_getms() - t0;
 		if (!chrono) chrono += 1;
 		curspeed = 1000 * (len - remain) / chrono;	//avg B/s
 		if (!curspeed) curspeed += 1;
