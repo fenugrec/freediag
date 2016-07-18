@@ -658,7 +658,7 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 	txi=2;
 	linecur = 0;
 	goodbytes = 0;
-	for (sent=0; sent < len; sent++, addr++) {
+	for (sent=0; sent < len; addr++) {
 		txdata[txi++]= 0x83;		//field type
 		txdata[txi++]= (uint8_t) (addr >> 24) & 0xFF;
 		txdata[txi++]= (uint8_t) (addr >> 16) & 0xFF;
@@ -666,9 +666,9 @@ uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len) {
 		txdata[txi++]= (uint8_t) (addr & 0xFF);
 		nisreq.len += 5;
 		linecur += 1;
-
+		sent++;
 		//request 12 addresses at a time, or whatever's left at the end
-		if ((linecur != 0x0c) && ((sent +1) != len))
+		if ((linecur != 0x0c) && (sent != len))
 			continue;
 
 		rxmsg=diag_l2_request(global_l2_conn, &nisreq, &errval);
