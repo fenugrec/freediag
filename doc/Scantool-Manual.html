@@ -81,8 +81,8 @@
   
   <p>Support for CANbus (ISO 15765) is incomplete and unusable.
   
-  <p>Please refer to the "supported interfaces" document to determine which
-  interface support what protocols.
+  <p>Please refer to <a href="Supported-Interfaces.html">Supported Interfaces</a> to determine which
+  protocols are supported by each interface type.
 
   <br><br>
   <a name="build"></a>
@@ -279,23 +279,12 @@
     <tr><th colspan="2">Set Sub-Menu</th></tr>
 	<tr>
 	<td><code>show</code></td>
-	<td>Show all "setable" values</td>
+	<td>Show all "setable" values. Note : some L0 drivers add specific configurable items,  see <a href="Supported-Interfaces.html#supported">Supported Interfaces</a></td>
 	</tr>
 
 	<tr>
-	<td><code>interface NAME [dev]</td></code>
-	<td>Shows/Sets the interface and device to use. Use set interface ? to get a list of names</td>
-	</tr>
-
-	<tr>
-	<td><code>dumbopts [opts]</td></code>
-	<td>Sets dumb-interface-specific options. Use set dumbopts ? to get details.<br>
-		See <a href="dumb_interfaces.txt">doc/dumb_interfaces.txt</a> for further information</td>
-	</tr>
-	
-	<tr>
-	<td><code>simfile [filename]</td></code>
-	<td>Select simulation file to use as data input. See freediag_carsim_all.db for an example</td>
+	<td><code>interface [NAME]</td></code>
+	<td>Shows/Sets the interface type. Use set interface ? to get a list of names</td>
 	</tr>
 
 	<tr>

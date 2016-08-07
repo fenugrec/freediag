@@ -129,6 +129,17 @@ to allow any protocol to be used. In some cases they can also be faster than "sm
   <a href="http://jeff.noxon.cc/2013/05/18/opendiag-obd-ii-schematics-pcb-layout/">
 		http://jeff.noxon.cc/2013/05/18/opendiag-obd-ii-schematics-pcb-layout/</a><br>
 This site shows you how to build a generic serial to ISO9141 interface.<br>
+	<br> List of configurable items in "set" submenu :
+	<table><tr>
+	<td><code>dumbopts [opts]</td></code>
+	<td>Sets dumb-interface-specific options. Use set dumbopts ? to get details.<br>
+		See <a href="dumb_interfaces.txt">doc/dumb_interfaces.txt</a> for further information</td>
+	</tr>
+	<tr>
+	<td><code>port [devname]</td></code>
+	<td>Sets serial port to use. "port ?" will show auto-detected ports not currently in use.</td>
+	</tr>
+	</table>
     <br>
     Availability : various vendors, or DIY projects<br><br>
     <li>B.Roadman ISO9141/VPW/PWM interface:<br>
@@ -142,6 +153,12 @@ This site shows you how to build a generic serial to ISO9141 interface.<br>
     hardware to the project.<br>
     These qualify as "smart" interfaces.<br>
     Availability: questionable<br>
+    <br> List of configurable items in "set" submenu :
+    	<table><tr>
+	<td><code>port [devname]</td></code>
+	<td>Sets serial port to use. "port ?" will show auto-detected ports not currently in use.</td>
+	</tr>
+	</table>
     <br>
     <li>Multiplex Engineering VPW, PWM, and ISO 9141-2 interface:<br>
     <a href="http://multiplex-engineering.com/obd2-interfaces/">http://multiplex-engineering.com/obd2-interfaces/</a><br>
@@ -173,6 +190,12 @@ This site shows you how to build a generic serial to ISO9141 interface.<br>
     freediag, it worked on a modern Sony Laptop but not on various branded PCs
     tested.<br>
     Availability: See website<br>
+    <br> List of configurable items in "set" submenu :
+    	<table><tr>
+	<td><code>port [devname]</td></code>
+	<td>Sets serial port to use. "port ?" will show auto-detected ports not currently in use.</td>
+	</tr>
+	</table>
     <br>
      <li>ELM32* based interfaces:<br>
     <a href="http://elmelectronics.com/obdic.html">http://elmelectronics.com/obdic.html</a><br>
@@ -183,6 +206,12 @@ This site shows you how to build a generic serial to ISO9141 interface.<br>
     IC. Most cheap devices sold on eBay / Amazon will be clones.<br>
     These qualify as "smart" interfaces.<br>
     Availabilty: IC by itself direct from vendor, or assembled interfaces from various third parties<br>
+    <br> List of configurable items in "set" submenu :
+    	<table><tr>
+	<td><code>port [devname]</td></code>
+	<td>Sets serial port to use. "port ?" will show auto-detected ports not currently in use.</td>
+	</tr>
+	</table>
     <br>
     <br>
     <li>CARSIM interface:<br>
@@ -198,6 +227,13 @@ answers for it, it simulates the responses from the car. I included a
 simple parsing mechanism to simulate whatever test values we want by
 placing a few text tokens inside the response sequences, which get
 translated into byte values through specific functions.<br>
+	<br> List of configurable items in "set" submenu :
+	<table>
+	<tr>
+	<td><code>simfile [filename]</td></code>
+	<td>Select simulation file to use as data input. See freediag_carsim_all.db for an example</td>
+	</tr>
+	</table>
 
   </ol>
   
