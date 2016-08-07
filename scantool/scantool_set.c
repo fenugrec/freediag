@@ -122,10 +122,10 @@ const struct cmd_tbl_entry set_cmd_table[] =
 	{ "addrtype", "addrtype [func/phys]", "Address type, physical or functional.",
 		cmd_set_addrtype, 0, NULL},
 
-	{ "l1protocol", "l1protocol [protocolname]", "Hardware (L1) protocol to use. Use 'set initmode ?' to show valid choices.",
+	{ "l1protocol", "l1protocol [protocolname]", "Hardware (L1) protocol to use. Use 'set l1protocol ?' to show valid choices.",
 		cmd_set_l1protocol, 0, NULL},
 
-	{ "l2protocol", "l2protocol [protocolname]", "Software (L2) protocol to use. Use 'set initmode ?' to show valid choices.",
+	{ "l2protocol", "l2protocol [protocolname]", "Software (L2) protocol to use. Use 'set l2protocol ?' to show valid choices.",
 		cmd_set_l2protocol, 0, NULL},
 
 	{ "initmode", "initmode [modename]", "Bus initialisation mode to use. Use 'set initmode ?' to show valid choices.",
