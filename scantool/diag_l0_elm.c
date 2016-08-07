@@ -6,7 +6,7 @@
  * Work in progress.
  *
  *This is meant to support ELM323 & 327 devices; clones and originals.
- * COM speed is "autodetected" (it tries 9600 and 38400bps).
+ * COM speed is "autodetected" (it tries 9600, 38400 and 115200bps).
  *
  *ELM interfaces are particular in that they handle the header bytes + checksum internally.
  *Data is transferred in ASCII hex format, i.e. 0x46 0xFE is sent and received as "46FE"
@@ -63,7 +63,6 @@ struct elm_device {
 #define ELM_323_BASIC	1	//device type is 323
 #define ELM_327_BASIC	2	//device type is 327
 #define ELM_32x_CLONE	4	 //device is a clone; some commands will not be supported
-#define ELM_38400	8	//device is using 38.4kbps; default is 9600
 #define ELM_INITDONE	0x10	//set when "BUS INIT" has happened. This is important for clones.
 
 
@@ -80,6 +79,9 @@ static const char * elm323_official[]={"2.0",NULL};	//authentic 323 firmware ver
 static const char * elm323_clones[]={NULL};	//known cloned versions
 static const char * elm327_official[]={"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3a", "1.3", "1.4b", "2.0", NULL};
 static const char * elm327_clones[]={"1.4", "1.4a", "1.5a", "1.5", "2.1", NULL};
+
+// baud rates for host to elm32x communication
+static const int elm_speeds[]={38400, 9600, 115200, 0};
 
 
 extern const struct diag_l0 diag_l0_elm;
@@ -358,53 +360,40 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol)
 	}
 	dev->protocol = iProtocol;
 
-	//set speed to 38400;8n1.
-	sset.speed=38400;
+	//try sending a command to elm327 at each possible speed until we get a response
 	sset.databits = diag_databits_8;
 	sset.stopbits = diag_stopbits_1;
 	sset.parflag = diag_par_n;
+	for (i=0; elm_speeds[i]; i++) {
+		fprintf(stderr, FLFMT "Sending ATI to ELM323/ELM327 at %d...\n", FL, elm_speeds[i]);
 
-	dev->serial = sset;
-
-	if ((rv=diag_tty_setup(dev->tty_int, &sset))) {
-		fprintf(stderr, FLFMT "Error setting 38400;8N1 on %s\n",
-			FL, dev->port.val.str);
-		elm_close(dl0d);
-		return diag_iseterr(rv);
-	}
-
-	diag_tty_iflush(dev->tty_int);	/* Flush unread input */
-
-	//At this stage, the ELM has possibly been powered up for a while;
-	//it may have an unfinished command / garbage in its input buffer. We
-	//need to clear that before sending the real ATZ ==> ATI is quick and safe; elm_purge does this.
-
-	dev->elmflags=0;	//we know nothing yet
-
-	rv=elm_purge(dl0d);
-	//if rv=0, we got a prompt so we know speed is set properly.
-	if (rv==0) {
-		dev->elmflags |= ELM_38400;
-	} else {
-		fprintf(stderr, FLFMT "sending ATI @ 38400 failed; trying @ 9600...\n", FL);
-
-		sset.speed=9600;
+		sset.speed = elm_speeds[i];
 		dev->serial = sset;
 
 		if ((rv=diag_tty_setup(dev->tty_int, &sset))) {
-			fprintf(stderr, FLFMT "Error setting 9600;8N1 on %s\n",
-				FL, dev->port.val.str);
+			fprintf(stderr, FLFMT "Error setting %d;8N1 on %s\n",
+				FL, elm_speeds[i], dev->port.val.str);
 			elm_close(dl0d);
 			return diag_iseterr(rv);
 		}
 
 		diag_tty_iflush(dev->tty_int);	/* Flush unread input */
-		rv = elm_purge(dl0d);	//try ATI\r again
-		if (rv !=0) {
-			fprintf(stderr, FLFMT "sending ATI @ 9600 failed. Verify connection to ELM\n", FL);
-			elm_close(dl0d);
-			return diag_iseterr(DIAG_ERR_BADIFADAPTER);
-		}
+
+		//At this stage, the ELM has possibly been powered up for a while;
+		//it may have an unfinished command / garbage in its input buffer. We
+		//need to clear that before sending the real ATZ ==> ATI is quick and safe; elm_purge does this.
+
+		dev->elmflags=0;	//we know nothing yet
+
+		rv=elm_purge(dl0d);
+		//if rv=0, we got a prompt so we know speed is set properly.
+		if (rv==0)
+			break;
+	}
+	if (elm_speeds[i]==0) {
+		fprintf(stderr, FLFMT "No response from ELM323/ELM327. Verify connection to ELM\n", FL);
+		elm_close(dl0d);
+		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 
 	if (diag_l0_debug&DIAG_DEBUG_OPEN) {
