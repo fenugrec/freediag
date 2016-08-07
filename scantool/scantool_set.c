@@ -106,7 +106,7 @@ const struct cmd_tbl_entry set_cmd_table[] =
 	{ "?", "help [command]", "Gives help for a command",
 		cmd_set_help, FLAG_HIDDEN, NULL},
 
-	{ "interface", "interface NAME [dev]", "Interface to use. Use set interface ? to get a list of names",
+	{ "interface", "interface [NAME]", "Interface to use. Use set interface ? to get a list of names",
 		cmd_set_interface, 0, NULL},
 
 	{ "display", "display [english/metric]", "English or metric display",
@@ -131,7 +131,7 @@ const struct cmd_tbl_entry set_cmd_table[] =
 	{ "initmode", "initmode [modename]", "Bus initialisation mode to use. Use 'set initmode ?' to show valid choices.",
 		cmd_set_initmode, 0, NULL},
 
-	{ "show", "show", "Shows all set'able values",
+	{ "show", "show", "Shows all settable values, including L0-specific items",
 		cmd_set_show, 0, NULL},
 
 	{ "up", "up", "Return to previous menu level",
@@ -271,6 +271,10 @@ static int cmd_set_interface(int argc, char **argv)
 		printf("interface: using %s\n",
 			global_cfg.l0name);
 		return CMD_OK;
+	}
+	if (argc > 2) {
+		printf("Too many arguments !\n");
+		return CMD_USAGE;
 	}
 
 	int i, helping = 0, found = 0;
