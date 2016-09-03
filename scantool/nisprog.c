@@ -1550,7 +1550,7 @@ static int np_12(int argc, char **argv) {
 	uint32_t start;
 	uint32_t len;
 
-	bool for_real = 0;	//actually erase + write flash if set
+	bool for_real = 0;	//if set, enables real flash erase + write
 
 	nisreq.data=txdata;
 
@@ -1603,9 +1603,6 @@ static int np_12(int argc, char **argv) {
 		goto badexit;
 	}
 
-	/*for now, run in "practice mode" without calling the Unprotect SID.
-	*/
-
 	/* 1- requestdownload */
 	txdata[0]=0x34;
 	nisreq.len = 1;
@@ -1620,7 +1617,7 @@ static int np_12(int argc, char **argv) {
 		goto badexit;
 	}
 
-	/* 2- Unprotect. TODO : use SID defines here and after */
+	/* 2- Unprotect maybe. TODO : use SID defines here and after */
 	if (for_real) {
 		(void) diag_os_ipending();	//must be done outside the loop first
 		printf("*** Last chance : operation will be safely aborted in 3 seconds. ***\n"
@@ -1633,22 +1630,22 @@ static int np_12(int argc, char **argv) {
 			goto badexit;
 		}
 
+		txdata[0]=0xBC;
+		txdata[1]=0x55;
+		txdata[2]=0xaa;
+		nisreq.len = 3;
+		rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
+		if (rxmsg==NULL)
+			goto badexit_reprotect;
+		if (rxmsg->data[0] != 0xFC) {
+			printf("got bad Unprotect response : ");
+			diag_data_dump(stdout, rxmsg->data, rxmsg->len);
+			printf("\n");
+			diag_freemsg(rxmsg);
+			goto badexit_reprotect;
+		}
+		printf("Entered flashing_enabled (unprotected) mode\n");
 	}
-	txdata[0]=0xBC;
-	txdata[1]=0x55;
-	txdata[2]=0xaa;
-	nisreq.len = 3;
-	rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
-	if (rxmsg==NULL)
-		goto badexit_reprotect;
-	if (rxmsg->data[0] != 0xFC) {
-		printf("got bad RequestDownload response : ");
-		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
-		printf("\n");
-		diag_freemsg(rxmsg);
-		goto badexit_reprotect;
-	}
-	printf("Entered flashing_enabled mode\n");
 
 	/* 3- erase block */
 	printf("Erasing block %u (0x%06X-0x%06X)...\n",
