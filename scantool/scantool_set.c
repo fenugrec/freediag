@@ -99,8 +99,6 @@ static int cmd_set_interface(int argc, char **argv);
 
 const struct cmd_tbl_entry set_cmd_table[] =
 {
-	{ "", "", "",
-		cmd_set_custom, FLAG_CUSTOM | FLAG_HIDDEN, NULL},
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_set_help, 0, NULL},
 	{ "?", "help [command]", "Gives help for a command",
@@ -140,6 +138,8 @@ const struct cmd_tbl_entry set_cmd_table[] =
 		cmd_exit, FLAG_HIDDEN, NULL},
 	{ "exit", "exit", "Exit program",
 		cmd_exit, 0, NULL},
+	{ "", "", "",
+		cmd_set_custom, FLAG_CUSTOM | FLAG_HIDDEN, NULL},
 
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
@@ -159,6 +159,7 @@ const char * const l2_initmodes[] =
 
 // handle dynamic options (L0-specific).
 // argv[0] is the config shortname, etc.
+// if argv[0] is '?' (special case), this prints available subcommands.
 static int cmd_set_custom(int argc, char **argv) {
 	struct cfgi *cfgp;
 	char *setstr;
@@ -167,6 +168,14 @@ static int cmd_set_custom(int argc, char **argv) {
 	int newval;
 
 	if (!global_dl0d) return CMD_FAILED;
+
+	if (strcmp(argv[0], "?") == 0) {
+		//list available custom commands for the current L0.
+		LL_FOREACH(diag_l0_getcfg(global_dl0d), cfgp) {
+			printf("\t%s\n", cfgp->shortname);
+		}
+		return CMD_OK;
+	}
 
 	if (argc >= 2) {
 		if (strcmp(argv[1], "?") == 0) {

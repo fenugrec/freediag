@@ -362,11 +362,20 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
 
 	} else {
 		/* Print help */
-		printf("Available commands are :-\n");
+		printf("Available commands are :\n");
 		ctp = cmd_table;
 		while (ctp->command) {
-			if ((ctp->flags & FLAG_HIDDEN) == 0)
+			if ((ctp->flags & FLAG_HIDDEN) == 0) {
 				printf("\t%s\n", ctp->usage);
+			}
+			if (ctp->flags & FLAG_CUSTOM) {
+				/* list custom subcommands too */
+				printf("Custom commands for the current L0:\n");
+				char cust_special[]="?";
+				char *pcs = cust_special;
+				char **temp_argv = &pcs;
+				ctp->routine(1, temp_argv);
+			}
 			ctp++;
 		}
 		printf("\nTry \"help <command>\" for further help\n");
@@ -852,7 +861,7 @@ cmd_scan(UNUSED(int argc), UNUSED(char **argv))
 		do_j1979_ncms(0);
 	} else {
 		printf("Connection to ECU failed\n");
-		printf("Please check :-\n");
+		printf("Please check :\n");
 		printf("\tAdapter is connected to PC\n");
 		printf("\tCable is connected to Vehicle\n");
 		printf("\tVehicle is switched on\n");
