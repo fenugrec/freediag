@@ -1,12 +1,12 @@
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
- * (c) 2011-2015 fenugrec
+ * (c) 2011-2016 fenugrec
  * Diag, Layer 0, interface for Scantool.net's ELM32x Interface
- * Work in progress.
- *
+  *
  *This is meant to support ELM323 & 327 devices; clones and originals.
- * COM speed is "autodetected" (it tries 9600, 38400 and 115200bps).
+ * COM speed is "autodetected" (it tries 38400, 9600 and 115200bps) but can also be
+ * manually specified.
  *
  *ELM interfaces are particular in that they handle the header bytes + checksum internally.
  *Data is transferred in ASCII hex format, i.e. 0x46 0xFE is sent and received as "46FE"
@@ -53,6 +53,7 @@ struct elm_device {
 	int elmflags; 	//see defines below
 
 	struct	cfgi port;
+	struct	cfgi speed;	//Host <-> ELM comms
 
 	struct diag_serial_settings serial;
 	ttyp *tty_int;			/** handle for tty stuff */
@@ -80,8 +81,9 @@ static const char * elm323_clones[]={NULL};	//known cloned versions
 static const char * elm327_official[]={"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3a", "1.3", "1.4b", "2.0", NULL};
 static const char * elm327_clones[]={"1.4", "1.4a", "1.5a", "1.5", "2.1", NULL};
 
-// baud rates for host to elm32x communication
-static const int elm_speeds[]={38400, 9600, 115200, 0};
+// baud rates for host to elm32x communication. Start with user-specified speed, then try common values
+#define ELM_CUSTOMSPEED ((unsigned) -1)
+static const unsigned elm_speeds[]={ELM_CUSTOMSPEED, 38400, 9600, 115200, 0};
 
 
 extern const struct diag_l0 diag_l0_elm;
@@ -133,7 +135,14 @@ int elm_new(struct diag_l0_device * dl0d) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	dev->port.next = NULL;
+	if (diag_cfgn_bps(&dev->speed, 38400, 38400)) {
+		diag_cfg_clear(&dev->port);
+		free(dev);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	dev->port.next = &dev->speed;
+	dev->speed.next = NULL;
 
 	return 0;
 }
@@ -155,6 +164,7 @@ void elm_del(struct diag_l0_device *dl0d) {
 	if (!dev) return;
 
 	diag_cfg_clear(&dev->port);
+	diag_cfg_clear(&dev->speed);
 	free(dev);
 	return;
 }
@@ -365,14 +375,24 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol)
 	sset.stopbits = diag_stopbits_1;
 	sset.parflag = diag_par_n;
 	for (i=0; elm_speeds[i]; i++) {
-		fprintf(stderr, FLFMT "Sending ATI to ELM323/ELM327 at %d...\n", FL, elm_speeds[i]);
-
 		sset.speed = elm_speeds[i];
+
+		// skip if custom speed was already tried:
+		if (sset.speed == (unsigned) dev->speed.val.i) {
+			continue;
+		}
+
+		if (sset.speed == ELM_CUSTOMSPEED) {
+			//magic flag to retrieve custom speed
+			sset.speed = (unsigned) dev->speed.val.i;
+		}
+		fprintf(stderr, FLFMT "Sending ATI to ELM32x at %u...\n", FL, sset.speed);
+
 		dev->serial = sset;
 
 		if ((rv=diag_tty_setup(dev->tty_int, &sset))) {
-			fprintf(stderr, FLFMT "Error setting %d;8N1 on %s\n",
-				FL, elm_speeds[i], dev->port.val.str);
+			fprintf(stderr, FLFMT "Error setting %u;8N1 on %s\n",
+				FL, sset.speed, dev->port.val.str);
 			elm_close(dl0d);
 			return diag_iseterr(rv);
 		}
