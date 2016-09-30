@@ -22,7 +22,7 @@ static const char tty_descr[]="Serial/tty port, such as \"/dev/ttyS0\" or \"\\\\
 static const char tty_sn[]="port";		/** tty cfg shortname */
 static const char tty_def[]="/dev/null";	/** last resort fallback */
 static const char bps_descr[]="Speed(bps)";
-static const char bps_sn[]="spd";	/** bps cfg shortname */
+static const char bps_sn[]="speed";	/** bps cfg shortname */
 
 /* top decls */
 void optarray_clear(struct cfgi *cfgp);
