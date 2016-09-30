@@ -65,8 +65,6 @@ check_type_size (uint32_t UINT32SIZE)
 ###### Global function & library checks
 find_library (HAVE_LIBREADLINE readline)
 
-#check_function_exists (malloc HAVE_MALLOC)
-#no use in checking for malloc() since we don't have a fallback solution...
 check_function_exists (strcasecmp HAVE_STRCASECMP)
 
 ###### Platform-specific function checks
@@ -109,6 +107,18 @@ option(BUILDGUI "Enable scangui (default=no)" OFF)
 option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
 option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
 option(NISPROG "Enable experimental Nissan Consult-II functions. (default=disabled)" OFF)
+
+set(L0LIST "me" "dumb" "br" "elm" "sim" "dumbtest")
+set(L2LIST "iso9141" "can" "iso14230" "mb1" "raw" "saej1850" "vag")
+
+foreach (L0NAME IN LISTS L0LIST)
+	option(USE_L0_${L0NAME} "Enable \"${L0NAME}\" L0 driver (default=enabled)" ON)
+endforeach()
+
+foreach (L2NAME IN LISTS L2LIST)
+	option(USE_L2_${L2NAME} "Enable \"${L2NAME}\" L2 driver (default=enabled)" ON)
+endforeach()
+
 
 ###### Includes
 #proj_bin_dir = needed to find cconf.h (not in src_dir)

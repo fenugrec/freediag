@@ -1,28 +1,26 @@
-### step 0.5 : parse l0config and l2config to determine which to build
-#I would prefer using option() in the top-level CMakeLists.txt eventually
-#also : if l0config changes, cmake needs to be run again (i.e. the makefile
-#will not track l0config and l2config and re-build if those changed)
-file (STRINGS l0config L0LIST REGEX "^[^#].*")
-file (STRINGS l2config L2LIST REGEX "^[^#].*")
 
-#now generate the "zone" string lists for diag_config.c.in, and
+#Based on the L0 and L2 options selected (see root CMakeLists.txt)
+#generate the "zone" string lists for diag_config.c.in, and
 #select appropriate source files
 
 #generate zone 1 and 3 lines with L0 names
 foreach (L0NAME IN LISTS L0LIST)
-	#empty lines are skipped. Lucky us.
-	set (DIAG_CONFIG_ZONE1 "${DIAG_CONFIG_ZONE1}extern const struct diag_l0 diag_l0_${L0NAME};\n")
-	set (DIAG_CONFIG_ZONE3 "${DIAG_CONFIG_ZONE3}\t&diag_l0_${L0NAME},\n")
-	set (DL0_SRCS ${DL0_SRCS} "diag_l0_${L0NAME}.c")
-	message(STATUS "Adding l0 driver ${L0NAME}")
+	if (USE_L0_${L0NAME})
+		set (DIAG_CONFIG_ZONE1 "${DIAG_CONFIG_ZONE1}extern const struct diag_l0 diag_l0_${L0NAME};\n")
+		set (DIAG_CONFIG_ZONE3 "${DIAG_CONFIG_ZONE3}\t&diag_l0_${L0NAME},\n")
+		set (DL0_SRCS ${DL0_SRCS} "diag_l0_${L0NAME}.c")
+		message(STATUS "Adding l0 driver ${L0NAME}")
+	endif()
 endforeach()
 
 #generate zone 2 and 4 lines with L2 names
 foreach (L2NAME IN LISTS L2LIST)
-	set (DIAG_CONFIG_ZONE2 "${DIAG_CONFIG_ZONE2}extern const struct diag_l2_proto diag_l2_proto_${L2NAME};\n")
-	set (DIAG_CONFIG_ZONE4 "${DIAG_CONFIG_ZONE4}\t&diag_l2_proto_${L2NAME},\n")
-	set (DL2_SRCS ${DL2_SRCS} "diag_l2_${L2NAME}.c")
-	message(STATUS "Adding l2 driver ${L2NAME}")
+	if (USE_L2_${L2NAME})
+		set (DIAG_CONFIG_ZONE2 "${DIAG_CONFIG_ZONE2}extern const struct diag_l2_proto diag_l2_proto_${L2NAME};\n")
+		set (DIAG_CONFIG_ZONE4 "${DIAG_CONFIG_ZONE4}\t&diag_l2_proto_${L2NAME},\n")
+		set (DL2_SRCS ${DL2_SRCS} "diag_l2_${L2NAME}.c")
+		message(STATUS "Adding l2 driver ${L2NAME}")
+	endif()
 endforeach()
 
 #and now generate diag_config.c ! (output in the build directory)
