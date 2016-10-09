@@ -30,6 +30,7 @@
 #include <stdbool.h>
 
 #include "diag.h"
+#include "diag_cfg.h"	//for cfgi
 #include "diag_l0.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
