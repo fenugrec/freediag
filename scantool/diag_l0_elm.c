@@ -59,6 +59,10 @@ struct elm_device {
 	ttyp *tty_int;			/** handle for tty stuff */
 };
 
+#define CFGSPEED_DESCR "Host <-> ELM comm speed (bps)"
+#define CFGSPEED_SHORTN "elmspeed"
+
+
 //flags for elmflags; set either 323_BASIC or 327_BASIC but not both;
 // _CLONE can be set in addition to the basic type
 #define ELM_323_BASIC	1	//device type is 323
@@ -135,11 +139,13 @@ int elm_new(struct diag_l0_device * dl0d) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_cfgn_bps(&dev->speed, 38400, 38400)) {
+	if (diag_cfgn_int(&dev->speed, 38400, 38400)) {
 		diag_cfg_clear(&dev->port);
 		free(dev);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+	dev->speed.descr = CFGSPEED_DESCR;
+	dev->speed.shortname = CFGSPEED_SHORTN;
 
 	dev->port.next = &dev->speed;
 	dev->speed.next = NULL;
