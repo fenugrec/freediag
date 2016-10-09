@@ -21,8 +21,6 @@
 static const char tty_descr[]="Serial/tty port, such as \"/dev/ttyS0\" or \"\\\\.\\COM11\"";
 static const char tty_sn[]="port";		/** tty cfg shortname */
 static const char tty_def[]="/dev/null";	/** last resort fallback */
-static const char bps_descr[]="Speed(bps)";
-static const char bps_sn[]="speed";	/** bps cfg shortname */
 
 /* top decls */
 void optarray_clear(struct cfgi *cfgp);
@@ -244,19 +242,6 @@ int diag_cfgn_tty(struct cfgi *cfgp) {
 
 	cfgp->refresh = &tty_refresh;
 	std_reset(cfgp);
-
-	return 0;
-}
-
-/** serial link speed **/
-
-//serial link speed; uses caller's &val for actual parameter
-int diag_cfgn_bps(struct cfgi *cfgp, int val, int def) {
-	if (diag_cfgn_int(cfgp, val, def))	//start with standard int config
-		return DIAG_ERR_GENERAL;
-
-	cfgp->descr = bps_descr;
-	cfgp->shortname = bps_sn;
 
 	return 0;
 }

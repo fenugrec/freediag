@@ -118,9 +118,6 @@ void diag_cfg_clear(struct cfgi *cfgp);
 /** new TTY / serial port config item */
 int diag_cfgn_tty(struct cfgi *cfgp);
 
-/** new serial link speed item */
-int diag_cfgn_bps(struct cfgi *cfgp, int val, int def);
-
 /** new ordinary int param
  *
  * Uses caller's val, and def as default value for reset().
