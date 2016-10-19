@@ -1417,12 +1417,8 @@ static uint8_t cks_add8(uint8_t *data, unsigned len) {
 
 static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 
-	/* 2- program 128-byte chunks + verify each
-	 * 3- verify all
-	 */
-	uint8_t *orig_src = src;
+	/* program 128-byte chunks */
 	uint32_t remain = len;
-	uint32_t orig_start = start;
 
 	uint8_t txdata[134];	//data for nisreq
 	struct diag_msg nisreq={0};	//request to send
@@ -1493,44 +1489,6 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 
 	}	//while len
 	printf("\nWrite complete.\n");
-
-	/* verify */
-	remain = len;
-	start = orig_start;
-	src = orig_src;
-	t0 = diag_os_getms();
-	while (remain) {
-		#define NP12_VBUFSIZ 4096
-		uint8_t vbuf[NP12_VBUFSIZ];
-		uint32_t vlen;
-		unsigned curspeed, tleft;
-
-		chrono = diag_os_getms() - t0;
-		if (!chrono) chrono += 1;
-		curspeed = 1000 * (len - remain) / chrono;	//avg B/s
-		if (!curspeed) curspeed += 1;
-		tleft = remain / curspeed;	//s
-
-		printf("\rVerifying 0x%06X (%3u%% done, %4u B/s, ~ %4u s remaining)\t", start, (unsigned) 100 * (len - remain) / len,
-				curspeed, tleft);
-
-		vlen = remain;
-		if (vlen > NP12_VBUFSIZ) vlen = NP12_VBUFSIZ;
-		errval = npk_RMBA(vbuf, start, vlen);
-		if (errval) {
-			printf("RMBA failed @ 0x%06X?\n", start);
-			return -1;
-		}
-		if (memcmp(vbuf, src, vlen) != 0) {
-			printf("Verify failed @ 0x%06X !\n", start);
-			return -1;
-		}
-
-		remain -= vlen;
-		start += vlen;
-		src += vlen;
-	}
-	printf("\nDone !\n");
 
 	return 0;
 }
