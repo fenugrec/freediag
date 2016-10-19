@@ -50,19 +50,21 @@ int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_mil
  */
 HANDLE hDiagTimer;
 
+CRITICAL_SECTION periodic_lock;
+
 VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
-	static int timerproblem=0;
+
+	if (!TryEnterCriticalSection(&periodic_lock)) return;
+
 	if (!timedout) {
 		//this should never happen.
-		if (!timerproblem) {
-			fprintf(stderr, FLFMT "Problem with OS timer callback! Report this !\n", FL);
-			timerproblem=1;	//so we dont flood the screen with errors
-		}
+		fprintf(stderr, FLFMT "Problem with OS timer callback! Report this !\n", FL);
 	} else {
-		timerproblem=0;
 		diag_l3_timer();	/* Call L3 Timer */
 		diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
 	}
+	LeaveCriticalSection(&periodic_lock);
+
 	return;
 }
 
@@ -79,10 +81,12 @@ diag_os_init(void)
 	if (diag_os_init_done)
 		return 0;
 
+	diag_os_sched();	//call os_sched to increase thread priority.
+
 	//probably the nearest equivalent to a unix interval timer + associated alarm handler
 	//is the timer queue... so that's what we do.
 	//we create the timer in the default timerqueue
-	diag_os_sched();	//call os_sched to increase thread priority.
+	InitializeCriticalSection(&periodic_lock);
 
 	if (! CreateTimerQueueTimer(&hDiagTimer, NULL,
 			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo,
@@ -130,25 +134,29 @@ int diag_os_close() {
 
 	diag_os_init_done=0;	//diag_os_init will have to be done again past this point.
 	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
-		//succes
-		return 0;
+		//success
+		goto goodexit;
 	}
 	//From MSDN : if error_io_pending, not necessary to call again.
 	err=GetLastError();
 	if (err==ERROR_IO_PENDING) {
 		//This is OK and the queue will be deleted automagically.
 		//No need to pester the user about this
-		return 0;
+		goto goodexit;
 	}
 	//Otherwise, try again
 	fprintf(stderr, FLFMT "Could not DTQT. Retrying...", FL);
 	Sleep(500);	//should be more than enough for IO to complete...
 	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
 		fprintf(stderr, "OK !\n");
-		return 0;
+		goto goodexit;
 	}
 	fprintf(stderr, "Failed. Please report this.\n");
 	return DIAG_ERR_GENERAL;
+
+goodexit:
+	DeleteCriticalSection(&periodic_lock);
+	return 0;
 } 	//diag_os_close
 
 
