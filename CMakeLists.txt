@@ -79,6 +79,7 @@ else()
 	check_function_exists (alarm HAVE_ALARM)
 	check_function_exists (select HAVE_SELECT)
 	check_function_exists (gettimeofday HAVE_GETTIMEOFDAY)
+	find_package (Threads REQUIRED)
 
 	#diag_os_unix needs some _POSIX_TIMERS functions wich
 	#may require linking with -lrt

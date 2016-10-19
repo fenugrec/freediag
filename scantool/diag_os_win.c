@@ -61,7 +61,7 @@ VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
 		fprintf(stderr, FLFMT "Problem with OS timer callback! Report this !\n", FL);
 	} else {
 		diag_l3_timer();	/* Call L3 Timer */
-		diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
+		diag_l2_timer();	/* Call L2 timer */
 	}
 	LeaveCriticalSection(&periodic_lock);
 

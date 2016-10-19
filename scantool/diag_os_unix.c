@@ -74,6 +74,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
+#include <pthread.h>
 
 /***
  * In the following #ifdefs, enable/include everything supported.
@@ -112,6 +113,8 @@ static int discover_done = 0;	//protect diag_os_millisleep() and _gethrt()
 
 static void diag_os_discover(void);
 
+static pthread_mutex_t periodic_lock = PTHREAD_MUTEX_INITIALIZER;
+
 static void
 #if defined(_POSIX_TIMERS) && (SEL_PERIODIC==S_POSIX || SEL_PERIODIC==S_AUTO)
 diag_os_periodic(UNUSED(union sigval sv))
@@ -124,9 +127,10 @@ diag_os_periodic(UNUSED(int unused))
 	* to occur during any other non-async-signal-safe function.
 	* See doc/sourcetree_notes.txt
 	*/
-
-	diag_l3_timer();	/* Call L3 Timer */
-	diag_l2_timer();	/* Call L2 timers, which will call L1 timer */
+	if (pthread_mutex_trylock(&periodic_lock)) return;
+	diag_l3_timer();	/* Call L3 Timers */
+	diag_l2_timer();	/* Call L2 timers */
+	pthread_mutex_unlock(&periodic_lock);
 }
 
 //diag_os_init sets up a periodic callback (diag_os_periodic())

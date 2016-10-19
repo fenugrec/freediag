@@ -84,7 +84,8 @@ add_library(diag STATIC ${LIBDIAG_SRCS})
 
 if (NOT WIN32)
 	#link to libmath (m); not required on win32 (msvcrt provides sin() etc)
-	target_link_libraries(diag m)
+	#link to pthread (win* uses native API)
+	target_link_libraries(diag m ${CMAKE_THREAD_LIBS_INIT})
 endif ()
 
 #if required, link with -lrt (see top-level CMakeLists.txt)
