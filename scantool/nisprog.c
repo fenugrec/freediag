@@ -1453,8 +1453,9 @@ static int npk_raw_flashblock(uint8_t *src, uint32_t start, uint32_t len) {
 		curspeed = 1000 * (len - remain) / chrono;	//avg B/s
 		if (!curspeed) curspeed += 1;
 		tleft = remain / curspeed;	//s
+		if (tleft > 9999) tleft = 9999;
 
-		printf("\rwriting chunk @ 0x%06X (%3u %%, %4u B/s, ~ %4u s remaining)", start, (unsigned) 100 * (len - remain) / len,
+		printf("\rwriting chunk @ 0x%06X (%3u %%, %5u B/s, ~ %4u s remaining)", start, (unsigned) 100 * (len - remain) / len,
 				curspeed, tleft);
 
 		txdata[2] = start >> 16;
@@ -1621,7 +1622,7 @@ static int np_12(int argc, char **argv) {
 	if (for_real) {
 		(void) diag_os_ipending();	//must be done outside the loop first
 		printf("*** Last chance : operation will be safely aborted in 3 seconds. ***\n"
-				"*** Press enter (within 3 seconds) to MODIFY FLASH ***\n");
+				"*** Press ENTER to MODIFY FLASH ***\n");
 		diag_os_millisleep(3000);
 		if (diag_os_ipending()) {
 			printf("Proceeding with flash process.\n");
