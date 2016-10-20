@@ -3,7 +3,7 @@
  *
  *
  * Copyright (C) 2001 Richard Almeida & Ibex Ltd (rpa@ibex.co.uk)
- * 2009-2015 fenugrec
+ * 2009-2016 fenugrec
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,15 +48,16 @@
 int diag_l2_debug;
 
 
-static struct diag_l2_conn	*diag_l2_connections=NULL;	//linked-list of current diag_l2_conn's
+/* struct to manage L2 stuff, used in here only */
+struct l2_internal_t {
+	diag_mtx *connlist_mtx;	//mutex for accessing dl2conn_list
+	struct diag_l2_conn	*dl2conn_list;	//linked-list of current diag_l2_conn's
+	struct diag_l2_link *dl2l_list;	//linked-list of current L2-L0 links
+	bool init_done;
+};
 
-static int diag_l2_init_done=0;	/* Init done */
+static struct l2_internal_t l2internal = {0};
 
-/*
- * The list of L1 devices we have open, not used often so no need to hash
- * (diag_l2_links is a linked list)
- */
-static struct diag_l2_link *diag_l2_links;
 
 /** Find an existing L2 link using the specified L0 device.
  * @return NULL if not found
@@ -66,7 +67,7 @@ diag_l2_findlink(struct diag_l0_device *dl0d)
 {
 	struct diag_l2_link *dl2l=NULL;
 
-	LL_FOREACH(diag_l2_links, dl2l) {
+	LL_FOREACH(l2internal.dl2l_list, dl2l) {
 		if ( dl2l->l2_dl0d == dl0d) break;
 	}
 
@@ -84,7 +85,7 @@ static int diag_l2_rmconn(struct diag_l2_conn *dl2c)
 {
 	assert(dl2c !=NULL);
 
-	LL_DELETE(diag_l2_connections, dl2c);
+	LL_DELETE(l2internal.dl2conn_list, dl2c);
 
 	return 0;
 }
@@ -95,7 +96,7 @@ static int diag_l2_rmconn(struct diag_l2_conn *dl2c)
  * Note: This is called from a signal handler.
  *
  * XXX Uses functions not async-signal-safe.
- * This parses through the diag_l2_connections linked-list and
+ * This parses through the l2internal.dl2conn_list linked-list and
  * calls the  ->diag_l2_proto_timeout function for every dl2conn
  * that has expired.
  *
@@ -109,7 +110,7 @@ diag_l2_timer(void)
 	unsigned long now;
 	now=diag_os_getms();	/* XXX probably Not async safe */
 
-	LL_FOREACH(diag_l2_connections, d_l2_conn) {
+	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		int expired = 0;
 
 		/*
@@ -154,19 +155,27 @@ diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  */
 int diag_l2_init()
 {
-	if ( diag_l2_init_done )
+
+	if (l2internal.init_done)
 		return 0;
 
 	if (diag_l2_debug & DIAG_DEBUG_INIT)
 		fprintf(stderr,FLFMT "entered diag_l2_init\n", FL);
 
-	diag_l2_init_done = 1;
+	l2internal.connlist_mtx = diag_os_newmtx();
+	assert(l2internal.connlist_mtx != NULL);
+
+	l2internal.dl2l_list = NULL;
+	l2internal.dl2conn_list = NULL;
+
+	l2internal.init_done = 1;
 	return 0;
 }
 
 //diag_l2_end : opposite of diag_l2_init !
 int diag_l2_end() {
-	diag_l2_init_done=0;
+	diag_os_delmtx(l2internal.connlist_mtx);
+	l2internal.init_done = 0;
 	return 0;
 }
 
@@ -187,7 +196,7 @@ diag_l2_closelink(struct diag_l2_link *dl2l)
 			FL, (void *)dl2l);
 
 	/* Remove from linked-list */
-	LL_DELETE(diag_l2_links, dl2l);
+	LL_DELETE(l2internal.dl2l_list, dl2l);
 
 	if (dl2l->l2_dl0d == NULL)
 		fprintf(stderr, FLFMT "**** Corrupt DL2L !! Report this !!!\n", FL);
@@ -252,7 +261,7 @@ diag_l2_open(struct diag_l0_device *dl0d, int L1protocol)
 	dl2l->l1proto = L1protocol;
 
 	/* Put ourselves at the head of the list. */
-	LL_PREPEND(diag_l2_links, dl2l);
+	LL_PREPEND(l2internal.dl2l_list, dl2l);
 
 	return 0;
 }
@@ -283,8 +292,8 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 
 	assert(dl0d !=NULL);	//crash if it's null. We need to fix these problems.
 
-	// Check if dl0d is still used by someone in diag_l2_connections
-	LL_FOREACH(diag_l2_connections, d_l2_conn) {
+	// Check if dl0d is still used by someone in l2internal.dl2conn_list
+	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		if (d_l2_conn->diag_link->l2_dl0d == dl0d) {
 			fprintf(stderr, FLFMT "Not closing dl0d: used by dl2conn %p!\n", FL,
 				(void *) d_l2_conn);
@@ -342,7 +351,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	 * but reinitialise ECU
 	 */
 
-	LL_FOREACH(diag_l2_connections, d_l2_conn) {
+	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		if (d_l2_conn->diag_link == dl2l) {
 			reusing = 1;
 			break;
@@ -426,7 +435,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	 */
 	if ( reusing == 0 ) {
 		/* And attach connection info to our main list */
-		LL_PREPEND(diag_l2_connections, d_l2_conn);
+		LL_PREPEND(l2internal.dl2conn_list, d_l2_conn);
 	}
 	d_l2_conn->tlast=diag_os_getms();
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_OPEN;
@@ -444,7 +453,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
  * - some L2 protocols have an ordered mechanism to do this, others are
  * just timeout based (i.e don't send anything for 5 seconds)
  * this also free()s d_l2_conn (alloced in startcomm)
- * and removes it from diag_l2_connections
+ * and removes it from l2internal.dl2conn_list
  */
 int
 diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
