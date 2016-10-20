@@ -32,6 +32,8 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+
 #ifdef WIN32
 	#include <windows.h>
 	typedef DWORD OS_ERRTYPE;
@@ -124,6 +126,32 @@ unsigned long long diag_os_hrtus(unsigned long long hrdelta);
 //Internally, chronoms must adjust the offset before calculating the
 //return value.
 unsigned long diag_os_chronoms(unsigned long treset);
+
+
+/* mutex wrapper stuff.
+ * the backends use pthread, C11, winAPI etc.
+ * lowest-common-denominator stuff here; regular mutexes (not necessarily recursive etc)
+ */
+typedef void diag_mtx;
+
+/** return a ptr to a new, initialized mutex.
+ * must be deleted with diag_os_delmtx() after use
+ */
+diag_mtx *diag_os_newmtx(void);
+
+/** delete unused mutex
+ */
+void diag_os_delmtx(diag_mtx *mtx);
+
+/** lock mutex, wait if busy */
+void diag_os_lock(diag_mtx *mtx);
+
+/** try to lock mutex, return 0 immediately if failed */
+bool diag_os_trylock(diag_mtx *mtx);
+
+/** unlock mutex */
+void diag_os_unlock(diag_mtx *mtx);
+
 
 #if defined(__cplusplus)
 }

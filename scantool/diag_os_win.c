@@ -417,3 +417,37 @@ unsigned long long diag_os_hrtus(unsigned long long hrdelta) {
 	assert(pfconv_valid);
 	return (unsigned long long) (hrdelta * (double) pf_conv);
 }
+
+
+diag_mtx *diag_os_newmtx(void) {
+	CRITICAL_SECTION *lpc;
+	diag_calloc(&lpc, 1);
+	InitializeCriticalSection(lpc);
+	return (diag_mtx *) lpc;
+}
+
+void diag_os_delmtx(diag_mtx *mtx) {
+	CRITICAL_SECTION *lpc = (CRITICAL_SECTION *) mtx;
+	DeleteCriticalSection(lpc);
+	free(lpc);
+	return;
+}
+
+void diag_os_lock(diag_mtx *mtx) {
+	CRITICAL_SECTION *lpc = (CRITICAL_SECTION *) mtx;
+	EnterCriticalSection(lpc);
+	return;
+}
+
+bool diag_os_trylock(diag_mtx *mtx) {
+	CRITICAL_SECTION *lpc = (CRITICAL_SECTION *) mtx;
+	if (!TryEnterCriticalSection(lpc)) return 0;
+	return 1;
+}
+
+void diag_os_unlock(diag_mtx *mtx) {
+	CRITICAL_SECTION *lpc = (CRITICAL_SECTION *) mtx;
+	LeaveCriticalSection(lpc);
+	return;
+}
+
