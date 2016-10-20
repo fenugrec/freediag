@@ -583,6 +583,11 @@ cmd_watch(int argc, char **argv)
 		return CMD_FAILED;
 	}
 
+	if (global_l2_conn) {
+		printf("L2 already connected, this won't work.\n");
+		return CMD_FAILED;
+	}
+
 	rv = diag_init();
 	if (rv != 0) {
 		fprintf(stderr, "diag_init failed\n");
