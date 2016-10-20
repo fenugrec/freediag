@@ -340,7 +340,6 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 	struct diag_l2_link *dl2l;
 	int i,rv;
-	int reusing = 0;
 
 	assert(dl0d!=NULL);
 
@@ -358,27 +357,27 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	}
 
 	/*
-	 * Check connection doesn't exist already, if it does, then use it
-	 * but reinitialise ECU
+	 * Check connection doesn't exist already, if it does, do not reuse !
+	 * with the current L1/L2 structure, hoping to share one L1 between more than one l2
+	 * is a bad idea.
 	 */
 
 	diag_os_lock(l2internal.connlist_mtx);
 
 	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		if (d_l2_conn->diag_link == dl2l) {
-			reusing = 1;
-			break;
+			fprintf(stderr, "Already an L2 connection with specified dl0-dl2l, cannot reuse !\n");
+			diag_os_unlock(l2internal.connlist_mtx);
+			return diag_pseterr(DIAG_ERR_GENERAL);
 		}
 	}
 
-	if (d_l2_conn == NULL) {
-		/* Still nothing -> new connection */
-		if (diag_calloc(&d_l2_conn, 1)) {
-			diag_os_unlock(l2internal.connlist_mtx);
-			return diag_pseterr(DIAG_ERR_NOMEM);
-		}
-		d_l2_conn->diag_link = dl2l;
+	/* Create new L2 connection */
+	if (diag_calloc(&d_l2_conn, 1)) {
+		diag_os_unlock(l2internal.connlist_mtx);
+		return diag_pseterr(DIAG_ERR_NOMEM);
 	}
+	d_l2_conn->diag_link = dl2l;
 
 	/* Look up the protocol we want to use */
 
@@ -395,9 +394,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	if (d_l2_conn->l2proto == NULL) {
 		fprintf(stderr,
 			FLFMT "Protocol %d not installed.\n", FL, L2protocol);
-		if (!reusing) {
-			free(d_l2_conn);
-		}
+		free(d_l2_conn);
 		diag_os_unlock(l2internal.connlist_mtx);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -436,10 +433,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 		if (diag_l2_debug & DIAG_DEBUG_OPEN)
 			fprintf(stderr,FLFMT "protocol startcomms returned %d\n", FL, rv);
 
-		if (reusing == 0) {
-			free(d_l2_conn);
-		}
-
+		free(d_l2_conn);
 		diag_os_unlock(l2internal.connlist_mtx);
 		return diag_pseterr(rv);
 	}
@@ -449,10 +443,10 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	 * - unless we're re-using a established connection, then no need
 	 * to re-note.
 	 */
-	if ( reusing == 0 ) {
-		/* And attach connection info to our main list */
-		LL_PREPEND(l2internal.dl2conn_list, d_l2_conn);
-	}
+
+	/* And attach connection info to our main list */
+	LL_PREPEND(l2internal.dl2conn_list, d_l2_conn);
+
 	d_l2_conn->tlast=diag_os_getms();
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_OPEN;
 

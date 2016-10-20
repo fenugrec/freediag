@@ -776,17 +776,15 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 
 /* _stopcomms:
  * Send a stopcomms message, and wait for the +ve response, for upto
- * p3max - the layer 2 code that called this marked the connection as
+ * p3max
+ * we'll therefore
+ * use diag_l2_proto_14230_request() as it was meant to be used.
+ * However, if we get no response or an unidentified negative response,
+ * we do warn the user that he should to wait P3max for the connection
+ * to time out.
+ - the layer 2 code that called this marked the connection as
  * STATE_CLOSING so the keepalive should be disabled
  */
-// Regarding p3max : I disagree with the above comment.
-//We send a StopCommunication request; we are "entitled" to a response
-//within the same delays as any other type of request; we'll therefore
-// use diag_l2_proto_14230_request() as it was meant to be used.
-// However, if we get no response or an unidentified negative response,
-// we do warn the user that he should to wait P3max for the connection
-// to time out.
-
 static int
 diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
 {
