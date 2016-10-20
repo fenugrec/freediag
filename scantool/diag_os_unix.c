@@ -752,3 +752,42 @@ unsigned long diag_os_chronoms(unsigned long treset) {
 	return rv;
 #endif // _POSIX_TIMERS
 }
+
+diag_mtx *diag_os_newmtx(void) {
+	pthread_mutex_t *pmt;
+	diag_calloc(&pmt, 1);
+	if (pthread_mutex_init(pmt, NULL)) {
+		free(pmt);
+		return NULL;
+	}
+	return (diag_mtx *) pmt;
+}
+
+void diag_os_delmtx(diag_mtx *mtx) {
+	pthread_mutex_t *pmt = (pthread_mutex_t *) mtx;
+	pthread_mutex_destroy(pmt);
+	free(pmt);
+	return;
+}
+
+void diag_os_lock(diag_mtx *mtx) {
+	pthread_mutex_t *pmt = (pthread_mutex_t *) mtx;
+	if (pthread_mutex_lock(pmt) == EDEADLK) {
+		//do we even check for error values...
+		fprintf(stderr, "DEADLOCK !\n");
+	}
+	return;
+}
+
+bool diag_os_trylock(diag_mtx *mtx) {
+	pthread_mutex_t *pmt = (pthread_mutex_t *) mtx;
+	if (pthread_mutex_trylock(pmt)) return 0;
+	return 1;
+}
+
+void diag_os_unlock(diag_mtx *mtx) {
+	pthread_mutex_t *pmt = (pthread_mutex_t *) mtx;
+	pthread_mutex_unlock(pmt);
+	return;
+}
+
