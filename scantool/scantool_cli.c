@@ -696,7 +696,6 @@ print_current_data(bool english)
 	unsigned int i;
 	unsigned int j;
 
-	printf("\n\nPress return to checkpoint then return to quit\n");
 	printf("%-30.30s %-15.15s FreezeFrame\n",
 		"Parameter", "Current");
 
@@ -795,7 +794,7 @@ cmd_monitor(int argc, char **argv)
 		english = global_cfg.units;
 	}
 
-	printf("Please wait\n");
+	printf("Monitoring. Press <enter> to stop.\n");
 
 	/*
 	 * Now just receive data and log it for ever
