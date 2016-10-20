@@ -85,7 +85,9 @@ static int diag_l2_rmconn(struct diag_l2_conn *dl2c)
 {
 	assert(dl2c !=NULL);
 
+	diag_os_lock(l2internal.connlist_mtx);
 	LL_DELETE(l2internal.dl2conn_list, dl2c);
+	diag_os_unlock(l2internal.connlist_mtx);
 
 	return 0;
 }
@@ -108,6 +110,9 @@ diag_l2_timer(void)
 	struct diag_l2_conn	*d_l2_conn;
 
 	unsigned long now;
+
+	if (!diag_os_trylock(l2internal.connlist_mtx)) return;
+
 	now=diag_os_getms();	/* XXX probably Not async safe */
 
 	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
@@ -133,6 +138,8 @@ diag_l2_timer(void)
 		if (expired && d_l2_conn->l2proto->diag_l2_proto_timeout)
 			d_l2_conn->l2proto->diag_l2_proto_timeout(d_l2_conn);
 	}
+	diag_os_unlock(l2internal.connlist_mtx);
+	return;
 }
 
 /*
@@ -292,11 +299,14 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 
 	assert(dl0d !=NULL);	//crash if it's null. We need to fix these problems.
 
+	diag_os_lock(l2internal.connlist_mtx);
+
 	// Check if dl0d is still used by someone in l2internal.dl2conn_list
 	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		if (d_l2_conn->diag_link->l2_dl0d == dl0d) {
 			fprintf(stderr, FLFMT "Not closing dl0d: used by dl2conn %p!\n", FL,
 				(void *) d_l2_conn);
+			diag_os_unlock(l2internal.connlist_mtx);
 			return diag_iseterr(DIAG_ERR_GENERAL);	//there's still a dl2conn using it !
 		}
 	}
@@ -309,6 +319,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 		diag_l2_closelink(dl2l);	//closelink calls diag_l1_close() as required
 	}
 
+	diag_os_unlock(l2internal.connlist_mtx);
 	return 0;
 }
 
@@ -351,6 +362,8 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	 * but reinitialise ECU
 	 */
 
+	diag_os_lock(l2internal.connlist_mtx);
+
 	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		if (d_l2_conn->diag_link == dl2l) {
 			reusing = 1;
@@ -361,6 +374,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	if (d_l2_conn == NULL) {
 		/* Still nothing -> new connection */
 		if (diag_calloc(&d_l2_conn, 1)) {
+			diag_os_unlock(l2internal.connlist_mtx);
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
 		d_l2_conn->diag_link = dl2l;
@@ -384,6 +398,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 		if (!reusing) {
 			free(d_l2_conn);
 		}
+		diag_os_unlock(l2internal.connlist_mtx);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -425,6 +440,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 			free(d_l2_conn);
 		}
 
+		diag_os_unlock(l2internal.connlist_mtx);
 		return diag_pseterr(rv);
 	}
 
@@ -445,6 +461,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 			FLFMT "diag_l2_StartComms returns %p\n",
 				FL, (void *)d_l2_conn);
 
+	diag_os_unlock(l2internal.connlist_mtx);
 	return d_l2_conn;
 }
 
