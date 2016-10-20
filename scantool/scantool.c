@@ -959,10 +959,10 @@ do_j1979_getdata(int interruptible)
 	diag_os_ipending();	//again, required for WIN32 to "purge" last keypress
 	/* Now go thru the ECUs that have responded with mode2 info */
 	for (j=0, ep=ecu_info; j<ecu_count; j++, ep++) {
-		if ( (ep->mode1_data[2].type == TYPE_GOOD) &&
-			(ep->mode1_data[2].data[2] |
-				ep->mode1_data[2].data[3]) ) {
-			for (i=3; i<=0x100; i++) {
+		if ( (ep->mode2_data[2].type == TYPE_GOOD) &&
+			(ep->mode2_data[2].data[2] |
+				ep->mode2_data[2].data[3]) ) {
+			for (i=3; i<0x100; i++) {
 				if (ep->mode2_info[i]) {
 					fprintf(stderr, "Requesting Mode 0x02 Pid 0x%02X...\n", i);
 					rv = l3_do_j1979_rqst(d_conn, 0x2, (uint8_t)i, 0x00,
@@ -1302,7 +1302,7 @@ do_j1979_getpids()
 	unsigned int i, j;
 
 	do_j1979_getmodeinfo(1, 2);
-	do_j1979_getmodeinfo(2, 2);
+	do_j1979_getmodeinfo(2, 3);
 	do_j1979_getmodeinfo(5, 3);
 	do_j1979_getmodeinfo(6, 3);
 	do_j1979_getmodeinfo(8, 2);
