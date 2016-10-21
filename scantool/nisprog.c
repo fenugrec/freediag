@@ -1104,7 +1104,7 @@ static int npkern_init(void) {
 
 	errval=diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_SETSPEED, (void *) &set);
 	if (errval) {
-		printf("could not setspeed\n");
+		printf("npk_init: could not setspeed\n");
 		return -1;
 	}
 	(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
@@ -1114,11 +1114,11 @@ static int npkern_init(void) {
 	nisreq.len = 1;
 	rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
 	if (!rxmsg) {
-		printf("npk startcomm failed : %d\n", errval);
+		printf("npk_init: startcomm failed : %d\n", errval);
 		return -1;
 	}
 	if (rxmsg->data[0] != 0xC1) {
-		printf("got bad SC response\n");
+		printf("npk_init: got bad startcomm response\n");
 		diag_freemsg(rxmsg);
 		return -1;
 	}
@@ -1628,10 +1628,12 @@ static int np_12(int argc, char **argv) {
 	nisreq.len = 3;
 	/* Problem : erasing can take a lot more than the default P2max for iso14230 */
 	uint16_t old_p2max = global_l2_conn->diag_l2_p2max;
-	global_l2_conn->diag_l2_p2max = 1000;
+	global_l2_conn->diag_l2_p2max = 1200;
 	rxmsg = diag_l2_request(global_l2_conn, &nisreq, &errval);
 	global_l2_conn->diag_l2_p2max = old_p2max;	//restore p2max; the rest should be OK
-	if (rxmsg==NULL)
+	if (rxmsg==NULL) {
+		printf("no ERASE_BLOCK response?\n");
+	}
 		goto badexit_reprotect;
 	if (rxmsg->data[0] != 0xFC) {
 		printf("got bad ERASE_BLOCK response : ");
