@@ -53,7 +53,7 @@
  * only proto_14230_intrecv should use this...
  */
 static int
-diag_l2_proto_14230_decode(uint8_t *data, int len,
+dl2p_14230_decode(uint8_t *data, int len,
 		 uint8_t *hdrlen, int *datalen, uint8_t *source, uint8_t *dest,
 		int first_frame)
 {
@@ -194,7 +194,7 @@ diag_l2_proto_14230_decode(uint8_t *data, int len,
 
  */
 static int
-diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
+dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 {
 	struct diag_l2_14230 *dp;
 	int rv, l1_doesl2frame, l1flags;
@@ -383,7 +383,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 		if ((l1flags & DIAG_L1_NOHDRS)==0) {
 
 			dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
-			rv = diag_l2_proto_14230_decode( tmsg->data,
+			rv = dl2p_14230_decode( tmsg->data,
 				tmsg->len,
 				&hdrlen, &datalen, &source, &dest,
 				dp->first_frame);
@@ -483,7 +483,7 @@ diag_l2_proto_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 /* External interface */
 
 static int
-diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
+dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
 /*
  * The complex initialisation routine for ISO14230, which supports
  * 2 types of initialisation (5-BAUD, FAST) and functional
@@ -493,7 +493,7 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  * Remember, we have to wait longer on smart L1 interfaces.
  */
 static int
-diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
+dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	unsigned int bitrate, target_type target, source_type source)
 {
 	struct diag_l2_14230 *dp;
@@ -595,7 +595,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			break;
 
 		/* Send the prepared message */
-		if (diag_l2_proto_14230_send(d_l2_conn, &msg)) {
+		if (dl2p_14230_send(d_l2_conn, &msg)) {
 			rv=DIAG_ERR_GENERAL;
 			break;
 		}
@@ -606,7 +606,7 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			timeout = d_l2_conn->diag_l2_p2max + RXTOFFSET;
 
 		/* And wait for a response, ISO14230 says will arrive in P2 */
-		rv = diag_l2_proto_14230_int_recv(d_l2_conn, timeout);
+		rv = dl2p_14230_int_recv(d_l2_conn, timeout);
 		if (rv < 0)
 			break;
 
@@ -771,14 +771,14 @@ diag_l2_proto_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 //We need this in _stopcomms
 static struct diag_msg *
-diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		int *errval);
 
 /* _stopcomms:
  * Send a stopcomms message, and wait for the +ve response, for upto
  * p3max
  * we'll therefore
- * use diag_l2_proto_14230_request() as it was meant to be used.
+ * use dl2p_14230_request() as it was meant to be used.
  * However, if we get no response or an unidentified negative response,
  * we do warn the user that he should to wait P3max for the connection
  * to time out.
@@ -786,7 +786,7 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
  * STATE_CLOSING so the keepalive should be disabled
  */
 static int
-diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
+dl2p_14230_stopcomms(struct diag_l2_conn* pX)
 {
 	struct diag_msg stopmsg={0};
 	struct diag_msg *rxmsg;
@@ -799,7 +799,7 @@ diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
 	stopmsg.dest=0;
 	stopmsg.src=0;
 
-	rxmsg=diag_l2_proto_14230_request(pX, &stopmsg, &errval);
+	rxmsg=dl2p_14230_request(pX, &stopmsg, &errval);
 
 	if (rxmsg != NULL) {
 		//we got a message;
@@ -841,7 +841,7 @@ diag_l2_proto_14230_stopcomms(struct diag_l2_conn* pX)
  * argument msg must have .len, .data, .dest and .src assigned.
  */
 static int
-diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
+dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int rv;
 	size_t len;
@@ -958,14 +958,14 @@ diag_l2_proto_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  * for extra messages
  */
 static int
-diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+dl2p_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
 	void *handle)
 {
 	int rv;
 
 	/* Call internal routine */
-	rv = diag_l2_proto_14230_int_recv(d_l2_conn, timeout);
+	rv = dl2p_14230_int_recv(d_l2_conn, timeout);
 
 	if (rv < 0)	/* Failure */
 		return rv;
@@ -996,7 +996,7 @@ diag_l2_proto_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 //Caller must free that diag_msg.
 //Sends using diag_l2_send() in order to have the timestamps updated
 static struct diag_msg *
-diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		int *errval)
 {
 	int rv;
@@ -1014,7 +1014,7 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 	while (1) {
 		/* do read only if no messages pending */
 		if (!d_l2_conn->diag_msg) {
-			rv = diag_l2_proto_14230_int_recv(d_l2_conn,
+			rv = dl2p_14230_int_recv(d_l2_conn,
 				d_l2_conn->diag_l2_p2max + 10);
 
 			if (rv < 0) {
@@ -1099,7 +1099,7 @@ diag_l2_proto_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
  * soon, so send it a keepalive message now.
  */
 static void
-diag_l2_proto_14230_timeout(struct diag_l2_conn *d_l2_conn)
+dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn)
 {
 	struct diag_l2_14230 *dp;
 	struct diag_msg msg={0};
@@ -1166,10 +1166,10 @@ const struct diag_l2_proto diag_l2_proto_iso14230 = {
 	DIAG_L2_PROT_ISO14230,
 	"ISO14230",
 	DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_KEEPALIVE,
-	diag_l2_proto_14230_startcomms,
-	diag_l2_proto_14230_stopcomms,
-	diag_l2_proto_14230_send,
-	diag_l2_proto_14230_recv,
-	diag_l2_proto_14230_request,
-	diag_l2_proto_14230_timeout
+	dl2p_14230_startcomms,
+	dl2p_14230_stopcomms,
+	dl2p_14230_send,
+	dl2p_14230_recv,
+	dl2p_14230_request,
+	dl2p_14230_timeout
 };

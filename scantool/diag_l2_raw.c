@@ -43,7 +43,7 @@
 
 
 int
-diag_l2_proto_raw_startcomms( struct diag_l2_conn *d_l2_conn,
+dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn,
 UNUSED(flag_type flags),
 unsigned int bitrate,
 target_type target,
@@ -74,7 +74,7 @@ source_type source)
 */
 
 int
-diag_l2_proto_raw_stopcomms(UNUSED(struct diag_l2_conn* pX))
+dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn* pX))
 {
 	return 0;
 }
@@ -84,7 +84,7 @@ diag_l2_proto_raw_stopcomms(UNUSED(struct diag_l2_conn* pX))
  * ret 0 if ok
  */
 int
-diag_l2_proto_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
+dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int rv;
 
@@ -102,7 +102,7 @@ diag_l2_proto_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 /*
 */
 int
-diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
 {
 	uint8_t rxbuf[MAXRBUF];
@@ -144,7 +144,7 @@ diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 /*
 */
 struct diag_msg *
-diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		int *errval)
 {
 	int rv;
@@ -183,10 +183,10 @@ const struct diag_l2_proto diag_l2_proto_raw = {
 	DIAG_L2_PROT_RAW,
 	"RAW",
 	0,
-	diag_l2_proto_raw_startcomms,
-	diag_l2_proto_raw_stopcomms,
-	diag_l2_proto_raw_send,
-	diag_l2_proto_raw_recv,
-	diag_l2_proto_raw_request,
+	dl2p_raw_startcomms,
+	dl2p_raw_stopcomms,
+	dl2p_raw_send,
+	dl2p_raw_recv,
+	dl2p_raw_request,
 	NULL
 };

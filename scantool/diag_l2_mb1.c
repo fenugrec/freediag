@@ -36,18 +36,17 @@
 #include "diag_tty.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
-#include "diag_l2_raw.h"
 
 #include "diag_l2_mb1.h"  /* prototypes for this file */
 
 
 static int
-diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+dl2p_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	uint8_t *data, int len);
 
 
 static int
-diag_l2_proto_mb1_startcomms( struct diag_l2_conn *d_l2_conn,
+dl2p_mb1_startcomms( struct diag_l2_conn *d_l2_conn,
 UNUSED(flag_type flags),
 unsigned int bitrate,
 target_type target,
@@ -135,9 +134,14 @@ UNUSED(source_type source))
 	 * Now we probably get a message back that we don't want
 	 * particularly that tells us the ecu part num, h/w and s/w versions
 	 */
-	(void) diag_l2_proto_mb1_int_recv(d_l2_conn, 1000, rxbuf, sizeof(rxbuf));
+	(void) dl2p_mb1_int_recv(d_l2_conn, 1000, rxbuf, sizeof(rxbuf));
 
 	return diag_iseterr(rv);
+}
+
+static int
+dl2p_mb1_stopcomms(UNUSED(struct diag_l2_conn* dl2c)) {
+	return 0;
 }
 
 /*
@@ -149,7 +153,7 @@ UNUSED(source_type source))
  * Data/len is received data/len
  */
 static int
-diag_l2_proto_mb1_decode(uint8_t *data, int len, int *msglen)
+dl2p_mb1_decode(uint8_t *data, int len, int *msglen)
 {
 	uint16_t cksum;
 	int i;
@@ -197,7 +201,7 @@ diag_l2_proto_mb1_decode(uint8_t *data, int len, int *msglen)
  * returns the data length of the packet received
  */
 static int
-diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+dl2p_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	uint8_t *data, int len)
 {
 	int rxoffset, rv;
@@ -217,7 +221,7 @@ diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 
 		/* Got some data */
 
-		rv = diag_l2_proto_mb1_decode(data, rxoffset, &msglen);
+		rv = dl2p_mb1_decode(data, rxoffset, &msglen);
 
 		if (rv >= 0)
 		{
@@ -249,14 +253,14 @@ diag_l2_proto_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
  *
  */
 static int
-diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+dl2p_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
 {
 	uint8_t	rxbuf[MAXRBUF];
 	int rv;
 	struct diag_msg *msg;
 
-	rv = diag_l2_proto_mb1_int_recv(d_l2_conn, timeout, rxbuf,
+	rv = dl2p_mb1_int_recv(d_l2_conn, timeout, rxbuf,
 		sizeof(rxbuf));
 
 	if (rv < 0 || rv>(255+4))
@@ -303,7 +307,7 @@ diag_l2_proto_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
  * ret 0 if ok
  */
 static int
-diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
+dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int rv;
 	unsigned int sleeptime;
@@ -355,7 +359,7 @@ diag_l2_proto_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 }
 
 static struct diag_msg *
-diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+dl2p_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		int *errval)
 {
 	int rv;
@@ -370,7 +374,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	}
 	/* And wait for response for 1 second */
 
-	rv = diag_l2_proto_mb1_int_recv(d_l2_conn, 1000, rxbuf,
+	rv = dl2p_mb1_int_recv(d_l2_conn, 1000, rxbuf,
 		sizeof(rxbuf));
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
@@ -406,7 +410,7 @@ diag_l2_proto_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
  * Timeout, called to send idle packet to keep link to ECU alive
  */
 static void
-diag_l2_proto_mb1_timeout(struct diag_l2_conn *d_l2_conn)
+dl2p_mb1_timeout(struct diag_l2_conn *d_l2_conn)
 {
 	struct diag_msg msg={0};
 	uint8_t txbuf[8];
@@ -428,7 +432,7 @@ diag_l2_proto_mb1_timeout(struct diag_l2_conn *d_l2_conn)
 
 	/* And receive/ignore the response */
 	if (rv >= 0)
-		(void) diag_l2_proto_mb1_int_recv(d_l2_conn, 1000, rxbuf, sizeof(rxbuf));
+		(void) dl2p_mb1_int_recv(d_l2_conn, 1000, rxbuf, sizeof(rxbuf));
 	return;
 }
 
@@ -436,10 +440,10 @@ const struct diag_l2_proto diag_l2_proto_mb1 = {
 	DIAG_L2_PROT_MB1,
 	"MB1",
 	DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_KEEPALIVE,
-	diag_l2_proto_mb1_startcomms,
-	diag_l2_proto_raw_stopcomms,
-	diag_l2_proto_mb1_send,
-	diag_l2_proto_mb1_recv,
-	diag_l2_proto_mb1_request,
-	diag_l2_proto_mb1_timeout
+	dl2p_mb1_startcomms,
+	dl2p_mb1_stopcomms,
+	dl2p_mb1_send,
+	dl2p_mb1_recv,
+	dl2p_mb1_request,
+	dl2p_mb1_timeout
 };

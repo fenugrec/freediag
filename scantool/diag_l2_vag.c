@@ -386,7 +386,7 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
  */
 
 static int
-diag_l2_proto_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
+dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
                              unsigned int bitrate, target_type target, UNUSED(source_type source))
 {
 	struct diag_serial_settings set;
@@ -505,7 +505,7 @@ diag_l2_proto_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type fl
 }
 
 //free what _startcomms alloc'ed
-static int diag_l2_proto_vag_stopcomms(struct diag_l2_conn *d_l2_conn)
+static int dl2p_vag_stopcomms(struct diag_l2_conn *d_l2_conn)
 {
 	//according to SAE J2818 if we want to finish the session
 	//we should just stop sending anything and let the ECU timeout;
@@ -532,7 +532,7 @@ static int diag_l2_proto_vag_stopcomms(struct diag_l2_conn *d_l2_conn)
  * Sends a single Block (message) to the ECU
  */
 static int
-diag_l2_proto_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
+dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int rv = 0;
 
@@ -644,7 +644,7 @@ diag_l2_proto_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  * Protocol receive routine
  */
 static int
-diag_l2_proto_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+dl2p_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
                        void (*callback)(void *handle, struct diag_msg *msg),
                        void *handle)
 {
@@ -693,7 +693,7 @@ diag_l2_proto_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 }
 
 static struct diag_msg *
-diag_l2_proto_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval)
+dl2p_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval)
 {
 	int rv, na_retry_cnt = 0;
 	struct diag_msg *rmsg;
@@ -756,7 +756,7 @@ diag_l2_proto_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, 
  * so send it a keepalive message now.
  */
 static void
-diag_l2_proto_vag_timeout(struct diag_l2_conn *d_l2_conn)
+dl2p_vag_timeout(struct diag_l2_conn *d_l2_conn)
 {
 	struct diag_msg ack;
 	memset(&ack, 0, sizeof(ack));
@@ -795,10 +795,10 @@ const struct diag_l2_proto diag_l2_proto_vag = {
 	DIAG_L2_PROT_VAG,
 	"VAG",
 	DIAG_L2_FLAG_KEEPALIVE,
-	diag_l2_proto_vag_startcomms,
-	diag_l2_proto_vag_stopcomms,
-	diag_l2_proto_vag_send,
-	diag_l2_proto_vag_recv,
-	diag_l2_proto_vag_request,
-	diag_l2_proto_vag_timeout
+	dl2p_vag_startcomms,
+	dl2p_vag_stopcomms,
+	dl2p_vag_send,
+	dl2p_vag_recv,
+	dl2p_vag_request,
+	dl2p_vag_timeout
 };

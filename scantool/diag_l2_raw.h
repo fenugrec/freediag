@@ -37,30 +37,30 @@ extern "C" {
 #endif
 
 int
-diag_l2_proto_raw_startcomms( struct diag_l2_conn *d_l2_conn, flag_type flags,
+dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn, flag_type flags,
 	unsigned int bitrate, target_type target, source_type source);
 
 /*
 */
 int
-diag_l2_proto_raw_stopcomms(struct diag_l2_conn* pX);
+dl2p_raw_stopcomms(struct diag_l2_conn* pX);
 
 /*
  * Just send the data, with no processing etc
  */
 int
-diag_l2_proto_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
+dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
 
 /*
 */
 int
-diag_l2_proto_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg), void *handle);
 
 /*
 */
 struct diag_msg *
-diag_l2_proto_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval);
+dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval);
 
 
 #if defined(__cplusplus)

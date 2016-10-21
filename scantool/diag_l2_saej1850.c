@@ -64,7 +64,7 @@ struct diag_l2_j1850
 #define STATE_ESTABLISHED 2	/* Established */
 
 /* Prototypes */
-uint8_t diag_l2_proto_j1850_crc(uint8_t *msg_buf, int nbytes);
+uint8_t dl2p_j1850_crc(uint8_t *msg_buf, int nbytes);
 
 /* External interface */
 
@@ -73,7 +73,7 @@ uint8_t diag_l2_proto_j1850_crc(uint8_t *msg_buf, int nbytes);
  */
 
 static int
-diag_l2_proto_j1850_startcomms(struct diag_l2_conn	*d_l2_conn,
+dl2p_j1850_startcomms(struct diag_l2_conn	*d_l2_conn,
 UNUSED(flag_type flags),
 UNUSED(unsigned int bitrate),
 target_type target, source_type source)
@@ -108,7 +108,7 @@ target_type target, source_type source)
 /*
 */
 static int
-diag_l2_proto_j1850_stopcomms(struct diag_l2_conn* d_l2_conn)
+dl2p_j1850_stopcomms(struct diag_l2_conn* d_l2_conn)
 {
 	struct diag_l2_j1850 *dp;
 
@@ -125,7 +125,7 @@ diag_l2_proto_j1850_stopcomms(struct diag_l2_conn* d_l2_conn)
 
 /* Thanks to B. Roadman's web site for this CRC code */
 uint8_t
-diag_l2_proto_j1850_crc(uint8_t *msg_buf, int nbytes)
+dl2p_j1850_crc(uint8_t *msg_buf, int nbytes)
 {
 	uint8_t crc_reg=0xff,poly,i,j;
 	uint8_t *byte_point;
@@ -162,7 +162,7 @@ diag_l2_proto_j1850_crc(uint8_t *msg_buf, int nbytes)
  * ret 0 if ok
  */
 static int
-diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
+dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int l1flags, rv, l1protocol;
 	struct diag_l2_j1850 *dp;
@@ -206,7 +206,7 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 		((l1flags & DIAG_L1_DATAONLY) == 0)) {
 		// Add in J1850 CRC
 		int curoff = offset;
-		buf[offset++] = diag_l2_proto_j1850_crc(buf, curoff);
+		buf[offset++] = dl2p_j1850_crc(buf, curoff);
 	}
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
@@ -231,7 +231,7 @@ diag_l2_proto_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  * Ret 0 if ok, whether or not there were any messages.
  */
 static int
-diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
+dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 {
 	int rv;
 	struct diag_l2_j1850 *dp;
@@ -325,7 +325,7 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 
 		if (!(l1flags & DIAG_L1_STRIPSL2CKSUM)) {
 			//test & trim checksum
-			uint8_t tcrc=diag_l2_proto_j1850_crc(dp->rxbuf, dp->rxoffset - 1);
+			uint8_t tcrc=dl2p_j1850_crc(dp->rxbuf, dp->rxoffset - 1);
 			if (dp->rxbuf[dp->rxoffset - 1] != tcrc) {
 				fprintf(stderr, "Bad checksum detected: needed %02X got %02X\n",
 						tcrc, dp->rxbuf[dp->rxoffset - 1]);
@@ -349,14 +349,14 @@ diag_l2_proto_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeou
 
 
 static int
-diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
 	void *handle)
 {
 	int rv;
 	struct diag_msg	*tmsg;
 
-	rv = diag_l2_proto_j1850_int_recv(d_l2_conn, timeout);
+	rv = dl2p_j1850_int_recv(d_l2_conn, timeout);
 
 	if (rv < 0) {
 		/* Failed, or timed out */
@@ -396,7 +396,7 @@ diag_l2_proto_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
  * Send a request and wait for a response
  */
 static struct diag_msg *
-diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+dl2p_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		int *errval)
 {
 	int rv;
@@ -411,7 +411,7 @@ diag_l2_proto_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg
 
 	/* And now wait for a response */
 	/* XXX, whats the correct timeout for this ??? */
-	rv = diag_l2_proto_j1850_int_recv(d_l2_conn, 250);
+	rv = dl2p_j1850_int_recv(d_l2_conn, 250);
 	if (rv < 0) {
 		*errval = rv;
 		return diag_pseterr(DIAG_ERR_GENERAL);
@@ -437,10 +437,10 @@ const struct diag_l2_proto diag_l2_proto_saej1850 = {
 	DIAG_L2_PROT_SAEJ1850,
 	"SAEJ1850",
 	DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_CONNECTS_ALWAYS,
-	diag_l2_proto_j1850_startcomms,
-	diag_l2_proto_j1850_stopcomms,
-	diag_l2_proto_j1850_send,
-	diag_l2_proto_j1850_recv,
-	diag_l2_proto_j1850_request,
+	dl2p_j1850_startcomms,
+	dl2p_j1850_stopcomms,
+	dl2p_j1850_send,
+	dl2p_j1850_recv,
+	dl2p_j1850_request,
 	NULL
 };
