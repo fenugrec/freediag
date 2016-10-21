@@ -28,6 +28,8 @@
 #include "diag_os.h"
 #include "diag_l2_iso14230.h" 	//needed to force header type (nisprog)
 
+#define NP_RX_EXTRATIMEOUT 20	//ms, added to all timeouts. Adjust to eliminiate read timeout errors
+
 /** fwd decls **/
 uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len);
 
@@ -365,7 +367,7 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 			// We should find 0xEC if it's in there no matter what kind of header.
 			// We'll "purge" the next bytes when we send SID 21
 			errval=diag_l1_recv(global_l2_conn->diag_link->l2_dl0d,
-					NULL, hackbuf, 4, 25);
+					NULL, hackbuf, 4, 25 + NP_RX_EXTRATIMEOUT);
 			if (errval == 4) {
 				//try to find 0xEC in the first bytes:
 				for (i=0; i<=3 && i<errval; i++) {
@@ -408,7 +410,7 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 				//By requesting (extra) + 4 with a short timeout, we'll return
 				//here very quickly and we're certain to "catch" 0x61.
 				errval=diag_l1_recv(global_l2_conn->diag_link->l2_dl0d,
-						NULL, hackbuf, extra + 4, 25);
+						NULL, hackbuf, extra + 4, 25 + NP_RX_EXTRATIMEOUT);
 				if (errval != extra+4) {
 					retryscore -=25;
 					diag_os_millisleep(300);
@@ -436,7 +438,7 @@ static int np_5(FILE *outf, const uint32_t start, uint32_t len) {
 					extra=0;
 				} else {
 					errval=diag_l1_recv(global_l2_conn->diag_link->l2_dl0d,
-						NULL, &hackbuf[errval], extra, 25);
+						NULL, &hackbuf[errval], extra, 25 + NP_RX_EXTRATIMEOUT);
 				}
 
 				if (errval != extra)	//this should always fit...
@@ -1209,7 +1211,7 @@ static int npk_rxrawdump(uint8_t *dest, uint32_t skip_start, uint32_t numblocks)
 		//loop for every 32-byte response
 
 		/* grab header. Assumes we only get "FMT PRC <data> cks" replies */
-		errval = diag_l1_recv(global_l2_conn->diag_link->l2_dl0d, NULL, rxbuf, 3 + 32, 25);
+		errval = diag_l1_recv(global_l2_conn->diag_link->l2_dl0d, NULL, rxbuf, 3 + 32, 25 + NP_RX_EXTRATIMEOUT);
 		if (errval < 0) {
 			printf("dl1recv err\n");
 			goto badexit;
