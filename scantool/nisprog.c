@@ -1633,8 +1633,8 @@ static int np_12(int argc, char **argv) {
 	global_l2_conn->diag_l2_p2max = old_p2max;	//restore p2max; the rest should be OK
 	if (rxmsg==NULL) {
 		printf("no ERASE_BLOCK response?\n");
-	}
 		goto badexit_reprotect;
+	}
 	if (rxmsg->data[0] != 0xFC) {
 		printf("got bad ERASE_BLOCK response : ");
 		diag_data_dump(stdout, rxmsg->data, rxmsg->len);
