@@ -633,7 +633,7 @@ static int dt_open(struct diag_l0_device *dl0d, int testnum)
 	diag_tty_close(dev->tty_int);
 
 	fprintf(stderr, "L0 test finished. Ignore the following error.\n");
-	return 0;
+	return DIAG_ERR_GENERAL;
 }
 
 
