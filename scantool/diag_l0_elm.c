@@ -100,7 +100,7 @@ static int elm_sendcmd(struct diag_l0_device *dl0d,
 
 static int elm_purge(struct diag_l0_device *dl0d);
 
-void elm_parse_cr(uint8_t *data, int len);	//change 0x0A to 0x0D
+static void elm_parse_cr(uint8_t *data, int len);	//change 0x0A to 0x0D
 static void elm_close(struct diag_l0_device *dl0d);
 
 /*
@@ -206,7 +206,7 @@ elm_close(struct diag_l0_device *dl0d)
 //elm_parse_errors : look for known error messages in the reply.
 // return any match or NULL if nothing found.
 // data[] must be \0-terminated !
-const char * elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) {
+static const char * elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) {
 	struct elm_device *dev;
 	const char ** elm_errors;	//just used to select between the 2 error lists
 	int i;
@@ -859,7 +859,14 @@ elm_send(struct diag_l0_device *dl0d,
   * ELM returns a string with format "%02X %02X %02X[...]\n" . But it's slow so we add ELM_SLOWNESS ms to the specified timeout.
  * We convert this received ascii string to hex before returning.
  * note : "len" is the number of bytes read on the OBD bus, *NOT* the number of ASCII chars received on the serial link !
- * TODO MAYBE : decode possible error strings ? not essential...
+ * TODO decode possible error strings ! Essential because ELM can reply
+ * 	"FB ERROR" (FB) is a valid hex number
+ * 	"ACT ALARM" (AC) is a valid hex number
+ * technique:
+ *	-if any hexpair doesn't decode cleanly, discard message
+ *	-just before returning any data, search for an error message match
+ *	-still missing : if caller requests 1 byte, and the error is "FB ERROR", we'll still happily return 0xFB !
+ *
  * TODO: improve "len" semantics for L0 interfaces that do framing, such as this. Currently this returns max 1 message, to
  * let L2 do another call to get further messages (typical case of multiple responses)
  */
@@ -875,6 +882,7 @@ elm_recv(struct diag_l0_device *dl0d,
 	unsigned long t0,tf;	//manual timeout control
 	int steplen;	/* bytes per read */
 	int wp, rp;	/* write & read indexes in rxbuf; a type of FIFO */
+	const char *err;
 
 	if ((!len) || (len > MAXRBUF))
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -886,6 +894,7 @@ elm_recv(struct diag_l0_device *dl0d,
 	wp=0;
 	rp=0;
 	xferd=0;
+	rxbuf[0] = 0x00;	//null-terminate
 
 	if (diag_l0_debug & DIAG_DEBUG_READ)
 		fprintf(stderr, FLFMT "Expecting 3*%d bytes from ELM, %u ms timeout(+400)...", FL, (int) len, timeout);
@@ -898,13 +907,13 @@ elm_recv(struct diag_l0_device *dl0d,
 		tcur = diag_os_getms();
 		if (tcur >= tf) {
 			/* timed out : */
-			return (xferd>0)? xferd:DIAG_ERR_TIMEOUT;
+			goto pre_exit;
 		}
 		timeout = tf - tcur;
 
 		rv = diag_tty_read(dev->tty_int, rxbuf+wp, steplen, timeout);
 		if (rv == DIAG_ERR_TIMEOUT) {
-			return (xferd>0)? xferd:rv;
+			goto pre_exit;
 		}
 
 		if (rv <= 0) {
@@ -925,7 +934,7 @@ elm_recv(struct diag_l0_device *dl0d,
 		if (skipc > 0) {
 			/* definitely a line-end / prompt ! return data so far, if any */
 			if (xferd > 0) {
-				return xferd;
+				goto pre_exit;
 			}
 		}
 
@@ -940,10 +949,22 @@ elm_recv(struct diag_l0_device *dl0d,
 			/* good hexpair */
 			((uint8_t *)data)[xferd]=(uint8_t) rbyte;
 			xferd++;
-			if ( (size_t)xferd==len)
-				return xferd;
+			if ( (size_t)xferd==len) {
+				goto pre_exit;
+			}
+		} else {
+			/* didn't scanf properly... error message ? ex. "NO DATA\r>"
+			 * NO DATA is pretty inoffensive; skip printing that one */
+			if (!(rxbuf[rp] == 'N' && rxbuf[rp+1] =='O')) {
+				fprintf(stderr, FLFMT "ELM sscanf failed to eat '%s'\n", FL, rxbuf);
+			}
+			/* finish pulling the error message or whatever garbage */
+			rv = diag_tty_read(dev->tty_int, rxbuf+wp, sizeof(rxbuf) - wp, ELM_SLOWNESS);
+			if (rv >= 0) rxbuf[wp + rv] = 0x00;
+			xferd = DIAG_ERR_GENERAL;
+			goto pre_exit;
 		}
-		/* here, we just sscanf'd 2 bytes (succesfully or not), so we read 1 more. */
+		/* here, we just sscanf'd 2 bytes, so we read 1 more. */
 		/* we can't read 2 more, in case we're in a multi-message, for instance if we just decoded 0x00 in
 		 * "48 6A 01 00\n48 6A..." , reading two bytes "\n4" would corrupt the next message !
 		 */
@@ -951,6 +972,14 @@ elm_recv(struct diag_l0_device *dl0d,
 		steplen=1;
 	}	// while (1)
 
+pre_exit:
+		err = elm_parse_errors(dl0d, rxbuf);
+		if (err) {
+			if (strcmp(err, "NO DATA") == 0) return DIAG_ERR_TIMEOUT;
+			fprintf(stderr, FLFMT "ELM error %s\n", FL, err);
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
+		return (xferd>0)? xferd:DIAG_ERR_TIMEOUT;
 }
 
 /*
@@ -1002,7 +1031,7 @@ elm_getflags(struct diag_l0_device *dl0d)
 }
 
 //elm_parse_cr : change 0x0A to 0x0D in datastream.
-void elm_parse_cr(uint8_t *data, int len) {
+static void elm_parse_cr(uint8_t *data, int len) {
 	int i=0;
 	for (;i<len; i++) {
 		if (*data==0x0D)
