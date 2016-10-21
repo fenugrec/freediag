@@ -26,11 +26,14 @@
 
 #include <stdbool.h>
 #include "diag_os.h"
+#include "diag_tty.h"	//for setspeed
 #include "diag_l2_iso14230.h" 	//needed to force header type (nisprog)
 
 #define NP_RX_EXTRATIMEOUT 20	//ms, added to all timeouts. Adjust to eliminiate read timeout errors
+#define NPK_SPEED 62500	//bps default speed for npkern kernel
 
 /** fwd decls **/
+static int npkern_init(void);
 uint32_t read_ac(uint8_t *dest, uint32_t raddr, uint32_t len);
 
 /****/
@@ -1069,9 +1072,14 @@ int np_9(int argc, char **argv) {
 	free(pl_encr);
 	fclose(fpl);
 
-	printf("SID BF done.\nECU now running from RAM ! Connection is now, most likely, dead or invalid.\n"
-			"Disabling periodic keepalive.\n");
-	global_l2_conn->tinterval = -1;
+	printf("SID BF done.\nECU now running from RAM ! Disabling periodic keepalive;\n");
+
+	if (!npkern_init()) {
+		printf("You may proceed with kernel-specific commands; speed has been changed to %u.\n", NPK_SPEED);
+	} else {
+		printf("Problem starting kernel; try to disconnect + set speed + connect again.\n");
+	}
+
 	return CMD_OK;
 
 badexit:
@@ -1097,9 +1105,10 @@ static int npkern_init(void) {
 
 	nisreq.data=txdata;
 
-	/* Assume kernel is freshly booted : setspeed first */
+	/* Assume kernel is freshly booted : disable keepalive and setspeed */
+	global_l2_conn->tinterval = -1;
 
-	set.speed = 62500;
+	set.speed = NPK_SPEED;
 	set.databits = diag_databits_8;
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
@@ -1110,6 +1119,11 @@ static int npkern_init(void) {
 		return -1;
 	}
 	(void) diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+
+	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
+	global_l2_conn->diag_l2_p3min = 5;	//5ms before sending new requests
+	dlproto = (struct diag_l2_14230 *)global_l2_conn->diag_l2_proto_data;
+	dlproto->modeflags = ISO14230_SHORTHDR | ISO14230_LENBYTE | ISO14230_FMTLEN;
 
 	/* StartComm */
 	txdata[0] = 0x81;
@@ -1126,11 +1140,6 @@ static int npkern_init(void) {
 	}
 	diag_freemsg(rxmsg);
 
-	global_l2_conn->tinterval = -1;
-	global_l2_conn->diag_l2_p4min = 0;	//0 interbyte spacing
-	global_l2_conn->diag_l2_p3min = 5;	//5ms before sending new requests
-	dlproto = (struct diag_l2_14230 *)global_l2_conn->diag_l2_proto_data;
-	dlproto->modeflags = ISO14230_SHORTHDR | ISO14230_LENBYTE | ISO14230_FMTLEN;
 	return 0;
 }
 
