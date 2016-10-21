@@ -32,6 +32,7 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
+#include "utlist.h"
 
 static int cmd_test_help(int argc, char **argv);
 static int cmd_test_rvi(int argc, char **argv);
@@ -76,34 +77,40 @@ cmd_test_help(int argc, char **argv)
 
 /*
  * Guts of routine to ask for VIN/CID/CVN
+ * return data length (excluding 0x00 termination) if ok (data written to *obuf)
  */
-static void
-get_vit_info(struct diag_l3_conn *d_conn, uint8_t rqst, const char *descr)
+static unsigned
+get_vit_info(struct diag_l3_conn *d_conn, uint8_t itype, uint8_t *obuf, unsigned buflen)
 {
-	char textbuf[MAXRBUF];
-	struct diag_msg *msg;
-	int rv, offset ;
+	struct diag_msg *msg, *msgcur;
+	int rv;
+	unsigned offset ;
 
 	/* Now request the VIN */
-	rv = l3_do_j1979_rqst(d_conn, 9, rqst, 0, 0, 0, 0, 0, (void *)&_RQST_HANDLE_NORMAL);
-	if (rv < 0)
-	{
-		printf("Failed to get %s info\n", descr);
-		return;
+	rv = l3_do_j1979_rqst(d_conn, 9, itype, 0, 0, 0, 0, 0, (void *)&_RQST_HANDLE_NORMAL);
+	if (rv < 0) {
+		printf("Failed to get infotype 0x%X info\n", itype);
+		return 0;
 	}
 
 	msg = find_ecu_msg(0, 0x49);
-	if (msg == NULL)
-	{
-		printf("No %s info\n", descr);
-		return;
+	if (msg == NULL){
+		printf("No Mode 9 response\n");
+		return 0;
 	}
-	for (offset = 0 ; msg; msg=msg->next, offset+=4)
-	{
-		memcpy(&textbuf[offset], &msg->data[3], 4);
+
+	offset = 0;
+	LL_FOREACH(msg, msgcur) {
+		memcpy(&obuf[offset], &msgcur->data[3], 4);
+		offset += 4;
+		if (offset >= buflen ) {
+			offset = buflen - 1;
+			printf("Clipped Mode 9 response\n");
+			break;
+		}
 	}
-	textbuf[offset] = 0;
-	printf("%s: %s\n", descr, &textbuf[3]);
+	obuf[offset] = 0;
+	return offset;
 }
 
 
@@ -113,14 +120,6 @@ static int
 cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
 {
 	struct diag_l3_conn *d_conn;
-	int rv;
-	struct diag_msg *msg;
-	int j, k;
-	uint8_t *data;
-
-
-
-	uint8_t vit_bits[4];
 
 	if (global_state < STATE_SCANDONE)
 	{
@@ -130,40 +129,49 @@ cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
 
 	d_conn = global_l3_conn;
 
-	/* 1st ask for the supported types */
-	rv = l3_do_j1979_rqst(d_conn, 9, 0, 0, 0, 0, 0, 0, (void *)&_RQST_HANDLE_NORMAL);
-	if (rv < 0)
-	{
-		printf("rvi: supported types request failed\n");
-		return CMD_OK;
+	ecu_data_t *ep;
+	unsigned i;
+	bool merged_mode9_info[0x100];
+	#define MODE9_INFO_MAXLEN 0x100
+	uint8_t infostring[MODE9_INFO_MAXLEN];
+
+
+		/* merge all infotypes supported by all ECUs */
+	memset(merged_mode9_info, 0, sizeof(merged_mode9_info));
+	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
+		unsigned j;
+		for (j=0; j<sizeof(ep->mode9_info);j++) {
+			merged_mode9_info[j] |= ep->mode9_info[j] ;
+		}
 	}
 
-	memset(vit_bits, 0, sizeof(vit_bits));
-
-	msg = find_ecu_msg(0, 0x49);
-	if (msg == NULL)
-	{
-		printf("rvi: no valid information\n");
-		return CMD_OK;
-	}
-	data = msg->data;
-
-	/* OR in the received bits into vit_bits */
-	for (j=0, k=3; j<4; j++,k++)
-		vit_bits[j] |= data[k];
-
-	if (l2_check_pid_bits(vit_bits, 1) == 1)
-		get_vit_info(d_conn, 2, "VIN");
-	else
+	if (merged_mode9_info[2]) {
+		if (get_vit_info(d_conn, 2, infostring, MODE9_INFO_MAXLEN) > 3) {
+			printf("VIN: %s\n", (char *) &infostring[3]);	//skip padding !
+		}
+	} else {
 		printf("ECU doesn't support VIN request\n");
-	if (l2_check_pid_bits(vit_bits, 3) == 1)
-		get_vit_info(d_conn, 4, "Calibration ID");
-	else
+	}
+
+	if (merged_mode9_info[4]) {
+		if (get_vit_info(d_conn, 4, infostring, MODE9_INFO_MAXLEN)) {
+			printf("Calibration ID: %s\n", (char *) infostring);
+		}
+	} else {
 		printf("ECU doesn't support Calibration ID request\n");
-	if (l2_check_pid_bits(vit_bits, 5) == 1)
-		get_vit_info(d_conn, 6, "CVN");
-	else
+	}
+
+	if (merged_mode9_info[6]) {
+		get_vit_info(d_conn, 6, infostring, MODE9_INFO_MAXLEN);
+		unsigned cvn_len = get_vit_info(d_conn, 6, infostring, MODE9_INFO_MAXLEN);
+		if (cvn_len) {
+			printf("CVN: ");
+			diag_data_dump(stdout, infostring, cvn_len);
+			printf("\n");
+		}
+	} else {
 		printf("ECU doesn't support CVN request\n");
+	}
 
 	return CMD_OK;
 }
