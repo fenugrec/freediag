@@ -53,7 +53,7 @@ set (LIBDYNO_SRCS dyno.c)
 set (DIAGTEST_SRCS diag_test.c)
 set (SCANTOOL_SRCS scantool.c scantool_cli.c scantool_diag.c scantool_set.c
 	scantool_test.c scantool_debug.c scantool_vag.c scantool_dyno.c
-	scantool_aif.c)
+	scantool_obd.c scantool_aif.c)
 #and GLOB all the headers. This is *only* so that the headers end up in
 #the file list of IDE projects (at least Code::blocks)
 #but could be removed without impacting the build process

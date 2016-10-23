@@ -80,6 +80,7 @@
 #include "diag_l3.h"
 
 #include "scantool.h"
+#include "scantool_obd.h"
 #include "scantool_cli.h"
 #include "scantool_aif.h"
 #include "utlist.h"
