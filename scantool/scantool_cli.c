@@ -32,7 +32,6 @@
 
 #include <stdbool.h>
 
-#include <sys/stat.h>
 #include <time.h>
 #include <ctype.h>
 #include <assert.h>
@@ -442,7 +441,6 @@ cmd_log(int argc, char **argv)
 {
 	char autofilename[20]="";
 	char *file;
-	struct stat buf;
 	time_t now;
 	int i;
 
@@ -457,10 +455,15 @@ cmd_log(int argc, char **argv)
 			file = argv[1];	//if a file name was specified, use that
 	} else {
 		//else, generate an auto log file
-		for (i = 0; i <= 100; i++) {
+		for (i = 0; i < 100; i++) {
+			FILE *testexist;
 			sprintf(autofilename,"log.%02d",i);
-			if (stat(file, &buf) == -1 && errno == ENOENT)
+			testexist = fopen(autofilename, "r");
+			if (testexist == NULL) {
+				//file name is free: use that
 				break;
+			}
+			fclose(testexist);
 		}
 		if (i == 100) {
 			printf("Can't create log.%d; remember to clean old auto log files\n",i);
