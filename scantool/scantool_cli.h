@@ -60,7 +60,21 @@ int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
 void wait_enter(const char *message);
 int pressed_enter(void);
 
-void enter_cli(const char *pname, const char *initscript);
+void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable);
+
+extern FILE		*global_logfp;		/* Monitor log output file pointer */
+void log_timestamp(const char *prefix);
+
+/** Prompt for some input.
+ * Returns a new 0-terminated string with trailing CR/LF stripped
+ *
+ * Caller must free returned buffer. Used if we don't
+ * have readline, and when reading init or command files.
+ * No line editing or history.
+ */
+char *
+basic_get_input(const char *prompt);
+
 
 /* Sub menus */
 

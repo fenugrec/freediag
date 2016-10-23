@@ -1841,7 +1841,7 @@ main(int argc, char **argv)
 	do_init();
 
 	if ( user_interface )
-		enter_cli(progname, startfile);
+		enter_cli(progname, startfile, scantool_cmd_table);
 	else
 		enter_aif(progname );
 
