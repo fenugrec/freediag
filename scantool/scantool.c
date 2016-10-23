@@ -73,6 +73,7 @@
 #include <stdbool.h>
 
 #include "diag.h"
+#include "diag_err.h"
 #include "diag_os.h"
 #include "diag_dtc.h"
 #include "diag_l1.h"

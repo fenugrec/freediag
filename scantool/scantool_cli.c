@@ -773,8 +773,7 @@ rc_file(void)
 	if (homedir) {
 		/* we add "/." and "rc" ... 4 characters */
 		if (diag_malloc(&rchomeinit, strlen(homedir) + strlen(progname) + 5)) {
-			diag_iseterr(DIAG_ERR_NOMEM);
-			return CMD_OK;
+			return CMD_FAILED;
 		}
 		strcpy(rchomeinit, homedir);
 		strcat(rchomeinit, "/.");

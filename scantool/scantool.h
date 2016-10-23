@@ -34,7 +34,6 @@
 #include <string.h>
 
 #include "diag.h"
-#include "diag_err.h"
 
 #if defined(__cplusplus)
 extern "C" {

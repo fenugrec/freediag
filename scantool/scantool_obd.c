@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "diag.h"
+#include "diag_err.h"
 #include "diag_os.h"
 #include "diag_l2.h"
 #include "diag_l3.h"
