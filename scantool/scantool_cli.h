@@ -66,6 +66,41 @@ extern int diag_cli_debug;
 extern FILE		*global_logfp;		/* Monitor log output file pointer */
 void log_timestamp(const char *prefix);
 
+
+
+/** Global parameters set by user interface **/
+
+/* struct global_cfg contains all global parameters */
+extern struct globcfg {
+	bool units;	/* English(1) or Metric(0)  display */
+
+	uint8_t	tgt;	/* u8; target address */
+	uint8_t	src;	/* u8: source addr / tester ID */
+	bool	addrtype;	/* Address type, 1 = functional */
+	unsigned int speed;	/* ECU comms speed */
+
+	int	initmode;	/* Type of bus init (ISO9141/14230 only) */
+	int	L1proto;	/* L1 (H/W) Protocol type */
+	int	L2proto;	/* L2 (S/W) Protocol type; value of ->diag_l2_protocol. */
+	int	L2idx;		/* index of that L2 proto in struct l2proto_list[] */
+
+	const char *l0name;	/* L0 interface name to use */
+	//struct diag_l0_device *dl0d;	/* L0 device to use */
+} global_cfg;
+
+
+enum globstate {
+	//specify numbers because some code checks (for global_state >= X) etc.
+	STATE_IDLE=0,		/* Idle */
+	STATE_WATCH=1,		/* Watch mode */
+	STATE_CONNECTED=2,	/* Connected to ECU */
+	STATE_L3ADDED=3,	/* Layer 3 protocol added on Layer 2 */
+	STATE_SCANDONE=4,	/* J1978/9 Scan Done, so got J1979 PID list */
+};	//only for global_state !
+extern enum globstate global_state;
+
+extern struct diag_l0_device *global_dl0d;
+
 /** Prompt for some input.
  * Returns a new 0-terminated string with trailing CR/LF stripped
  *

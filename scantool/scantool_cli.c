@@ -59,7 +59,13 @@ int diag_cli_debug;	//debug level
 FILE		*global_logfp;		/* Monitor log output file pointer */
 #define LOG_FORMAT	"FREEDIAG log format 0.2"
 
-FILE		*instream;
+FILE		*instream;	/* source of text commands ; can be stdin or a file */
+
+//ugly, global data. Could be struct-ed together eventually
+struct diag_l2_conn *global_l2_conn;
+struct diag_l3_conn *global_l3_conn;
+enum globstate global_state = STATE_IDLE;
+struct diag_l0_device *global_dl0d;
 
 /* ROOT main menu */
 

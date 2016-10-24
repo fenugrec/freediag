@@ -87,13 +87,7 @@
 #include "utlist.h"
 
 
-//ugly, global data. Could be struct-ed together eventually
-struct diag_l2_conn *global_l2_conn;
-struct diag_l3_conn *global_l3_conn;
-enum globstate global_state = STATE_IDLE;
 uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
-struct diag_l0_device *global_dl0d;
-
 
 /*
  * Data received from each ecu
