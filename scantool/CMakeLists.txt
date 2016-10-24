@@ -51,9 +51,12 @@ set (LIBDIAG_SRCS ${DL0_SRCS} ${DL2_SRCS}
 	diag_general.c diag_dtc.c diag_cfg.c)
 set (LIBDYNO_SRCS dyno.c)
 set (DIAGTEST_SRCS diag_test.c)
-set (SCANTOOL_SRCS scantool.c scantool_cli.c scantool_diag.c scantool_set.c
-	scantool_test.c scantool_debug.c scantool_vag.c scantool_dyno.c
+set (CLI_SRCS scantool_cli.c scantool_diag.c scantool_set.c
+	scantool_debug.c)
+set (SCANTOOL_SRCS scantool.c
+	scantool_test.c scantool_vag scantool_dyno.c
 	scantool_obd.c scantool_aif.c)
+
 #and GLOB all the headers. This is *only* so that the headers end up in
 #the file list of IDE projects (at least Code::blocks)
 #but could be removed without impacting the build process
@@ -69,7 +72,7 @@ file (GLOB SCANTOOL_HEADERS *.h)
 # -source-codes-filename-at-compile-time/22161316
 
 foreach (F IN LISTS LIBDIAG_SRCS;LIBDYNO_SRCS;
-	DIAGTEST_SRCS;SCANTOOL_SRCS)
+	DIAGTEST_SRCS;CLI_SRCS;SCANTOOL_SRCS)
 	get_filename_component (BNAME ${F} NAME)
 	set_source_files_properties (${F} PROPERTIES
 		COMPILE_DEFINITIONS "CURFILE=\"${BNAME}\"")
@@ -93,6 +96,7 @@ target_link_libraries(diag ${LIBRT})
 
 add_library(dyno STATIC ${LIBDYNO_SRCS})
 
+add_library(freediagcli STATIC ${CLI_SRCS})
 
 # diag_test binary
 
@@ -104,7 +108,7 @@ install(TARGETS diag_test DESTINATION bin)
 
 add_executable(scantool  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
 
-target_link_libraries(scantool diag dyno)
+target_link_libraries(scantool diag dyno freediagcli)
 if (HAVE_LIBREADLINE)
 	#this was optional
 	target_link_libraries(scantool readline)
