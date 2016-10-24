@@ -362,7 +362,6 @@ static int
 cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
 {
 	if (global_state < STATE_CONNECTED) {
-		printf("Not connected to ECU\n");
 		return CMD_OK;
 	}
 

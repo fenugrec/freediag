@@ -35,12 +35,12 @@
 #include <time.h>
 #include <ctype.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "diag.h"
 #include "diag_os.h"
 #include "diag_err.h"
 
-#include "scantool.h"
 #include "scantool_cli.h"
 
 #ifdef HAVE_LIBREADLINE
@@ -700,11 +700,12 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 		return CMD_OK;
 	if (rv == CMD_EXIT) {
 		char *disco="disconnect";
-		if (global_logfp != NULL)
+		if (global_logfp != NULL) {
 			cmd_stoplog(0, NULL);
-		if (global_state > STATE_IDLE) {
-			do_cli(diag_cmd_table, "", 1, &disco);	//XXX should be called recursively in case there are >1 active L3 conns...
 		}
+
+		do_cli(diag_cmd_table, "", 1, &disco);	//XXX should be called recursively in case there are >1 active L3 conns...
+
 		rv=diag_end();
 		if (rv)
 			fprintf(stderr, FLFMT "diag_end failed !?\n", FL);
