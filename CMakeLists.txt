@@ -108,8 +108,21 @@ option(BUILDGUI "Enable scangui (default=no)" OFF)
 option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
 option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
 
-set(L0LIST "dumb" "br" "elm" "sim" "dumbtest" "me")
-set(L2LIST "iso9141" "can" "iso14230" "mb1" "raw" "saej1850" "vag")
+
+###### L0/L2 driver selection
+
+if(DEFINED L0LIST)
+		message("Using provided list of L0 : ${L0LIST}")
+else()
+		set(L0LIST "me" "dumb" "br" "elm" "sim" "dumbtest")
+endif()
+
+if(DEFINED L2LIST)
+		message("Using provided list of L2 : ${L2LIST}")
+else()
+		set(L2LIST "iso9141" "can" "iso14230" "mb1" "raw" "saej1850" "vag")
+endif()
+
 
 foreach (L0NAME IN LISTS L0LIST)
 	option(USE_L0_${L0NAME} "Enable \"${L0NAME}\" L0 driver (default=enabled)" ON)
