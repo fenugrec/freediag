@@ -51,7 +51,7 @@
 
 #define PROMPTBUFSIZE 80		//Length of prompt before the '>' character.
 #define CLI_MAXARGS 300
-const char progname[]=SCANTOOL_PROGNAME;
+const char *progname;
 const char projname[]=PROJECT_NAME;
 
 int diag_cli_debug;	//debug level
@@ -846,7 +846,7 @@ enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *
 {
 	int rc_rv=CMD_OK;
 	global_logfp = NULL;
-
+	progname = name;
 	// alloc a new table combining extra table (if applicable) and basic table
 	int i = 0;
 	const struct cmd_tbl_entry *ctp_iter;

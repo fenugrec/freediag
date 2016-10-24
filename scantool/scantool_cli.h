@@ -56,13 +56,46 @@ typedef struct cmd_tbl_entry
 #define FLAG_FILE_ARG (1 << 1) /* Command accepts a filename as an argument*/
 #define FLAG_CUSTOM (1 << 2)	/* Command handles other subcommands not in the subtable, max 1 per table */
 
+/*** Public CLI functions */
+
 int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
 void wait_enter(const char *message);
 int pressed_enter(void);
 
 void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable);
 
-extern int diag_cli_debug;
+
+
+/** Prompt for some input.
+ * Returns a new 0-terminated string with trailing CR/LF stripped
+ *
+ * Caller must free returned buffer. Used if we don't
+ * have readline, and when reading init or command files.
+ * No line editing or history.
+ */
+char *
+basic_get_input(const char *prompt);
+
+
+/**
+ * Decimal/Octal/Hex to integer routine
+ * formats:
+ * [-]0[0-7] : octal
+ * [-]0x[0-9,A-F,a-f] : hex
+ * [-]$[0-9,A-F,a-f] : hex
+ * [-][0-9] : dec
+ * Returns 0 if unable to decode.
+ */
+int htoi(char *buf);
+
+
+int cmd_up(int argc, char **argv);
+int cmd_exit(int argc, char **argv);
+
+
+
+
+extern int diag_cli_debug;	/* debug level */
 extern FILE		*global_logfp;		/* Monitor log output file pointer */
 void log_timestamp(const char *prefix);
 
@@ -101,31 +134,7 @@ extern enum globstate global_state;
 
 extern struct diag_l0_device *global_dl0d;
 
-/** Prompt for some input.
- * Returns a new 0-terminated string with trailing CR/LF stripped
- *
- * Caller must free returned buffer. Used if we don't
- * have readline, and when reading init or command files.
- * No line editing or history.
- */
-char *
-basic_get_input(const char *prompt);
-
-
-/**
- * Decimal/Octal/Hex to integer routine
- * formats:
- * [-]0[0-7] : octal
- * [-]0x[0-9,A-F,a-f] : hex
- * [-]$[0-9,A-F,a-f] : hex
- * [-][0-9] : dec
- * Returns 0 if unable to decode.
- */
-int htoi(char *buf);
-
-int cmd_up(int argc, char **argv);
-int cmd_exit(int argc, char **argv);
-
+extern const char *progname;
 
 
 /* Sub menus */

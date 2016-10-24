@@ -1807,9 +1807,9 @@ main(int argc, char **argv)
 	do_init();
 
 	if ( user_interface )
-		enter_cli(progname, startfile, scantool_cmd_table);
+		enter_cli(SCANTOOL_PROGNAME, startfile, scantool_cmd_table);
 	else
-		enter_aif(progname );
+		enter_aif(SCANTOOL_PROGNAME);
 
 	/* Done */
 	exit(0);

@@ -40,9 +40,6 @@ extern "C" {
 #endif
 
 
-extern const char progname[];
-
-
 /* Structure to hold responses */
 typedef struct response
 {
