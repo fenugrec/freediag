@@ -108,11 +108,14 @@ install(TARGETS diag_test DESTINATION bin)
 
 add_executable(scantool  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
 
-target_link_libraries(scantool diag dyno freediagcli)
+target_link_libraries(freediagcli diag)
 if (HAVE_LIBREADLINE)
 	#this was optional
-	target_link_libraries(scantool readline)
+	target_link_libraries(freediagcli readline)
 endif ()
+
+target_link_libraries(scantool dyno freediagcli)
+
 install(TARGETS scantool DESTINATION bin)
 
 
