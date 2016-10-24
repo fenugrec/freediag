@@ -1850,17 +1850,3 @@ main(int argc, char **argv)
 	exit(0);
 }
 
-
-int
-cmd_up(UNUSED(int argc), UNUSED(char **argv))
-{
-	return CMD_UP;
-}
-
-
-int
-cmd_exit(UNUSED(int argc), UNUSED(char **argv))
-{
-	return CMD_EXIT;
-}
-

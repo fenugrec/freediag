@@ -62,6 +62,7 @@ int pressed_enter(void);
 
 void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable);
 
+extern int diag_cli_debug;
 extern FILE		*global_logfp;		/* Monitor log output file pointer */
 void log_timestamp(const char *prefix);
 
@@ -74,6 +75,22 @@ void log_timestamp(const char *prefix);
  */
 char *
 basic_get_input(const char *prompt);
+
+
+/**
+ * Decimal/Octal/Hex to integer routine
+ * formats:
+ * [-]0[0-7] : octal
+ * [-]0x[0-9,A-F,a-f] : hex
+ * [-]$[0-9,A-F,a-f] : hex
+ * [-][0-9] : dec
+ * Returns 0 if unable to decode.
+ */
+int htoi(char *buf);
+
+int cmd_up(int argc, char **argv);
+int cmd_exit(int argc, char **argv);
+
 
 
 /* Sub menus */

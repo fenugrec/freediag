@@ -54,6 +54,8 @@
 const char progname[]=SCANTOOL_PROGNAME;
 const char projname[]=PROJECT_NAME;
 
+int diag_cli_debug;	//debug level
+
 FILE		*global_logfp;		/* Monitor log output file pointer */
 #define LOG_FORMAT	"FREEDIAG log format 0.2"
 
@@ -975,4 +977,18 @@ void wait_enter(const char *message)
 int pressed_enter()
 {
 	return diag_os_ipending();
+}
+
+
+int
+cmd_up(UNUSED(int argc), UNUSED(char **argv))
+{
+	return CMD_UP;
+}
+
+
+int
+cmd_exit(UNUSED(int argc), UNUSED(char **argv))
+{
+	return CMD_EXIT;
 }

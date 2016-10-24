@@ -36,8 +36,6 @@
 #include "scantool_cli.h"
 
 
-int diag_cli_debug;
-
 //declare an array of structs to associate debug flag masks with short description.
 //See diag.h
 const struct debugflags_descr debugflags[]={
