@@ -396,7 +396,111 @@ cmd_ecus(UNUSED(int argc), UNUSED(char **argv))
 	return CMD_OK;
 }
 
+static void
+print_resp_info(UNUSED(int mode), response_t *data)
+{
 
+	int i;
+	for (i=0; i<256; i++)
+	{
+		if (data->type != TYPE_UNTESTED)
+		{
+			if (data->type == TYPE_GOOD)
+			{
+				printf("0x%02X: ", i );
+				diag_data_dump(stdout, data->data, data->len);
+				printf("\n");
+			}
+			else
+				printf("0x%02X: Failed 0x%X\n",
+					i, data->data[1]);
+		}
+		data++;
+	}
+}
+
+
+static int
+cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv))
+{
+	ecu_data_t *ep;
+	int i;
+
+	printf("Current Data\n");
+	for (i=0, ep=ecu_info; i<MAX_ECU; i++,ep++)
+	{
+		if (ep->valid)
+		{
+			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
+			print_resp_info(1, ep->mode1_data);
+		}
+	}
+
+	printf("Freezeframe Data\n");
+	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++)
+	{
+		if (ep->valid)
+		{
+			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
+			print_resp_info(2, ep->mode2_data);
+		}
+	}
+
+	return CMD_OK;
+}
+
+
+
+
+/*print_pidinfo() : print supported PIDs (0 to 0x60) */
+static void
+print_pidinfo(int mode, uint8_t *pid_data)
+{
+	int i,j;	/* j : # pid per line */
+
+	printf(" Mode %d:", mode);
+	for (i=0, j=0; i<=0x60; i++) {
+		if (j == 8) j=0;
+
+		if (pid_data[i]) {
+			if (j == 0) printf("\n \t");	//once per line
+			printf("0x%02X ", i);
+			j++;
+		}
+	}
+	printf("\n");
+}
+
+
+static int cmd_pids(UNUSED(int argc), UNUSED(char **argv))
+{
+	ecu_data_t *ep;
+	int i;
+
+	if (global_state < STATE_SCANDONE)
+	{
+		printf("SCAN has not been done, please do a scan\n");
+		return CMD_OK;
+	}
+
+	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++)
+	{
+		if (ep->valid)
+		{
+			printf("ECU %d address 0x%02X: Supported PIDs:\n",
+				i, ep->ecu_addr & 0xff);
+			print_pidinfo(1, ep->mode1_info);
+			print_pidinfo(2, ep->mode2_info);
+			print_pidinfo(5, ep->mode5_info);
+			print_pidinfo(6, ep->mode6_info);
+			print_pidinfo(8, ep->mode8_info);
+			print_pidinfo(9, ep->mode9_info);
+		}
+	}
+	printf("\n");
+
+	return CMD_OK;
+}
 
 const struct cmd_tbl_entry scantool_cmd_table[]=
 {
@@ -408,6 +512,10 @@ const struct cmd_tbl_entry scantool_cmd_table[]=
 	{ "watch", "watch [raw/nodecode/nol3]",
 		"Watch the diagnostic bus and, if not in raw/nol3 mode, decode data",
 		cmd_watch, 0, NULL},
+	{ "dumpdata", "dumpdata", "Show Mode1 Pid1/2 responses",
+		cmd_dumpdata, 0, NULL},
+	{ "pids", "pids", "Shows PIDs supported by ECU",
+		cmd_pids, 0, NULL},
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
 

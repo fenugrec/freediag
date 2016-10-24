@@ -51,8 +51,6 @@ const struct debugflags_descr debugflags[]={
 	{NIL, NULL, NULL}
 };
 
-static int cmd_debug_dumpdata(int argc, char **argv);
-static int cmd_debug_pids(int argc, char **argv);
 static int cmd_debug_help(int argc, char **argv);
 static int cmd_debug_show(int argc, char **argv);
 
@@ -70,12 +68,6 @@ const struct cmd_tbl_entry debug_cmd_table[] =
 		cmd_debug_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
 		cmd_debug_help, FLAG_HIDDEN, NULL},
-
-	{ "dumpdata", "dumpdata", "Show Mode1 Pid1/2 responses",
-		cmd_debug_dumpdata, 0, NULL},
-
-	{ "pids", "pids", "Shows PIDs supported by ECU",
-		cmd_debug_pids, 0, NULL},
 
 	{ "show", "show", "Shows current debug levels",
 		cmd_debug_show, 0, NULL},
@@ -120,58 +112,6 @@ cmd_debug_help(int argc, char **argv)
 }
 
 
-static void
-print_resp_info(UNUSED(int mode), response_t *data)
-{
-
-	int i;
-	for (i=0; i<256; i++)
-	{
-		if (data->type != TYPE_UNTESTED)
-		{
-			if (data->type == TYPE_GOOD)
-			{
-				printf("0x%02X: ", i );
-				diag_data_dump(stdout, data->data, data->len);
-				printf("\n");
-			}
-			else
-				printf("0x%02X: Failed 0x%X\n",
-					i, data->data[1]);
-		}
-		data++;
-	}
-}
-
-
-static int
-cmd_debug_dumpdata(UNUSED(int argc), UNUSED(char **argv))
-{
-	ecu_data_t *ep;
-	int i;
-
-	printf("Current Data\n");
-	for (i=0, ep=ecu_info; i<MAX_ECU; i++,ep++)
-	{
-		if (ep->valid)
-		{
-			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
-			print_resp_info(1, ep->mode1_data);
-		}
-	}
-
-	printf("Freezeframe Data\n");
-	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++)
-	{
-		if (ep->valid)
-		{
-			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
-			print_resp_info(2, ep->mode2_data);
-		}
-	}
-
-	return CMD_OK;
-}
 
 static int
 cmd_debug_common( const char *txt, int *val, int argc, char **argv)
@@ -253,55 +193,6 @@ cmd_debug_show(UNUSED(int argc), UNUSED(char **argv))
 	return CMD_OK;
 }
 
-/*print_pidinfo() : print supported PIDs (0 to 0x60) */
-static void
-print_pidinfo(int mode, uint8_t *pid_data)
-{
-	int i,j;	/* j : # pid per line */
-
-	printf(" Mode %d:", mode);
-	for (i=0, j=0; i<=0x60; i++) {
-		if (j == 8) j=0;
-
-		if (pid_data[i]) {
-			if (j == 0) printf("\n \t");	//once per line
-			printf("0x%02X ", i);
-			j++;
-		}
-	}
-	printf("\n");
-}
-
-
-static int cmd_debug_pids(UNUSED(int argc), UNUSED(char **argv))
-{
-	ecu_data_t *ep;
-	int i;
-
-	if (global_state < STATE_SCANDONE)
-	{
-		printf("SCAN has not been done, please do a scan\n");
-		return CMD_OK;
-	}
-
-	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++)
-	{
-		if (ep->valid)
-		{
-			printf("ECU %d address 0x%02X: Supported PIDs:\n",
-				i, ep->ecu_addr & 0xff);
-			print_pidinfo(1, ep->mode1_info);
-			print_pidinfo(2, ep->mode2_info);
-			print_pidinfo(5, ep->mode5_info);
-			print_pidinfo(6, ep->mode6_info);
-			print_pidinfo(8, ep->mode8_info);
-			print_pidinfo(9, ep->mode9_info);
-		}
-	}
-	printf("\n");
-
-	return CMD_OK;
-}
 
 //cmd_debug_l0test : run a variety of low-level
 //tests, for dumb interfaces. Do not use while connected
