@@ -408,3 +408,33 @@ void strlist_free(char ** list, int elems) {
 	}
 	free(list);
 }
+
+/*
+ * Message print out / debug routines
+ */
+void
+diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum)
+{
+	if (timestamp)
+		fprintf(fp, "%lu.%03lu: ",
+			msg->rxtime / 1000, msg->rxtime % 1000);
+	fprintf(fp, "msg %02d src=0x%02X dest=0x%02X\n", msgnum, msg->src, msg->dest);
+	fprintf(fp, "msg %02d data: ", msgnum);
+}
+
+void
+diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp)
+{
+	struct diag_msg *tmsg;
+	int i=0;
+
+	LL_FOREACH(msg, tmsg) {
+		diag_printmsg_header(fp, tmsg, timestamp, i);
+		diag_data_dump(fp, tmsg->data, tmsg->len);
+		if (tmsg->fmt & DIAG_FMT_BADCS)
+			fprintf(fp, " [BAD CKS]\n");
+		else
+			fprintf(fp, "\n");
+		i++;
+	}
+}

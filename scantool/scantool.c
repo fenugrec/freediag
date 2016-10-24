@@ -147,35 +147,6 @@ find_ecu_msg(int byte, databyte_type val)
 }
 
 
-/*
- * Message print out / debug routines
- */
-static void
-print_msg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum)
-{
-	if (timestamp)
-		fprintf(fp, "%lu.%03lu: ",
-			msg->rxtime / 1000, msg->rxtime % 1000);
-	fprintf(fp, "msg %02d src=0x%02X dest=0x%02X\n", msgnum, msg->src, msg->dest);
-	fprintf(fp, "msg %02d data: ", msgnum);
-}
-
-static void
-print_msg(FILE *fp, struct diag_msg *msg, bool timestamp)
-{
-	struct diag_msg *tmsg;
-	int i=0;
-
-	LL_FOREACH(msg, tmsg) {
-		print_msg_header(fp, tmsg, timestamp, i);
-		diag_data_dump(fp, tmsg->data, tmsg->len);
-		if (tmsg->fmt & DIAG_FMT_BADCS)
-			fprintf(fp, " [BAD CKS]\n");
-		else
-			fprintf(fp, "\n");
-		i++;
-	}
-}
 
 /*
  * ************
@@ -226,7 +197,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 	if (diag_cli_debug & DIAG_DEBUG_DATA) {
 		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src=0x%X, dest=0x%X\n",
 			(void *)handle, msg->len, msg->src, msg->dest);
-		print_msg(stdout, msg, 0);
+		diag_printmsg(stdout, msg, 0);
 	}
 
 	/* Deal with the diag type responses (send/recv/watch) */
@@ -236,7 +207,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
 		case RQST_HANDLE_DECODE:
 			if (!(diag_cli_debug & DIAG_DEBUG_DATA)) {
 				/* Print data (unless done already) */
-					print_msg(stdout, msg, 0);
+					diag_printmsg(stdout, msg, 0);
 			}
 			return;
 			break;
@@ -448,7 +419,7 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 	int i=0;
 
 	LL_FOREACH(msg, tmsg) {
-		print_msg_header(stderr, tmsg, 1, i);
+		diag_printmsg_header(stderr, tmsg, 1, i);
 
 		if (handle != NULL) {
 			char buf[256];	/* XXX Can we switch to stdargs for decoders? */
@@ -471,7 +442,7 @@ l2raw_data_rcv(UNUSED(void *handle), struct diag_msg *msg)
 	 * Layer 2 call back, just print the data, this is used if we
 	 * do a "read" and we haven't yet added a L3 protocol
 	 */
-	print_msg(stderr, msg, 0);
+	diag_printmsg(stderr, msg, 0);
 	return;
 }
 

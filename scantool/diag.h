@@ -44,6 +44,7 @@ extern "C" {
 	#include <sys/types.h>
 #endif
 
+#include <stdbool.h>
 #include <stdint.h>		/* For uint8_t, etc. This is a C99 header */
 #include <stdio.h>		/* For FILE */
 
@@ -220,6 +221,10 @@ void diag_freemsg(struct diag_msg *);
  * @return 8-bit sum of all bytes
  */
 uint8_t diag_cks1(const uint8_t *data, unsigned int len);
+
+
+void diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum);
+void diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp);
 
 /*
  * General functions
