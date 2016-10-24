@@ -107,9 +107,8 @@ endif()
 option(BUILDGUI "Enable scangui (default=no)" OFF)
 option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
 option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
-option(NISPROG "Enable experimental Nissan Consult-II functions. (default=disabled)" OFF)
 
-set(L0LIST "me" "dumb" "br" "elm" "sim" "dumbtest")
+set(L0LIST "dumb" "br" "elm" "sim" "dumbtest" "me")
 set(L2LIST "iso9141" "can" "iso14230" "mb1" "raw" "saej1850" "vag")
 
 foreach (L0NAME IN LISTS L0LIST)

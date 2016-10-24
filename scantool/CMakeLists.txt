@@ -37,10 +37,6 @@ else()
 	set (OS_DIAGOS "diag_os_unix.c")
 endif()
 
-if (NISPROG)
-	message (STATUS "*****Compiling with nisprog !!!!!!*****")
-endif()
-
 
 ### build source file lists (useful later)
 set (LIBDIAG_SRCS ${DL0_SRCS} ${DL2_SRCS}

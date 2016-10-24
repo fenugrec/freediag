@@ -1,7 +1,7 @@
 #ifndef _CCONF_H
 #define _CCONF_H
 // cconf.h.in is processed by cmake to generate cconf.h
-// Replaces autotools' config.h.in + config.h combo. 
+// Replaces autotools' config.h.in + config.h combo.
 
 //@varname@ or ${varname} will be replaced by the contents of the cmake variable varname
 //# cmakedefine generates the appropriate #define as required
@@ -15,7 +15,6 @@
 
 #cmakedefine USE_RCFILE
 #cmakedefine USE_INIFILE
-#cmakedefine NISPROG
 
 #define PACKAGE_VERSION "@PKGVERSION@"
 #define SCANTOOL_PROGNAME "@SCANTOOL_PROGNAME@"
