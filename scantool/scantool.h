@@ -113,7 +113,6 @@ int l2_do_send( struct diag_l2_conn *d_conn, void *data, size_t len, void *handl
 int l2_check_pid_bits(uint8_t *data, int pid);
 int do_l2_9141_start(int destaddr); // 9141 init
 int do_l2_14230_start(int init_type); //14230 init
-int do_l2_generic_start(void);// Generic init, using parameters set by user
 int do_j1979_getdtcs(void);
 int do_j1979_getO2sensors(void);
 int diag_cleardtc(void);

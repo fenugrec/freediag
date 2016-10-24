@@ -329,6 +329,63 @@ cmd_diag_fastprobe(int argc, char **argv)
 }
 
 
+/*
+ * Generic init, using parameters set by user.
+ * Currently only called from cmd_diag_connect;
+ */
+static int
+do_l2_generic_start(void)
+{
+	struct diag_l2_conn *d_conn;
+	struct diag_l0_device *dl0d = global_dl0d;
+	int rv;
+	flag_type flags = 0;
+
+	if (!dl0d) {
+		printf("No global L0. Please select + configure L0 first\n");
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	rv = diag_init();
+	if (rv != 0) {
+		fprintf(stderr, "diag_init failed\n");
+		diag_end();
+		return diag_iseterr(rv);
+	}
+
+	/* Open interface using current L1 proto and hardware */
+	rv = diag_l2_open(dl0d, global_cfg.L1proto);
+	if (rv) {
+		fprintf(stderr, "l2_generic_start: open failed for protocol %d on %s\n",
+			global_cfg.L1proto, dl0d->dl0->shortname);
+		return diag_iseterr(rv);
+	}
+
+	if (global_cfg.addrtype)
+		flags = DIAG_L2_TYPE_FUNCADDR;
+	else
+		flags = 0;
+
+	flags |= (global_cfg.initmode & DIAG_L2_TYPE_INITMASK) ;
+
+	d_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
+		flags, global_cfg.speed, global_cfg.tgt, global_cfg.src);
+
+	if (d_conn == NULL) {
+	rv=diag_geterr();
+		diag_l2_close(dl0d);
+		return diag_iseterr(rv);
+	}
+
+	/* Connected ! */
+
+	global_l2_conn = d_conn;
+
+	return 0;
+}
+
+
+
 //cmd_diag_connect : attempt to connect to ECU
 //using the current global l2proto, l1proto, etc.
 static int
