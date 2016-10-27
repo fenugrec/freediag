@@ -1748,14 +1748,14 @@ main(int argc, char **argv)
 		}
 	}
 
-	/* Input buffer */
-
 	do_init();
 
-	if ( user_interface )
+	if ( user_interface ) {
+		printf("%s version %s\n", PROJECT_NAME, PACKAGE_VERSION);
 		enter_cli(SCANTOOL_PROGNAME, startfile, scantool_cmd_table);
-	else
+	} else {
 		enter_aif(SCANTOOL_PROGNAME);
+	}
 
 	/* Done */
 	exit(0);

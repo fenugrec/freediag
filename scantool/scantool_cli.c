@@ -879,7 +879,6 @@ enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *
 		}
 	} else {
 		/* print banner and load rc file, only if running without an initscript */
-		printf("%s: %s version %s\n", name, projname, PACKAGE_VERSION);
 		printf("%s: Type HELP for a list of commands\n", name);
 		printf("%s: Type SCAN to start ODBII Scan\n", name);
 		printf("%s: Then use MONITOR to monitor real-time data\n", name);
