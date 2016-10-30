@@ -168,7 +168,13 @@ static int cmd_set_custom(int argc, char **argv) {
 	bool show_current=0;
 	int newval;
 
-	if (!global_dl0d) return CMD_FAILED;
+	if (!global_dl0d) {
+		// no L0 selected yet
+		if (strcmp(argv[0], "?") == 0)
+			return CMD_OK;
+		printf("No such item !\nAdditional items may be available after setting the interface type.\nUse \"set interface NAME\" to set the interface type.\n");
+		return CMD_FAILED;
+	}
 
 	if (strcmp(argv[0], "?") == 0) {
 		//list available custom commands for the current L0.
