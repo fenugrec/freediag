@@ -36,6 +36,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "diag.h"
 #include "diag_os.h"
