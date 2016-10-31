@@ -172,7 +172,7 @@ static int cmd_set_custom(int argc, char **argv) {
 		// no L0 selected yet
 		if (strcmp(argv[0], "?") == 0)
 			return CMD_OK;
-		printf("No such item !\n");
+		printf("No such item !\nAdditional items may be available after setting the interface type.\nUse \"set interface NAME\" to set the interface type.\n");
 		return CMD_FAILED;
 	}
 
