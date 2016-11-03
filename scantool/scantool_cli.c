@@ -782,7 +782,7 @@ rc_file(void)
 
 	if (homedir) {
 		/* we add "/." and "rc" ... 4 characters */
-		if (diag_malloc(&rchomeinit, strlen(homedir) + strlen(progname) + 5)) {
+		if (diag_malloc(&rchomeinit, strlen(homedir) + strlen(projname) + 5)) {
 			return CMD_FAILED;
 		}
 		strcpy(rchomeinit, homedir);
