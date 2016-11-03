@@ -4,29 +4,25 @@
 
 cmake_minimum_required(VERSION 2.8.5)
 
-# don't go polluting c:\program files ; this has to go before project()
-set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Default install prefix")
-set (TEMP_INSTPREFIX ${CMAKE_INSTALL_PREFIX})
-message("Using install prefix : ${CMAKE_INSTALL_PREFIX}")
 
 project(freediag)
 
-#check if install prefix was clobbered
-if ( NOT(${CMAKE_INSTALL_PREFIX} STREQUAL ${TEMP_INSTPREFIX}))
-	message(WARNING "Default install prefix has been corrupted ! please report this.")
-	#note : if this happens, the alternative is something like
-	#if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-	# set(installprefix .etc... FORCE)
-	#endif()
-	#placed after project().
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND WIN32)
+	# don't go polluting c:\program files (default setting);
+	# to use that anyway just run cmake with -DCMAKE_INSTALL_PREFIX="c:\program files" ...
+	message("Forcing Win* install prefix to CMAKE_BINARY_DIR")
+	set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Default install prefix" FORCE)
 endif ()
+
+message("Using install prefix : ${CMAKE_INSTALL_PREFIX}")
 
 include (CheckLibraryExists)
 include (CheckFunctionExists)
 include (CheckTypeSize)
+include (GNUInstallDirs)
 
 set (PKGVERSIONMAJOR "1")
-set (PKGVERSIONMINOR "07")
+set (PKGVERSIONMINOR "08")
 set (PKGVERSION "${PKGVERSIONMAJOR}.${PKGVERSIONMINOR}")
 set (SCANTOOL_PROGNAME "scantool")
 #that sets the command-line tool prompt.
@@ -75,7 +71,6 @@ if(WIN32)
 	endif ()
 	set (PLATF "-win32")	#for package name string generation only.
 else()
-	#no need to check for these on WIN32 as the offending code (diag_os and diag_tty) was re-written
 	check_function_exists (alarm HAVE_ALARM)
 	check_function_exists (select HAVE_SELECT)
 	check_function_exists (gettimeofday HAVE_GETTIMEOFDAY)
