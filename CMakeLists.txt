@@ -100,6 +100,7 @@ endif()
 ###### Build Options
 
 option(BUILDGUI "Enable scangui (default=no)" OFF)
+option(BUILD_DIAGTEST "Build old \"diag_test\" binary (out-of-date; default=no)" OFF)
 option(USE_RCFILE "At startup, search $home/ for an rc file to load initial commands. (default=disabled)" OFF)
 option(USE_INIFILE "At startup, search the current directory for an ini file to load initial commands. (default=enabled)" ON)
 

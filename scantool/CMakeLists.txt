@@ -94,11 +94,13 @@ add_library(dyno STATIC ${LIBDYNO_SRCS})
 
 add_library(freediagcli STATIC ${CLI_SRCS})
 
-# diag_test binary
 
-add_executable(diag_test ${DIAGTEST_SRCS})
-target_link_libraries(diag_test diag)
-install(TARGETS diag_test DESTINATION ${BIN_DESTDIR})
+# diag_test binary
+if (BUILD_DIAGTEST)
+	add_executable(diag_test ${DIAGTEST_SRCS})
+	target_link_libraries(diag_test diag)
+	install(TARGETS diag_test DESTINATION ${BIN_DESTDIR})
+endif ()
 
 # scantool binary
 
