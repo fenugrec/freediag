@@ -6,6 +6,15 @@ I took the liberty of modifying the version number format to MAJOR.MINOR, the MI
 written with 2 digits ( %02d if you will). Some early versions had a suffixed lower-case letter
 indicating a snapshot of the CVS source tree.
 
+*** Release 1.08 ; 2016-11-03
+- Some breaking changes to CLI (L0-specific options, etc)
+- OBD J1979 : some fixes : Mode 9 "test rvi" command, Mode 2 FreezeFrame data
+- L0 ELM driver : some usability fixes
+- Rework of L0/L1/L2 layers to provide L0-specific configurable options.
+- CLI : deal better with long command lines instead of silently truncating
+- iso14230 : many fixes; better support for  RequestCorrectlyRcvd-RspPending negative responses
+- better OS error messages on Win*
+
 *** Release 1.07 ; 2016-02-26
 ** Tomek Kazmierczak
 - Added support for VAG KWP1281 (implemented according to SAE J2818) !!

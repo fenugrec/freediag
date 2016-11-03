@@ -28,7 +28,7 @@
 
 
 
-  <p>This manual applies to version 1.07 of freediag.
+  <p>This manual applies to freediag version 1.08 and following.
 
   <p>Table of contents:
   <ul>
@@ -92,12 +92,10 @@
 <a name="running"></a>
   <div class="section">2) Running Scantool</div>
 
-  <p>The Scantool should be run as SuperUser / administrator as the process has to set
-  real-time scheduling in order to get accurate timing control. If
-  it is run by an un-privileged user than a warning will be printed and the
-  scantool may not work. It is extremely unlikely to work on ISO9141/ISO14230
-  interfaces, it may work with SAEJ1850 type interfaces where timing is not so
-  critical.
+  <p>Under Linux / unix variants, the scantool should no longer be run as superuser / root, for obvious security reasons.
+  A regular user account should be sufficient, provided you setup the udev rules (or equivalent) to give access to the relevant
+  hardware. Running as root was recommended in  previous versions of freediag in the hope of improving precision of timing,
+  but the effect has not proved to be worth the risk.
   
   <p>Start the Scantool CLI by running &quot;./scantool&quot;, you will get a
   command prompt:
@@ -111,7 +109,7 @@
   depending on options set at compile time.
 
   <p>Many people will put the appropriate <code>set interface &lt;<i>type</i>&gt;</code>
-  command (see section 4) in their .scantoolrc file and will just want to use
+  command (see section 4) in their .freediagrc file and will just want to use
   the <code>scan</code>, and the <code>cleardtc</code> commands.
 
   <br><br>
@@ -302,7 +300,7 @@
 
 	<tr>
 	<td><code>speed [speed]</td></code>
-	<td>Shows/Sets the speed to connect</td>
+	<td>Shows/Sets the speed to connect to the ECU (separate from the Host-to-interface speed when using a smart L0 interface)</td>
 	</tr>
 
 	<tr>
