@@ -157,12 +157,29 @@ if (BUILDGUI)
 	endif()
 endif ()
 
+
 ###### files to install
-install (DIRECTORY doc/ DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/doc
+if (WIN32)
+	set (DOC_DESTDIR .
+		CACHE PATH "Destination directory for documentation")
+	set (BIN_DESTDIR .
+		CACHE PATH "Destination directory for executables")
+	set (EXAMPLES_DESTDIR .
+		CACHE PATH "Destination directory for example .db and .ini files")
+else ()
+	set (DOC_DESTDIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
+		CACHE PATH "Destination directory for documentation")
+	set (BIN_DESTDIR ${CMAKE_INSTALL_BINDIR}
+		CACHE PATH "Destination directory for executables")
+	set (EXAMPLES_DESTDIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/examples
+		CACHE PATH "Destination directory for example .db and .ini files")
+endif ()
+
+install (DIRECTORY doc/ DESTINATION ${DOC_DESTDIR}/doc
 	PATTERN "*xcf" EXCLUDE)
 install (FILES "README_v${PKGVERSIONMAJOR}_${PKGVERSIONMINOR}.txt"
 		"README" "CHANGES" "AUTHORS" "COPYING"
-	DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
+	DESTINATION ${DOC_DESTDIR})
 
 ###### package generation
 #this adds "package" and "package_source" targets, i.e. we can "make package_source"
