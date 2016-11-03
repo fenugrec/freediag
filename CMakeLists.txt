@@ -157,12 +157,12 @@ if (BUILDGUI)
 	endif()
 endif ()
 
-###### misc files to include in bin packages
-install (DIRECTORY doc/ DESTINATION doc
+###### files to install
+install (DIRECTORY doc/ DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/doc
 	PATTERN "*xcf" EXCLUDE)
 install (FILES "README_v${PKGVERSIONMAJOR}_${PKGVERSIONMINOR}.txt"
-		"README" "CHANGES" "AUTHORS" "COPYING" "OLD_CHANGES"
-	DESTINATION . OPTIONAL)
+		"README" "CHANGES" "AUTHORS" "COPYING"
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
 ###### package generation
 #this adds "package" and "package_source" targets, i.e. we can "make package_source"

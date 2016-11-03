@@ -98,7 +98,7 @@ add_library(freediagcli STATIC ${CLI_SRCS})
 
 add_executable(diag_test ${DIAGTEST_SRCS})
 target_link_libraries(diag_test diag)
-install(TARGETS diag_test DESTINATION bin)
+install(TARGETS diag_test DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # scantool binary
 
@@ -112,7 +112,7 @@ endif ()
 
 target_link_libraries(scantool dyno freediagcli)
 
-install(TARGETS scantool DESTINATION bin)
+install(TARGETS scantool DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
 
@@ -154,15 +154,20 @@ foreach (TF_ITER IN LISTS SCANTOOL_TESTS)
 	message(STATUS "Adding test \"${TF_ITER}\"")
 endforeach()
 
-### install & copy targets
-# defined mainly to simplify packaging
+### misc install & copy targets
 
+if (WIN32)
+	set (EXAMPLES_DESTDIR .
+		CACHE PATH "Destination directory for example .db and .ini files")
+else ()
+	set (EXAMPLES_DESTDIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/examples
+		CACHE PATH "Destination directory for example .db and .ini files")
+endif()
+
+#install carsim .db files and sample .ini file
 file (GLOB CARSIM_EXAMPLES *.db)
-#copy carsim db files and ini file to build dir, add install target as required
-file (COPY ${CARSIM_EXAMPLES} DESTINATION .)
-install (FILES ${CARSIM_EXAMPLES} DESTINATION bin)
+install (FILES ${CARSIM_EXAMPLES} DESTINATION ${EXAMPLES_DESTDIR})
 
 if (USE_INIFILE)
-	file (COPY scantool.ini DESTINATION .)
-	install (FILES scantool.ini DESTINATION bin)
+	install (FILES scantool.ini DESTINATION ${EXAMPLES_DESTDIR})
 endif ()
