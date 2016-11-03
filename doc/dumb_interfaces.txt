@@ -65,7 +65,8 @@ To access these tests there is an "l0test" command in the "debug" sub-menu.
 
 example of a troubleshooting session : (with no car connected !)
 
-scantool>set interface dumbt /dev/ttyUSB0
+scantool>set interface dumbt
+scantool>set port /dev/ttyUSB0
 scantool>set dumbopts 8
 scantool>debug
 scantool/debug>l0test ?

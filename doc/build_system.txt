@@ -63,7 +63,6 @@ I no longer maintain the autotools build system.
 As distributed, the CMake build system for freediag consists of the following files in
 the source tree :
 cconf.h.in 		// manually edited, it is eventually parsed by CMake to create cconf.h
-scantool/ l0config , 2config	//typically not modified, they indicate which L0 and L2 drivers to include.
 CMakeLists.txt	//there's one of these in every subdirectory with compiled code.
 
 The CMakeLists.txt are roughly equivalent to the autotools' configure.ac and Makefile.am files, which
