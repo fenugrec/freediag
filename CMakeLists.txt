@@ -145,20 +145,7 @@ configure_file (cconf.h.in cconf.h)
 enable_testing()
 
 
-###### parse sub-dirs
-add_subdirectory(scantool)
-
-if (BUILDGUI)
-	find_package(FLTK)
-	if (FLTK_FOUND)
-		add_subdirectory(scangui)
-	else ()
-		message(WARNING "Cannot build scangui without FLTK !")
-	endif()
-endif ()
-
-
-###### files to install
+###### install locations
 if (WIN32)
 	set (DOC_DESTDIR .
 		CACHE PATH "Destination directory for documentation")
@@ -174,6 +161,21 @@ else ()
 	set (EXAMPLES_DESTDIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/examples
 		CACHE PATH "Destination directory for example .db and .ini files")
 endif ()
+
+###### parse sub-dirs
+add_subdirectory(scantool)
+
+if (BUILDGUI)
+	find_package(FLTK)
+	if (FLTK_FOUND)
+		add_subdirectory(scangui)
+	else ()
+		message(WARNING "Cannot build scangui without FLTK !")
+	endif()
+endif ()
+
+
+###### files to install
 
 install (DIRECTORY doc/ DESTINATION ${DOC_DESTDIR}/doc
 	PATTERN "*xcf" EXCLUDE)
