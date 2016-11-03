@@ -105,8 +105,8 @@ endif()
 ###### Build Options
 
 option(BUILDGUI "Enable scangui (default=no)" OFF)
-option(USE_RCFILE "Enable use of rc file in $home/ (default=disabled)" OFF)
-option(USE_INIFILE "Enable ini file in ./ (default=enabled)" ON)
+option(USE_RCFILE "At startup, search $home/ for an rc file to load initial commands. (default=disabled)" OFF)
+option(USE_INIFILE "At startup, search the current directory for an ini file to load initial commands. (default=enabled)" ON)
 
 
 ###### L0/L2 driver selection
