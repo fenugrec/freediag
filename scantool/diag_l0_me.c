@@ -934,16 +934,16 @@ muleng_getflags(struct diag_l0_device *dl0d)
 	{
 	case DIAG_L1_J1850_VPW:
 	case DIAG_L1_J1850_PWM:
-			flags = DIAG_L1_DOESL2CKSUM;
+			flags |= DIAG_L1_DOESL2CKSUM;
 			flags |= DIAG_L1_DOESL2FRAME;
 			break;
 	case DIAG_L1_ISO9141:
-			flags = DIAG_L1_SLOW ;
+			flags |= DIAG_L1_SLOW ;
 /* XX does it ?		flags |= DIAG_L1_DOESL2CKSUM; */
 			break;
 
  	case DIAG_L1_ISO14230:
-			flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
+			flags |= DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
 			flags |= DIAG_L1_DOESL2FRAME;
 			flags |= DIAG_L1_DOESSLOWINIT;
 			flags |= DIAG_L1_DOESL2CKSUM;
