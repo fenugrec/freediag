@@ -293,6 +293,13 @@ static int cmd_set_interface(int argc, char **argv)
 		return CMD_USAGE;
 	}
 
+	if (global_dl0d) {
+		if (global_dl0d->opened) {
+			printf("Error : L0 busy or connected; please disconnect first\n");
+			return CMD_FAILED;
+		}
+	}
+
 	int i, helping = 0, found = 0;
 	if (strcmp(argv[1], "?") == 0) {
 		helping = 1;
