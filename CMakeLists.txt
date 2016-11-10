@@ -180,9 +180,10 @@ endif ()
 
 install (DIRECTORY doc/ DESTINATION ${DOC_DESTDIR}/doc
 	PATTERN "*xcf" EXCLUDE)
-install (FILES "README_v${PKGVERSIONMAJOR}_${PKGVERSIONMINOR}.txt"
-		"README" "CHANGES" "AUTHORS" "COPYING"
+install (FILES "README" "CHANGES" "AUTHORS" "COPYING"
 	DESTINATION ${DOC_DESTDIR})
+install (FILES "README_v${PKGVERSIONMAJOR}_${PKGVERSIONMINOR}.txt"
+		DESTINATION ${DOC_DESTDIR} OPTIONAL)
 
 ###### package generation
 #this adds "package" and "package_source" targets, i.e. we can "make package_source"
