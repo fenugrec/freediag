@@ -115,10 +115,14 @@ void diag_cfg_clear(struct cfgi *cfgp);
 /* after alloc'ing a new struct cfgi, calling these funcs will prepare the struct */
 /* Ret 0 if ok. Some members of the struct may need to be filled after calling these. */
 
-/** new TTY / serial port config item */
+/** new TTY / serial port config item
+ * @return 0 if ok
+ */
 int diag_cfgn_tty(struct cfgi *cfgp);
 
 /** new ordinary int param
+ *
+ * @return 0 if ok
  *
  * Uses caller's val, and def as default value for reset().
  * Doesn't fill descr and shortname
@@ -126,6 +130,9 @@ int diag_cfgn_tty(struct cfgi *cfgp);
 int diag_cfgn_int(struct cfgi *cfgp, int val, int def);
 
 /** new ordinary u8 param (copy of _int code)
+ *
+ * @return 0 if ok
+ *
  * Uses dval as default value for reset().
  * Doesn't fill descr and shortname
  */
@@ -133,11 +140,15 @@ int diag_cfgn_u8(struct cfgi *cfgp, uint8_t val, uint8_t def);
 
 /** new ordinary string param
  *
+ * @return 0 if ok
+ *
  * Copies *def for its default value; sets descr and shortname ptrs
  */
 int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const char *sn);
 
 /** new ordinary bool param
+ *
+ * @return 0 if ok
  *
  * (copy of _int code)
  */
