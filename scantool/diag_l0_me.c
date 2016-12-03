@@ -43,8 +43,9 @@
 #include "diag_l1.h"
 
 
-#define INTERFACE_ADDRESS 0x38
-
+#define ME_DEFAULT_ADDRESS 0x38
+#define ME_ADDR_SN "meaddr"
+#define ME_ADDR_DESCR "ME device address"
 
 extern const struct diag_l0 diag_l0_me;
 
@@ -153,7 +154,6 @@ static const char *me_geterr(const int err)
 
 struct muleng_device
 {
-	uint8_t dev_addr;	/* ME device address; default is 0x38. TODO : configurable */
 	int protocol;
 	int dev_wakeup;		/* Contains wakeup type for next packet */
 	int dev_state;		/* State for 5 baud startup stuff */
@@ -166,6 +166,7 @@ struct muleng_device
 	unsigned	dev_rdoffset;	/* Offset to read from to */
 
 	struct	cfgi port;		/** serial port */
+	struct	cfgi dev_addr;	/** ME device address; default is 0x38. */
 	ttyp *tty_int;			/** handle for tty stuff */
 };
 
@@ -340,7 +341,6 @@ static int muleng_open(struct diag_l0_device *dl0d, int iProtocol)
 		muleng_close(dl0d);
 		return diag_iseterr(rv);
 	}
-	dev->dev_addr = INTERFACE_ADDRESS;
 
 	diag_tty_iflush(dev->tty_int);	/* Flush unread input */
 	dl0d->opened = 1;
@@ -364,8 +364,16 @@ muleng_new(struct diag_l0_device *dl0d) {
 		free(dev);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
+	dev->port.next = &dev->dev_addr;
 
-	dev->port.next = NULL;
+	if (diag_cfgn_u8(&dev->dev_addr, ME_DEFAULT_ADDRESS, ME_DEFAULT_ADDRESS)) {
+		free(dev);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	dev->dev_addr.shortname = ME_ADDR_SN;
+	dev->dev_addr.descr = ME_ADDR_DESCR;
+
+	dev->dev_addr.next = NULL;
 
 	return 0;
 }
@@ -379,6 +387,7 @@ static void muleng_del(struct diag_l0_device *dl0d) {
 	if (!dev) return;
 
 	diag_cfg_clear(&dev->port);
+	diag_cfg_clear(&dev->dev_addr);
 	free(dev);
 	return;
 }
@@ -463,7 +472,7 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 	unsigned int baud;
 
 	memset(txbuf, 0, sizeof(txbuf));
-	txbuf[0] = dev->dev_addr;
+	txbuf[0] = dev->dev_addr.val.u8;
 
 	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:
@@ -541,7 +550,7 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		 * response
 		 */
 		memset(txbuf, 0, sizeof(txbuf));
-		txbuf[0] = dev->dev_addr;
+		txbuf[0] = dev->dev_addr.val.u8;
 		txbuf[1] = 0x86;
 		(void)muleng_txcksum(txbuf);
 		rv = muleng_write(dl0d, txbuf, 15);
@@ -703,7 +712,7 @@ const void *data, size_t len)
 	 */
 	memset(txbuf, 0, sizeof(txbuf));
 
-	txbuf[0] = dev->dev_addr;
+	txbuf[0] = dev->dev_addr.val.u8;
 	txbuf[1] = cmd;
 	txbuf[2] = (uint8_t) len;
 	memcpy(&txbuf[3], data, len);
