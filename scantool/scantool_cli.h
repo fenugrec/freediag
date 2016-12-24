@@ -74,7 +74,7 @@ void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_en
  * No line editing or history.
  */
 char *
-basic_get_input(const char *prompt);
+basic_get_input(const char *prompt, FILE *instream);
 
 
 /**

@@ -60,7 +60,6 @@ int diag_cli_debug;	//debug level
 FILE		*global_logfp;		/* Monitor log output file pointer */
 #define LOG_FORMAT	"FREEDIAG log format 0.2"
 
-FILE		*instream;	/* source of text commands ; can be stdin or a file */
 
 //ugly, global data. Could be struct-ed together eventually
 struct diag_l2_conn *global_l2_conn;
@@ -140,7 +139,7 @@ static const struct cmd_tbl_entry *completion_cmd_level;
 #define INPUT_MAX 1024
 
 char *
-basic_get_input(const char *prompt)
+basic_get_input(const char *prompt, FILE *instream)
 {
 	char *input;
 	bool do_prompt;
@@ -311,7 +310,7 @@ readline_init(const struct cmd_tbl_entry *curtable)
 static char *
 get_input(const char *prompt)
 {
-	return basic_get_input(prompt);
+	return basic_get_input(prompt, stdin);
 }
 
 static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {}
@@ -319,13 +318,14 @@ static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {}
 #endif	//HAVE_LIBREADLINE
 
 static char *
-command_line_input(const char *prompt)
+command_line_input(const char *prompt, FILE *instream)
 {
-	if (instream == stdin)
+	if (instream == stdin) {
 		return get_input(prompt);
+	}
 
 	/* Reading from init or command file; no prompting or history */
-	return basic_get_input(NULL);
+	return basic_get_input(NULL, instream);
 }
 
 int
@@ -580,7 +580,7 @@ static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, co
  * If argc is supplied, then this is one shot cli, ie run the command
  */
 static int
-do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char **argv)
+do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv)
 {
 	/* Build up argc/argv */
 	const struct cmd_tbl_entry *ctp;
@@ -608,7 +608,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 			/* Get Input */
 			if (input)
 				free(input);
-			input = command_line_input(promptbuf);
+			input = command_line_input(promptbuf, instream);
 			if (!input) {
 					if (instream == stdin)
 						printf("\n");
@@ -670,6 +670,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 			/* Sub menu */
 			rv = do_cli(ctp->sub_cmd_tbl,
 				promptbuf,
+				instream,
 				cmd_argc-1,
 				&cmd_argv[1]);
 #ifdef HAVE_LIBREADLINE
@@ -711,7 +712,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, int argc, char *
 			cmd_stoplog(0, NULL);
 		}
 
-		do_cli(diag_cmd_table, "", 1, &disco);	//XXX should be called recursively in case there are >1 active L3 conns...
+		do_cli(diag_cmd_table, "", instream, 1, &disco);	//XXX should be called recursively in case there are >1 active L3 conns...
 
 		rv=diag_end();
 		if (rv)
@@ -729,15 +730,13 @@ static int
 command_file(const char *filename)
 {
 	int rv;
-	FILE *prev_instream = instream;
+	FILE *fstream;
 
-	if ( (instream=fopen(filename, "r"))) {
-		rv=do_cli(root_cmd_table, progname, 0, NULL);
-		fclose(instream);
-		instream=prev_instream;
+	if ( (fstream=fopen(filename, "r"))) {
+		rv=do_cli(root_cmd_table, progname, fstream, 0, NULL);
+		fclose(fstream);
 		return (rv==CMD_EXIT)? CMD_EXIT:CMD_OK;
 	}
-	instream=prev_instream;
 	return CMD_FAILED;
 }
 
@@ -891,8 +890,7 @@ enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *
 	if (rc_rv != CMD_EXIT) {
 		printf("\n");
 		/* And go start CLI */
-		instream = stdin;
-		(void)do_cli(root_cmd_table, name, 0, NULL);
+		(void)do_cli(root_cmd_table, name, stdin, 0, NULL);
 	}
 exit_cleanup:
 	free(ctp);

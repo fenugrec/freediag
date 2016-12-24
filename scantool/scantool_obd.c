@@ -354,7 +354,7 @@ cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv))
 	}
 
 	input = basic_get_input("Are you sure you wish to clear the Diagnostic "
-			"Trouble Codes (y/n) ? ");
+			"Trouble Codes (y/n) ? ", stdin);
 	if (!input)
 		return CMD_OK;
 
