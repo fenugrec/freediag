@@ -743,6 +743,24 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 					break;
 			}
 
+			//set init address
+			if ((dev->elmflags & ELM_323_BASIC) && (in->addr != 0x33)) {
+				fprintf(stderr, FLFMT "elm_initbus: ELM323 doesn't support target address %02X", FL, in->addr);
+				return diag_iseterr(DIAG_ERR_GENERAL);
+			} else {
+				uint8_t iia[15];
+				sprintf((char *) iia, "ATIIA %02X\x0D", in->addr);
+				rv=elm_sendcmd(dl0d, iia, 9, 500, NULL);
+				if (rv < 0 && in->addr == 0x33) {
+					fprintf(stderr, FLFMT "elm_initbus: ATIIA 33 failed, continuing anyway\n", FL);
+					rv = 0;
+				} else if (rv < 0) {
+					fprintf(stderr, FLFMT "elm_initbus: ATIIA %02X failed\n", FL, in->addr);
+					return diag_iseterr(DIAG_ERR_GENERAL);
+				}
+			}
+			
+
 			//explicit init is not supported by clones
 			if ((dev->elmflags & ELM_32x_CLONE)==0) {
 				rv = elm_slowinit(dl0d);
