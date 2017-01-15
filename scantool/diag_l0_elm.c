@@ -57,6 +57,8 @@ struct elm_device {
 
 	struct diag_serial_settings serial;
 	ttyp *tty_int;			/** handle for tty stuff */
+
+	uint8_t kb1, kb2;	// key bytes from 5 baud init
 };
 
 #define CFGSPEED_DESCR "Host <-> ELM comm speed (bps)"
@@ -237,7 +239,7 @@ static const char * elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data)
 //This func should not be used for commands that elicit a data response (i.e. all data destined to the OBD bus,
 //hence not prefixed by "AT"). Response is dumped in *resp (0-terminated) for optional analysis by caller; *resp must be ELM_BUFSIZE long.
 //returns 0 if (prompt_good) && ("OK" found anywhere in the response) && (no known error message was present) ||
-//		(prompt_good && ATZ command was sent) , since response doesn't contain "OK" for ATZ.
+//		(prompt_good && ATZ or ATKW command was sent) , since response doesn't contain "OK" for ATZ or ATKW.
 //elm_sendcmd should not be called from outside diag_l0_elm.c.
 static int
 elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp)
@@ -333,6 +335,7 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsign
 	//check if we either 1)got a positive response "OK"
 	//2)were sending ATZ (special case hack, it doesn't answer "OK")
 	if ((strstr((char *)buf, "OK") != NULL) ||
+		(strstr((char *)data, "ATKW") != NULL) ||
 		(strstr((char *)data, "ATZ") != NULL)) {
 		return 0;
 	}
@@ -759,7 +762,14 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 					return diag_iseterr(DIAG_ERR_GENERAL);
 				}
 			}
-			
+
+			//accept nonstandard keybytes during init
+			if (dev->elmflags & ELM_327_BASIC) {
+				buf=(uint8_t *) "ATKW0\x0D";
+				rv=elm_sendcmd(dl0d, buf, 6, 500, NULL);
+				if (rv < 0)
+					fprintf(stderr, FLFMT "elm_initbus: ATKW0 failed, continuing anyway\n", FL);
+			}
 
 			//explicit init is not supported by clones
 			if ((dev->elmflags & ELM_32x_CLONE)==0) {
@@ -768,6 +778,33 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 					dev->elmflags |= ELM_INITDONE;
 			}
 			timeout=4200;	//slow init is slow !
+
+			//query elm for keybytes
+			dev->kb1 = 0; dev->kb2 = 0;
+			if (dev->elmflags & ELM_INITDONE) {
+				uint8_t rxbuf[ELM_BUFSIZE];
+				unsigned int kb1, kb2;
+
+				buf=(uint8_t *) "ATKW\x0D";
+				rv=elm_sendcmd(dl0d, buf, 5, 500, rxbuf);
+				if (rv < 0) {
+					fprintf(stderr, FLFMT "elm_initbus: ATKW failed, continuing anyway\n", FL);
+					// TODO: for clones without ATKW, can
+					// fall back to ATBD. If ATBD response
+					// starts with 06 addr 55 xx yy aa bb
+					// and aa=yy^0xff and bb=addr^0xff then
+					// xx and yy should be key bytes
+					break;
+				}
+				if (sscanf((char *)rxbuf, "1:%02X 2:%02X", &kb1, &kb2) == 2) {
+					dev->kb1 = kb1;
+					dev->kb2 = kb2;
+				} else {
+					fprintf(stderr, FLFMT "elm_initbus: ATKW0 failed, continuing anyway\n", FL);
+					rv = 0;
+				}
+			}
+
 			break;
 		default:
 			rv = DIAG_ERR_INIT_NOTSUPP;
