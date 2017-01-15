@@ -803,6 +803,8 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 					fprintf(stderr, FLFMT "elm_initbus: ATKW0 failed, continuing anyway\n", FL);
 					rv = 0;
 				}
+				// Note: currently there is no way to tell the
+				// L2 what key bytes we got
 			}
 
 			break;

@@ -199,6 +199,10 @@ dl2p_6227_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 	if (rv < 0)
 		goto err;
 
+	/* L0 doesn't tell us what key bytes it got. For now assume it's D3B0 */
+	d_l2_conn->diag_l2_kb1 = 0xd3;
+	d_l2_conn->diag_l2_kb2 = 0xb0;
+
 	if ((d_l2_conn->diag_l2_kb1 != 0xd3) || (d_l2_conn->diag_l2_kb2 != 0xb0)) {
 		fprintf(stderr, FLFMT "_startcomms : wrong keybytes %02X%02X, expecting D3B0\n",
 			FL, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
