@@ -892,6 +892,9 @@ elm_send(struct diag_l0_device *dl0d,
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
+	if ((dev->protocol & DIAG_L1_ISO9141) && len <= 3)
+		return diag_iseterr(DIAG_ERR_BADLEN);
+
 	if ((2*len)>(ELM_BUFSIZE-1)) {
 		//too much data for buffer size
 		fprintf(stderr, FLFMT "ELM: too much data for buffer (report this bug please!)\n", FL);
@@ -900,6 +903,30 @@ elm_send(struct diag_l0_device *dl0d,
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "ELM: sending %d bytes\n", FL, (int) len);
+	}
+
+	if (dev->protocol & DIAG_L1_ISO9141) {
+		sprintf((char *)buf, "ATSH %02X %02X %02X\x0D",
+			(unsigned int)((uint8_t *)data)[0],
+			(unsigned int)((uint8_t *)data)[1],
+			(unsigned int)((uint8_t *)data)[2]);
+		rv=elm_sendcmd(dl0d, buf, 14, 500, NULL);
+		if (rv < 0) {
+			fprintf(stderr, FLFMT "elm_send: ATSH failed\n",FL);
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
+
+		if((unsigned int)((uint8_t *)data)[0] & 0x80) {
+			// if ISO9141 protocol setting with KWP message format,
+			// adjust receive filter
+			sprintf((char *)buf, "ATSR %02X\x0D",
+				(unsigned int)((uint8_t *)data)[2]);
+			rv=elm_sendcmd(dl0d, buf, 8, 500, NULL);
+			if (rv < 0) {
+				fprintf(stderr, FLFMT "elm_send: ATSR failed\n",FL);
+				return diag_iseterr(DIAG_ERR_GENERAL);
+			}
+		}
 	}
 
 	for (i=0; i<len; i++) {
@@ -914,7 +941,12 @@ elm_send(struct diag_l0_device *dl0d,
 		fprintf(stderr, FLFMT "ELM: (sending string %s)\n", FL, (char *) buf);
 	}
 
-	rv=diag_tty_write(dev->tty_int, buf, i+1);
+	if(dev->protocol & DIAG_L1_ISO9141) {
+		i -= 6;
+		rv=diag_tty_write(dev->tty_int, buf+6, i+1); // skip header
+	} else {
+		rv=diag_tty_write(dev->tty_int, buf, i+1);
+	}
 	if (rv != (int) (i+1)) {	//XXX danger ! evil cast !
 		fprintf(stderr, FLFMT "elm_send:write error\n",FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -1078,6 +1110,7 @@ elm_getflags(struct diag_l0_device *dl0d)
 	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:
 		flags |= DIAG_L1_SLOW;
+		flags &= ~DIAG_L1_DATAONLY;
 		//flags |= DIAG_L1_NOHDRS;	//probably not needed since we send ATH1 on init (enable headers)
 		break;
 	case DIAG_L1_ISO14230:
