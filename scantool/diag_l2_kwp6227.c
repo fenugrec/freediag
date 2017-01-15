@@ -195,6 +195,7 @@ dl2p_6227_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 
 	in.type = DIAG_L1_INITBUS_5BAUD;
 	in.addr = with_parity(target, PARITY_ODD);
+	in.testerid = dp->srcaddr;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 	if (rv < 0)
 		goto err;
