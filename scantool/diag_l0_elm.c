@@ -807,6 +807,17 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 				// L2 what key bytes we got
 			}
 
+			//for KWP6227, set appropriate wakeup message
+			if (dev->kb1 == 0xd3 && dev->kb2 == 0xb0) {
+				uint8_t wm[18];
+				sprintf((char *) wm, "ATWM 82 %02X %02X A1\x0D", in->addr, in->testerid);
+				rv=elm_sendcmd(dl0d, wm, 17, 500, NULL);
+				if (rv < 0) {
+					fprintf(stderr, FLFMT "elm_initbus: ATWM failed\n", FL);
+					return diag_iseterr(DIAG_ERR_GENERAL);
+				}
+			}
+
 			break;
 		default:
 			rv = DIAG_ERR_INIT_NOTSUPP;
