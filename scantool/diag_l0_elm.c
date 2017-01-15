@@ -59,6 +59,7 @@ struct elm_device {
 	ttyp *tty_int;			/** handle for tty stuff */
 
 	uint8_t kb1, kb2;	// key bytes from 5 baud init
+	uint8_t atsh[3];	// current header setting for ISO9141
 };
 
 #define CFGSPEED_DESCR "Host <-> ELM comm speed (bps)"
@@ -631,11 +632,16 @@ elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout)
 	int rv;
 	struct elm_device *dev;
 	uint8_t buf[MAXRBUF];
-	uint8_t data[]={0x01,0x00};
+	uint8_t generic_data[]={0x01,0x00}; // J1979 request only
+	uint8_t iso9141_data[]={0x68,0x6a,0xf1,0x01,0x00}; // with ISO9141 hdr
 	const char *err_str;
 
 	dev = dl0d->l0_int;
-	rv = elm_send(dl0d, NULL, data, 2);
+	if (dev->protocol & DIAG_L1_ISO9141) {
+		rv = elm_send(dl0d, NULL, iso9141_data, 5);
+	} else {
+		rv = elm_send(dl0d, NULL, generic_data, 2);
+	}
 	if (rv)
 		return diag_iseterr(rv);
 
@@ -750,14 +756,11 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 			if ((dev->elmflags & ELM_323_BASIC) && (in->addr != 0x33)) {
 				fprintf(stderr, FLFMT "elm_initbus: ELM323 doesn't support target address %02X", FL, in->addr);
 				return diag_iseterr(DIAG_ERR_GENERAL);
-			} else {
+			} else if (in->addr != 0x33) {
 				uint8_t iia[15];
 				sprintf((char *) iia, "ATIIA %02X\x0D", in->addr);
 				rv=elm_sendcmd(dl0d, iia, 9, 500, NULL);
-				if (rv < 0 && in->addr == 0x33) {
-					fprintf(stderr, FLFMT "elm_initbus: ATIIA 33 failed, continuing anyway\n", FL);
-					rv = 0;
-				} else if (rv < 0) {
+				if (rv < 0) {
 					fprintf(stderr, FLFMT "elm_initbus: ATIIA %02X failed\n", FL, in->addr);
 					return diag_iseterr(DIAG_ERR_GENERAL);
 				}
@@ -794,17 +797,16 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 					// starts with 06 addr 55 xx yy aa bb
 					// and aa=yy^0xff and bb=addr^0xff then
 					// xx and yy should be key bytes
-					break;
-				}
-				if (sscanf((char *)rxbuf, "1:%02X 2:%02X", &kb1, &kb2) == 2) {
+					rv = 0;
+				} else if (sscanf((char *)rxbuf, "1:%02X 2:%02X", &kb1, &kb2) == 2) {
 					dev->kb1 = kb1;
 					dev->kb2 = kb2;
+					in->kb1 = kb1;
+					in->kb2 = kb2;
 				} else {
-					fprintf(stderr, FLFMT "elm_initbus: ATKW0 failed, continuing anyway\n", FL);
+					fprintf(stderr, FLFMT "elm_initbus: ATKW failed, continuing anyway\n", FL);
 					rv = 0;
 				}
-				// Note: currently there is no way to tell the
-				// L2 what key bytes we got
 			}
 
 			//for KWP6227, set appropriate wakeup message
@@ -892,6 +894,9 @@ elm_send(struct diag_l0_device *dl0d,
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
+	if ((dev->protocol & DIAG_L1_ISO9141) && len <= 3)
+		return diag_iseterr(DIAG_ERR_BADLEN);
+
 	if ((2*len)>(ELM_BUFSIZE-1)) {
 		//too much data for buffer size
 		fprintf(stderr, FLFMT "ELM: too much data for buffer (report this bug please!)\n", FL);
@@ -900,6 +905,35 @@ elm_send(struct diag_l0_device *dl0d,
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "ELM: sending %d bytes\n", FL, (int) len);
+	}
+
+	if ((dev->protocol & DIAG_L1_ISO9141) && memcmp(dev->atsh, data, 3)) {
+		sprintf((char *)buf, "ATSH %02X %02X %02X\x0D",
+			(unsigned int)((uint8_t *)data)[0],
+			(unsigned int)((uint8_t *)data)[1],
+			(unsigned int)((uint8_t *)data)[2]);
+		rv=elm_sendcmd(dl0d, buf, 14, 500, NULL);
+		if (rv < 0) {
+			fprintf(stderr, FLFMT "elm_send: ATSH failed\n",FL);
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
+
+		// if ISO9141 protocol setting with KWP message format,
+		// adjust receive filter
+		if((dev->atsh[0] & 0x80) &&
+		   (dev->atsh[2] == (unsigned int)((uint8_t *)data)[2])) {
+			// already sent ATSR for this address
+		} else if((unsigned int)((uint8_t *)data)[0] & 0x80) {
+			sprintf((char *)buf, "ATSR %02X\x0D",
+				(unsigned int)((uint8_t *)data)[2]);
+			rv=elm_sendcmd(dl0d, buf, 8, 500, NULL);
+			if (rv < 0) {
+				fprintf(stderr, FLFMT "elm_send: ATSR failed\n",FL);
+				return diag_iseterr(DIAG_ERR_GENERAL);
+			}
+		}
+
+		memcpy(dev->atsh, data, 3);
 	}
 
 	for (i=0; i<len; i++) {
@@ -914,7 +948,12 @@ elm_send(struct diag_l0_device *dl0d,
 		fprintf(stderr, FLFMT "ELM: (sending string %s)\n", FL, (char *) buf);
 	}
 
-	rv=diag_tty_write(dev->tty_int, buf, i+1);
+	if(dev->protocol & DIAG_L1_ISO9141) {
+		i -= 6;
+		rv=diag_tty_write(dev->tty_int, buf+6, i+1); // skip header
+	} else {
+		rv=diag_tty_write(dev->tty_int, buf, i+1);
+	}
 	if (rv != (int) (i+1)) {	//XXX danger ! evil cast !
 		fprintf(stderr, FLFMT "elm_send:write error\n",FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -1078,6 +1117,7 @@ elm_getflags(struct diag_l0_device *dl0d)
 	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:
 		flags |= DIAG_L1_SLOW;
+		flags &= ~DIAG_L1_DATAONLY;
 		//flags |= DIAG_L1_NOHDRS;	//probably not needed since we send ATH1 on init (enable headers)
 		break;
 	case DIAG_L1_ISO14230:

@@ -204,13 +204,19 @@ dl2p_6227_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 	in.type = DIAG_L1_INITBUS_5BAUD;
 	in.addr = with_parity(target, diag_par_o);
 	in.testerid = dp->srcaddr;
+	in.kb1 = 0; in.kb2 = 0;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 	if (rv < 0)
 		goto err;
 
-	/* L0 doesn't tell us what key bytes it got. For now assume it's D3B0 */
-	d_l2_conn->diag_l2_kb1 = 0xd3;
-	d_l2_conn->diag_l2_kb2 = 0xb0;
+	if (in.kb1 == 0 && in.kb2 == 0) {
+		d_l2_conn->diag_l2_kb1 = 0xd3;
+		d_l2_conn->diag_l2_kb2 = 0xb0;
+		fprintf(stderr, FLFMT "_startcomms : L0 didn't return keybytes, continuing anyway\n", FL);
+	} else {
+		d_l2_conn->diag_l2_kb1 = in.kb1;
+		d_l2_conn->diag_l2_kb2 = in.kb2;
+	}
 
 	if ((d_l2_conn->diag_l2_kb1 != 0xd3) || (d_l2_conn->diag_l2_kb2 != 0xb0)) {
 		fprintf(stderr, FLFMT "_startcomms : wrong keybytes %02X%02X, expecting D3B0\n",
