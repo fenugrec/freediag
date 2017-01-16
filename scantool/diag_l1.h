@@ -175,6 +175,7 @@ struct diag_l1_initbus_args
 	uint8_t	addr;	/* ECU (target) address, if iso9141 or 14230 init */
 	uint8_t	testerid;	/* tester address, for 14230 init */
 	uint8_t	physaddr;	//1:physical addressing, 0: func. iso14230 only.
+	uint8_t kb1, kb2;	/* key bytes (return value from L0) */
 };
 //initbus types:
 #define DIAG_L1_INITBUS_NONE	0	/* Not needed */

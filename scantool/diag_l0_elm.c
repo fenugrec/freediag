@@ -805,12 +805,12 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 				if (sscanf((char *)rxbuf, "1:%02X 2:%02X", &kb1, &kb2) == 2) {
 					dev->kb1 = kb1;
 					dev->kb2 = kb2;
+					in->kb1 = kb1;
+					in->kb2 = kb2;
 				} else {
 					fprintf(stderr, FLFMT "elm_initbus: ATKW0 failed, continuing anyway\n", FL);
 					rv = 0;
 				}
-				// Note: currently there is no way to tell the
-				// L2 what key bytes we got
 			}
 
 			//for KWP6227, set appropriate wakeup message
