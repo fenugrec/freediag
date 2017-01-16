@@ -808,7 +808,7 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 					in->kb1 = kb1;
 					in->kb2 = kb2;
 				} else {
-					fprintf(stderr, FLFMT "elm_initbus: ATKW0 failed, continuing anyway\n", FL);
+					fprintf(stderr, FLFMT "elm_initbus: ATKW failed, continuing anyway\n", FL);
 					rv = 0;
 				}
 			}
