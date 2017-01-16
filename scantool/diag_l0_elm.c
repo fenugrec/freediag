@@ -800,9 +800,8 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 					// starts with 06 addr 55 xx yy aa bb
 					// and aa=yy^0xff and bb=addr^0xff then
 					// xx and yy should be key bytes
-					break;
-				}
-				if (sscanf((char *)rxbuf, "1:%02X 2:%02X", &kb1, &kb2) == 2) {
+					rv = 0;
+				} else if (sscanf((char *)rxbuf, "1:%02X 2:%02X", &kb1, &kb2) == 2) {
 					dev->kb1 = kb1;
 					dev->kb2 = kb2;
 					in->kb1 = kb1;
