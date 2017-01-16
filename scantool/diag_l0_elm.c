@@ -631,11 +631,16 @@ elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout)
 	int rv;
 	struct elm_device *dev;
 	uint8_t buf[MAXRBUF];
-	uint8_t data[]={0x01,0x00};
+	uint8_t generic_data[]={0x01,0x00}; // J1979 request only
+	uint8_t iso9141_data[]={0x68,0x6a,0xf1,0x01,0x00}; // with ISO9141 hdr
 	const char *err_str;
 
 	dev = dl0d->l0_int;
-	rv = elm_send(dl0d, NULL, data, 2);
+	if (dev->protocol & DIAG_L1_ISO9141) {
+		rv = elm_send(dl0d, NULL, iso9141_data, 5);
+	} else {
+		rv = elm_send(dl0d, NULL, generic_data, 2);
+	}
 	if (rv)
 		return diag_iseterr(rv);
 
