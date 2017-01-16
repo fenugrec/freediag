@@ -59,6 +59,7 @@ struct elm_device {
 	ttyp *tty_int;			/** handle for tty stuff */
 
 	uint8_t kb1, kb2;	// key bytes from 5 baud init
+	uint8_t atsh[3];	// current header setting for ISO9141
 };
 
 #define CFGSPEED_DESCR "Host <-> ELM comm speed (bps)"
@@ -910,7 +911,7 @@ elm_send(struct diag_l0_device *dl0d,
 		fprintf(stderr, FLFMT "ELM: sending %d bytes\n", FL, (int) len);
 	}
 
-	if (dev->protocol & DIAG_L1_ISO9141) {
+	if ((dev->protocol & DIAG_L1_ISO9141) && memcmp(dev->atsh, data, 3)) {
 		sprintf((char *)buf, "ATSH %02X %02X %02X\x0D",
 			(unsigned int)((uint8_t *)data)[0],
 			(unsigned int)((uint8_t *)data)[1],
@@ -921,9 +922,12 @@ elm_send(struct diag_l0_device *dl0d,
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 
-		if((unsigned int)((uint8_t *)data)[0] & 0x80) {
-			// if ISO9141 protocol setting with KWP message format,
-			// adjust receive filter
+		// if ISO9141 protocol setting with KWP message format,
+		// adjust receive filter
+		if((dev->atsh[0] & 0x80) &&
+		   (dev->atsh[2] == (unsigned int)((uint8_t *)data)[2])) {
+			// already sent ATSR for this address
+		} else if((unsigned int)((uint8_t *)data)[0] & 0x80) {
 			sprintf((char *)buf, "ATSR %02X\x0D",
 				(unsigned int)((uint8_t *)data)[2]);
 			rv=elm_sendcmd(dl0d, buf, 8, 500, NULL);
@@ -932,6 +936,8 @@ elm_send(struct diag_l0_device *dl0d,
 				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
 		}
+
+		memcpy(dev->atsh, data, 3);
 	}
 
 	for (i=0; i<len; i++) {
