@@ -172,7 +172,7 @@ dl2p_6227_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
 
-	if (dp->srcaddr != 0x13)
+	if (source != 0x13)
 		fprintf(stderr, "Warning : Using tester address %02X. Some ECUs require tester address to be 13.\n", source);
 
 	dp->srcaddr = source;
