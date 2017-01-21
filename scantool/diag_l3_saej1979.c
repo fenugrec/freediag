@@ -365,7 +365,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				/* Copy in J1979 part of message */
 				memcpy(data, &l3i->rxbuf[3], (size_t)(sae_msglen - 4));
 				/* remove whole message from rx buf */
-				memcpy(l3i->rxbuf,
+				memmove(l3i->rxbuf,
 					&l3i->rxbuf[sae_msglen],
 					(size_t)sae_msglen);
 
