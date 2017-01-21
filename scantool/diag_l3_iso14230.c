@@ -140,10 +140,6 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 			diag_data_dump(stderr, (void *) msg->data, (size_t)msg->len);
 	}
 
-	/* Note source address on 1st send */
-	if (d_l3_conn->src == 0)
-		d_l3_conn->src = msg->src;
-
 	// L2 does framing, adds addressing and CRC, so do nothing special
 
 	rv = diag_l2_send(d_conn, msg);

@@ -43,6 +43,7 @@ struct diag_l3_conn
 	uint32_t d_l3l1_flags;		/* Flags from L1 */
 
 	const struct diag_l3_proto *d_l3_proto;
+	void *l3_int;	// internal (private) data for each connection instance
 
 	/* Callback into next layer (which passed us the handle) */
 	void (*callback)(void *handle, struct diag_msg *msg);
@@ -60,10 +61,6 @@ struct diag_l3_conn
 
 	/* Linked list held by main L3 code */
 	struct diag_l3_conn	*next;
-
-
-	/* Source address this connection is using */
-	uint8_t	src;
 
 };
 

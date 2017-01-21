@@ -37,6 +37,11 @@
 #include "utlist.h"
 
 
+/* internal data used by each connection */
+struct l3_j1979_int {
+	uint8_t src;	//source address ("tester ID")
+};
+
 /*
  * Return the expected J1979 packet length for a given mode byte
  * This includes *only* up to 7 data bytes (headers and checksum are stripped and
@@ -213,6 +218,7 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 {
 	int rv;
 	struct diag_l2_conn *d_conn;
+	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
 //	uint8_t buf[32];
 
 	/* Get l2 connection info */
@@ -227,8 +233,8 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
 		msg->src=0xF1;
 
 	/* Note source address on 1st send */
-	if (d_l3_conn->src == 0)
-		d_l3_conn->src = msg->src;
+	if (l3i->src == 0)
+		l3i->src = msg->src;
 
 
 
@@ -689,6 +695,7 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 	struct diag_msg *rxmsg;
 	uint8_t data[6];
 	int errval;
+	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
 
 	/*
 	 * Service 1 Pid 0 request is the SAEJ1979 idle message
@@ -704,8 +711,8 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 	 * And set the source address, if no sends have happened, then
 	 * the src address will be 0, so use the default used in J1979
 	 */
-	if (d_l3_conn->src)
-		msg.src = d_l3_conn->src;
+	if (l3i->src)
+		msg.src = l3i->src;
 	else
 		msg.src = 0xF1;		/* Default as used in SAE J1979 */
 
@@ -737,15 +744,32 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 //That sounds like a sure-fire way to make sure we have a succesful connection to a J1979-compliant ECU.
 int diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
 	int rv;
+	struct l3_j1979_int *l3i;
 
 	assert(d_l3_conn != NULL);
+
+	if (diag_calloc(&l3i, 1))
+		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	d_l3_conn->l3_int = l3i;
+
 	rv=diag_l3_j1979_keepalive(d_l3_conn);
 
 	if (rv<0) {
 		fprintf(stderr, FLFMT "J1979 Keepalive failed ! Try to disconnect and reconnect.\n", FL);
+		free(l3i);
+		return diag_iseterr(rv);
 	}
 
-	return (rv<0)? diag_iseterr(rv):0;
+
+	return 0;
+}
+
+/* Stop communications : nothing defined, other than letting the link timeout (L2 defined). */
+int dl3_j1979_stop(struct diag_l3_conn *d_l3_conn) {
+	assert(d_l3_conn != NULL);
+	free(d_l3_conn->l3_int);
+	return 0;
 }
 
 /*
@@ -795,7 +819,7 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
 const struct diag_l3_proto diag_l3_j1979 = {
 	"SAEJ1979",
 	diag_l3_j1979_start,
-	diag_l3_base_stop,
+	dl3_j1979_stop,
 	diag_l3_j1979_send,
 	diag_l3_j1979_recv,
 	NULL,	//ioctl
