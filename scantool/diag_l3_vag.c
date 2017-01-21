@@ -125,7 +125,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 	}
 	smartcat(buf, bufsize, "\n");
 
-	return buf;
+	return;
 }
 
 const struct diag_l3_proto diag_l3_vag = {
