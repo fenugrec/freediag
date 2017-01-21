@@ -793,7 +793,13 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
 }
 
 const struct diag_l3_proto diag_l3_j1979 = {
-	"SAEJ1979", diag_l3_j1979_start, diag_l3_base_stop,
-	diag_l3_j1979_send, diag_l3_j1979_recv, NULL, diag_l3_base_request,
-	diag_l3_j1979_decode, diag_l3_j1979_timer
+	"SAEJ1979",
+	diag_l3_j1979_start,
+	diag_l3_base_stop,
+	diag_l3_j1979_send,
+	diag_l3_j1979_recv,
+	NULL,	//ioctl
+	diag_l3_base_request,
+	diag_l3_j1979_decode,
+	diag_l3_j1979_timer
 };

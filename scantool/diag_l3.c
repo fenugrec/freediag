@@ -79,8 +79,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		}
 	}
 
-	if (dp)
-	{
+	if (dp) {
 		if (diag_l3_debug & DIAG_DEBUG_OPEN)
 			fprintf(stderr,FLFMT "start protocol %s found\n",
 				FL, dp->proto_name);
@@ -108,17 +107,17 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 		if (rv < 0) {
 			free(d_l3_conn);
 			return diag_pseterr(rv);
-		} else {
-			/*
-			 * Set time to now
-			 */
-			d_l3_conn->timer=diag_os_getms();
-
-			/*
-			 * And add to list
-			 */
-			LL_PREPEND(diag_l3_list, d_l3_conn);
 		}
+		/*
+		 * Set time to now
+		 */
+		d_l3_conn->timer=diag_os_getms();
+
+		/*
+		 * And add to list
+		 */
+		LL_PREPEND(diag_l3_list, d_l3_conn);
+
 	}
 
 	if (diag_l3_debug & DIAG_DEBUG_OPEN)

@@ -358,7 +358,13 @@ static const char *l3_iso14230_neglookup(const int id)
 
 
 const struct diag_l3_proto diag_l3_iso14230 = {
-	"ISO14230", diag_l3_base_start, diag_l3_base_stop,
-	diag_l3_iso14230_send, diag_l3_iso14230_recv, NULL, diag_l3_base_request,
-	diag_l3_iso14230_decode, NULL
+	"ISO14230",
+	diag_l3_base_start,
+	diag_l3_base_stop,
+	diag_l3_iso14230_send,
+	diag_l3_iso14230_recv,
+	NULL,	//ioctl
+	diag_l3_base_request,
+	diag_l3_iso14230_decode,
+	NULL	//timer
 };

@@ -34,16 +34,13 @@ extern "C" {
 struct diag_l2_conn;
 struct diag_msg;
 
-/*
- * Layer 3 connection info
+/** Layer 3 connection info
  */
 struct diag_l3_conn
 {
 	struct diag_l2_conn	*d_l3l2_conn;
 	int d_l3l2_flags;		/* Flags from L2 */
 	uint32_t d_l3l1_flags;		/* Flags from L1 */
-
-	int diag_l3_speed;		/* Speed */
 
 	const struct diag_l3_proto *d_l3_proto;
 
@@ -58,7 +55,7 @@ struct diag_l3_conn
 	/* Received messages */
 	struct diag_msg	*msg;
 
-	// Count in ms since an arbitrary reference (from diag_os_getms())
+	/* time (in ms since an arbitrary reference) of last tx/rx , for managing periodic timers */
 	unsigned long timer;
 
 	/* Linked list held by main L3 code */
@@ -70,55 +67,106 @@ struct diag_l3_conn
 
 };
 
-/*
- * L3 Protocol look up table
+/** L3 Protocol descriptor.
+ *
+ * Do not call member functions directly.
+ * All functions must be implemented, except
+ * 	_ioctl
+ * 	_timer
  */
 
 struct diag_l3_proto {
 	const char *proto_name;
 
-	//start, stop : initiate L3 comms, filling the given diag_l3_conn
+	//start, stop : initiate L3 comms, filling the given diag_l3_conn. Must return 0 if ok, <0 on error
 	int (*diag_l3_proto_start)(struct diag_l3_conn *);
 	int (*diag_l3_proto_stop)(struct diag_l3_conn *);
-	//proto_recv: ret 0 if ok?
+
+	//proto_send: ret 0 if ok
 	int (*diag_l3_proto_send)(struct diag_l3_conn *, struct diag_msg *);
-	//proto_recv: ret 0 if ok?
+
+	//proto_recv: ret 0 if ok
 	int (*diag_l3_proto_recv)(struct diag_l3_conn *, unsigned int,
 		void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *);
+
+	//proto_ioctl (optional). ret 0 if ok; if not defined the ioctl is passed to L2.
 	int (*diag_l3_proto_ioctl)(struct diag_l3_conn *, int cmd, void *data);
-	//proto_request : send request and return a new message with the reply.
+
+	//proto_request : send request and return a new message with the reply, and error in *errval (0 if ok)
 	struct diag_msg * (*diag_l3_proto_request)(struct diag_l3_conn*,
 		struct diag_msg* txmsg, int* errval);
 
-/* Pretty text decode routine */
+	/* Decode msg to printable text in *buf */
 	char *(*diag_l3_proto_decode)(struct diag_l3_conn *,
 		struct diag_msg *msg,
 		char * buf,
 		const size_t bufsize);
 
-	/* Timer */
-	//this function, if it exists, is called every time diag_l3_timer()
-	//is called from the periodic callback (in diag_os); the ms argument
-	//is the difference (in ms) between [now] and [diag_l3_conn->timer].
-	//ret 0 if ok
+	/* Timer (optional)
+	 * If defined, this is called from diag_l3_timer()
+	 * by the periodic callback (in diag_os); the ms argument
+	 * is the difference (in ms) between [now] and [diag_l3_conn->timer].
+	 * ret 0 if ok
+	 */
 	int (*diag_l3_proto_timer)(struct diag_l3_conn *, unsigned long ms);
 
 };
 
 
-//diag_l3_start must free() everything if it fails;
+/** Start L3 connection
+ *
+ * must free() everything if it fails;
+ */
 struct diag_l3_conn * diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn);
-//diag_l3_stop must free() everything diag_l3_start alloc()ed
+
+/** Stop L3 connection
+ *
+ * must free() everything diag_l3_start alloc'd
+ */
 int	diag_l3_stop(struct diag_l3_conn *d_l3_conn);
+
+/** Send message
+ *
+ * @return 0 if ok
+ */
 int	diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg);
+
+/** Receive message
+ *
+ * @return 0 if ok
+ */
 int	diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle);
+
+/** Format given message as text
+ *
+ * @return buf (pointless), 0-terminated
+ */
 char * diag_l3_decode(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg,
 	char *buf, const size_t bufsize);
-//_request : send the request in txmsg and return a new msg with the response.
-//Caller must free that msg
+
+/** Send a request and return a new msg with the response.
+ *
+ * Caller must free that msg
+ */
 struct diag_msg *diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg,
 		int *errval);
+
+/** Send ioctl to the specified
+ * L3 AND its diag_l2_ioctl !? XXX why both ?
+ *
+ * ret 0 if ok
+ */
+int diag_l3_ioctl(struct diag_l3_conn *connection, unsigned int cmd, void *data);
+
+/** Periodic timer dispatcher
+ *
+ * (call only from diag_os_*.c) *
+ * This calls the diag_l3_proto_timer function of every
+ * diag_l3_conn in the diag_l3_list linked-list.
+ */
+void diag_l3_timer(void);
+
 
 /* Base implementations:
  * these are defined in diag_l3.c and perform no operation.
@@ -134,17 +182,6 @@ struct diag_msg * diag_l3_base_request(struct diag_l3_conn *dl3c,
 	struct diag_msg* txmsg, int* errval);
 
 
-/* Pretty text decode routine */
-char *diag_l3_proto_decode(struct diag_l3_conn *, struct diag_msg *);
-
-/* Regular timer routine: this is called regularly (diag_os) */
-// and calls the diag_l3_proto_timer function of every
-// diag_l3_conn in the diag_l3_list linked-list.
-void diag_l3_timer(void);
-
-// diag_l3_ioctl() : calls the diag_l3_proto_ioctl of the specified
-// diag_l3_conn , AND its diag_l2_ioctl !? XXX why both ?
-int diag_l3_ioctl(struct diag_l3_conn *connection, unsigned int cmd, void *data);
 
 // diag_l3_debug : contains debugging message flags (see diag.h)
 extern int diag_l3_debug;
