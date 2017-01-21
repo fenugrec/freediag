@@ -597,7 +597,6 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 {
 	struct diag_l0_device *dl0d;
-	struct diag_serial_settings *ic;
 	int rv = 0;
 	struct diag_l2_data *d;
 	struct diag_l2_link *dl2l;
@@ -631,15 +630,14 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 	case DIAG_IOCTL_SETSPEED:
 		if (dl2l->l1flags & (DIAG_L1_AUTOSPEED | DIAG_L1_NOTTY))
 			break;
-		ic = (struct diag_serial_settings *)data;
-		rv = diag_l1_setspeed(dl0d, ic);
+		rv = diag_l1_ioctl(dl0d, cmd, data);
 		break;
 	case DIAG_IOCTL_INITBUS:
 		rv = diag_l1_initbus(dl0d, (struct diag_l1_initbus_args *)data);
 		break;
 	case DIAG_IOCTL_IFLUSH:
 		if (dl2l->l1flags & DIAG_L1_NOTTY) break;
-		rv = diag_l1_iflush(dl0d);
+		rv = diag_l1_ioctl(dl0d, cmd, data);
 		break;
 	default:
 		rv = 0;	/* Do nothing, quietly */

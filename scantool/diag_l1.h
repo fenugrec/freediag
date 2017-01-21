@@ -203,11 +203,13 @@ int diag_l1_end(void);
 int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 
 
-/** Flush input buffers, if applicable.
- *
- * @return 0 if ok
+/** Send IOCTL to L1/L0
+ *	@param command : IOCTL #, defined in diag.h
+ *	@param data	optional, input/output
+ *	@return 0 if OK, diag error num (<0) on error
  */
-int diag_l1_iflush(struct diag_l0_device *);
+int diag_l1_ioctl(struct diag_l0_device *, unsigned cmd, void *data);
+
 
 /** calls l0 ->open with the specified L1 protocol;
 * @return 0 if ok
@@ -229,12 +231,6 @@ int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *
  * since a lot of L2 code uses this to detect end of responses
  */
 int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, unsigned int timeout);
-
-/** Set serial settings
- * @return 0 if ok
- */
-int diag_l1_setspeed(struct diag_l0_device *dl0d,
-	const struct diag_serial_settings *pset);
 
 /** Get L0/L1 device flags (defined in diag_l1.h)
  * @return bitmask of L0/L1 flags

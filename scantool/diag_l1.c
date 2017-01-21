@@ -134,10 +134,27 @@ diag_l1_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 }
 
 
-int diag_l1_iflush(struct diag_l0_device *dl0d) {
-	/* No buffering at the L1 level; forward this to L0. */
-	return diag_l0_iflush(dl0d);
+int diag_l1_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+	int rv = 0;
+
+	switch (cmd) {
+	case DIAG_IOCTL_IFLUSH:
+		/* No buffering at the L1 level; forward this to L0. */
+		rv = diag_l0_iflush(dl0d);
+		break;
+
+	case DIAG_IOCTL_SETSPEED:
+		rv = diag_l0_setspeed(dl0d, (const struct diag_serial_settings *) data);
+		break;
+
+	default:
+		rv = DIAG_ERR_IOCTL_NOTSUPP;
+		break;
+	}
+
+	return rv;
 }
+
 
 /*
  * Send a load of data
@@ -284,15 +301,6 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 	return rv;
 }
 
-/*
- * Set speed/parity etc; this should only be called through diag_l2_ioctl
- */
-int
-diag_l1_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pset)
-{
-	return diag_l0_setspeed(dl0d, pset);
-}
 
 //diag_l1_getflags: returns l0 flags
 uint32_t diag_l1_getflags(struct diag_l0_device *dl0d)
