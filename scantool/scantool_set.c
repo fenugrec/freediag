@@ -303,8 +303,7 @@ static int cmd_set_interface(int argc, char **argv)
 	int i, helping = 0, found = 0;
 	if (strcmp(argv[1], "?") == 0) {
 		helping = 1;
-		printf("hardware interface: use \"set interface NAME\" .\n"
-		"NAME is the interface type. Valid NAMEs are: \n");
+		printf("Valid interface names (not case sensitive): \n\t");
 	}
 	for (i=0; l0dev_list[i]; i++) {
 		iter = l0dev_list[i];
@@ -321,7 +320,7 @@ static int cmd_set_interface(int argc, char **argv)
 
 	if (helping) {
 		printf("\n");
-		return CMD_OK;
+		return CMD_USAGE;
 	}
 
 	if (!found) {
@@ -348,8 +347,7 @@ static int cmd_set_interface(int argc, char **argv)
 static int
 cmd_set_display(int argc, char **argv)
 {
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		if (strcasecmp(argv[1], "english") == 0)
 			global_cfg.units = 1;
 		else if (strcasecmp(argv[1], "metric") == 0)
@@ -367,10 +365,13 @@ static int
 cmd_set_speed(int argc, char **argv)
 {
 	if (argc > 1) {
+		if (strcmp(argv[1], "?") == 0) {
+			return CMD_USAGE;
+		}
+
 		global_cfg.speed = htoi(argv[1]);
-	} else {
-		printf("speed: Connect speed: %d\n", global_cfg.speed);
 	}
+	printf("Connect speed: %d\n", global_cfg.speed);
 
 	return CMD_OK;
 }
@@ -378,17 +379,19 @@ cmd_set_speed(int argc, char **argv)
 static int
 cmd_set_testerid(int argc, char **argv)
 {
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		int tmp;
+		if (strncmp(argv[1], "?", 1) == 0) {
+			return CMD_USAGE;
+		}
 		tmp = htoi(argv[1]);
-		if ( (tmp < 0) || (tmp > 0xff))
+		if ( (tmp < 0) || (tmp > 0xff)) {
 			printf("testerid: must be between 0 and 0xff\n");
-		else
-			global_cfg.src = (uint8_t) tmp;
+			return CMD_FAILED;
+		}
+		global_cfg.src = (uint8_t) tmp;
 	}
-	else
-		printf("testerid: Source ID to use: 0x%X\n", global_cfg.src);
+	printf("testerid: using 0x%02X\n", (unsigned) global_cfg.src);
 
 	return CMD_OK;
 }
@@ -398,32 +401,33 @@ cmd_set_destaddr(int argc, char **argv)
 {
 	if (argc > 1) {
 		int tmp;
+		if (strncmp(argv[1], "?", 1) == 0) {
+			return CMD_USAGE;
+		}
 		tmp = htoi(argv[1]);
-		if ( (tmp < 0) || (tmp > 0xff))
+		if ( (tmp < 0) || (tmp > 0xff)) {
 			printf("destaddr: must be between 0 and 0xff\n");
-		else
-			global_cfg.tgt = (uint8_t) tmp;
-	} else {
-		printf("destaddr: Destination address to connect to: 0x%X\n",
-			global_cfg.tgt);
+			return CMD_FAILED;
+		}
+		global_cfg.tgt = (uint8_t) tmp;
 	}
+	printf("destaddr: using 0x%02X\n",
+			(unsigned) global_cfg.tgt);
 
 	return CMD_OK;
 }
+
 static int
 cmd_set_addrtype(int argc, char **argv)
 {
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		if (strncmp(argv[1], "func", 4) == 0)
 			global_cfg.addrtype = 1;
 		else if (strncmp(argv[1], "phys", 4) == 0)
 			global_cfg.addrtype = 0;
 		else
 			return CMD_USAGE;
-	}
-	else
-	{
+	} else {
 		printf("addrtype: %s addressing\n",
 			global_cfg.addrtype ? "functional" : "physical");
 	}
@@ -434,14 +438,14 @@ cmd_set_addrtype(int argc, char **argv)
 static int cmd_set_l2protocol(int argc, char **argv)
 {
 	if (argc > 1) {
-		int i, prflag = 0, found = 0;
+		int i, helping = 0, found = 0;
 		if (strcmp(argv[1], "?") == 0) {
-			prflag = 1;
+			helping = 1;
 			printf("L2 protocol: valid names are ");
 		}
 		for (i=0; l2proto_list[i] != NULL; i++) {
 			const struct diag_l2_proto *d2p=l2proto_list[i];
-			if (prflag) {
+			if (helping) {
 					printf("%s ", d2p->shortname);
 					continue;
 			}
@@ -452,9 +456,9 @@ static int cmd_set_l2protocol(int argc, char **argv)
 				break;
 			}
 		}
-		if (prflag) {
+		if (helping) {
 			printf("\n");
-			return CMD_OK;
+			return CMD_USAGE;
 		}
 		if (! found) {
 			printf("l2protocol: invalid protocol %s\n", argv[1]);
@@ -469,17 +473,15 @@ static int cmd_set_l2protocol(int argc, char **argv)
 
 static int cmd_set_l1protocol(int argc, char **argv)
 {
-	if (argc > 1)
-	{
-		int i, prflag = 0, found = 0;
-		if (strcmp(argv[1], "?") == 0)
-		{
-			prflag = 1;
+	if (argc > 1) {
+		int i, helping = 0, found = 0;
+		if (strcmp(argv[1], "?") == 0) {
+			helping = 1;
 			printf("L1 protocol: valid names are ");
 		}
 		for (i=0; l1_names[i] != NULL; i++)
 		{
-			if (prflag && *l1_names[i])
+			if (helping && *l1_names[i])
 				printf("%s ", l1_names[i]);
 			else
 				if (strcasecmp(argv[1], l1_names[i]) == 0)
@@ -488,63 +490,60 @@ static int cmd_set_l1protocol(int argc, char **argv)
 					found = 1;
 				}
 		}
-		if (prflag)
+		if (helping) {
 			printf("\n");
-		else if (! found)
-		{
+			return CMD_USAGE;
+		}
+		if (! found) {
 			printf("L1protocol: invalid protocol %s\n", argv[1]);
 			printf("l1protocol: use \"set l1protocol ?\" to see list of protocols\n");
 		}
+		return CMD_OK;
 	}
-	else
-	{
-		int offset;
 
-		for (offset=0; offset < 8; offset++)
-		{
-			if (global_cfg.L1proto == (1 << offset))
-				break;
-		}
-		printf("l1protocol: Layer 1 (H/W) protocol to use %s\n",
-			l1_names[offset]);
+	int offset;
 
+	for (offset=0; offset < 8; offset++) {
+		if (global_cfg.L1proto == (1 << offset))
+			break;
 	}
+	printf("l1protocol: Layer 1 (H/W) protocol to use %s\n",
+		l1_names[offset]);
+
 	return CMD_OK;
 }
 
 static int cmd_set_initmode(int argc, char **argv)
 {
-	if (argc > 1)
-	{
-		int i, prflag = 0, found = 0;
-		if (strcmp(argv[1], "?") == 0)
-			prflag = 1;
-		for (i=0; l2_initmodes[i] != NULL; i++)
-		{
-			if (prflag)
+	if (argc > 1) {
+		int i, helping = 0, found = 0;
+		if (strcmp(argv[1], "?") == 0) {
+			helping = 1;
+		}
+		for (i=0; l2_initmodes[i] != NULL; i++) {
+			if (helping) {
 				printf("%s ", l2_initmodes[i]);
-			else
-			{
-				if (strcasecmp(argv[1], l2_initmodes[i]) == 0)
-				{
+			} else {
+				if (strcasecmp(argv[1], l2_initmodes[i]) == 0) {
 					found = 1;
 					global_cfg.initmode = i;
 				}
 			}
 		}
-		if (prflag)
+		if (helping) {
 			printf("\n");
-		else if (! found)
-		{
+			return CMD_USAGE;
+		}
+		if (! found) {
 			printf("initmode: invalid mode %s\n", argv[1]);
 			printf("initmode: use \"set initmode ?\" to see list of initmodes\n");
 		}
+		return CMD_OK;
 	}
-	else
-	{
-		printf("initmode: Initmode to use with above protocol is %s\n",
-			l2_initmodes[global_cfg.initmode]);
-	}
+
+	printf("initmode: Initmode to use with above protocol is %s\n",
+		l2_initmodes[global_cfg.initmode]);
+
 	return CMD_OK;
 }
 

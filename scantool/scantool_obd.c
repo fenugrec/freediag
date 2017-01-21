@@ -242,6 +242,9 @@ cmd_monitor(int argc, char **argv)
 	int rv;
 	bool english = 0;
 
+	if ((argc > 1) && (strcmp(argv[1], "?") == 0)) {
+		return CMD_USAGE;
+	}
 
 	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");

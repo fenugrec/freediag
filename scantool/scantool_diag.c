@@ -114,7 +114,7 @@ cmd_diag_addl3(int argc, char **argv)
 			printf("%s ", diag_l3_protocols[i]->proto_name);
 		}
 		printf("\n");
-		return CMD_OK;
+		return CMD_USAGE;
 	}
 
 	/* Add a L3 stack above the open L2 */
@@ -391,6 +391,10 @@ cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 {
 	int rv;
 
+	if (argc > 1) {
+		return CMD_USAGE;
+	}
+
 	if (global_state >= STATE_CONNECTED) {
 		printf("Already connected !\n");
 		return CMD_OK;
@@ -416,6 +420,10 @@ cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 static int
 cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
 {
+	if (argc > 1) {
+		return CMD_USAGE;
+	}
+
 	if (global_state < STATE_CONNECTED) {
 		return CMD_OK;
 	}
@@ -478,14 +486,18 @@ cmd_diag_sendreq(int argc, char **argv)
 	unsigned int	i,j,len;
 	int	rv;
 
-	if (global_state < STATE_CONNECTED) {
-		printf("Not connected to ECU\n");
-		return CMD_OK;
-	}
-
 	if (argc < 2) {
 		printf("Too few arguments\n");
 		return CMD_USAGE;
+	}
+
+	if (strcmp(argv[1], "?") == 0) {
+		return CMD_USAGE;
+	}
+
+	if (global_state < STATE_CONNECTED) {
+		printf("Not connected to ECU\n");
+		return CMD_OK;
 	}
 
 	memset(data, 0, sizeof(data));

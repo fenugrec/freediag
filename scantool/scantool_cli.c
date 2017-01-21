@@ -347,30 +347,31 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
 			}
 			ctp++;
 		}
-		if (!found)
+		if (!found) {
 			printf("help: %s: no such command\n", argv[1]);
-
-	} else {
-		/* Print help */
-		printf("Available commands are :\n");
-		ctp = cmd_table;
-		while (ctp->command) {
-			if ((ctp->flags & FLAG_HIDDEN) == 0) {
-				printf("\t%s\n", ctp->usage);
-			}
-			if (ctp->flags & FLAG_CUSTOM) {
-				/* list custom subcommands too */
-				printf("Custom commands for the current L0:\n");
-				char cust_special[]="?";
-				char *pcs = cust_special;
-				char **temp_argv = &pcs;
-				ctp->routine(1, temp_argv);
-			}
-			ctp++;
 		}
-		printf("\nTry \"help <command>\" for further help\n");
-
+		return CMD_OK;
 	}
+
+	/* Print help */
+	printf("Available commands are :\n");
+	ctp = cmd_table;
+	while (ctp->command) {
+		if ((ctp->flags & FLAG_HIDDEN) == 0) {
+			printf("\t%s\n", ctp->usage);
+		}
+		if (ctp->flags & FLAG_CUSTOM) {
+			/* list custom subcommands too */
+			printf("Custom commands for the current level:\n");
+			char cust_special[]="?";
+			char *pcs = cust_special;
+			char **temp_argv = &pcs;
+			ctp->routine(1, temp_argv);
+		}
+		ctp++;
+	}
+	printf("\nTry \"help <command>\" for further help\n");
+
 
 	return CMD_OK;
 }
@@ -686,7 +687,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 			rv = ctp->routine(cmd_argc, cmd_argv);
 			switch (rv) {
 				case CMD_USAGE:
-					printf("Usage: %s\n", ctp->usage);
+					printf("Usage: %s\n%s\n", ctp->usage, ctp->help);
 					break;
 				case CMD_EXIT:
 				case CMD_UP:
