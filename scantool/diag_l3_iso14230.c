@@ -161,28 +161,22 @@ diag_l3_14230_rxcallback(void *handle, struct diag_msg *msg)
 	struct diag_l3_conn *d_l3_conn = (struct diag_l3_conn *)handle;
 	char buffer[200];
 
-	if (diag_l3_debug & DIAG_DEBUG_READ)
-	{
-		fprintf(stderr,FLFMT "rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n",
-			FL, msg->len, msg->fmt, d_l3_conn->rxoffset);
+	if (diag_l3_debug & DIAG_DEBUG_READ) {
+		fprintf(stderr,FLFMT "rcv_callback for %d bytes fmt 0x%X conn\n",
+			FL, msg->len, msg->fmt);
 	}
-	if (diag_l3_iso14230_decode_response(msg, buffer, sizeof(buffer)))
-	{
+
+	if (diag_l3_iso14230_decode_response(msg, buffer, sizeof(buffer))) {
 	 fprintf(stderr, "DECODED: %s\n",buffer);
 	}
 
 	if (msg->fmt & DIAG_FMT_FRAMED) {
-
 		/* Send data upward if needed */
 		if (d_l3_conn->callback)
 			d_l3_conn->callback(d_l3_conn->handle, msg);
 	} else {
-		fprintf(stderr, FLFMT "diag_l3_14230_rxcallback: problem: got an unframed message!\n"
+		fprintf(stderr, FLFMT "problem: got an unframed message!\n"
 								"Report this !\n", FL);
-			/* Add data to the receive buffer on the L3 connection */
-			memcpy(&d_l3_conn->rxbuf[d_l3_conn->rxoffset],
-				msg->data, msg->len);	//XXX possible buffer overflow !
-			d_l3_conn->rxoffset += msg->len;
 	}
 }
 

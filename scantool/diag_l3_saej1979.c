@@ -40,6 +40,10 @@
 /* internal data used by each connection */
 struct l3_j1979_int {
 	uint8_t src;	//source address ("tester ID")
+
+	/* Received data buffer, and offset into it */
+	uint8_t rxbuf[MAXRBUF];
+	int	rxoffset;
 };
 
 /*
@@ -261,10 +265,11 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
 	 * message is complete call next layer callback routine
 	 */
 	struct diag_l3_conn *d_l3_conn = (struct diag_l3_conn *)handle;
+	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
 
 	if (diag_l3_debug & DIAG_DEBUG_READ)
 		fprintf(stderr,FLFMT "rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n",
-			FL, msg->len, msg->fmt, d_l3_conn->rxoffset);
+			FL, msg->len, msg->fmt, l3i->rxoffset);
 
 	if (msg->fmt & DIAG_FMT_FRAMED) {
 		/* Send data upward if needed */
@@ -272,9 +277,9 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
 			d_l3_conn->callback(d_l3_conn->handle, msg);
 	} else {
 		/* Add data to the receive buffer on the L3 connection */
-		memcpy(&d_l3_conn->rxbuf[d_l3_conn->rxoffset],
+		memcpy(&l3i->rxbuf[l3i->rxoffset],
 			msg->data, msg->len);		//XXX possible buffer overflow !
-		d_l3_conn->rxoffset += msg->len;
+		l3i->rxoffset += msg->len;
 	}
 }
 
@@ -304,19 +309,20 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 	/* Process the received data into messages if complete */
 	struct diag_msg *msg;
 	int sae_msglen;
+	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
 
-	while (d_l3_conn->rxoffset) {
+	while (l3i->rxoffset) {
 		int badpacket=0;
 
-		sae_msglen = diag_l3_j1979_getlen(d_l3_conn->rxbuf,
-					d_l3_conn->rxoffset);	//set expected packet length based on SID + TID
+		sae_msglen = diag_l3_j1979_getlen(l3i->rxbuf,
+					l3i->rxoffset);	//set expected packet length based on SID + TID
 
 		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
 			fprintf(stderr,FLFMT "process_data rxoffset is %d sae_msglen is %ld\n",
-				FL, d_l3_conn->rxoffset, (long)sae_msglen);
+				FL, l3i->rxoffset, (long)sae_msglen);
 			fprintf(stderr,FLFMT "process_data hex data is ",
 				FL);
-			diag_data_dump(stderr, d_l3_conn->rxbuf, d_l3_conn->rxoffset -1);
+			diag_data_dump(stderr, l3i->rxbuf, l3i->rxoffset -1);
 			fprintf(stderr,"\n");
 		}
 
@@ -330,7 +336,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			}
 		}
 
-		if (badpacket || (sae_msglen <= d_l3_conn->rxoffset )) {
+		if (badpacket || (sae_msglen <= l3i->rxoffset )) {
 
 			/* Bad packet, or full packet, need to tell user */
 			uint8_t *data = NULL;
@@ -353,17 +359,17 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 			} else {
 				msg->fmt = DIAG_FMT_ISO_FUNCADDR;
 				// XXX This won't do at all !
-				//msg->type = d_l3_conn->rxbuf[0];	//nobody checks this
-				msg->dest = d_l3_conn->rxbuf[1];
-				msg->src = d_l3_conn->rxbuf[2];
+				//msg->type = l3i->rxbuf[0];	//nobody checks this
+				msg->dest = l3i->rxbuf[1];
+				msg->src = l3i->rxbuf[2];
 				/* Copy in J1979 part of message */
-				memcpy(data, &d_l3_conn->rxbuf[3], (size_t)(sae_msglen - 4));
+				memcpy(data, &l3i->rxbuf[3], (size_t)(sae_msglen - 4));
 				/* remove whole message from rx buf */
-				memcpy(d_l3_conn->rxbuf,
-					&d_l3_conn->rxbuf[sae_msglen],
+				memcpy(l3i->rxbuf,
+					&l3i->rxbuf[sae_msglen],
 					(size_t)sae_msglen);
 
-				d_l3_conn->rxoffset -= sae_msglen;
+				l3i->rxoffset -= sae_msglen;
 
 				msg->data = data;
 				msg->len = (uint8_t) sae_msglen - 4;
@@ -488,9 +494,8 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 			diag_l3_j1979_process_data(d_l3_conn);
 
 			if (diag_l3_debug & DIAG_DEBUG_PROTO)
-				fprintf(stderr,FLFMT "recv process_data called, msg %p rxoffset %d\n",
-					FL, (void *)d_l3_conn->msg,
-					d_l3_conn->rxoffset);
+				fprintf(stderr,FLFMT "recv process_data called, msg %p\n",
+					FL, (void *)d_l3_conn->msg);
 
 			/*
 			 * If there is a full message, remove it, call back

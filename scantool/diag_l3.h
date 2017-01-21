@@ -49,10 +49,6 @@ struct diag_l3_conn
 	void (*callback)(void *handle, struct diag_msg *msg);
 	void *handle;
 
-	/* Data buffer, and offset into it */
-	uint8_t rxbuf[MAXRBUF];	/* Receive data buffer */
-	int	rxoffset;
-
 	/* Received messages */
 	struct diag_msg	*msg;
 
