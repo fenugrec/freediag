@@ -90,7 +90,7 @@ struct diag_l3_proto {
 		struct diag_msg* txmsg, int* errval);
 
 	/* Decode msg to printable text in *buf */
-	char *(*diag_l3_proto_decode)(struct diag_l3_conn *,
+	void (*diag_l3_proto_decode)(struct diag_l3_conn *,
 		struct diag_msg *msg,
 		char * buf,
 		const size_t bufsize);
@@ -136,9 +136,8 @@ int	diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 
 /** Format given message as text
  *
- * @return buf (pointless), 0-terminated
  */
-char * diag_l3_decode(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg,
+void diag_l3_decode(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg,
 	char *buf, const size_t bufsize);
 
 /** Send a request and return a new msg with the response.

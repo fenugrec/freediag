@@ -539,7 +539,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
  * Doesn't do any data scaling / conversion.
  */
 
-static char *
+void
 diag_l3_j1979_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
 struct diag_msg *msg, char *buf, size_t bufsize)
 {
@@ -689,7 +689,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 				smartcat(buf, bufsize, buf2);
 			}
 	}
-	return buf;
+	return;
 }
 
 

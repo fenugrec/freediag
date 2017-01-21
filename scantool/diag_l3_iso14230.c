@@ -225,7 +225,7 @@ diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 
 
 
-static char *
+void
 diag_l3_iso14230_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
 struct diag_msg *msg, char *buf, size_t bufsize)
 {
@@ -234,7 +234,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 	else
 		snprintf(buf, bufsize, "ISO14230 request ");
 
-	return buf;
+	return;
 }
 
 

@@ -165,12 +165,13 @@ int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 }
 
 
-char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
+void diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 	struct diag_msg *msg, char *buf, const size_t bufsize)
 {
 	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 
-	return dp->diag_l3_proto_decode(d_l3_conn, msg, buf, bufsize);
+	dp->diag_l3_proto_decode(d_l3_conn, msg, buf, bufsize);
+	return;
 }
 
 

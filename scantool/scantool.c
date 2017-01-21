@@ -417,9 +417,8 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 
 		if (handle != NULL) {
 			char buf[256];	/* XXX Can we switch to stdargs for decoders? */
-			fprintf(stderr, "%s\n",
-				diag_l3_decode((struct diag_l3_conn *)handle, tmsg,
-				buf, sizeof(buf)));
+			diag_l3_decode((struct diag_l3_conn *)handle, tmsg, buf, sizeof(buf));
+			fprintf(stderr, "%s\n", buf);
 		} else {
 			diag_data_dump(stderr, tmsg->data, tmsg->len);
 			fprintf(stderr, "\n");

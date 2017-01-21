@@ -79,7 +79,7 @@ diag_l3_vag_start(struct diag_l3_conn *d_l3_conn)
  * This is called without just the VW protocol data
  */
 
-static char *
+void
 diag_l3_vag_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
 struct diag_msg *msg, char *buf, size_t bufsize)
 {
