@@ -113,12 +113,15 @@ struct diag_l3_proto {
 /** Start L3 connection
  *
  * must free() everything if it fails;
+ * make sure to diag_l3_stop afterwards to free() the diag_l3_conn !
+ * This adds the new l3 connection to the diag_l3_list linked-list
  */
 struct diag_l3_conn * diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn);
 
 /** Stop L3 connection
  *
  * must free() everything diag_l3_start alloc'd
+ * and remove from diag_l3_list
  */
 int	diag_l3_stop(struct diag_l3_conn *d_l3_conn);
 
@@ -150,7 +153,7 @@ struct diag_msg *diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txm
 		int *errval);
 
 /** Send ioctl to the specified
- * L3 AND its diag_l2_ioctl !? XXX why both ?
+ * L3
  *
  * ret 0 if ok
  */

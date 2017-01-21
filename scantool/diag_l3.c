@@ -23,12 +23,6 @@
  * L3 code, interface to diagnostic protocols such as SAEJ1979 (ODB II), VAG,
  * etc
  *
- *
- *
- * Timers. As most L3 protocols run idle timers, the hard work is done here,
- *	The timer code calls the L3 timer for each L3 connection with the
- *	time difference between "now" and the timer in the L3 connection
- *	structure, so L3 can quickly check to see if it needs to do a retry
  */
 
 #include <stdlib.h>
@@ -49,11 +43,6 @@ int diag_l3_debug;
 static struct diag_l3_conn	*diag_l3_list;
 
 
-/*
- * Protocol start (connect a protocol on top of a L2 connection)
- * make sure to diag_l3_stop afterwards to free() the diag_l3_conn !
- * This adds the new l3 connection to the diag_l3_list linked-list
- */
 struct diag_l3_conn *
 diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 {
@@ -127,10 +116,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn)
 	return d_l3_conn;
 }
 
-/*
- * Calls the appropriate protocol stop routine,
- * free() d_l3_conn, and remove from diag_l3_list
- */
+
 int diag_l3_stop(struct diag_l3_conn *d_l3_conn)
 {
 	int rv;
@@ -178,7 +164,7 @@ int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	return rv? diag_iseterr(rv):0;
 }
 
-//diag_l3_decode:
+
 char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 	struct diag_msg *msg, char *buf, const size_t bufsize)
 {
@@ -188,29 +174,19 @@ char *diag_l3_decode(struct diag_l3_conn *d_l3_conn,
 }
 
 
-// diag_l3_ioctl : call the diag_l3_proto_ioctl AND diag_l2_ioctl !?
-// But why L2 ?
 int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, unsigned int cmd, void *data)
 {
-	int rv = 0;
 	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 
-	/* Call the L3 ioctl routine */
+	/* Call the L3 ioctl routine if applicable */
 	if (dp->diag_l3_proto_ioctl)
-		rv = dp->diag_l3_proto_ioctl(d_l3_conn, cmd, data);
+		return dp->diag_l3_proto_ioctl(d_l3_conn, cmd, data);
 
-	if (rv < 0)
-		return rv;
-
-	/* And now the L2 ioctl routine, which will call the L1 one etc */
-	rv = diag_l2_ioctl(d_l3_conn->d_l3l2_conn, cmd, data);
-
-	return rv;
+	/* Otherwise L2 ioctl */
+	return diag_l2_ioctl(d_l3_conn->d_l3l2_conn, cmd, data);
 }
 
-/*
- * Send a message and return a new message with the reply.
- */
+
 struct diag_msg *
 diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval)
 {
@@ -276,6 +252,9 @@ void diag_l3_timer(void)
 }
 
 
+/* Base implementations for some functions */
+
+
 int diag_l3_base_start(UNUSED(struct diag_l3_conn *d_l3_conn))
 {
 	return 0;
@@ -287,10 +266,6 @@ int diag_l3_base_stop(UNUSED(struct diag_l3_conn *d_l3_conn))
 	return 0;
 }
 
-/*
- * Send a Message doing all the handshaking needed
- */
-
 int diag_l3_base_send(struct diag_l3_conn *d_l3_conn,
 	UNUSED(struct diag_msg *msg))
 {
@@ -298,13 +273,6 @@ int diag_l3_base_send(struct diag_l3_conn *d_l3_conn,
 	return 0;
 }
 
-/*
- * Receive a Message frame (building it as we get small amounts of data)
- *
- * - timeout expiry will cause return before complete packet
- *
- * Successful packet receive will call the callback routine with the message
- */
 
 int
 diag_l3_base_recv(struct diag_l3_conn *d_l3_conn,
