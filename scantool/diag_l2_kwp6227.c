@@ -32,6 +32,10 @@
  * checksum byte -- that is, the length value is 1 greater in KWP6227 than it
  * would be in KWP2000.
  *
+ * Information on KWP6227 is available at:
+ *   http://jonesrh.info/volvo850/volvo_850_obdii_faq.rtf
+ * Thanks to Richard H. Jones for sharing this information.
+ *
  * This driver currently works only with ELM327 interfaces.
  *
  */
