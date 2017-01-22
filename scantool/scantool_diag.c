@@ -65,9 +65,9 @@ const struct cmd_tbl_entry diag_cmd_table[] =
 	{ "disconnect", "disconnect", "Disconnect from ECU", cmd_diag_disconnect,
 		0, NULL},
 
-	{ "sendreq", "sendreq data0 data1 data2 ...", "Send a command to the ECU and print response",
+	{ "sendreq", "sendreq [byte0 [byte1 [...]]]", "Send raw data to the ECU and print response",
 		cmd_diag_sendreq, 0, NULL},
-	{ "sr", "sendreq data0 data1 data2 ...", "Send a command to the ECU and print response",
+	{ "sr", "sendreq [byte0 [byte1 [...]]]", "Send a command to the ECU and print response",
 		cmd_diag_sendreq, FLAG_HIDDEN, NULL},
 	{ "read", "read [waittime]",
 		"Receive some data from the ECU waiting waittime seconds",
@@ -75,7 +75,7 @@ const struct cmd_tbl_entry diag_cmd_table[] =
 	{ "rx", "read [waittime]", "Receive some data from the ECU",
 		cmd_diag_read, FLAG_HIDDEN, NULL},
 
-	{ "addl3", "addl3 protocol", "Add (start) a L3 protocol",
+	{ "addl3", "addl3 [protocol]", "Add (start) a L3 protocol",
 		cmd_diag_addl3, 0, NULL},
 	{ "reml3", "reml3", "Remove (stop) an L3 protocol",
 		cmd_diag_reml3, 0, NULL},
