@@ -718,16 +718,6 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 
 
 
-// Simulates setting speed/parity etc.
-// Just accepts whatever is specified.
-static int
-diag_l0_sim_setspeed(UNUSED(struct diag_l0_device *dl0d),
-			 UNUSED(const struct diag_serial_settings *pset))
-{
-	return 0;
-}
-
-
 // Returns the interface's physical flags.
 // The simulator doesn't need half-duplex or
 // P4 timing, and implements all types of init.
@@ -767,6 +757,23 @@ sim_getcfg(struct diag_l0_device *dl0d) {
 	return &dev->simfile;
 }
 
+
+static int sim_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+	int rv = 0;
+
+	switch (cmd) {
+	case DIAG_IOCTL_INITBUS:
+		rv = diag_l0_sim_initbus(dl0d, (struct diag_l1_initbus_args *)data);
+		break;
+	default:
+		rv = DIAG_ERR_IOCTL_NOTSUPP;
+		break;
+	}
+
+	return rv;
+}
+
+
 // Declares the interface's protocol flags
 // and pointers to functions.
 // Like any simulator, it "implements" all protocols
@@ -785,7 +792,5 @@ const struct diag_l0 diag_l0_sim =
 	diag_l0_sim_getflags,
 	diag_l0_sim_recv,
 	diag_l0_sim_send,
-	diag_l0_sim_initbus,
-	NULL,
-	diag_l0_sim_setspeed
+	sim_ioctl
 };

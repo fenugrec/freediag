@@ -168,7 +168,7 @@ extern "C" {
  * L1 public interface
  */
 
-/* Argument to diag_l1_initbus */
+/* Argument for DIAG_IOCTL_INITBUS */
 struct diag_l1_initbus_args
 {
 	uint8_t	type;	/* Init type */
@@ -194,14 +194,6 @@ int diag_l1_init(void);
 
 /** Opposite of diag_l1_init; does nothing for now */
 int diag_l1_end(void);
-
-/** Calls L0 -\>initbus.
- *
- * Must return as soon as possible,
- * and restore original port settings (speed, etc).
- * @return 0 if ok
- */
-int diag_l1_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
 
 
 /** Send IOCTL to L1/L0

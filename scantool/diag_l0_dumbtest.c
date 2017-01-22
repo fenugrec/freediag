@@ -644,28 +644,6 @@ dt_close(UNUSED(struct diag_l0_device *dl0d))
 }
 
 
-
-/*
- * Do nothing
- * return 0 on success,
- */
-static int
-dt_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
-{
-
-	struct dt_device *dev;
-
-	dev = (struct dt_device *)(dl0d->l0_int);
-
-	fprintf(stderr, FLFMT "device link %p info %p initbus type %d, doing nothing.\n",
-			FL, (void *)dl0d, (void *)dev, in->type);
-
-	return 0;
-
-}
-
-
-
 /*
  * Send a load of data
  * this is "blocking", i.e. returns only when it's finished or it failed.
@@ -747,6 +725,26 @@ dt_getflags(UNUSED(struct diag_l0_device *dl0d))
 	return DIAG_L1_HALFDUPLEX;
 }
 
+static int dt_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+	int rv = 0;
+
+	switch (cmd) {
+	case DIAG_IOCTL_IFLUSH:
+		//do nothing
+		rv = 0;
+		break;
+	case DIAG_IOCTL_SETSPEED:
+		rv = dt_setspeed(dl0d, (const struct diag_serial_settings *) data);
+		break;
+	default:
+		rv = DIAG_ERR_IOCTL_NOTSUPP;
+		break;
+	}
+
+	return rv;
+}
+
+
 const struct diag_l0 diag_l0_dumbtest = {
  	"Dumb interface test suite",
 	"DUMBT",
@@ -760,7 +758,5 @@ const struct diag_l0 diag_l0_dumbtest = {
 	dt_getflags,
 	dt_recv,
 	dt_send,
-	dt_initbus,
-	NULL,
-	dt_setspeed
+	dt_ioctl
 };

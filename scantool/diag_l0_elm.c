@@ -1089,18 +1089,6 @@ pre_exit:
 		return (xferd>0)? xferd:DIAG_ERR_TIMEOUT;
 }
 
-/*
- * Set speed/parity
-* but upper levels shouldn't be doing this.
-* This function will do nothing
- */
-static int
-elm_setspeed(UNUSED(struct diag_l0_device *dl0d),
-	const struct diag_serial_settings *pss)
-{
-	fprintf(stderr, FLFMT "Warning: attempted to override ELM com speed (%d)! Report this !\n", FL,pss->speed);
-	return 0;
-}
 
 static uint32_t
 elm_getflags(struct diag_l0_device *dl0d)
@@ -1149,6 +1137,27 @@ static void elm_parse_cr(uint8_t *data, int len) {
 	return;
 }
 
+
+static int elm_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+	int rv = 0;
+
+	switch (cmd) {
+	case DIAG_IOCTL_IFLUSH:
+		//do nothing
+		rv = 0;
+		break;
+	case DIAG_IOCTL_INITBUS:
+		rv = elm_initbus(dl0d, (struct diag_l1_initbus_args *)data);
+		break;
+	default:
+		rv = DIAG_ERR_IOCTL_NOTSUPP;
+		break;
+	}
+
+	return rv;
+}
+
+
 const struct diag_l0 diag_l0_elm = {
 	"Scantool.net ELM32x Chipset Device",
 	"ELM",
@@ -1162,7 +1171,5 @@ const struct diag_l0 diag_l0_elm = {
 	elm_getflags,
 	elm_recv,
 	elm_send,
-	elm_initbus,
-	NULL,
-	elm_setspeed,
+	elm_ioctl
 };

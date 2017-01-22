@@ -745,6 +745,28 @@ dumb_getflags(struct diag_l0_device *dl0d)
 	return flags;
 }
 
+static int dumb_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+	int rv = 0;
+
+	switch (cmd) {
+	case DIAG_IOCTL_SETSPEED:
+		rv = dumb_setspeed(dl0d, (const struct diag_serial_settings *) data);
+		break;
+	case DIAG_IOCTL_INITBUS:
+		rv = dumb_initbus(dl0d, (struct diag_l1_initbus_args *)data);
+		break;
+	case DIAG_IOCTL_IFLUSH:
+		rv = dumb_iflush(dl0d);
+		break;
+	default:
+		rv = DIAG_ERR_IOCTL_NOTSUPP;
+		break;
+	}
+
+	return rv;
+}
+
+
 const struct diag_l0 diag_l0_dumb = {
  	"Generic dumb serial interface",
 	"DUMB",
@@ -758,7 +780,5 @@ const struct diag_l0 diag_l0_dumb = {
 	dumb_getflags,
 	dumb_recv,
 	dumb_send,
-	dumb_initbus,
-	dumb_iflush,
-	dumb_setspeed
+	dumb_ioctl,
 };

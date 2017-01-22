@@ -56,11 +56,6 @@ struct diag_l0_device *diag_l0_new(const char *shortname) {
 }
 
 
-/** Delete an L0 device.
- * Must have been closed first !
- *
- * Opposite of diag_l0_new()
- */
 void diag_l0_del(struct diag_l0_device *dl0d) {
 	if (!dl0d) return;
 
@@ -95,23 +90,9 @@ int	diag_l0_send(struct diag_l0_device *dl0d,
 	return dl0d->dl0->_send(dl0d, subinterface, data, len);
 }
 
-/* TODO : delete this, move to cfgi inside L0s that need it
- */
-int	diag_l0_setspeed(struct diag_l0_device * dl0d, const struct diag_serial_settings *pss) {
+int diag_l0_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 	assert(dl0d);
-	return dl0d->dl0->_setspeed(dl0d, pss);
-}
 
-int	diag_l0_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
-	assert(dl0d);
-	return dl0d->dl0->_initbus(dl0d, in);
-}
-
-int diag_l0_iflush(struct diag_l0_device *dl0d) {
-	assert(dl0d);
-	if (dl0d->dl0->_iflush) {
-		return dl0d->dl0->_iflush(dl0d);
-	}
-	return 0;
+	return dl0d->dl0->_ioctl(dl0d, cmd, data);
 }
 

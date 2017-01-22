@@ -610,8 +610,7 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 	dl2l = d_l2_conn->diag_link;
 	dl0d = dl2l->l2_dl0d ;
 
-	switch (cmd)
-	{
+	switch (cmd) {
 	case DIAG_IOCTL_GET_L1_TYPE:
 		*(int *)data = diag_l1_gettype(dl0d);
 		break;
@@ -632,15 +631,15 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 			break;
 		rv = diag_l1_ioctl(dl0d, cmd, data);
 		break;
-	case DIAG_IOCTL_INITBUS:
-		rv = diag_l1_initbus(dl0d, (struct diag_l1_initbus_args *)data);
-		break;
 	case DIAG_IOCTL_IFLUSH:
 		if (dl2l->l1flags & DIAG_L1_NOTTY) break;
 		rv = diag_l1_ioctl(dl0d, cmd, data);
 		break;
+	case DIAG_IOCTL_INITBUS:
+		//fall-through to L1
 	default:
-		rv = 0;	/* Do nothing, quietly */
+		/* Not implemented by L2 : forward to L1 */
+		rv = diag_l1_ioctl(dl0d, cmd, data);
 		break;
 	}
 

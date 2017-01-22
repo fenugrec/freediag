@@ -72,12 +72,7 @@ struct diag_l0
 	int	(*_send)(struct diag_l0_device *,
 		const char *subinterface, const void *data, size_t len);
 
-	int	(*_initbus)(struct diag_l0_device *,
-		struct diag_l1_initbus_args *in);
-	int (*_iflush)(struct diag_l0_device *);		//Optional
-	int	(*_setspeed)(struct diag_l0_device *,
-		const struct diag_serial_settings *pss);
-
+	int (*_ioctl)(struct diag_l0_device *, unsigned cmd, void *data);
 };
 
 
@@ -98,6 +93,7 @@ struct cfgi* diag_l0_getcfg(struct diag_l0_device *);
 /** Delete L0 driver instance.
  *
  * Caller MUST have closed it first with diag_l0_close !
+ * Opposite of diag_l0_new()
  */
 void diag_l0_del(struct diag_l0_device *);
 
@@ -139,28 +135,13 @@ int diag_l0_recv(struct diag_l0_device *,
 int	diag_l0_send(struct diag_l0_device *,
 					const char *subinterface, const void *data, size_t len);
 
-
-/** Set serial port settings, if applicable.
- * @return 0 if ok
- * TODO : delete this, move to cfgi inside L0s that need it
+/** Send IOCTL to L0
+ *	@param command : IOCTL #, defined in diag.h
+ *	@param data	optional, input/output
+ *	@return 0 if OK, diag error num (<0) on error
  */
-int	diag_l0_setspeed(struct diag_l0_device *,
-						const struct diag_serial_settings *pss);
+int diag_l0_ioctl(struct diag_l0_device *, unsigned cmd, void *data);
 
-
-/** Initialize bus
- *
- * Implementation ust return as soon as possible,
- * and restore original port settings (speed, etc).
- * @return 0 if ok
- */
-int	diag_l0_initbus(struct diag_l0_device *, struct diag_l1_initbus_args *in);
-
-/** Flush input buffers, if applicable
- *
- * @return 0 if ok
- */
-int diag_l0_iflush(struct diag_l0_device *);
 
 /*** globals ***/
 

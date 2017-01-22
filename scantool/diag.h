@@ -121,14 +121,19 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
 #define DIAG_IOCTL_GET_L2_DATA	0x2023	/* Get the L2 Keybytes etc into
 										 * diag_l2_data passed to us
 										 */
-#define DIAG_IOCTL_SETSPEED	0x2101	/* Set speed, bits etc. data = (const struct diag_serial_settings *); ret 0 if ok */
+#define DIAG_IOCTL_SETSPEED	0x2101	/* Set speed, bits etc. data = (const struct diag_serial_settings *); ret 0 if ok
+									 * Ignored if DIAG_L1_AUTOSPEED or DIAG_L1_NOTTY is set */
 #define DIAG_IOCTL_INITBUS	0x2201	/* Initialise the ecu bus, data = (struct diag_l1_initbus_args *)
 									 *
+									 * Caller must have waited the appropriate time before calling this, since any
+									 * bus-idle requirements are specified at the L2 level.
 									 * Must return as soon as possible,
 									 * and restore original port settings (speed, etc).
+									 * See diag_l1.h for initbus args
 									 * return 0 if ok
 									 */
-#define DIAG_IOCTL_IFLUSH 0x2202	/* flush input buffers. No data. Ret 0 if ok */
+#define DIAG_IOCTL_IFLUSH 0x2202	/* flush input buffers. No data. Ignored if DIAG_L1_NOTTY is set.
+									 * Ret 0 if ok / not applicable (non fatal error) */
 
 /****** debug control ******/
 // flag containers : diag_l0_debug, diag_l1_debug diag_l2_debug, diag_l3_debug, diag_cli_debug

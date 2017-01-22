@@ -614,18 +614,6 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 }
 
 /*
- * Set speed/parity etc : ignored.
- */
-
-static int
-muleng_setspeed(UNUSED(struct diag_l0_device *dl0d),
-		UNUSED(const struct diag_serial_settings *pset))
-{
-	fprintf(stderr, FLFMT "Warning: attempted to override com speed (%d)! Report this !\n", FL,pset->speed);
-	return 0;
-}
-
-/*
  * Send a load of data
  *
  * Returns 0 on success, -1 on failure
@@ -968,6 +956,26 @@ muleng_getflags(struct diag_l0_device *dl0d)
 	return flags ;
 }
 
+
+static int muleng_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+	int rv = 0;
+
+	switch (cmd) {
+	case DIAG_IOCTL_INITBUS:
+		rv = muleng_initbus(dl0d, (struct diag_l1_initbus_args *)data);
+		break;
+	case DIAG_IOCTL_IFLUSH:
+		//do nothing
+		rv = 0;
+		break;
+	default:
+		rv = DIAG_ERR_IOCTL_NOTSUPP;
+		break;
+	}
+
+	return rv;
+}
+
 const struct diag_l0 diag_l0_me = {
 	"Multiplex Engineering T16 interface",
 	"MET16",
@@ -982,8 +990,5 @@ const struct diag_l0 diag_l0_me = {
 	muleng_getflags,
 	muleng_recv,
 	muleng_send,
-	muleng_initbus,
-	NULL,
-	muleng_setspeed,
-
+	muleng_ioctl
 };

@@ -122,37 +122,10 @@ diag_l1_close(struct diag_l0_device *dl0d)
 	return;
 }
 
-/*
- * Do wakeup/init on the net.
- * Caller must have waited the appropriate time before calling this, since any
- * bus-idle requirements are specified at the L2 level.
- */
-int
-diag_l1_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
-{
-	return diag_l0_initbus(dl0d, in);
-}
-
-
 int diag_l1_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
-	int rv = 0;
+	/* At the moment, no ioctls are handled at the L1 level, so forward them to L0. */
 
-	switch (cmd) {
-	case DIAG_IOCTL_IFLUSH:
-		/* No buffering at the L1 level; forward this to L0. */
-		rv = diag_l0_iflush(dl0d);
-		break;
-
-	case DIAG_IOCTL_SETSPEED:
-		rv = diag_l0_setspeed(dl0d, (const struct diag_serial_settings *) data);
-		break;
-
-	default:
-		rv = DIAG_ERR_IOCTL_NOTSUPP;
-		break;
-	}
-
-	return rv;
+	return diag_l0_ioctl(dl0d, cmd, data);
 }
 
 

@@ -480,32 +480,6 @@ br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 }
 
 /*
- * Set speed/parity etc
- *
- * If called by the user then we ignore what he says
- *
- * The internal routine still exists because it makes the code
- * look similar to the other L0 interfaces
- */
-static int
-br_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pset)
-{
-	struct br_device *dev = dl0d->l0_int;
-	struct diag_serial_settings sset;
-
-	fprintf(stderr, FLFMT "Warning: attempted to over-ride serial settings (%d). 19200;8N1 maintained\n", FL, pset->speed);
-	return 0;
-	//XXX we could probably remove the rest of this
-	sset.speed=9600;
-	sset.databits = diag_databits_8;
-	sset.stopbits = diag_stopbits_1;
-	sset.parflag = diag_par_n;
-
-	return diag_tty_setup(dev->tty_int, &sset);
-}
-
-/*
  * Routine to read a whole BR1 message
  * length of which depends on the first value received.
  * This also handles "error" messages (top bit of first value set)
@@ -923,6 +897,26 @@ br_getflags(struct diag_l0_device *dl0d)
 	return flags;
 }
 
+
+static int br_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+	int rv = 0;
+
+	switch (cmd) {
+	case DIAG_IOCTL_IFLUSH:
+		//do nothing
+		rv = 0;
+		break;
+	case DIAG_IOCTL_INITBUS:
+		rv = br_initbus(dl0d, (struct diag_l1_initbus_args *)data);
+		break;
+	default:
+		rv = DIAG_ERR_IOCTL_NOTSUPP;
+		break;
+	}
+
+	return rv;
+}
+
 const struct diag_l0 diag_l0_br = {
 	"B. Roadman BR-1 interface",
 	"BR1",
@@ -937,8 +931,6 @@ const struct diag_l0 diag_l0_br = {
 	br_getflags,
 	br_recv,
 	br_send,
-	br_initbus,
-	NULL,
-	br_setspeed
+	br_ioctl
 };
 
