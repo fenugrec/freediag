@@ -133,6 +133,8 @@ dl2p_6227_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	int rv;
 	struct diag_msg *rmsg;
 
+	*errval = 0;
+
 	rv = diag_l2_send(d_l2_conn, msg);
 	if (rv < 0) {
 		*errval = rv;
