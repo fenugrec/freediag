@@ -1090,6 +1090,14 @@ pre_exit:
 }
 
 
+/* TODO : set new wakeup message, if possible */
+static int elm_setwm(struct diag_l0_device *dl0d, struct diag_msg *pmsg) {
+	(void) dl0d;
+	(void) pmsg;
+	return 0;
+}
+
+
 static uint32_t
 elm_getflags(struct diag_l0_device *dl0d)
 {
@@ -1148,6 +1156,9 @@ static int elm_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 		break;
 	case DIAG_IOCTL_INITBUS:
 		rv = elm_initbus(dl0d, (struct diag_l1_initbus_args *)data);
+		break;
+	case DIAG_IOCTL_SETWM:
+		rv = elm_setwm(dl0d, (struct diag_msg *)data);
 		break;
 	default:
 		rv = DIAG_ERR_IOCTL_NOTSUPP;

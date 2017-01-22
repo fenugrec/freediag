@@ -635,6 +635,10 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
 		if (dl2l->l1flags & DIAG_L1_NOTTY) break;
 		rv = diag_l1_ioctl(dl0d, cmd, data);
 		break;
+	case DIAG_IOCTL_SETWM:
+		if ( !(dl2l->l1flags & DIAG_L1_DOESKEEPALIVE)) break;
+		rv = diag_l1_ioctl(dl0d, cmd, data);
+		break;
 	case DIAG_IOCTL_INITBUS:
 		//fall-through to L1
 	default:

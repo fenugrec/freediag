@@ -134,6 +134,15 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
 									 */
 #define DIAG_IOCTL_IFLUSH 0x2202	/* flush input buffers. No data. Ignored if DIAG_L1_NOTTY is set.
 									 * Ret 0 if ok / not applicable (non fatal error) */
+/** Set wake-up (keepalive) message.
+ * Only applicable if DIAG_L1_DOESKEEPALIVE is set
+ *
+ * data = (struct diag_msg *).
+ * The (struct diag_msg)->data member must be a raw message (including headers, checksums etc)
+ *
+ * data can be freed by caller after the ioctl (L0 will make a copy of the message data as required)
+ */
+#define DIAG_IOCTL_SETWM 0x2203
 
 /****** debug control ******/
 // flag containers : diag_l0_debug, diag_l1_debug diag_l2_debug, diag_l3_debug, diag_cli_debug
