@@ -76,7 +76,7 @@ struct sim_ecu_response
 };
 
 /* Internal state (struct diag_l0_device->l0_int) */
-struct diag_l0_sim_device
+struct sim_device
 {
 	int protocol;
 	FILE* fp; // DB file pointer.
@@ -105,16 +105,16 @@ struct diag_l0_sim_device
 
 
 static int
-diag_l0_sim_send(struct diag_l0_device *dl0d,
+sim_send(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 const void *data, size_t len);
 
 static int
-diag_l0_sim_recv(struct diag_l0_device *dl0d,
+sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 void *data, size_t len, unsigned int timeout);
 
-static void diag_l0_sim_close(struct diag_l0_device *dl0d);
+static void sim_close(struct diag_l0_device *dl0d);
 
 /**************************************************/
 // LOCAL FUNCTIONS:
@@ -398,7 +398,7 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 
 // Reads the configuration options from the file.
 // Stores them in globals.
-void sim_read_cfg(struct diag_l0_sim_device *dev)
+void sim_read_cfg(struct sim_device *dev)
 {
 	FILE *fp = dev->fp;
 	char *p; // temp string pointer.
@@ -469,7 +469,7 @@ void sim_read_cfg(struct diag_l0_sim_device *dev)
 
 // Initializes the simulator.
 static int
-diag_l0_sim_init(void)
+sim_init(void)
 {
 	return 0;
 }
@@ -478,9 +478,9 @@ diag_l0_sim_init(void)
 int
 sim_new(struct diag_l0_device *dl0d) {
 	int rv;
-	struct diag_l0_sim_device *dev;
+	struct sim_device *dev;
 
-	// Create diag_l0_sim_device:
+	// Create sim_device:
 	if ((rv=diag_calloc(&dev, 1)))
 		return diag_iseterr(rv);
 
@@ -499,11 +499,11 @@ sim_new(struct diag_l0_device *dl0d) {
 /* Clear + free the contents of dl0d; assumes L0 was closed first */
 static void
 sim_del(struct diag_l0_device * dl0d) {
-	struct diag_l0_sim_device *dev;
+	struct sim_device *dev;
 
 	assert(dl0d !=NULL);
 
-	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
+	dev = (struct sim_device *)dl0d->l0_int;
 
 	if (!dev) return;
 
@@ -515,14 +515,14 @@ sim_del(struct diag_l0_device * dl0d) {
 
 // Opens the simulator DB file
 int
-diag_l0_sim_open(struct diag_l0_device *dl0d, int iProtocol)
+sim_open(struct diag_l0_device *dl0d, int iProtocol)
 {
-	struct diag_l0_sim_device *dev;
+	struct sim_device *dev;
 	const char *simfile;
 
 	assert(dl0d != NULL);
 
-	dev = (struct diag_l0_sim_device *) dl0d->l0_int;
+	dev = (struct sim_device *) dl0d->l0_int;
 	simfile = dev->simfile.val.str;
 
 	if (diag_l0_debug & DIAG_DEBUG_OPEN)
@@ -545,7 +545,7 @@ diag_l0_sim_open(struct diag_l0_device *dl0d, int iProtocol)
 	/* if a specific proto was set, refuse a mismatched connection */
 	if (dev->proto_restrict) {
 		if (dev->proto_restrict != iProtocol) {
-			diag_l0_sim_close(dl0d);
+			sim_close(dl0d);
 			return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 		}
 	}
@@ -557,12 +557,12 @@ diag_l0_sim_open(struct diag_l0_device *dl0d, int iProtocol)
 
 // Closes the simulator DB file; cleanup after _sim_open()
 static void
-diag_l0_sim_close(struct diag_l0_device *dl0d)
+sim_close(struct diag_l0_device *dl0d)
 {
 	assert(dl0d != NULL);
 	//if (!dl0d) return;
 
-	struct diag_l0_sim_device *dev = (struct diag_l0_sim_device *)dl0d->l0_int;
+	struct sim_device *dev = (struct sim_device *)dl0d->l0_int;
 	assert(dev != NULL);
 
 	// If debugging, print to stderr.
@@ -585,13 +585,13 @@ diag_l0_sim_close(struct diag_l0_device *dl0d)
 
 // Simulates the bus initialization.
 static int
-diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
+sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 {
-	struct diag_l0_sim_device *dev;
+	struct sim_device *dev;
 	uint8_t synch_patt[1];
 	const uint8_t sim_break = 0x00;
 
-	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
+	dev = (struct sim_device *)dl0d->l0_int;
 
 	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
@@ -607,13 +607,13 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 		// We simulate a break with a single "0x00" char.
 		if (diag_l0_debug & DIAG_DEBUG_DATA)
 			fprintf(stderr, FLFMT "Sending: BREAK!\n", FL);
-		diag_l0_sim_send(dl0d, 0, &sim_break, 1);
+		sim_send(dl0d, 0, &sim_break, 1);
 		break;
 	case DIAG_L1_INITBUS_5BAUD:
 		// Send Service Address (as if it was at 5baud).
-		diag_l0_sim_send(dl0d, 0, &in->addr, 1);
+		sim_send(dl0d, 0, &in->addr, 1);
 		// Receive Synch Pattern (as if it was at 10.4kbaud).
-		diag_l0_sim_recv(dl0d, 0 , synch_patt, 1, 0);
+		sim_recv(dl0d, 0 , synch_patt, 1, 0);
 		break;
 	default:
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
@@ -630,17 +630,17 @@ diag_l0_sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in
 // CARSIM behaves like a smart interface (does P4).
 // Gets the list of responses from the DB file for the given request.
 static int
-diag_l0_sim_send(struct diag_l0_device *dl0d,
+sim_send(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 const void *data, const size_t len)
 {
-	struct diag_l0_sim_device * dev = dl0d->l0_int;
+	struct sim_device * dev = dl0d->l0_int;
 
 	if (len <= 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (len > 255) {
-		fprintf(stderr, FLFMT "Error : calling diag_l0_sim_send with len >255 bytes! (%u)\n", FL, (unsigned int) len);
+		fprintf(stderr, FLFMT "Error : calling sim_send with len >255 bytes! (%u)\n", FL, (unsigned int) len);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -673,13 +673,13 @@ diag_l0_sim_send(struct diag_l0_device *dl0d,
 // Returns ECU response with parsed data (if applicable).
 // Returns number of bytes read.
 static int
-diag_l0_sim_recv(struct diag_l0_device *dl0d,
+sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		void *data, size_t len, unsigned int timeout)
 {
 	size_t xferd;
 	struct sim_ecu_response* resp_p = NULL;
-	struct diag_l0_sim_device * dev = dl0d->l0_int;
+	struct sim_device * dev = dl0d->l0_int;
 
 	if (!len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -722,9 +722,9 @@ diag_l0_sim_recv(struct diag_l0_device *dl0d,
 // The simulator doesn't need half-duplex or
 // P4 timing, and implements all types of init.
 static uint32_t
-diag_l0_sim_getflags(struct diag_l0_device *dl0d)
+sim_getflags(struct diag_l0_device *dl0d)
 {
-	struct diag_l0_sim_device * dev = dl0d->l0_int;
+	struct sim_device * dev = dl0d->l0_int;
 	int ret;
 
 	ret = DIAG_L1_SLOW |
@@ -750,10 +750,10 @@ diag_l0_sim_getflags(struct diag_l0_device *dl0d)
 
 static struct cfgi*
 sim_getcfg(struct diag_l0_device *dl0d) {
-	struct diag_l0_sim_device *dev;
+	struct sim_device *dev;
 	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
 
-	dev = (struct diag_l0_sim_device *)dl0d->l0_int;
+	dev = (struct sim_device *)dl0d->l0_int;
 	return &dev->simfile;
 }
 
@@ -763,7 +763,7 @@ static int sim_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 
 	switch (cmd) {
 	case DIAG_IOCTL_INITBUS:
-		rv = diag_l0_sim_initbus(dl0d, (struct diag_l1_initbus_args *)data);
+		rv = sim_initbus(dl0d, (struct diag_l1_initbus_args *)data);
 		break;
 	default:
 		rv = DIAG_ERR_IOCTL_NOTSUPP;
@@ -783,14 +783,14 @@ const struct diag_l0 diag_l0_sim =
 	"Car Simulator interface",
 	"CARSIM",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM | DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,
-	diag_l0_sim_init,
+	sim_init,
 	sim_new,
 	sim_getcfg,
 	sim_del,
-	diag_l0_sim_open,
-	diag_l0_sim_close,
-	diag_l0_sim_getflags,
-	diag_l0_sim_recv,
-	diag_l0_sim_send,
+	sim_open,
+	sim_close,
+	sim_getflags,
+	sim_recv,
+	sim_send,
 	sim_ioctl
 };
