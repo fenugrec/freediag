@@ -899,7 +899,7 @@ br_getflags(struct diag_l0_device *dl0d)
 
 	dev = (struct br_device *)dl0d->l0_int;
 
-	flags = 0;
+	flags = DIAG_L1_AUTOSPEED;
 	switch (dev->protocol) {
 	case DIAG_L1_J1850_VPW:
 	case DIAG_L1_J1850_PWM:
