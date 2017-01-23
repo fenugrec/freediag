@@ -138,7 +138,7 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
  * Only applicable if DIAG_L1_DOESKEEPALIVE is set
  *
  * data = (struct diag_msg *).
- * The (struct diag_msg)->data member must be a raw message (including headers, checksums etc)
+ * The (struct diag_msg)->data member must be a raw message (including headers)
  *
  * data can be freed by caller after the ioctl (L0 will make a copy of the message data as required)
  */

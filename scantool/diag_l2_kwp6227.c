@@ -165,6 +165,8 @@ dl2p_6227_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 	struct diag_serial_settings set;
 	struct diag_l2_kwp6227 *dp;
 	int rv;
+	struct diag_msg wm={0};
+	uint8_t wm_data[]={0x82, 0, 0, 0xa1};
 	struct diag_l1_initbus_args in;
 
 	if (!(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) || !(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2CKSUM)) {
@@ -200,6 +202,14 @@ dl2p_6227_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 
 	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 	diag_os_millisleep(300);
+
+	wm_data[1] = dp->dstaddr;
+	wm_data[2] = dp->srcaddr;
+	wm.data = wm_data;
+	wm.len = sizeof(wm_data);
+	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETWM, &wm);
+	if (rv < 0)
+		goto err;
 
 	in.type = DIAG_L1_INITBUS_5BAUD;
 	in.addr = with_parity(target, diag_par_o);
