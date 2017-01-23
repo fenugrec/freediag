@@ -842,6 +842,16 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 				}
 			}
 
+			// enable receipt of >7 byte messages, if possible
+			if (dev->elmflags & ELM_INITDONE) {
+				buf=(uint8_t *) "ATAL\x0D";
+				rv=elm_sendcmd(dl0d, buf, 5, 500, NULL);
+				if (rv < 0) {
+					fprintf(stderr, FLFMT "elm_initbus: ATAL failed, continuing anyway\n", FL);
+					rv = 0;
+				}
+			}
+
 			break;
 		default:
 			rv = DIAG_ERR_INIT_NOTSUPP;
