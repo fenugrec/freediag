@@ -150,7 +150,7 @@ dl2p_6227_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	rv = dl2p_6227_recv(d_l2_conn, 1000, dl2p_6227_request_callback, &rmsg);
 	if (rv < 0) {
 		*errval = rv;
-		return rmsg;
+		return NULL;
 	}
 	if (rmsg == NULL)
 		*errval = DIAG_ERR_NOMEM;
