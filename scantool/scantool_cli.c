@@ -110,6 +110,10 @@ static const struct cmd_tbl_entry basic_cmd_table[]=
 		"VW diagnostic protocol functions, \"vw help\" for more info", NULL,
 		0, vag_cmd_table},
 
+	{ "850", "850 <command [params]>",
+		"'96-'98 Volvo 850/S70/V70/etc functions, \"850 help\" for more info", NULL,
+		0, v850_cmd_table},
+
 	{ "dyno", "dyno <command [params]",
 		"Dyno functions, \"dyno help\" for more info", NULL,
 		0, dyno_cmd_table},
