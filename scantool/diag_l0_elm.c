@@ -683,6 +683,22 @@ elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout)
 
 }
 
+// set wakeup message
+static int
+elm_updatewm(struct diag_l0_device *dl0d)
+{
+	struct elm_device *dev;
+	uint8_t wm[18];
+
+	dev = (struct elm_device *)dl0d->l0_int;
+	sprintf((char *) wm, "ATWM %02X %02X %02X %02X\x0D", dev->wm->data[0], dev->wm->data[1], dev->wm->data[2], dev->wm->data[3]);
+	if (elm_sendcmd(dl0d, wm, 17, 500, NULL) < 0) {
+		fprintf(stderr, FLFMT "elm_updatewm: ATWM failed\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	return 0;
+}
+
 /*
  * Do manual wakeup on the bus, if supported
  * ret 0 if ok
@@ -730,13 +746,9 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 
 			// set wakeup message if applicable
 			if (dev->wm != NULL) {
-				uint8_t wm[18];
-				sprintf((char *) wm, "ATWM %02X %02X %02X %02X\x0D", dev->wm->data[0], dev->wm->data[1], dev->wm->data[2], dev->wm->data[3]);
-				rv=elm_sendcmd(dl0d, wm, 17, 500, NULL);
-				if (rv < 0) {
-					fprintf(stderr, FLFMT "elm_initbus: ATWM failed\n", FL);
-					return diag_iseterr(DIAG_ERR_GENERAL);
-				}
+				rv=elm_updatewm(dl0d);
+				if (rv < 0)
+					return rv;
 			}
 
 			sprintf((char *) sethdr, "ATSH %02X %02X %02X\x0D", fmt, tgt, src);
@@ -768,13 +780,9 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 
 			// set wakeup message if applicable
 			if (dev->wm != NULL) {
-				uint8_t wm[18];
-				sprintf((char *) wm, "ATWM %02X %02X %02X %02X\x0D", dev->wm->data[0], dev->wm->data[1], dev->wm->data[2], dev->wm->data[3]);
-				rv=elm_sendcmd(dl0d, wm, 17, 500, NULL);
-				if (rv < 0) {
-					fprintf(stderr, FLFMT "elm_initbus: ATWM failed\n", FL);
-					return diag_iseterr(DIAG_ERR_GENERAL);
-				}
+				rv=elm_updatewm(dl0d);
+				if (rv < 0)
+					return rv;
 			}
 
 			//set init address
