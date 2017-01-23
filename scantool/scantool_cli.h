@@ -147,6 +147,7 @@ extern const struct cmd_tbl_entry debug_cmd_table[];
 extern const struct cmd_tbl_entry test_cmd_table[];
 extern const struct cmd_tbl_entry diag_cmd_table[];
 extern const struct cmd_tbl_entry vag_cmd_table[];
+extern const struct cmd_tbl_entry v850_cmd_table[];
 extern const struct cmd_tbl_entry dyno_cmd_table[];
 
 #if defined(__cplusplus)
