@@ -1121,7 +1121,7 @@ static int elm_setwm(struct diag_l0_device *dl0d, struct diag_msg *pmsg) {
 
 	if (dev->elmflags & ELM_323_BASIC) {
 		fprintf(stderr, FLFMT "elm_setwm: ELM323 doesn't support setting wakeup message\n", FL);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+		return diag_iseterr(DIAG_ERR_IOCTL_NOTSUPP);
 	}
 
 	if (pmsg->len != 4) {
