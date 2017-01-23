@@ -60,6 +60,7 @@ struct elm_device {
 
 	uint8_t kb1, kb2;	// key bytes from 5 baud init
 	uint8_t atsh[3];	// current header setting for ISO9141
+	struct diag_msg *wm;	// custom wakeup message, if set
 };
 
 #define CFGSPEED_DESCR "Host <-> ELM comm speed (bps)"
@@ -174,6 +175,8 @@ void elm_del(struct diag_l0_device *dl0d) {
 
 	diag_cfg_clear(&dev->port);
 	diag_cfg_clear(&dev->speed);
+	if(dev->wm != NULL)
+		diag_freemsg(dev->wm);
 	free(dev);
 	return;
 }
@@ -725,6 +728,17 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 					break;
 			}
 
+			// set wakeup message if applicable
+			if (dev->wm != NULL) {
+				uint8_t wm[18];
+				sprintf((char *) wm, "ATWM %02X %02X %02X %02X\x0D", dev->wm->data[0], dev->wm->data[1], dev->wm->data[2], dev->wm->data[3]);
+				rv=elm_sendcmd(dl0d, wm, 17, 500, NULL);
+				if (rv < 0) {
+					fprintf(stderr, FLFMT "elm_initbus: ATWM failed\n", FL);
+					return diag_iseterr(DIAG_ERR_GENERAL);
+				}
+			}
+
 			sprintf((char *) sethdr, "ATSH %02X %02X %02X\x0D", fmt, tgt, src);
 			rv=elm_sendcmd(dl0d, sethdr, 14, 500, NULL);
 
@@ -750,6 +764,17 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 				rv=elm_sendcmd(dl0d, buf, 6, 500, NULL);
 				if (rv<0)
 					break;
+			}
+
+			// set wakeup message if applicable
+			if (dev->wm != NULL) {
+				uint8_t wm[18];
+				sprintf((char *) wm, "ATWM %02X %02X %02X %02X\x0D", dev->wm->data[0], dev->wm->data[1], dev->wm->data[2], dev->wm->data[3]);
+				rv=elm_sendcmd(dl0d, wm, 17, 500, NULL);
+				if (rv < 0) {
+					fprintf(stderr, FLFMT "elm_initbus: ATWM failed\n", FL);
+					return diag_iseterr(DIAG_ERR_GENERAL);
+				}
 			}
 
 			//set init address
@@ -806,17 +831,6 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 				} else {
 					fprintf(stderr, FLFMT "elm_initbus: ATKW failed, continuing anyway\n", FL);
 					rv = 0;
-				}
-			}
-
-			//for KWP6227, set appropriate wakeup message
-			if (dev->kb1 == 0xd3 && dev->kb2 == 0xb0) {
-				uint8_t wm[18];
-				sprintf((char *) wm, "ATWM 82 %02X %02X A1\x0D", in->addr, in->testerid);
-				rv=elm_sendcmd(dl0d, wm, 17, 500, NULL);
-				if (rv < 0) {
-					fprintf(stderr, FLFMT "elm_initbus: ATWM failed\n", FL);
-					return diag_iseterr(DIAG_ERR_GENERAL);
 				}
 			}
 
@@ -1090,10 +1104,36 @@ pre_exit:
 }
 
 
-/* TODO : set new wakeup message, if possible */
+/* set new wakeup message, if possible */
 static int elm_setwm(struct diag_l0_device *dl0d, struct diag_msg *pmsg) {
-	(void) dl0d;
-	(void) pmsg;
+	struct elm_device *dev;
+
+	dev = (struct elm_device *)dl0d->l0_int;
+
+	if (dev->elmflags & ELM_INITDONE) {
+		/*
+		 * It's possible to change the wakeup message after init,
+		 * but we don't currently implement this.
+		 */
+		fprintf(stderr, FLFMT "elm_setwm: tried to set wakeup message after init\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	if (dev->elmflags & ELM_323_BASIC) {
+		fprintf(stderr, FLFMT "elm_setwm: ELM323 doesn't support setting wakeup message\n", FL);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	if (pmsg->len != 4) {
+		fprintf(stderr, FLFMT "elm_setwm: invalid message length %d\n", FL, pmsg->len);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	if (dev->wm != NULL)
+		diag_freemsg(dev->wm);
+	dev->wm = diag_dupsinglemsg(pmsg);
+	if (dev->wm == NULL)
+		return diag_iseterr(DIAG_ERR_NOMEM);
 	return 0;
 }
 
