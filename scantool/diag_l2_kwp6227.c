@@ -108,6 +108,9 @@ dl2p_6227_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	if (rv < 0)
 		return rv;
 
+	if (rv < 5)
+		return diag_iseterr(DIAG_ERR_INCDATA);
+
 	msg = diag_allocmsg((size_t)(rv - 4));
 	if (msg == NULL)
 		return diag_iseterr(DIAG_ERR_NOMEM);
