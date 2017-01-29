@@ -104,7 +104,7 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		0, NULL},
 	{ "peek", "peek <addr1>[w|l][.addr2] [addr2 ...] [live]", "Display contents of RAM, once or continuously",
 		cmd_850_peek, 0, NULL},
-	{ "dumpram", "dumpram <filename>", "Dump entire RAM contents to file (Warning: takes 20+ minutes)",
+	{ "dumpram", "dumpram <filename> [fast]", "Dump entire RAM contents to file (Warning: takes 20+ minutes)",
 		cmd_850_dumpram, 0, NULL},
 	{ "read", "read <id1>|*<addr1> [id2 ...] [live]", "Display live data, once or continuously",
 		cmd_850_read, 0, NULL},
@@ -651,6 +651,8 @@ cmd_850_read(int argc, char **argv)
  * at 0000-00FF and XRAM at F800-FFFF and nothing in between). So we try
  * reading in 8 byte chunks and if an attempt to read a given address fails,
  * just skip the hexdump line for that address and continue on to the next one.
+ * If the "fast" option is specified on the command line, skip ahead to 0xF000
+ * when a read attempt fails.
  */
 static int
 cmd_850_dumpram(int argc, char **argv)
@@ -659,9 +661,15 @@ cmd_850_dumpram(int argc, char **argv)
 	FILE *f;
 	bool happy;
 	uint8_t buf[8];
+	bool fast;
 
-	if (!valid_arg_count(2, argc, 2))
-                return CMD_USAGE;
+	if (argc == 2) {
+		fast = false;
+	} else if(argc == 3 && strcasecmp(argv[2], "fast") == 0) {
+		fast = true;
+	} else {
+		return CMD_USAGE;
+	}
 
 	if (!valid_connection_status(CONNECTED_KWP6227))
 		return CMD_OK;
@@ -698,11 +706,9 @@ cmd_850_dumpram(int argc, char **argv)
 		if (addr == 0xfff8)
 			break;
 		addr += 8;
-#if 0
-		/* Skip most of the address space for faster testing. */
-		if (addr == 0x200)
-			addr = 0xf700;
-#endif
+
+		if (fast && !happy && addr < 0xf000)
+			addr = 0xf000;
 	}
 
 	if (fclose(f) != 0) {
