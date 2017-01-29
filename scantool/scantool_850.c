@@ -537,8 +537,9 @@ read_or_peek(int argc, char **argv, bool is_read)
 	int i;
 	bool continuous;
 	struct read_or_peek_item *items;
-	uint8_t buf[8];
+	uint8_t buf[20];
 	uint16_t addr, len;
+	int gotbytes;
 
 	if (!valid_arg_count(2, argc, 999))
                 return CMD_USAGE;
@@ -572,18 +573,17 @@ read_or_peek(int argc, char **argv, bool is_read)
 		for (i=0; i<count; i++) {
 			if(items[i].is_read) {
 				addr = items[i].start;
-				len = diag_l7_volvo_livedata(global_l2_conn, addr, 8, buf);
-				if (len == 0) {
-					printf("%02X: no data\n", addr);
-				} else if (len > 0) {
-					if (len > 8) {
-						printf("Showing only first 8 bytes of %02X live data.\n", addr);
-						len = 8;
-					}
-					print_hexdump_line(stdout, addr, 2, buf, len);
-				} else {
+				gotbytes = diag_l7_volvo_livedata(global_l2_conn, addr, sizeof(buf), buf);
+				if (gotbytes < 0) {
 					printf("Error reading %02X\n", addr);
 					goto done;
+				} else if (gotbytes == 0) {
+					printf("%02X: no data\n", addr);
+				} else if ((unsigned int)gotbytes > sizeof(buf)) {
+					print_hexdump_line(stdout, addr, 2, buf, sizeof(buf));
+					printf(" (%d bytes received, only first %d shown)\n", gotbytes, sizeof(buf));
+				} else if (gotbytes > 0) {
+					print_hexdump_line(stdout, addr, 2, buf, gotbytes);
 				}
 			} else {
 				addr = items[i].start;
