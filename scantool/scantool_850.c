@@ -553,6 +553,8 @@ read_or_peek(int argc, char **argv, bool is_read)
 	if (strcasecmp(argv[argc-1], "live")==0) {
 		continuous = true;
 		count--;
+		if (count < 1)
+			return CMD_USAGE;
 	}
 
 	items = calloc(sizeof(items[0]), count);
