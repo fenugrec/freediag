@@ -88,7 +88,7 @@ diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn)
 	if (resp == NULL)
 		return errval;
 
-	if (success_p(req, resp->data)) {
+	if (resp->len>=1 && success_p(req, resp->data)) {
 		diag_freemsg(resp);
 		return 0;
 	} else {
@@ -115,7 +115,7 @@ diag_l7_volvo_peek(struct diag_l2_conn *d_l2_conn, uint16_t addr, uint8_t len, u
 	if (resp == NULL)
 		return errval;
 
-	if (success_p(req, resp->data) && memcmp(req+1, resp->data+1, 3)==0 && resp->len == (unsigned int)len+4) {
+	if (resp->len == (unsigned int)len+4 && success_p(req, resp->data) && memcmp(req+1, resp->data+1, 3)==0) {
 		memcpy(out, resp->data+4, len);
 		diag_freemsg(resp);
 		return 0;
