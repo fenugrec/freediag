@@ -33,6 +33,7 @@
 
 int diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn);
 int diag_l7_volvo_peek(struct diag_l2_conn *d_l2_conn, uint16_t addr, uint8_t len, uint8_t *out);
+int diag_l7_volvo_livedata(struct diag_l2_conn *d_l2_conn, uint8_t identifier, int buflen, uint8_t *out);
 
 #if defined(__cplusplus)
 extern "C" {
