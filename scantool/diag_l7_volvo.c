@@ -56,6 +56,7 @@ enum {
 	stopDiagnosticSession = 0xA0,
 	testerPresent = 0xA1,
 	readDataByLocalIdentifier = 0xA5,
+	/* 0xA6 is also used for live data, but apparently only on CAN bus */
 	readMemoryByAddress = 0xA7,
         readDiagnosticTroubleCodes = 0xAE,
 	clearDiagnosticInformation = 0xAF
@@ -119,6 +120,42 @@ diag_l7_volvo_peek(struct diag_l2_conn *d_l2_conn, uint16_t addr, uint8_t len, u
 		memcpy(out, resp->data+4, len);
 		diag_freemsg(resp);
 		return 0;
+	} else {
+		diag_freemsg(resp);
+		return DIAG_ERR_ECUSAIDNO;
+	}
+}
+
+/*
+ * Read live data.
+ *
+ * Return value is actual byte count of live data, or negative on failure.
+ * If specified buffer length is less than size of live data, only the initial
+ * portion of the live data up to the buffer length is copied to the output
+ * buffer.
+ */
+int
+diag_l7_volvo_livedata(struct diag_l2_conn *d_l2_conn, uint8_t identifier, int buflen, uint8_t *out)
+{
+	uint8_t req[] = { readDataByLocalIdentifier, identifier, 0x01 };
+	int errval = 0;
+	struct diag_msg msg = {0};
+	struct diag_msg *resp = NULL;
+	int datalen;
+
+	msg.data = req;
+	msg.len = sizeof(req);
+
+	resp = diag_l2_request(d_l2_conn, &msg, &errval);
+	if (resp == NULL)
+		return errval;
+
+	if (resp->len>=2 && success_p(req, resp->data) && resp->data[1]==req[1]) {
+		datalen = resp->len - 2;
+		if (datalen > 0)
+			memcpy(out, resp->data+2, (datalen>buflen)?buflen:datalen);
+		diag_freemsg(resp);
+		return datalen;
 	} else {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;

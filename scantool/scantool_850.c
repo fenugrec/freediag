@@ -85,6 +85,7 @@ static int cmd_850_ping(int argc, UNUSED(char **argv));
 static int cmd_850_sendreq(int argc, char **argv);
 static int cmd_850_peek(int argc, char **argv);
 static int cmd_850_dumpram(int argc, char **argv);
+static int cmd_850_read(int argc, char **argv);
 
 const struct cmd_tbl_entry v850_cmd_table[] =
 {
@@ -105,6 +106,8 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		cmd_850_peek, 0, NULL},
 	{ "dumpram", "dumpram <filename>", "Dump entire RAM contents to file (Warning: takes 20+ minutes)",
 		cmd_850_dumpram, 0, NULL},
+	{ "read", "read <id1>|*<addr1> [id2 ...] [live]", "Display live data, once or continuously",
+		cmd_850_read, 0, NULL},
 
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -456,9 +459,9 @@ cmd_850_ping(int argc, UNUSED(char **argv))
  * values.
  */
 static int
-print_hexdump_line(FILE *f, uint16_t addr, uint8_t *buf, uint16_t len)
+print_hexdump_line(FILE *f, uint16_t addr, int addr_chars, uint8_t *buf, uint16_t len)
 {
-	if (fprintf(f, "%04X:", addr) < 0)
+	if (fprintf(f, "%0*X:", addr_chars, addr) < 0)
 		return 1;
 	while (len--) {
 		if (fprintf(f, " %02X", *buf++) < 0)
@@ -469,28 +472,71 @@ print_hexdump_line(FILE *f, uint16_t addr, uint8_t *buf, uint16_t len)
 	return 0;
 }
 
+struct read_or_peek_item {
+	uint16_t start;		/* starting address or identifier */
+	uint16_t end;		/* ending address - for peeks only */
+	bool is_read;		/* else peek */
+};
+
 /*
- * Read and display one or more values from RAM.
- *
- * Takes a list of addresses to read. Each address can have a suffix "w" or
- * "l" to indicate 2 or 4 bytes, respectively; otherwise a single byte is
- * read. Each item in the list can also be an address range with the starting
- * and ending addresses separated by ".".
- *
- * The word "live" can be added at the end to continuously read and display
- * the requested addresses until interrupted.
+ * Parse an address argument on a peek command line.
  */
 static int
-cmd_850_peek(int argc, char **argv)
+parse_peek_arg(char *arg, struct read_or_peek_item *item)
+{
+	char *p, *q;
+
+	item->is_read = false;
+	item->start = strtoul(arg, &p, 0);
+	if (*p == '\0') {
+		item->end = item->start;
+	} else if ((p[0] == 'w' || p[0] == 'W') && p[1] == '\0') {
+		item->end = item->start + 1;
+	} else if ((p[0] == 'l' || p[0] == 'L') && p[1] == '\0') {
+		item->end = item->start + 3;
+	} else if ((p[0] == '.' || p[0] == '-') && p[1] != '\0') {
+		item->end = strtoul(p+1, &q, 0);
+		if (*q != '\0' || item->end < item->start) {
+			printf("Invalid address range '%s'\n", arg);
+			return 1;
+		}
+	} else {
+		printf("Invalid address '%s'\n", arg);
+		return 1;
+	}
+	return 0;
+}
+
+/*
+ * Parse an identifier argument on a read command line.
+ */
+static int
+parse_read_arg(char *arg, struct read_or_peek_item *item)
+{
+	char *p;
+
+	if(arg[0] == '*')
+		return parse_peek_arg(arg+1, item);
+
+	item->is_read = true;
+	item->start = strtoul(arg, &p, 0);
+	if (*p != '\0' || item->start > 0xff) {
+		printf("Invalid identifier '%s'\n", arg);
+		return 1;
+	}
+	return 0;
+}
+
+/*
+ * Execute a read or peek command.
+ */
+static int
+read_or_peek(int argc, char **argv, bool is_read)
 {
 	int count;
 	int i;
-	char *p, *q;
 	bool continuous;
-	struct {
-		uint16_t start;
-		uint16_t end;
-	} *peeks;
+	struct read_or_peek_item *items;
 	uint8_t buf[8];
 	uint16_t addr, len;
 
@@ -508,43 +554,50 @@ cmd_850_peek(int argc, char **argv)
 		count--;
 	}
 
-	peeks = calloc(sizeof(peeks[0]), count);
-	if (peeks == NULL)
+	items = calloc(sizeof(items[0]), count);
+	if (items == NULL)
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	for (i=0; i<count; i++) {
-		peeks[i].start = strtoul(argv[i+1], &p, 0);
-		if (*p == '\0') {
-			peeks[i].end = peeks[i].start;
-		} else if ((p[0] == 'w' || p[0] == 'W') && p[1] == '\0') {
-			peeks[i].end = peeks[i].start + 1;
-		} else if ((p[0] == 'l' || p[0] == 'L') && p[1] == '\0') {
-			peeks[i].end = peeks[i].start + 3;
-		} else if (p[0] == '.' && p[1] != '\0') {
-			peeks[i].end = strtoul(p+1, &q, 0);
-			if(*q != '\0' || peeks[i].end < peeks[i].start) {
-				printf("Invalid address range '%s'\n", argv[i+1]);
+		if (is_read) {
+			if (parse_read_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
-			}
 		} else {
-			printf("Invalid address '%s'\n", argv[i+1]);
-			goto done;
+			if (parse_peek_arg(argv[i+1], &(items[i])) != 0)
+				goto done;
 		}
 	}
 
 	diag_os_ipending();
 	while (1) {
 		for (i=0; i<count; i++) {
-			addr = peeks[i].start;
-			len = (peeks[i].end - peeks[i].start) + 1;
-			while(len > 0) {
-				if(diag_l7_volvo_peek(global_l2_conn, addr, (len<8)?len:8, buf) == 0) {
-					print_hexdump_line(stdout, addr, buf, (len<8)?len:8);
+			if(items[i].is_read) {
+				addr = items[i].start;
+				len = diag_l7_volvo_livedata(global_l2_conn, addr, 8, buf);
+				if (len == 0) {
+					printf("%02X: no data\n", addr);
+				} else if (len > 0) {
+					if (len > 8) {
+						printf("Showing only first 8 bytes of %02X live data.\n", addr);
+						len = 8;
+					}
+					print_hexdump_line(stdout, addr, 2, buf, len);
 				} else {
-					printf("Error reading %04X\n", peeks[i].start);
+					printf("Error reading %02X\n", addr);
 					goto done;
 				}
+			} else {
+				addr = items[i].start;
+				len = (items[i].end - items[i].start) + 1;
+				while(len > 0) {
+					if(diag_l7_volvo_peek(global_l2_conn, addr, (len<8)?len:8, buf) == 0) {
+						print_hexdump_line(stdout, addr, 4, buf, (len<8)?len:8);
+					} else {
+						printf("Error reading %s%04X\n", is_read?"*":"", items[i].start);
+						goto done;
+					}
 				len -= (len<8)?len:8;
 				addr += 8;
+				}
 			}
 		}
 		if (!continuous || diag_os_ipending())
@@ -552,8 +605,42 @@ cmd_850_peek(int argc, char **argv)
 	}
 
 done:
-	free(peeks);
+	free(items);
 	return CMD_OK;
+}
+
+/*
+ * Read and display one or more values from RAM.
+ *
+ * Takes a list of addresses to read. Each address can have a suffix "w" or
+ * "l" to indicate 2 or 4 bytes, respectively; otherwise a single byte is
+ * read. Each item in the list can also be an address range with the starting
+ * and ending addresses separated by ".".
+ *
+ * The word "live" can be added at the end to continuously read and display
+ * the requested addresses until interrupted.
+ */
+static int
+cmd_850_peek(int argc, char **argv)
+{
+	return read_or_peek(argc, argv, false);
+}
+
+/*
+ * Read and display one or more live data parameters.
+ *
+ * Takes a list of one-byte identifier values. If a value is prefixed with *,
+ * it is treated as an address or address range to read from RAM instead of
+ * a live data parameter identifier; in this way, a list of "read" and "peek"
+ * operations can be done in a single command.
+ *
+ * The word "live" can be added at the end to continuously read and display
+ * the requested addresses until interrupted.
+ */
+static int
+cmd_850_read(int argc, char **argv)
+{
+	return read_or_peek(argc, argv, true);
 }
 
 /*
@@ -592,7 +679,7 @@ cmd_850_dumpram(int argc, char **argv)
 		if (diag_l7_volvo_peek(global_l2_conn, addr, 8, buf) == 0) {
 			happy = 1;
 			errno = 0;
-			if (print_hexdump_line(f, addr, buf, 8) != 0) {
+			if (print_hexdump_line(f, addr, 4, buf, 8) != 0) {
 				if (errno != 0) {
 					perror("\nError writing file");
 				} else {
