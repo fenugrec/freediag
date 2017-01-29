@@ -36,6 +36,7 @@
 # DATAONLY	Messages are sent/received without headers or checksum.
 # NOL2CKSUM	Messages are sent/received without requiring a checksum byte
 # FRAMED		Responses are treated as already framed; this is implied by DATAONLY and NOL2CKSUM
+# FULLINIT	Simulate an interface that does full init; init communications not passed to L2
 # If more than one option is set, the last one is used for the entire file.
 
 # Optional : restrict to a particular L2 protocol
