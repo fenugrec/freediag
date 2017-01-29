@@ -89,6 +89,7 @@ struct sim_device
 	bool	dataonly;	/* messages are sent/received without headers or checksums; required for J1850 */
 	bool	nocksum;	/* messages are sent/received without checksums */
 	bool	framed;		/* responses must be considered as complete frames; dataonly and nocksum imply this */
+	bool	fullinit;	/* indicate that l0 does full init */
 
 	int	proto_restrict;	/* (optional) only accept connections matching this proto */
 
@@ -408,6 +409,7 @@ void sim_read_cfg(struct sim_device *dev)
 #define CFG_DATAONLY "DATAONLY"
 #define CFG_NOL2CKSUM "NOL2CKSUM"
 #define CFG_FRAMED "FRAMED"
+#define CFG_FULLINIT "FULLINIT"
 #define CFG_P9141	"P_9141"
 #define CFG_P14230	"P_14230"
 #define CFG_P1850P	"P_J1850P"
@@ -417,6 +419,7 @@ void sim_read_cfg(struct sim_device *dev)
 
 	dev->dataonly = 0;
 	dev->nocksum = 0;
+	dev->fullinit = 0;
 	dev->proto_restrict = 0;
 
 	// search for all config lines.
@@ -440,6 +443,8 @@ void sim_read_cfg(struct sim_device *dev)
 			continue;
 		} else if (strncmp(p, CFG_FRAMED, strlen(CFG_FRAMED)) == 0) {
 			dev->framed = 1;
+		} else if (strncmp(p, CFG_FULLINIT, strlen(CFG_FULLINIT)) == 0) {
+			dev->fullinit = 1;
 		} else if (strncmp(p, CFG_P9141, strlen(CFG_P9141)) == 0) {
 			dev->proto_restrict=DIAG_L1_ISO9141;
 			continue;
@@ -601,6 +606,9 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 	if (!dev)
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
 
+	if (dev->fullinit)
+		return 0;
+
 	switch (in->type) {
 	case DIAG_L1_INITBUS_FAST:
 		// Send break.
@@ -743,6 +751,9 @@ sim_getflags(struct diag_l0_device *dl0d)
 
 	if (dev->framed)
 		ret |= DIAG_L1_DOESL2FRAME;
+
+	if (dev->fullinit)
+		ret |= DIAG_L1_DOESFULLINIT;
 
 	return ret;
 }
