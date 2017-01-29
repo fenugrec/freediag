@@ -29,6 +29,7 @@
  *
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -38,6 +39,7 @@
 #include "diag_l1.h"
 #include "diag_l2.h"
 #include "diag_err.h"
+#include "diag_os.h"
 
 #include "diag_l7_volvo.h"
 #include "scantool.h"
@@ -80,6 +82,7 @@ static int cmd_850_connect(int argc, char **argv);
 static int cmd_850_disconnect(int argc, UNUSED(char **argv));
 static int cmd_850_ping(int argc, UNUSED(char **argv));
 static int cmd_850_sendreq(int argc, char **argv);
+static int cmd_850_peek(int argc, char **argv);
 
 const struct cmd_tbl_entry v850_cmd_table[] =
 {
@@ -96,6 +99,8 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		cmd_850_sendreq, 0, NULL},
 	{ "ping", "ping", "Verify communication with the ECU", cmd_850_ping,
 		0, NULL},
+	{ "peek", "peek <addr1>[w|l][.addr2] [addr2 ...] [live]", "Display contents of RAM, once or continuously",
+		cmd_850_peek, 0, NULL},
 
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -442,17 +447,44 @@ cmd_850_ping(int argc, UNUSED(char **argv))
 	return CMD_OK;
 }
 
-#if 0
+/*
+ * Print one line of a hex dump, with an address followed by one or more
+ * values.
+ */
+static int
+print_hexdump_line(FILE *f, uint16_t addr, uint8_t *buf, uint16_t len)
+{
+	fprintf(f, "%04X:", addr);
+	while(len--)
+		fprintf(f, " %02X", *buf++);
+	fputc('\n', f);
+	return 0;
+}
+
+/*
+ * Read and display one or more values from RAM.
+ *
+ * Takes a list of addresses to read. Each address can have a suffix "w" or
+ * "l" to indicate 2 or 4 bytes, respectively; otherwise a single byte is
+ * read. Each item in the list can also be an address range with the starting
+ * and ending addresses separated by ".".
+ *
+ * The word "live" can be added at the end to continuously read and display
+ * the requested addresses until interrupted.
+ */
 static int
 cmd_850_peek(int argc, char **argv)
 {
 	int count;
 	int i;
+	char *p, *q;
 	bool continuous;
 	struct {
 		uint16_t start;
 		uint16_t end;
 	} *peeks;
+	uint8_t buf[8];
+	uint16_t addr, len;
 
 	if (!valid_arg_count(2, argc, 999))
                 return CMD_USAGE;
@@ -471,15 +503,52 @@ cmd_850_peek(int argc, char **argv)
 	peeks = calloc(sizeof(peeks[0]), count);
 	if (peeks == NULL)
 		return diag_iseterr(DIAG_ERR_NOMEM);
-	for(i=0; i<count; i++) {
-		peeks[i].start = 0;
-		peeks[i].end = 1;
+	for (i=0; i<count; i++) {
+		peeks[i].start = strtoul(argv[i+1], &p, 0);
+		if (*p == '\0') {
+			peeks[i].end = peeks[i].start;
+		} else if ((p[0] == 'w' || p[0] == 'W') && p[1] == '\0') {
+			peeks[i].end = peeks[i].start + 1;
+		} else if ((p[0] == 'l' || p[0] == 'L') && p[1] == '\0') {
+			peeks[i].end = peeks[i].start + 3;
+		} else if (p[0] == '.' && p[1] != '\0') {
+			peeks[i].end = strtoul(p+1, &q, 0);
+			if(*q != '\0' || peeks[i].end < peeks[i].start) {
+				printf("Invalid address range '%s'\n", argv[i+1]);
+				goto done;
+			}
+		} else {
+			printf("Invalid address '%s'\n", argv[i+1]);
+			goto done;
+		}
 	}
-	free(peeks);
 
+	diag_os_ipending();
+	while (1) {
+		for (i=0; i<count; i++) {
+			addr = peeks[i].start;
+			len = (peeks[i].end - peeks[i].start) + 1;
+			while(len > 0) {
+				if(diag_l7_volvo_peek(global_l2_conn, addr, (len<8)?len:8, buf) == 0) {
+					print_hexdump_line(stdout, addr, buf, (len<8)?len:8);
+				} else {
+					printf("Error reading %04X\n", peeks[i].start);
+					goto done;
+				}
+				len -= (len<8)?len:8;
+				addr += 8;
+			}
+		}
+		if (!continuous || diag_os_ipending())
+			break;
+	}
+
+done:
+	free(peeks);
 	return CMD_OK;
 }
 
+#if 0
 static int
 cmd_850_dumpram(int argc, char **argv)
 {
