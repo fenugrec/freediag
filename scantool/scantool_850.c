@@ -34,6 +34,7 @@
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "diag.h"
 #include "diag_l1.h"
@@ -83,6 +84,7 @@ static int cmd_850_disconnect(int argc, UNUSED(char **argv));
 static int cmd_850_ping(int argc, UNUSED(char **argv));
 static int cmd_850_sendreq(int argc, char **argv);
 static int cmd_850_peek(int argc, char **argv);
+static int cmd_850_dumpram(int argc, char **argv);
 
 const struct cmd_tbl_entry v850_cmd_table[] =
 {
@@ -101,6 +103,8 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		0, NULL},
 	{ "peek", "peek <addr1>[w|l][.addr2] [addr2 ...] [live]", "Display contents of RAM, once or continuously",
 		cmd_850_peek, 0, NULL},
+	{ "dumpram", "dumpram <filename>", "Dump entire RAM contents to file (Warning: takes 20+ minutes)",
+		cmd_850_dumpram, 0, NULL},
 
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -454,10 +458,14 @@ cmd_850_ping(int argc, UNUSED(char **argv))
 static int
 print_hexdump_line(FILE *f, uint16_t addr, uint8_t *buf, uint16_t len)
 {
-	fprintf(f, "%04X:", addr);
-	while(len--)
-		fprintf(f, " %02X", *buf++);
-	fputc('\n', f);
+	if (fprintf(f, "%04X:", addr) < 0)
+		return 1;
+	while (len--) {
+		if (fprintf(f, " %02X", *buf++) < 0)
+			return 1;
+	}
+	if (fputc('\n', f) == EOF)
+		return 1;
 	return 0;
 }
 
@@ -548,16 +556,74 @@ done:
 	return CMD_OK;
 }
 
-#if 0
+/*
+ * Dump the entire contents of RAM to the specified file as a hex dump with
+ * 8 bytes per line.
+ *
+ * ECUs may have holes in the memory map (example: Motronic M4.4 has RAM
+ * at 0000-00FF and XRAM at F800-FFFF and nothing in between). So we try
+ * reading in 8 byte chunks and if an attempt to read a given address fails,
+ * just skip the hexdump line for that address and continue on to the next one.
+ */
 static int
 cmd_850_dumpram(int argc, char **argv)
 {
+	uint16_t addr;
+	FILE *f;
+	bool happy;
+	uint8_t buf[8];
+
 	if (!valid_arg_count(2, argc, 2))
                 return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if (!valid_connection_status(CONNECTED_KWP6227))
 		return CMD_OK;
+
+	f = fopen(argv[1], "w");
+	if (f == NULL) {
+		perror("Can't open file");
+		return CMD_OK;
+	}
+
+	printf("Dumping RAM to %s...\n", argv[1]);
+
+	addr = 0;
+	while (1) {
+		if (diag_l7_volvo_peek(global_l2_conn, addr, 8, buf) == 0) {
+			happy = 1;
+			errno = 0;
+			if (print_hexdump_line(f, addr, buf, 8) != 0) {
+				if (errno != 0) {
+					perror("\nError writing file");
+				} else {
+					/*error, but fprintf didn't set errno*/
+					printf("\nError writing file");
+				}
+				return CMD_OK;
+			}
+		} else {
+			happy = 0;
+		}
+		if ((addr&0x1f) == 0) {
+			printf("\r%04X %s", addr, happy?":)":":/");
+			fflush(stdout);
+		}
+		if (addr == 0xfff8)
+			break;
+		addr += 8;
+#if 0
+		/* Skip most of the address space for faster testing. */
+		if (addr == 0x200)
+			addr = 0xf700;
+#endif
+	}
+
+	if (fclose(f) != 0) {
+		perror("\nError writing file");
+		return CMD_OK;
+	}
+
+	printf("\r%04X :D\n", addr);
 
 	return CMD_OK;
 }
-#endif
