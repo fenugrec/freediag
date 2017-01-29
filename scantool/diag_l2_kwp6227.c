@@ -72,12 +72,12 @@ static int
 dl2p_6227_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int rv;
-	uint8_t buf[3 + 14 + 1];
+	uint8_t buf[3 + 62 + 1];
 	struct diag_l2_kwp6227 *dp;
 
 	dp = (struct diag_l2_kwp6227 *)d_l2_conn->diag_l2_proto_data;
 
-	if (msg->len < 1 || msg->len > 14)
+	if (msg->len < 1 || msg->len > 62)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	buf[0] = 0x80 + msg->len + 1;
@@ -100,7 +100,7 @@ dl2p_6227_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void *handle)
 {
 	int rv;
-	uint8_t buf[3 + 14 + 1];
+	uint8_t buf[3 + 62 + 1];
 	struct diag_msg *msg;
 
 	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, NULL, buf,
