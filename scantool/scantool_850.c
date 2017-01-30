@@ -53,7 +53,7 @@ struct ecu_info {
 	char *dtc_prefix;
 };
 
-struct ecu_info ecu_list[] = {
+static struct ecu_info ecu_list[] = {
 	{0x01, "abs", "antilock brakes", "ABS"},
 #if 0
 	/*
