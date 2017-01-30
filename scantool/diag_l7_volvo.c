@@ -39,12 +39,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "diag.h"
 #include "diag_os.h"
 #include "diag_err.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
+#include "diag_l7_volvo.h"
 
 /*
  * Service Identifier hex values are in the manufacturer defined range.
@@ -56,10 +58,11 @@ enum {
 	stopDiagnosticSession = 0xA0,
 	testerPresent = 0xA1,
 	readDataByLocalIdentifier = 0xA5,
-	/* 0xA6 is also used for live data, but apparently only on CAN bus */
+	readDataByLongLocalIdentifier = 0xA6, /* CAN bus only? */
 	readMemoryByAddress = 0xA7,
-        readDiagnosticTroubleCodes = 0xAE,
-	clearDiagnosticInformation = 0xAF
+	readDiagnosticTroubleCodes = 0xAE,
+	clearDiagnosticInformation = 0xAF,
+	readNVByLocalIdentifier = 0xB9
 } service_id;
 
 /*
@@ -98,66 +101,129 @@ diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn)
 	}
 }
 
-/*
- * Read one or more bytes from RAM.
- */
-int
-diag_l7_volvo_peek(struct diag_l2_conn *d_l2_conn, uint16_t addr, uint8_t len, uint8_t *out)
+/* The request message for reading memory */
+static int
+read_MEMORY_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, uint8_t count)
 {
-	uint8_t req[] = { readMemoryByAddress, 0, (addr>>8)&0xff, addr&0xff, 1, len };
-	int errval = 0;
-	struct diag_msg msg = {0};
-	struct diag_msg *resp = NULL;
+	static uint8_t req[] = { readMemoryByAddress, 0, 99, 99, 1, 99 };
 
-	msg.data = req;
-	msg.len = sizeof(req);
+	req[2] = (addr>>8)&0xff;
+	req[3] = addr&0xff;
+	req[5] = count;
+	*msgout = req;
+	*msglen = sizeof(req);
+	return 0;
+}
 
-	resp = diag_l2_request(d_l2_conn, &msg, &errval);
-	if (resp == NULL)
-		return errval;
+/* The request message for reading live data by 1-byte identifier */
+static int
+read_LIVEDATA_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count))
+{
+	static uint8_t req[] = { readDataByLocalIdentifier, 99, 1 };
 
-	if (resp->len == (unsigned int)len+4 && success_p(req, resp->data) && memcmp(req+1, resp->data+1, 3)==0) {
-		memcpy(out, resp->data+4, len);
-		diag_freemsg(resp);
-		return 0;
-	} else {
-		diag_freemsg(resp);
-		return DIAG_ERR_ECUSAIDNO;
+	req[1] = addr&0xff;
+	if (addr > 0xff) {
+		fprintf(stderr, FLFMT "read_LIVEDATA_req invalid address %x\n", FL, addr);
+		return DIAG_ERR_GENERAL;
 	}
+
+	*msgout = req;
+	*msglen = sizeof(req);
+	return 0;
+}
+
+/* The request message for reading live data by 2-byte ident (CAN bus only?) */
+static int
+read_LIVEDATA2_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count))
+{
+	static uint8_t req[] = { readDataByLongLocalIdentifier, 99, 99, 1 };
+	req[1] = (addr>>8)&0xff;
+	req[2] = addr&0xff;
+	*msgout = req;
+	*msglen = sizeof(req);
+	return 0;
+}
+
+/* The request message for reading non-volatile data */
+static int
+read_NV_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count))
+{
+	static uint8_t req[] = { readNVByLocalIdentifier, 99 };
+
+	req[1] = addr&0xff;
+	if (addr > 0xff) {
+		fprintf(stderr, FLFMT "read_NV_req invalid address %x\n", FL, addr);
+		return DIAG_ERR_GENERAL;
+	}
+
+	*msgout = req;
+	*msglen = sizeof(req);
+	return 0;
 }
 
 /*
- * Read live data.
+ * Read memory, live data or non-volatile data.
  *
- * Return value is actual byte count of live data, or negative on failure.
- * If specified buffer length is less than size of live data, only the initial
- * portion of the live data up to the buffer length is copied to the output
- * buffer.
+ * Return value is actual byte count received, or negative on failure.
+ *
+ * For memory reads, a successful read always copies the exact number of bytes
+ * requested into the output buffer.
+ *
+ * For live data and non-volatile data reads, copies up to the number of bytes
+ * requested. Returns the actual byte count received, which may be more or
+ * less than the number of bytes requested.
  */
 int
-diag_l7_volvo_livedata(struct diag_l2_conn *d_l2_conn, uint8_t identifier, int buflen, uint8_t *out)
+diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out)
 {
-	uint8_t req[] = { readDataByLocalIdentifier, identifier, 0x01 };
-	int errval = 0;
-	struct diag_msg msg = {0};
+	struct diag_msg req = {0};
 	struct diag_msg *resp = NULL;
 	int datalen;
+	int rv;
 
-	msg.data = req;
-	msg.len = sizeof(req);
+	switch (ns) {
+	case NS_MEMORY:
+		rv = read_MEMORY_req(&req.data, &req.len, addr, buflen);
+		break;
+	case NS_LIVEDATA:
+		rv = read_LIVEDATA_req(&req.data, &req.len, addr, buflen);
+		break;
+	case NS_LIVEDATA2:
+		rv = read_LIVEDATA2_req(&req.data, &req.len, addr, buflen);
+		break;
+	case NS_NV:
+		rv = read_NV_req(&req.data, &req.len, addr, buflen);
+		break;
+	default:
+		fprintf(stderr, FLFMT "diag_l7_volvo_read invalid namespace %d\n", FL, ns);
+		return DIAG_ERR_GENERAL;
+	}
 
-	resp = diag_l2_request(d_l2_conn, &msg, &errval);
+	if (rv != 0)
+		return rv;
+
+	resp = diag_l2_request(d_l2_conn, &req, &rv);
 	if (resp == NULL)
-		return errval;
+		return rv;
 
-	if (resp->len>=2 && success_p(req, resp->data) && resp->data[1]==req[1]) {
-		datalen = resp->len - 2;
-		if (datalen > 0)
-			memcpy(out, resp->data+2, (datalen>buflen)?buflen:datalen);
-		diag_freemsg(resp);
-		return datalen;
-	} else {
+	if (resp->len<2 || !success_p(req.data, resp->data) || resp->data[1]!=req.data[1]) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
+
+	if (ns==NS_MEMORY) {
+		if (resp->len!=(unsigned int)buflen+4 || memcmp(req.data+1, resp->data+1, 3)!=0) {
+			diag_freemsg(resp);
+			return DIAG_ERR_ECUSAIDNO;
+		}
+		memcpy(out, resp->data+4, buflen);
+		diag_freemsg(resp);
+		return buflen;
+	}
+
+	datalen = resp->len - 2;
+	if (datalen > 0)
+		memcpy(out, resp->data+2, (datalen>buflen)?buflen:datalen);
+	diag_freemsg(resp);
+	return datalen;
 }

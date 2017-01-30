@@ -86,6 +86,8 @@ static int cmd_850_sendreq(int argc, char **argv);
 static int cmd_850_peek(int argc, char **argv);
 static int cmd_850_dumpram(int argc, char **argv);
 static int cmd_850_read(int argc, char **argv);
+static int cmd_850_readnv(int argc, char **argv);
+static int cmd_850_id(int argc, char **argv);
 
 const struct cmd_tbl_entry v850_cmd_table[] =
 {
@@ -108,6 +110,10 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		cmd_850_dumpram, 0, NULL},
 	{ "read", "read <id1>|*<addr1> [id2 ...] [live]", "Display live data, once or continuously",
 		cmd_850_read, 0, NULL},
+	{ "readnv", "readnv id1 [id2 ...]", "Display non-volatile data",
+		cmd_850_readnv, 0, NULL},
+	{ "id", "id", "Display ECU identification",
+		cmd_850_id, 0, NULL},
 
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -475,7 +481,7 @@ print_hexdump_line(FILE *f, uint16_t addr, int addr_chars, uint8_t *buf, uint16_
 struct read_or_peek_item {
 	uint16_t start;		/* starting address or identifier */
 	uint16_t end;		/* ending address - for peeks only */
-	bool is_read;		/* else peek */
+	enum namespace ns;
 };
 
 /*
@@ -486,7 +492,7 @@ parse_peek_arg(char *arg, struct read_or_peek_item *item)
 {
 	char *p, *q;
 
-	item->is_read = false;
+	item->ns = NS_MEMORY;
 	item->start = strtoul(arg, &p, 0);
 	if (*p == '\0') {
 		item->end = item->start;
@@ -518,7 +524,7 @@ parse_read_arg(char *arg, struct read_or_peek_item *item)
 	if(arg[0] == '*')
 		return parse_peek_arg(arg+1, item);
 
-	item->is_read = true;
+	item->ns = NS_LIVEDATA;
 	item->start = strtoul(arg, &p, 0);
 	if (*p != '\0' || item->start > 0xff) {
 		printf("Invalid identifier '%s'\n", arg);
@@ -528,10 +534,28 @@ parse_read_arg(char *arg, struct read_or_peek_item *item)
 }
 
 /*
- * Execute a read or peek command.
+ * Parse an identifier argument on a readnv command line.
  */
 static int
-read_or_peek(int argc, char **argv, bool is_read)
+parse_readnv_arg(char *arg, struct read_or_peek_item *item)
+{
+	char *p;
+
+	item->ns = NS_NV;
+	item->start = strtoul(arg, &p, 0);
+	if (*p != '\0' || item->start > 0xff) {
+		printf("Invalid identifier '%s'\n", arg);
+		return 1;
+	}
+	return 0;
+}
+
+
+/*
+ * Execute a read, peek or readnv command.
+ */
+static int
+read_family(int argc, char **argv, enum namespace ns)
 {
 	int count;
 	int i;
@@ -550,7 +574,7 @@ read_or_peek(int argc, char **argv, bool is_read)
 	continuous = false;
 	count = argc - 1;
 
-	if (strcasecmp(argv[argc-1], "live")==0) {
+	if (ns!=NS_NV && strcasecmp(argv[argc-1], "live")==0) {
 		continuous = true;
 		count--;
 		if (count < 1)
@@ -561,11 +585,14 @@ read_or_peek(int argc, char **argv, bool is_read)
 	if (items == NULL)
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	for (i=0; i<count; i++) {
-		if (is_read) {
+		if (ns == NS_MEMORY) {
+			if (parse_peek_arg(argv[i+1], &(items[i])) != 0)
+				goto done;
+		} else if (ns == NS_LIVEDATA) {
 			if (parse_read_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
-		} else {
-			if (parse_peek_arg(argv[i+1], &(items[i])) != 0)
+		} else { /* NS_NV */
+			if (parse_readnv_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
 		}
 	}
@@ -573,9 +600,9 @@ read_or_peek(int argc, char **argv, bool is_read)
 	diag_os_ipending();
 	while (1) {
 		for (i=0; i<count; i++) {
-			if(items[i].is_read) {
+			if(items[i].ns != NS_MEMORY) {
 				addr = items[i].start;
-				gotbytes = diag_l7_volvo_livedata(global_l2_conn, addr, sizeof(buf), buf);
+				gotbytes = diag_l7_volvo_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
 				if (gotbytes < 0) {
 					printf("Error reading %02X\n", addr);
 					goto done;
@@ -591,10 +618,10 @@ read_or_peek(int argc, char **argv, bool is_read)
 				addr = items[i].start;
 				len = (items[i].end - items[i].start) + 1;
 				while(len > 0) {
-					if(diag_l7_volvo_peek(global_l2_conn, addr, (len<8)?len:8, buf) == 0) {
+					if(diag_l7_volvo_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf) == len) {
 						print_hexdump_line(stdout, addr, 4, buf, (len<8)?len:8);
 					} else {
-						printf("Error reading %s%04X\n", is_read?"*":"", items[i].start);
+						printf("Error reading %s%04X\n", (ns==NS_LIVEDATA)?"*":"", items[i].start);
 						goto done;
 					}
 				len -= (len<8)?len:8;
@@ -625,7 +652,7 @@ done:
 static int
 cmd_850_peek(int argc, char **argv)
 {
-	return read_or_peek(argc, argv, false);
+	return read_family(argc, argv, NS_MEMORY);
 }
 
 /*
@@ -642,7 +669,58 @@ cmd_850_peek(int argc, char **argv)
 static int
 cmd_850_read(int argc, char **argv)
 {
-	return read_or_peek(argc, argv, true);
+	return read_family(argc, argv, NS_LIVEDATA);
+}
+
+/*
+ * Read and display one or more non-volatile parameters.
+ *
+ * Takes a list of one-byte identifier values.
+ */
+static int
+cmd_850_readnv(int argc, char **argv)
+{
+	return read_family(argc, argv, NS_NV);
+}
+
+/*
+ * Display ECU identification.
+ */
+static int
+cmd_850_id(int argc, UNUSED(char **argv))
+{
+	uint8_t buf[15];
+	int rv;
+
+	if (!valid_arg_count(1, argc, 1))
+		return CMD_USAGE;
+
+	if(!valid_connection_status(CONNECTED_KWP6227))
+		return CMD_OK;
+
+	rv = diag_l7_volvo_read(global_l2_conn, NS_NV, 0xf0, sizeof(buf), buf);
+	if (rv < 0) {
+		printf("Couldn't read identification.\n");
+		return CMD_OK;
+	}
+	if (rv != sizeof(buf)) {
+		printf("Identification response was %d bytes, expected %d\n", rv, sizeof(buf));
+		return CMD_OK;
+	}
+	if (buf[0] != 0) {
+		printf("First identification response byte was %02X, expected 0\n", buf[0]);
+		return CMD_OK;
+	}
+	if (!isprint(buf[5]) || !isprint(buf[6]) || !isprint(buf[7]) ||
+	    !isprint(buf[12]) || !isprint(buf[13]) || !isprint(buf[14])) {
+		printf("Unexpected characters in version response\n");
+		return CMD_OK;
+	}
+
+	printf("Hardware ID: P%02X%02X%02X%02X revision %.3s\n", buf[1], buf[2], buf[3], buf[4], buf+5);
+	printf("Software ID:  %02X%02X%02X%02X revision %.3s\n", buf[8], buf[9], buf[10], buf[11], buf+12);
+
+	return CMD_OK;
 }
 
 /*
@@ -686,7 +764,7 @@ cmd_850_dumpram(int argc, char **argv)
 
 	addr = 0;
 	while (1) {
-		if (diag_l7_volvo_peek(global_l2_conn, addr, 8, buf) == 0) {
+		if (diag_l7_volvo_read(global_l2_conn, NS_MEMORY, addr, 8, buf) == 8) {
 			happy = 1;
 			errno = 0;
 			if (print_hexdump_line(f, addr, 4, buf, 8) != 0) {
