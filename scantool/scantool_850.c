@@ -320,6 +320,21 @@ valid_connection_status(unsigned int want)
 }
 
 /*
+ * Send 3 pings with a delay between them to get the ELM used to the ECU's
+ * response time.
+ */
+static void
+adaptive_timing_workaround(void)
+{
+	int i;
+
+	for (i=0;i<3;i++) {
+		(void)diag_l7_volvo_ping(global_l2_conn);
+		diag_os_millisleep(200);
+	}
+}
+
+/*
  * Connect to an ECU by name or address.
  */
 static int
@@ -387,6 +402,8 @@ cmd_850_connect(int argc, char **argv)
 	global_state = STATE_CONNECTED;
 	printf("Connected to %s.\n", ecu_desc_by_addr(addr));
 	have_read_dtcs = false;
+
+	adaptive_timing_workaround();
 
 	return CMD_OK;
 }
