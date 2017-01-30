@@ -60,6 +60,7 @@ enum {
 	readDataByLocalIdentifier = 0xA5,
 	readDataByLongLocalIdentifier = 0xA6, /* CAN bus only? */
 	readMemoryByAddress = 0xA7,
+	readFreezeFrameByDTC = 0xAD,
 	readDiagnosticTroubleCodes = 0xAE,
 	clearDiagnosticInformation = 0xAF,
 	readNVByLocalIdentifier = 0xB9
@@ -161,6 +162,23 @@ read_NV_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_
 	return 0;
 }
 
+/* The request message for reading freeze frames */
+static int
+read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count))
+{
+	static uint8_t req[] = { readFreezeFrameByDTC, 99, 0 };
+
+	req[1] = addr&0xff;
+	if (addr > 0xff) {
+		fprintf(stderr, FLFMT "read_FREEZE_req invalid address %x\n", FL, addr);
+		return DIAG_ERR_GENERAL;
+	}
+
+	*msgout = req;
+	*msglen = sizeof(req);
+	return 0;
+}
+
 /*
  * Read memory, live data or non-volatile data.
  *
@@ -193,6 +211,9 @@ diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 		break;
 	case NS_NV:
 		rv = read_NV_req(&req.data, &req.len, addr, buflen);
+		break;
+	case NS_FREEZE:
+		rv = read_FREEZE_req(&req.data, &req.len, addr, buflen);
 		break;
 	default:
 		fprintf(stderr, FLFMT "diag_l7_volvo_read invalid namespace %d\n", FL, ns);
