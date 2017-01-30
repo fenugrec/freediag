@@ -266,6 +266,7 @@ diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
 		fprintf(stderr, "Warning: retrieving only first 12 DTCs\n");
 	}
 
+	diag_freemsg(resp);
 	return count;
 }
 
