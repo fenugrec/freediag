@@ -35,7 +35,8 @@ enum namespace {
 	NS_MEMORY,
 	NS_LIVEDATA,
 	NS_LIVEDATA2,
-	NS_NV
+	NS_NV,
+	NS_FREEZE
 };
 
 int diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn);

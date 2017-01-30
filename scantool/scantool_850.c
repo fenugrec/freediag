@@ -92,6 +92,7 @@ static int cmd_850_readnv(int argc, char **argv);
 static int cmd_850_id(int argc, UNUSED(char **argv));
 static int cmd_850_dtc(int argc, UNUSED(char **argv));
 static int cmd_850_cleardtc(int argc, UNUSED(char **argv));
+static int cmd_850_freeze(int argc, char **argv);
 
 const struct cmd_tbl_entry v850_cmd_table[] =
 {
@@ -122,6 +123,8 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		cmd_850_dtc, 0, NULL},
 	{ "cleardtc", "cleardtc", "Clear DTCs from ECU",
 		cmd_850_cleardtc, 0, NULL},
+	{ "freeze", "freeze dtc1|all [dtc2 ...]", "Display freeze frame(s)",
+		cmd_850_freeze, 0, NULL},
 
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -544,14 +547,13 @@ parse_read_arg(char *arg, struct read_or_peek_item *item)
 }
 
 /*
- * Parse an identifier argument on a readnv command line.
+ * Parse an identifier argument on a readnv or freeze command line.
  */
 static int
-parse_readnv_arg(char *arg, struct read_or_peek_item *item)
+parse_readnv_freeze_arg(char *arg, struct read_or_peek_item *item)
 {
 	char *p;
 
-	item->ns = NS_NV;
 	item->start = strtoul(arg, &p, 0);
 	if (*p != '\0' || item->start > 0xff) {
 		printf("Invalid identifier '%s'\n", arg);
@@ -559,7 +561,6 @@ parse_readnv_arg(char *arg, struct read_or_peek_item *item)
 	}
 	return 0;
 }
-
 
 /*
  * Execute a read, peek or readnv command.
@@ -584,7 +585,7 @@ read_family(int argc, char **argv, enum namespace ns)
 	continuous = false;
 	count = argc - 1;
 
-	if (ns!=NS_NV && strcasecmp(argv[argc-1], "live")==0) {
+	if (ns!=NS_NV && ns!=NS_FREEZE && strcasecmp(argv[argc-1], "live")==0) {
 		continuous = true;
 		count--;
 		if (count < 1)
@@ -595,15 +596,28 @@ read_family(int argc, char **argv, enum namespace ns)
 	if (items == NULL)
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	for (i=0; i<count; i++) {
-		if (ns == NS_MEMORY) {
+		switch (ns) {
+		case NS_MEMORY:
 			if (parse_peek_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
-		} else if (ns == NS_LIVEDATA) {
+			break;
+		case NS_LIVEDATA:
 			if (parse_read_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
-		} else { /* NS_NV */
-			if (parse_readnv_arg(argv[i+1], &(items[i])) != 0)
+			break;
+		case NS_NV:
+			items[i].ns = NS_NV;
+			if (parse_readnv_freeze_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
+			break;
+		case NS_FREEZE:
+			items[i].ns = NS_FREEZE;
+			if (parse_readnv_freeze_arg(argv[i+1], &(items[i])) != 0)
+				goto done;
+			break;
+		default:
+			fprintf(stderr, FLFMT "impossible ns value\n", FL);
+			goto done;
 		}
 	}
 
@@ -691,6 +705,72 @@ static int
 cmd_850_readnv(int argc, char **argv)
 {
 	return read_family(argc, argv, NS_NV);
+}
+
+/*
+ * Read and display freeze frames for all stored DTCs.
+ */
+static int
+cmd_850_freeze_all(void)
+{
+	uint8_t dtcs[12];
+	int count;
+	char *argbuf;
+	char **argvout;
+	char *p;
+	int rv;
+	int i;
+
+	if(!valid_connection_status(CONNECTED_KWP6227))
+		return CMD_OK;
+
+	rv = diag_l7_volvo_dtclist(global_l2_conn, sizeof(dtcs), dtcs);
+	if (rv < 0) {
+		printf("Couldn't retrieve DTCs.\n");
+		return CMD_OK;
+	}
+
+	if (rv == 0) {
+		printf("No stored DTCs.\n");
+		return CMD_OK;
+	}
+
+	count = rv;
+	argbuf = calloc(count, 4);
+	if (argbuf == NULL)
+		return diag_iseterr(DIAG_ERR_NOMEM);
+	argvout = calloc(count+1, sizeof(argvout[0]));
+	if (argvout == NULL)
+		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	p = argbuf;
+	for (i=0; i<count; i++) {
+		sprintf(p, "%d", dtcs[i]);
+		argvout[i+1] = p;
+		p += 4;
+	}
+
+	rv = read_family(count+1, argvout, NS_FREEZE);
+
+	free(argvout);
+	free(argbuf);
+	return rv;
+}
+
+/*
+ * Read and display one or more freeze frames.
+ *
+ * Takes a list of one-byte identifier values, or the option "all" to retrieve
+ * freeze frames for all stored DTCs.
+ */
+static int
+cmd_850_freeze(int argc, char **argv)
+{
+	if(argc==2 && strcasecmp(argv[1], "all")==0) {
+		return cmd_850_freeze_all();
+	} else {
+		return read_family(argc, argv, NS_FREEZE);
+	}
 }
 
 /*
