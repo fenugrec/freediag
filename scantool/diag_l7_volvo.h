@@ -40,6 +40,7 @@ enum namespace {
 
 int diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn);
 int diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out);
+int diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out);
 
 #if defined(__cplusplus)
 extern "C" {

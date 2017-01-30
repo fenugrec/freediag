@@ -227,3 +227,44 @@ diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 	diag_freemsg(resp);
 	return datalen;
 }
+
+/*
+ * Retrieve list of stored DTCs.
+ */
+int
+diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
+{
+	uint8_t req[] = { readDiagnosticTroubleCodes, 1 };
+	int errval = 0;
+	struct diag_msg msg = {0};
+	struct diag_msg *resp = NULL;
+	int count;
+
+	msg.data = req;
+	msg.len = sizeof(req);
+
+	resp = diag_l2_request(d_l2_conn, &msg, &errval);
+	if (resp == NULL)
+		return errval;
+
+	if (resp->len<2 || !success_p(req, resp->data) || resp->data[1]!=1) {
+		diag_freemsg(resp);
+		return DIAG_ERR_ECUSAIDNO;
+	}
+
+	count = resp->len - 2;
+	memcpy(out, resp->data+2, (buflen<count)?buflen:count);
+
+	if (resp->len == 14) {
+		/*
+		 * If there are more than 12 DTCs, ECU will send multiple
+		 * responses to a single readDiagnosticTroubleCodes request.
+		 * Currently we just try to throw away any additional DTCs
+		 * after the first response message.
+		 */
+		(void)diag_l2_recv(d_l2_conn, 1000, NULL, NULL);
+		fprintf(stderr, "Warning: retrieving only first 12 DTCs\n");
+	}
+
+	return count;
+}

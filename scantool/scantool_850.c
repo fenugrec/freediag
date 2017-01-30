@@ -87,7 +87,8 @@ static int cmd_850_peek(int argc, char **argv);
 static int cmd_850_dumpram(int argc, char **argv);
 static int cmd_850_read(int argc, char **argv);
 static int cmd_850_readnv(int argc, char **argv);
-static int cmd_850_id(int argc, char **argv);
+static int cmd_850_id(int argc, UNUSED(char **argv));
+static int cmd_850_dtc(int argc, UNUSED(char **argv));
 
 const struct cmd_tbl_entry v850_cmd_table[] =
 {
@@ -114,6 +115,8 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		cmd_850_readnv, 0, NULL},
 	{ "id", "id", "Display ECU identification",
 		cmd_850_id, 0, NULL},
+	{ "dtc", "dtc", "Retrieve DTCs",
+		cmd_850_dtc, 0, NULL},
 
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -797,6 +800,42 @@ cmd_850_dumpram(int argc, char **argv)
 	}
 
 	printf("\r%04X :D\n", addr);
+
+	return CMD_OK;
+}
+
+/*
+ * Display list of stored DTCs.
+ */
+static int
+cmd_850_dtc(int argc, UNUSED(char **argv))
+{
+	uint8_t buf[12];
+	int rv;
+	int i;
+
+	if (!valid_arg_count(1, argc, 1))
+		return CMD_USAGE;
+
+	if(!valid_connection_status(CONNECTED_KWP6227))
+		return CMD_OK;
+
+	rv = diag_l7_volvo_dtclist(global_l2_conn, sizeof(buf), buf);
+	if (rv < 0) {
+		printf("Couldn't retrieve DTCs.\n");
+		return CMD_OK;
+	}
+
+	if (rv == 0) {
+		printf("No stored DTCs.\n");
+		return CMD_OK;
+	}
+
+	printf("Stored DTCs:");
+	for (i=0; i<rv; i++) {
+		printf(" %02X", buf[i]);
+	}
+	putchar('\n');
 
 	return CMD_OK;
 }
