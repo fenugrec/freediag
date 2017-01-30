@@ -78,6 +78,8 @@ struct ecu_info ecu_list[] = {
 	{0, NULL, NULL, NULL}
 };
 
+static bool have_read_dtcs = false;
+
 static int cmd_850_help(int argc, char **argv);
 static int cmd_850_connect(int argc, char **argv);
 static int cmd_850_disconnect(int argc, UNUSED(char **argv));
@@ -89,6 +91,7 @@ static int cmd_850_read(int argc, char **argv);
 static int cmd_850_readnv(int argc, char **argv);
 static int cmd_850_id(int argc, UNUSED(char **argv));
 static int cmd_850_dtc(int argc, UNUSED(char **argv));
+static int cmd_850_cleardtc(int argc, UNUSED(char **argv));
 
 const struct cmd_tbl_entry v850_cmd_table[] =
 {
@@ -117,6 +120,8 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		cmd_850_id, 0, NULL},
 	{ "dtc", "dtc", "Retrieve DTCs",
 		cmd_850_dtc, 0, NULL},
+	{ "cleardtc", "cleardtc", "Clear DTCs from ECU",
+		cmd_850_cleardtc, 0, NULL},
 
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -378,6 +383,7 @@ cmd_850_connect(int argc, char **argv)
 
 	global_state = STATE_CONNECTED;
 	printf("Connected to %s.\n", ecu_desc_by_addr(addr));
+	have_read_dtcs = false;
 
 	return CMD_OK;
 }
@@ -405,6 +411,7 @@ cmd_850_disconnect(int argc, UNUSED(char **argv))
 	global_state = STATE_IDLE;
 
 	printf("Disconnected from %s.\n", desc);
+	have_read_dtcs = false;
 	return CMD_OK;
 }
 
@@ -825,6 +832,7 @@ cmd_850_dtc(int argc, UNUSED(char **argv))
 		printf("Couldn't retrieve DTCs.\n");
 		return CMD_OK;
 	}
+	have_read_dtcs = true;
 
 	if (rv == 0) {
 		printf("No stored DTCs.\n");
@@ -837,5 +845,54 @@ cmd_850_dtc(int argc, UNUSED(char **argv))
 	}
 	putchar('\n');
 
+	return CMD_OK;
+}
+
+/*
+ * Clear stored DTCs.
+ */
+static int
+cmd_850_cleardtc(int argc, UNUSED(char **argv))
+{
+	char *input;
+	int rv;
+
+	if (!valid_arg_count(1, argc, 1))
+		return CMD_USAGE;
+
+	if(!valid_connection_status(CONNECTED_KWP6227))
+		return CMD_OK;
+
+	input = basic_get_input("Are you sure you wish to clear the Diagnostic Trouble Codes (y/n) ? ", stdin);
+	if (!input)
+		return CMD_OK;
+
+	if ((strcasecmp(input, "yes") != 0) && (strcasecmp(input, "y")!=0)) {
+		printf("Not done\n");
+		goto done;
+	}
+
+	if (!have_read_dtcs) {
+		free(input);
+		input = basic_get_input("You haven't read the DTCs yet. Are you sure you wish to clear them (y/n) ? ", stdin);
+		if (!input)
+			return CMD_OK;
+		if ((strcasecmp(input, "yes") != 0) && (strcasecmp(input, "y")!=0)) {
+			printf("Not done\n");
+			goto done;
+		}
+	}
+
+	rv = diag_l7_volvo_cleardtc(global_l2_conn);
+	if (rv == 0) {
+		printf("No DTCs to clear!\n");
+	} else if (rv == 1) {
+		printf("Done\n");
+	} else {
+		printf("Failed\n");
+	}
+
+done:
+	free(input);
 	return CMD_OK;
 }
