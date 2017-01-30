@@ -31,9 +31,15 @@
 #include "diag.h"
 #include "diag_l2.h"
 
+enum namespace {
+	NS_MEMORY,
+	NS_LIVEDATA,
+	NS_LIVEDATA2,
+	NS_NV
+};
+
 int diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn);
-int diag_l7_volvo_peek(struct diag_l2_conn *d_l2_conn, uint16_t addr, uint8_t len, uint8_t *out);
-int diag_l7_volvo_livedata(struct diag_l2_conn *d_l2_conn, uint8_t identifier, int buflen, uint8_t *out);
+int diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out);
 
 #if defined(__cplusplus)
 extern "C" {
