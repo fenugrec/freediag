@@ -268,3 +268,43 @@ diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
 
 	return count;
 }
+
+/*
+ * Attempt to clear stored DTCs.
+ *
+ * Returns 0 if there were no DTCs, 1 if there was at least one DTC and the
+ * ECU returned positive acknowledgement for the clear request, <0 for errors.
+ */
+int
+diag_l7_volvo_cleardtc(struct diag_l2_conn *d_l2_conn)
+{
+	uint8_t req[] = { clearDiagnosticInformation, 1 };
+	uint8_t buf[1];
+	struct diag_msg msg = {0};
+	struct diag_msg *resp = NULL;
+	int rv;
+
+	/*
+	 * ECU will reject clearDiagnosticInformation unless preceded by
+	 * readDiagnosticTroubleCodes.
+	 */
+	rv = diag_l7_volvo_dtclist(d_l2_conn, sizeof(buf), buf);
+	if (rv < 0)
+		return rv;
+	if (rv == 0)
+		return 0;
+
+	msg.data = req;
+	msg.len = sizeof(req);
+	resp = diag_l2_request(d_l2_conn, &msg, &rv);
+	if (resp == NULL)
+		return rv;
+
+	if (resp->len==2 && success_p(req, resp->data) && resp->data[1]==1) {
+		diag_freemsg(resp);
+		return 1;
+	} else {
+		diag_freemsg(resp);
+		return DIAG_ERR_ECUSAIDNO;
+	}
+}
