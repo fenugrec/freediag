@@ -376,6 +376,14 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol)
 
 	elm_init();
 
+	//sending ATZ to elm will wipe out current header setting
+	dev->atsh[0]=0; dev->atsh[1]=0; dev->atsh[2]=0;
+
+	//throw away previous wakeup message setting, if any
+	if(dev->wm != NULL)
+		diag_freemsg(dev->wm);
+	dev->wm = NULL;
+
 	/* try to open TTY */
 	dev->tty_int = diag_tty_open(dev->port.val.str);
 	if (dev->tty_int == NULL) {
