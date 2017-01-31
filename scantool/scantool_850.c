@@ -78,6 +78,19 @@ static struct ecu_info ecu_list[] = {
 	{0, NULL, NULL, NULL}
 };
 
+struct dtc_table_entry {
+	uint8_t ecu_addr;
+	uint8_t raw_value;
+	uint16_t dtc_suffix;
+	char *desc;
+};
+
+static struct dtc_table_entry dtc_table[] = {
+	{0x6e, 0x13, 332, "Torque converter lock-up solenoid open circuit"},
+	{0x7a, 0x54, 445, "Pulsed secondary air injection system pump signal"},
+	{0, 0, 0, NULL}
+};
+
 static bool have_read_dtcs = false;
 
 static int cmd_850_help(int argc, char **argv);
@@ -237,6 +250,113 @@ current_ecu_desc(void)
 		return "???";
 
 	return ecu_desc_by_addr(addr);
+}
+
+/*
+ * Get the printable designation (EFI-xxx, AT-xxx, etc) for a DTC by its raw
+ * byte value. Optionally, also get a description of the DTC.
+ * Returns a static buffer that will be reused on the next call.
+ */
+static char *
+dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc)
+{
+	static char printable[7+1];
+	static char *empty="";
+	struct ecu_info *ecu_entry;
+	struct dtc_table_entry *dtc_entry;
+	char *prefix;
+	uint16_t suffix;
+
+	prefix = "???";
+	for (ecu_entry = ecu_list; ecu_entry->name != NULL; ecu_entry++) {
+		if (addr == ecu_entry->addr) {
+			prefix = ecu_entry->dtc_prefix;
+			break;
+		}
+	}
+
+	for (dtc_entry = dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
+		if (dtc_entry->ecu_addr == addr && dtc_entry->raw_value == raw) {
+			suffix = dtc_entry->dtc_suffix;
+			if(desc != NULL)
+				*desc = dtc_entry->desc;
+			sprintf(printable, "%s-%03d", prefix, suffix);
+			return printable;
+		}
+	}
+
+	if (desc != NULL)
+		*desc = empty;
+	sprintf(printable, "%s-???", prefix);
+	return printable;
+}
+
+/*
+ * Get a DTC byte value by the printable designation. Returns 0xffff on
+ * failure.
+ */
+static uint16_t
+dtc_raw_by_printable(char *printable)
+{
+	char prefix[8];
+	uint16_t suffix;
+	char *p, *q, *r;
+	struct ecu_info *ecu_entry;
+	struct dtc_table_entry *dtc_entry;
+	uint8_t ecu_addr;
+
+	/* extract prefix and suffix from string */
+	if (strlen(printable) > sizeof(prefix)-1)
+		return 0xffff; /* implausably long string */
+	strcpy(prefix, printable);
+	p = prefix;
+	while (isalpha(*p))
+		p++;
+	q = p;
+	if (*q == '-')
+		q++;
+	suffix = strtoul(q, &r, 10);
+	if (*q == '\0' || *r != '\0')
+		return 0xffff; /* no valid numeric suffix */
+	*p = '\0';
+
+	/* find prefix */
+	ecu_addr = 0;
+	for (ecu_entry = ecu_list; ecu_entry->name != NULL; ecu_entry++) {
+		if (strcasecmp(prefix, ecu_entry->dtc_prefix)==0) {
+			ecu_addr = ecu_entry->addr;
+		}
+	}
+	if (ecu_addr == 0)
+		return 0xffff; /* prefix not found */
+	if (global_state < STATE_CONNECTED || ecu_addr != global_l2_conn->diag_l2_destaddr)
+		return 0xffff; /* prefix isn't for connected ecu */
+
+	/* find suffix */
+	for (dtc_entry = dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
+		if (dtc_entry->ecu_addr == ecu_addr && dtc_entry->dtc_suffix == suffix)
+			return dtc_entry->raw_value;
+	}
+	return 0xffff; /* suffix not found */
+}
+
+/*
+ * Get the DTC prefix for the currently connected ECU.
+ */
+static char *
+current_dtc_prefix(void)
+{
+	struct ecu_info *ecu;
+
+	if (global_state < STATE_CONNECTED)
+		return "???";
+
+	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
+		if (global_l2_conn->diag_l2_destaddr == ecu->addr)
+			return ecu->dtc_prefix;
+	}
+
+	return "???";
 }
 
 /*
@@ -564,19 +684,55 @@ parse_read_arg(char *arg, struct read_or_peek_item *item)
 }
 
 /*
- * Parse an identifier argument on a readnv or freeze command line.
+ * Parse an identifier argument on a readnv command line.
  */
 static int
-parse_readnv_freeze_arg(char *arg, struct read_or_peek_item *item)
+parse_readnv_arg(char *arg, struct read_or_peek_item *item)
 {
 	char *p;
 
+	item->ns = NS_NV;
 	item->start = strtoul(arg, &p, 0);
 	if (*p != '\0' || item->start > 0xff) {
 		printf("Invalid identifier '%s'\n", arg);
 		return 1;
 	}
 	return 0;
+}
+
+/*
+ * Parse an identifier argument on a freeze command line.
+ */
+static int
+parse_freeze_arg(char *arg, struct read_or_peek_item *item)
+{
+	char *p;
+
+	item->ns = NS_FREEZE;
+	if (isalpha(arg[0])) {
+		item->start = dtc_raw_by_printable(arg);
+		if(item->start == 0xffff) {
+			printf("Invalid identifier '%s'\n", arg);
+			return 1;
+		}
+		return 0;
+	} else {
+		item->start = strtoul(arg, &p, 0);
+		if (*p != '\0' || item->start > 0xff) {
+			printf("Invalid identifier '%s'\n", arg);
+			if(isdigit(arg[0]) && arg[0]!='0' && *p=='\0')
+				printf("Did you mean %s-%s?\n", current_dtc_prefix(), arg);
+			return 1;
+		}
+		if(isdigit(arg[0]) && arg[0]!='0') {
+			if(item->start < 100) {
+				printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean 0x%s?\n", item->start, item->start, arg);
+			} else {
+				printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean %s-%s?\n", item->start, item->start, current_dtc_prefix(), arg);
+			}
+		}
+		return 0;
+	}
 }
 
 /*
@@ -623,13 +779,11 @@ read_family(int argc, char **argv, enum namespace ns)
 				goto done;
 			break;
 		case NS_NV:
-			items[i].ns = NS_NV;
-			if (parse_readnv_freeze_arg(argv[i+1], &(items[i])) != 0)
+			if (parse_readnv_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
 			break;
 		case NS_FREEZE:
-			items[i].ns = NS_FREEZE;
-			if (parse_readnv_freeze_arg(argv[i+1], &(items[i])) != 0)
+			if (parse_freeze_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
 			break;
 		default:
@@ -753,7 +907,7 @@ cmd_850_freeze_all(void)
 	}
 
 	count = rv;
-	argbuf = calloc(count, 4);
+	argbuf = calloc(count, 5);
 	if (argbuf == NULL)
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	argvout = calloc(count+1, sizeof(argvout[0]));
@@ -762,9 +916,9 @@ cmd_850_freeze_all(void)
 
 	p = argbuf;
 	for (i=0; i<count; i++) {
-		sprintf(p, "%d", dtcs[i]);
+		sprintf(p, "0x%x", dtcs[i]);
 		argvout[i+1] = p;
-		p += 4;
+		p += 5;
 	}
 
 	rv = read_family(count+1, argvout, NS_FREEZE);
@@ -777,8 +931,9 @@ cmd_850_freeze_all(void)
 /*
  * Read and display one or more freeze frames.
  *
- * Takes a list of one-byte identifier values, or the option "all" to retrieve
- * freeze frames for all stored DTCs.
+ * Takes a list of DTCs, or the option "all" to retrieve freeze frames for all
+ * stored DTCs. Each DTC can be specified either as a raw byte value or by its
+ * EFI-xxx, AT-xxx, etc designation.
  */
 static int
 cmd_850_freeze(int argc, char **argv)
@@ -917,6 +1072,7 @@ cmd_850_dtc(int argc, UNUSED(char **argv))
 	uint8_t buf[12];
 	int rv;
 	int i;
+	char *code, *desc;
 
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
@@ -936,11 +1092,11 @@ cmd_850_dtc(int argc, UNUSED(char **argv))
 		return CMD_OK;
 	}
 
-	printf("Stored DTCs:");
+	printf("Stored DTCs:\n");
 	for (i=0; i<rv; i++) {
-		printf(" %02X", buf[i]);
+		code = dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, buf[i], &desc);
+		printf("%s (%02X) %s\n", code, buf[i], desc);
 	}
-	putchar('\n');
 
 	return CMD_OK;
 }
