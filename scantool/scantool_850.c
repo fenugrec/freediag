@@ -671,8 +671,13 @@ parse_read_arg(char *arg, struct read_or_peek_item *item)
 {
 	char *p;
 
-	if(arg[0] == '*')
+	if(arg[0] == '*') {
+		if (arg[1] == '\0') {
+			printf("Invalid identifier '%s'\n", arg);
+			return 1;
+		}
 		return parse_peek_arg(arg+1, item);
+	}
 
 	item->ns = NS_LIVEDATA;
 	item->start = strtoul(arg, &p, 0);
