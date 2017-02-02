@@ -106,6 +106,7 @@ static int cmd_850_id(int argc, UNUSED(char **argv));
 static int cmd_850_dtc(int argc, UNUSED(char **argv));
 static int cmd_850_cleardtc(int argc, UNUSED(char **argv));
 static int cmd_850_freeze(int argc, char **argv);
+static int cmd_850_scan_all(int argc, UNUSED(char **argv));
 
 const struct cmd_tbl_entry v850_cmd_table[] =
 {
@@ -118,6 +119,8 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		cmd_850_connect, 0, NULL},
 	{ "disconnect", "disconnect", "Disconnect from ECU",
 		cmd_850_disconnect, 0, NULL},
+	{ "scan-all", "scan-all", "Try connecting to all possible ECUs, print identification and DTCs",
+		cmd_850_scan_all, 0, NULL},
 	{ "sendreq", "sendreq <byte0 [byte1 ...]>", "Send raw data to the ECU and print response",
 		cmd_850_sendreq, 0, NULL},
 	{ "ping", "ping", "Verify communication with the ECU", cmd_850_ping,
@@ -1152,5 +1155,46 @@ cmd_850_cleardtc(int argc, UNUSED(char **argv))
 
 done:
 	free(input);
+	return CMD_OK;
+}
+
+/*
+ * Try to connect to each possible ECU. Print identification and DTCs for each
+ * successfully connected ECU.
+ *
+ * There will always be some unsuccessful connection attempts in a scan-all
+ * because at least one ECU in our list will be missing from any given vehicle.
+ * For example, MSA 15.7 and Motronic M4.4 will never both be present in the
+ * same car.
+ */
+static int
+cmd_850_scan_all(int argc, UNUSED(char **argv))
+{
+	struct ecu_info *ecu;
+	char *argvout[2];
+	char buf[4];
+
+	if (!valid_arg_count(1, argc, 1))
+		return CMD_USAGE;
+
+	if(!valid_connection_status(NOT_CONNECTED))
+		return CMD_OK;
+
+	printf("Scanning all ECUs.\n");
+
+	argvout[1] = buf;
+	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
+		sprintf(buf, "%d", ecu->addr);
+		if (cmd_850_connect(2, argvout) == CMD_OK) {
+			cmd_850_id(1, NULL);
+			cmd_850_dtc(1, NULL);
+			cmd_850_disconnect(1, NULL);
+		} else {
+			printf("Couldn't connect to %s.\n", ecu->desc);
+		}
+	}
+
+	printf("Scan-all done.\n");
+
 	return CMD_OK;
 }
