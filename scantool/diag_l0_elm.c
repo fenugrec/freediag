@@ -624,8 +624,8 @@ elm_slowinit(struct diag_l0_device *dl0d)
 		fprintf(stderr, FLFMT "ELM forced slowinit...\n", FL);
 	}
 
-	//huge timeout of 2.5s. Not sure if this is adequate
-	if (elm_sendcmd(dl0d, cmds, 5, 2500, NULL)) {
+	//huge timeout of 2.8s. Not sure if this is adequate
+	if (elm_sendcmd(dl0d, cmds, 5, 2800, NULL)) {
 		fprintf(stderr, FLFMT "Command ATSI failed\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
