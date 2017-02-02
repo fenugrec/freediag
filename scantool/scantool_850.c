@@ -70,6 +70,7 @@ static struct ecu_info ecu_list[] = {
 	{0x2d, "vgla", "Volvo Guard Lock and Alarm", "GLA"},
 	{0x2e, "psl", "left power seat", "PSL"},
 	{0x2f, "psr", "right power seat", "PSR"},
+	/* 0x33 - J1979 OBD2 */
 	{0x41, "immo", "immobilizer", "IMM"},
 	{0x51, "combi", "combined instrument panel", "CI"},
 	{0x58, "srs", "airbags and belt tensioner", "SRS"},
