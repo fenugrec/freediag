@@ -802,12 +802,15 @@ read_family(int argc, char **argv, enum namespace ns)
 				if (gotbytes < 0) {
 					printf("Error reading %02X\n", addr);
 					goto done;
-				} else if (gotbytes == 0) {
+				}
+				if(items[i].ns == NS_FREEZE)
+					printf("%s  ", dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, addr, NULL));
+				if (gotbytes == 0) {
 					printf("%02X: no data\n", addr);
 				} else if ((unsigned int)gotbytes > sizeof(buf)) {
 					print_hexdump_line(stdout, addr, 2, buf, sizeof(buf));
 					printf(" (%d bytes received, only first %d shown)\n", gotbytes, sizeof(buf));
-				} else if (gotbytes > 0) {
+				} else {
 					print_hexdump_line(stdout, addr, 2, buf, gotbytes);
 				}
 			} else {
