@@ -296,6 +296,25 @@ dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc)
 }
 
 /*
+ * Get the DTC prefix for the currently connected ECU.
+ */
+static char *
+current_dtc_prefix(void)
+{
+	struct ecu_info *ecu;
+
+	if (global_state < STATE_CONNECTED)
+		return "???";
+
+	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
+		if (global_l2_conn->diag_l2_destaddr == ecu->addr)
+			return ecu->dtc_prefix;
+	}
+
+	return "???";
+}
+
+/*
  * Get a DTC byte value by the printable designation. Returns 0xffff on
  * failure.
  */
@@ -305,7 +324,6 @@ dtc_raw_by_printable(char *printable)
 	char prefix[8];
 	uint16_t suffix;
 	char *p, *q, *r;
-	struct ecu_info *ecu_entry;
 	struct dtc_table_entry *dtc_entry;
 	uint8_t ecu_addr;
 
@@ -324,43 +342,17 @@ dtc_raw_by_printable(char *printable)
 		return 0xffff; /* no valid numeric suffix */
 	*p = '\0';
 
-	/* find prefix */
-	ecu_addr = 0;
-	for (ecu_entry = ecu_list; ecu_entry->name != NULL; ecu_entry++) {
-		if (strcasecmp(prefix, ecu_entry->dtc_prefix)==0) {
-			ecu_addr = ecu_entry->addr;
-		}
-	}
-	if (ecu_addr == 0)
-		return 0xffff; /* prefix not found */
-	if (global_state < STATE_CONNECTED || ecu_addr != global_l2_conn->diag_l2_destaddr)
-		return 0xffff; /* prefix isn't for connected ecu */
+	/* check prefix */
+	if (strcasecmp(prefix, current_dtc_prefix())!=0)
+		return 0xffff; /* doesn't match connected ecu prefix */
 
 	/* find suffix */
+	ecu_addr = global_l2_conn->diag_l2_destaddr;
 	for (dtc_entry = dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
 		if (dtc_entry->ecu_addr == ecu_addr && dtc_entry->dtc_suffix == suffix)
 			return dtc_entry->raw_value;
 	}
 	return 0xffff; /* suffix not found */
-}
-
-/*
- * Get the DTC prefix for the currently connected ECU.
- */
-static char *
-current_dtc_prefix(void)
-{
-	struct ecu_info *ecu;
-
-	if (global_state < STATE_CONNECTED)
-		return "???";
-
-	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
-		if (global_l2_conn->diag_l2_destaddr == ecu->addr)
-			return ecu->dtc_prefix;
-	}
-
-	return "???";
 }
 
 /*
