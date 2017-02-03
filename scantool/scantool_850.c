@@ -607,6 +607,38 @@ cmd_850_ping(int argc, UNUSED(char **argv))
 }
 
 /*
+ * If we know how to interpret a live data value, print out the description and
+ * scaled value.
+ */
+static void
+interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf)
+{
+	if (ns==NS_LIVEDATA && addr==0x0300) {
+		printf("Battery voltage: %.2f V (approximate)\n", (float)buf[0]/14);
+	} else if(ns==NS_LIVEDATA && addr==0x1000) {
+		printf("MAF sensor signal: %.2f V (approximate)\n", (float)buf[0]/44.25);
+	} else if(ns==NS_LIVEDATA && addr==0x1001) {
+		printf("Air flow rate: %.2f gm/s (?)\n", (float)buf[0]*16/36);
+	}
+}
+
+/*
+ * Try to interpret all the live data values in the buffer.
+ */
+static void
+interpret_block(enum namespace ns, uint16_t addr, int len, uint8_t *buf)
+{
+	int i;
+
+	if (ns != NS_MEMORY)
+		addr <<= 8;
+
+	for (i=0; i<len; i++) {
+		interpret_value(ns, addr+i, len-i, buf+i);
+	}
+}
+
+/*
  * Print one line of a hex dump, with an address followed by one or more
  * values.
  */
@@ -810,8 +842,10 @@ read_family(int argc, char **argv, enum namespace ns)
 				} else if ((unsigned int)gotbytes > sizeof(buf)) {
 					print_hexdump_line(stdout, addr, 2, buf, sizeof(buf));
 					printf(" (%d bytes received, only first %d shown)\n", gotbytes, sizeof(buf));
+					interpret_block(items[i].ns, addr, sizeof(buf), buf);
 				} else {
 					print_hexdump_line(stdout, addr, 2, buf, gotbytes);
+					interpret_block(items[i].ns, addr, gotbytes, buf);
 				}
 			} else {
 				addr = items[i].start;
@@ -819,6 +853,7 @@ read_family(int argc, char **argv, enum namespace ns)
 				while(len > 0) {
 					if(diag_l7_volvo_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf) == len) {
 						print_hexdump_line(stdout, addr, 4, buf, (len<8)?len:8);
+						interpret_block(NS_MEMORY, addr, (len<8)?len:8, buf);
 					} else {
 						printf("Error reading %s%04X\n", (ns==NS_LIVEDATA)?"*":"", items[i].start);
 						goto done;
