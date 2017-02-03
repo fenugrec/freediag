@@ -187,9 +187,9 @@ read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(ui
  * For memory reads, a successful read always copies the exact number of bytes
  * requested into the output buffer.
  *
- * For live data and non-volatile data reads, copies up to the number of bytes
- * requested. Returns the actual byte count received, which may be more or
- * less than the number of bytes requested.
+ * For live data, non-volatile data and freeze frame reads, copies up to the
+ * number of bytes requested. Returns the actual byte count received, which may
+ * be more or less than the number of bytes requested.
  */
 int
 diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out)
