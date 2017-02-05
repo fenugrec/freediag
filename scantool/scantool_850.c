@@ -851,15 +851,15 @@ read_family(int argc, char **argv, enum namespace ns)
 				addr = items[i].start;
 				len = (items[i].end - items[i].start) + 1;
 				while(len > 0) {
-					if(diag_l7_volvo_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf) == len) {
+					if(diag_l7_volvo_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf) == ((len<8)?len:8)) {
 						print_hexdump_line(stdout, addr, 4, buf, (len<8)?len:8);
 						interpret_block(NS_MEMORY, addr, (len<8)?len:8, buf);
 					} else {
-						printf("Error reading %s%04X\n", (ns==NS_LIVEDATA)?"*":"", items[i].start);
+						printf("Error reading %s%04X\n", (ns==NS_LIVEDATA)?"*":"", addr);
 						goto done;
 					}
-				len -= (len<8)?len:8;
-				addr += 8;
+					len -= (len<8)?len:8;
+					addr += 8;
 				}
 			}
 		}
