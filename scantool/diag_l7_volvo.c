@@ -70,9 +70,18 @@ enum {
  * Indicates whether a response was a positive acknowledgement of the request.
  */
 static bool
-success_p(uint8_t req[], uint8_t resp[])
+success_p(struct diag_msg *req, struct diag_msg *resp)
 {
-	return(resp[0] == (req[0] | 0x40));
+	if (resp->len < 1)
+		return false;
+
+	if (resp->data[0] != (req->data[0] ^ 0x40))
+		return false;
+
+	if (resp->len>2 && resp->data[1]!=req->data[1])
+		return false;
+
+	return true;
 }
 
 /*
@@ -93,7 +102,7 @@ diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn)
 	if (resp == NULL)
 		return errval;
 
-	if (resp->len>=1 && success_p(req, resp->data)) {
+	if (success_p(&msg, resp)) {
 		diag_freemsg(resp);
 		return 0;
 	} else {
@@ -227,7 +236,7 @@ diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 	if (resp == NULL)
 		return rv;
 
-	if (resp->len<2 || !success_p(req.data, resp->data) || resp->data[1]!=req.data[1]) {
+	if (resp->len<2 || !success_p(&req, resp)) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
@@ -268,7 +277,7 @@ diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
 	if (resp == NULL)
 		return errval;
 
-	if (resp->len<2 || !success_p(req, resp->data) || resp->data[1]!=1) {
+	if (resp->len<2 || !success_p(&msg, resp)) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
@@ -322,7 +331,7 @@ diag_l7_volvo_cleardtc(struct diag_l2_conn *d_l2_conn)
 	if (resp == NULL)
 		return rv;
 
-	if (resp->len==2 && success_p(req, resp->data) && resp->data[1]==1) {
+	if (resp->len==2 && success_p(&msg, resp)) {
 		diag_freemsg(resp);
 		return 1;
 	} else {
