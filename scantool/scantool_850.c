@@ -614,11 +614,11 @@ static void
 interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf)
 {
 	if (ns==NS_LIVEDATA && addr==0x0300) {
-		printf("Battery voltage: %.2f V (approximate)\n", (float)buf[0]/14);
+		/*ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref*/
+		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
 	} else if(ns==NS_LIVEDATA && addr==0x1000) {
-		printf("MAF sensor signal: %.2f V (approximate)\n", (float)buf[0]/44.25);
-	} else if(ns==NS_LIVEDATA && addr==0x1001) {
-		printf("Air flow rate: %.2f gm/s (?)\n", (float)buf[0]*16/36);
+		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
+		printf("MAF sensor signal: %.2f V\n", (float)buf[0]*9460/8250*5/256);
 	}
 }
 
