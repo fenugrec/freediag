@@ -1,61 +1,24 @@
+Current (as of 2017) recommended practices; merged from initial notes
+bye Peter Dufault circa v1.0.0.
 
-Notes on Version 1.0.0 from Peter Dufault (dufault@hda.com).
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-I plowed through this code when I was interested in OBD software for
-a laptop, and I also hacked it extensively in order to learn how it worked
-and to make it meet a few guidelines.  I may have screwed up, and so if
-I did, let me know and we'll clean things up.
-
-Here are some of the rules I was following:
+See the end for commit formatting.
 
 1. The code should adhere to the C language standards that avoid silly
 problems.  That means, everything needs to have prototypes, and
 shouldn't have redundant prototypes, etc.
 
-2. The code should adhere to POSIX defined OS interfaces when
-possible.  Everyone, that is, LINUX (the original platform), my own
-personal embedded interfaces, Solaris, HP-UX, AIX, FreeBSD, etc,
-etc, all promise to follow the POSIX interfaces, and so if we follow
-them closely and one of the system's  misbehaves at least we can
-grouch about them as we figure out a work around.
+2. On Linux/UNIX, try to follow POSIX as much as possible. If not,
+split functionality in OS-specific files (examples : diag_tty_* and diag_os_*)
+This is to reduce #ifdef indigestion.
 
-3. The code should be C++ friendly.  This is because I have found it
-convenient to temporarily redefine a struct to be class so that I
-can see who is poking around in it, and because overall I find C++ a
-much better place to work, even in embedded systems.
-
-4. The code should be appropriate for embedding in a microcontroller.
-I work on microcontrollers and this seems to be the kind of code
-that should run on one.  This means I've been really suspicious
-about uninitialized data and stack sizes.
-
-5. The code should be aesthetic, both in appearance and presentation.
-It should be well formatted physically, and polite to other viewpoints.
-I've probably broken this because I use four-space tabs and other
-people use eight-space tabs.  I hope I haven't violated the viewpoint
-rule.  Let me know.
-
-Peter
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-2014 update by fenugrec
-
-6- Peter's point 4 (appropriate for embedding) is interesting but not
-realistic at the moment; freediag has a lot of malloc's that are
-typically not very microcontroller friendly. 
-
-7- malloc, calloc, etc. : these should never be called directly; instead
+3. malloc, calloc, etc. : these should never be called directly; instead
 use the diag_*alloc wrappers defined in diag.h and diag_general.c
 
-8- everything OS-dependant must be kept inside diag_os_*
- and diag_tty_* files, to avoid #ifdef hell.
- 
-9- I think aiming for a silent ouptut when compiling with 
+4- Aiming for a silent ouptut when compiling with 
  "-Wall -Wextra -pedantic -std=gnu99" flags will help find many potential bugs.
   The code should be as C99-compliant as possible, as a guideline.
  
-10- regarding casts : many parts of the code casted function
+5- regarding casts : many parts of the code casted function
  pointers to object pointers implicitly such as 
   printf("callback %p", diag_function) which is not strictly correct.
  I know of no easy, portable method of printfing a function pointer.
@@ -67,14 +30,43 @@ use the diag_*alloc wrappers defined in diag.h and diag_general.c
  Also, on certain versions of windows, the printf() provided by msvcrt.dll is
  broken and *DOES NOT* support the %llu and %lld formatters !
   
-11- any function that can fail, should free() everything it successfully
+6- any function that can fail, MUST free() everything it successfully
  alloc'ed so far, *before* returning an error. Similarly, it should "undo"
  all previous succesful operations : if it open()ed something, it should
  close() before returning; etc.
  
-12- A return statement is not a function call : "return 0;" , not
+7- A return statement is not a function call : "return 0;" , not
  "return(0);"
 
-13- End-of-line char is LF (0x0A).
+8- End-of-line char is LF (0x0A).
 
-14- Linked-list handling : use the macros from "utlist.h"
+9- Linked-list handling : use the macros from "utlist.h"
+
+10- I like the tab character for indention, and prefer "1TBS" coding style.
+
+
+*******
+
+Submitting contributions
+
+to make my life easier, please 
+
+- work on a "feature branch" on your fork, not the master branch !!
+
+- Don't use "git merge", except "git merge --ff-only" if you really need to !
+
+- format commit messages along this popular pattern:
+	Line 1 is a short (<70char) summary of the commit. Must start with the applicable module, section or file name.
+	Examples : "L0_elm : fix ATWM request"  ; "cmd_set_interface : add custom setting handlers"; etc.
+
+	Line 2 is blank
+
+	Line 3+ : extra details, rationale, etc. (if required)
+
+- use "git rebase -i" to squash fixup commits, omissions, etc. 
+
+- before submitting, update your master branch, then "git rebase -i master" on your feature branch. Then submit PR as usual.
+
+- After your PR is merged, delete your feature branch ! If you want to continue work, just create a new branch. Branches are cheap.
+
+Thanks !
