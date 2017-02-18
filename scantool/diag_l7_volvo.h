@@ -28,6 +28,10 @@
  *
  */
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "diag.h"
 #include "diag_l2.h"
 
@@ -43,10 +47,6 @@ int diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn);
 int diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out);
 int diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out);
 int diag_l7_volvo_cleardtc(struct diag_l2_conn *d_l2_conn);
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 #if defined(__cplusplus)
 }
