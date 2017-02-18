@@ -205,7 +205,7 @@ diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval)
 	else
 		rxmsg = NULL;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "_request returns %p, err %d\n",
 				FL, (void *)rxmsg, *errval);
 	}
