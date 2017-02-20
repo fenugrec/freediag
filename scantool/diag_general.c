@@ -180,7 +180,7 @@ diag_dupsinglemsg(struct diag_msg *msg)
 		return diag_pseterr(DIAG_ERR_NOMEM);
 
 	newmsg->fmt = msg->fmt;
-//	newmsg->type = msg->type;
+	newmsg->type = msg->type;
 	newmsg->dest = msg->dest;
 	newmsg->src = msg->src;
 	newmsg->rxtime = msg->rxtime;
