@@ -22,6 +22,8 @@
 # "swt1" = replaced by a sawtooth(t) signal, period = 1 second;
 # "sin1" = replaced by sin(t) signal, period = 1 second;
 # "cks1" = replaced by the ISO9141 checksum of all previous bytes.
+# "req1", "req2", etc = replaced by the first, second, etc byte of the request.
+# "req1+", "req2+", etc = replaced by request byte plus 1.
 # For the RQ lines, it's not necessary to put the checksum byte at the end.
 # Or, more generally, only the shortest of either the request or the RQ line
 # must match. In other words, the line

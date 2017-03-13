@@ -96,6 +96,7 @@ struct sim_device
 
 	struct cfgi simfile;
 
+	uint8_t sim_last_ecu_request[255];	// Copy of most recent request.
 	struct sim_ecu_response* sim_last_ecu_responses;	// For keeping all the responses to the last request.
 };
 
@@ -359,13 +360,47 @@ uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
 	return (uint8_t) (0xFF * (now % 1000));
 }
 
+// Returns a value copied from the specified position in the request.
+uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[])
+{
+	int index;
+	bool increment = 0;
+	bool bogus = 0;
+	uint8_t value;
+	char *p;
+
+	index = (uint8_t)strtoul(s, &p, 10);
+	if (*s == '\0') {
+		bogus = 1;
+	} else if (p[0]=='+' && p[1]=='\0') {
+		increment = 1;
+	} else if (*p != '\0') {
+		bogus = 1;
+	}
+
+	index--;
+	if (index<0 || index>254)
+		bogus = 1;
+
+	if (bogus) {
+		fprintf(stderr, FLFMT "Invalid req* token in response\n", FL);
+		return 0;
+	}
+
+	value = req[index];
+	if (increment)
+		value++;
+	return value;
+}
+
 // Parses a response's text to data.
 // Replaces special tokens with function results. This mangles resp_p->text, which shouldn't be a problem
-void sim_parse_response(struct sim_ecu_response* resp_p)
+void sim_parse_response(struct sim_ecu_response* resp_p, uint8_t req[])
 {
 #define TOKEN_SINE1	 "sin1"
 #define TOKEN_SAWTOOTH1 "swt1"
 #define TOKEN_ISO9141CS "cks1"
+#define TOKEN_REQUESTBYTE "req"
 #define SRESP_SIZE 255
 
 	uint8_t synth_resp[SRESP_SIZE];	// 255 response bytes.
@@ -387,6 +422,8 @@ void sim_parse_response(struct sim_ecu_response* resp_p)
 			synth_resp[pos] = sawtooth1(synth_resp, pos);
 		else if (strcmp(cur_tok, TOKEN_ISO9141CS) == 0)
 			synth_resp[pos] = diag_cks1(synth_resp, pos);
+		else if (strncmp(cur_tok, TOKEN_REQUESTBYTE, strlen(TOKEN_REQUESTBYTE)) == 0)
+			synth_resp[pos] = requestbyten(synth_resp, cur_tok + strlen(TOKEN_REQUESTBYTE), req);
 		else {
 			// failed. try scanning element as an Hex byte.
 			unsigned int tempbyte;
@@ -679,6 +716,8 @@ sim_send(struct diag_l0_device *dl0d,
 		}
 	}
 
+	// Store a copy of this request for use by req* function tokens.
+	memcpy(dev->sim_last_ecu_request, data, len);
 
 	// Build the list of responses for this request.
 	sim_find_responses(&dev->sim_last_ecu_responses, dev->fp, data, (uint8_t) len);
@@ -713,7 +752,7 @@ sim_recv(struct diag_l0_device *dl0d,
 	resp_p = dev->sim_last_ecu_responses;
 	if (resp_p != NULL) {
 		// Parse the response (replace simulated values if needed).
-		sim_parse_response(resp_p);
+		sim_parse_response(resp_p, dev->sim_last_ecu_request);
 		// Copy to client.
 		xferd = MIN(resp_p->len, len);
 		memcpy(data, resp_p->data, xferd);
