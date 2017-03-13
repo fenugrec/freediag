@@ -42,6 +42,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h> // str**()
+#include <ctype.h>
 #include <stdbool.h>
 #include <math.h> // sin()
 
@@ -239,6 +240,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 {
 #define TAG_REQUEST "RQ"
 #define TAG_RESPONSE "RP"
+#define VALUE_DONTCARE "XXXX"
 #define REQBYTES	11	//number of request bytes analyzed
 
 	uint8_t resp_count = 0;
@@ -270,17 +272,28 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 		if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) != 0)
 			continue;
 		// synthesize up to 11 byte values from DB request line.
-		unsigned int reqvals[REQBYTES];
-		memset(reqvals, 0, REQBYTES);
-		unsigned int num = (unsigned int) sscanf(line_buf+3, "%X %X %X %X %X %X %X %X %X %X %X",
-			 &reqvals[0], &reqvals[1], &reqvals[2], &reqvals[3],
-			 &reqvals[4], &reqvals[5], &reqvals[6], &reqvals[7],
-			 &reqvals[8], &reqvals[9], &reqvals[10]);
-		//re-cast to uint8...
-		int i;
+		unsigned int i, num;
+		char *p, *q;
+		p = line_buf + 3;
 		for (i=0; i < REQBYTES; i++) {
-			synth_req[i]=(uint8_t) reqvals[i];
+			while (isspace(*p))
+				p++;
+			if (*p == '\0')
+				break;
+			if (strncmp(p, VALUE_DONTCARE, strlen(VALUE_DONTCARE)) == 0) {
+				if (i < len)
+					synth_req[i] = data[i];
+				p += strlen(VALUE_DONTCARE);
+			} else {
+				synth_req[i] = (uint8_t)strtoul(p, &q, 16);
+				if (p == q)
+					break;
+				p = q;
+				if (!isspace(*p))
+					break;
+			}
 		}
+		num = i;
 		// compare given request with synthesized DB file request.
 		if (memcmp(data, synth_req, MIN(len, num)) == 0) {
 			// got a match, now cycle the following lines for responses.

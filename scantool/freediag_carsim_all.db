@@ -14,9 +14,11 @@
 # All other lines must be commented out with "# ".
 # Both Request and Response lines are composed of 4-character-long
 # elements, separated by one space character ("R* **** **** ...").
-# In the Requests, these elements can only be hexadecimal values
-# from "0x00" to "0xFF"; in the Responses, they can be hex values
-# or a function token. Available tokens are:
+# In the Requests, these elements are hexadecimal values from
+# "0x00" to "0xFF" to match against. The special value "XXXX" is a
+# don't-care that will match a single byte regardless of its value.
+# In the Responses, elements can be hex values or a function token.
+# Available tokens are:
 # "swt1" = replaced by a sawtooth(t) signal, period = 1 second;
 # "sin1" = replaced by sin(t) signal, period = 1 second;
 # "cks1" = replaced by the ISO9141 checksum of all previous bytes.
