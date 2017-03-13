@@ -44,7 +44,7 @@ extern "C" {
 #define KWP1281_T_R1_MIN    80  //between Init Byte and Synchronization Byte (ECU -> Scan Tool)
 #define KWP1281_T_R1_MAX   210
 #define KWP1281_T_R2_MIN     5  //time between Sync Byte and KW1 Byte (ECU -> Scan Tool)
-#define KWP1281_T_R2_MAX    20
+#define KWP1281_T_R2_MAX    50	// (KWP1281_T_R2_MAX is relaxed from standard)
 #define KWP1281_T_R3_MIN     1  //time between KW1 and KW2 Byte (ECU -> Scan Tool)
 #define KWP1281_T_R3_MAX    20
 #define KWP1281_T_R4_MIN    25  //time between KW2 Byte and KW2 Complement (Scan Tool -> ECU)
