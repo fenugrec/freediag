@@ -41,8 +41,10 @@
 #include "diag_l2.h"
 #include "diag_err.h"
 #include "diag_os.h"
+#include "utlist.h"
 
 #include "diag_l7_volvo.h"
+#include "diag_l7_kwp71.h"
 #include "scantool.h"
 #include "scantool_cli.h"
 
@@ -57,14 +59,17 @@ static struct ecu_info ecu_list[] = {
 	{0x01, "abs", "antilock brakes", "ABS"},
 #if 0
 	/*
-	 * Address 0x10 communicates by KWP71 protocol, so we currently
-	 * can't talk to it.
+	 * Don't have an M4.3 ECU to test. Will probably need separate DTC and
+	 * live data tables for M4.3.
 	 */
-	{0x10, "m43", "Motronic M4.3 engine management (DLC pin 3)", "EFI"}, /* 12700bps */
-	{0x10, "m44old", "Motronic M4.4 engine management (old protocol)", "EFI"}, /* 9600bps */
+	{0x10, "m43", "Motronic M4.3 engine management (DLC pin 3)", "EFI"}, /* 12700bps, KWP71 */
 #endif
+	{0x10, "m44old", "Motronic M4.4 engine management (old protocol)", "EFI"},
 	{0x11, "msa", "MSA 15.7 engine management (diesel vehicles)" ,"EFI"},
-	/* 0x13 - Volvo Scan Tool */
+	/* 0x13 - Volvo Scan Tool tester address */
+#if 0
+	{0x15, "m18", "Motronic M1.8 engine management (960)", "EFI"}, /* 4800bps, KWP71 */
+#endif
 	{0x18, "add", "912-D fuel-driven heater (cold climate option)", "HEA"},
 	{0x29, "ecc", "electronic climate control", "ECC"},
 	{0x2d, "vgla", "alarm", "GLA"},
@@ -88,11 +93,13 @@ struct dtc_table_entry {
 
 static struct dtc_table_entry dtc_table[] = {
 	{0x6e, 0x13, 332, "Torque converter lock-up solenoid open circuit"},
+	{0x10, 0x54, 445, "Pulsed secondary air injection system pump signal"},
 	{0x7a, 0x54, 445, "Pulsed secondary air injection system pump signal"},
 	{0, 0, 0, NULL}
 };
 
 static bool have_read_dtcs = false;
+static struct diag_msg *ecu_id = NULL;
 
 static int cmd_850_help(int argc, char **argv);
 static int cmd_850_connect(int argc, char **argv);
@@ -103,6 +110,7 @@ static int cmd_850_peek(int argc, char **argv);
 static int cmd_850_dumpram(int argc, char **argv);
 static int cmd_850_read(int argc, char **argv);
 static int cmd_850_readnv(int argc, char **argv);
+static int cmd_850_adc(int argc, char **argv);
 static int cmd_850_id(int argc, UNUSED(char **argv));
 static int cmd_850_dtc(int argc, UNUSED(char **argv));
 static int cmd_850_cleardtc(int argc, UNUSED(char **argv));
@@ -132,6 +140,8 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		cmd_850_dumpram, 0, NULL},
 	{ "read", "read <id1>|*<addr1> [id2 ...] [live]", "Display live data, once or continuously",
 		cmd_850_read, 0, NULL},
+	{ "adc", "adc id1 [id2 ...]", "Display ADC readings, once or continuously",
+		cmd_850_adc, 0, NULL},
 	{ "readnv", "readnv id1 [id2 ...]", "Display non-volatile data",
 		cmd_850_readnv, 0, NULL},
 	{ "id", "id", "Display ECU identification",
@@ -369,17 +379,26 @@ print_ecu_list(void)
 	}
 }
 
+enum connection_status {
+	NOT_CONNECTED,		/* Not connected */
+	CONNECTED_KWP6227,	/* Connected with D2 over K-line */
+	CONNECTED_KWP71,	/* Connected with KWP71 */
+	CONNECTED_EITHER,	/* Connected with either D2 or KWP71 */
+	CONNECTED_OTHER		/* Connected with non-Volvo protocol */
+};
+
 /*
  * Indicates whether we're currently connected.
  */
-static enum {
-	NOT_CONNECTED, CONNECTED_KWP6227, CONNECTED_OTHER
-} connection_status(void)
+static enum connection_status
+get_connection_status(void)
 {
 	if (global_state < STATE_CONNECTED) {
 		return NOT_CONNECTED;
 	} else if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_KWP6227) {
 		return CONNECTED_KWP6227;
+	} else if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_VAG) {
+		return CONNECTED_KWP71;
 	} else {
 		return CONNECTED_OTHER;
 	}
@@ -412,10 +431,14 @@ valid_arg_count(int min, int argc, int max)
 static bool
 valid_connection_status(unsigned int want)
 {
-	if (connection_status() == want)
+	if (want == CONNECTED_EITHER) {
+		if (get_connection_status()==CONNECTED_KWP6227 || get_connection_status()==CONNECTED_KWP71)
+			return true;
+	} else if (get_connection_status() == want) {
 		return true;
+	}
 
-	switch(connection_status()) {
+	switch(get_connection_status()) {
 	case NOT_CONNECTED:
 		printf("Not connected.\n");
 		return false;
@@ -427,7 +450,12 @@ valid_connection_status(unsigned int want)
 		}
 		return false;
 	case CONNECTED_KWP6227:
-		printf("Already connected to %s. Please disconnect first.\n", current_ecu_desc());
+	case CONNECTED_KWP71:
+		if(want == NOT_CONNECTED) {
+			printf("Already connected to %s. Please disconnect first.\n", current_ecu_desc());
+		} else {
+			printf("This function is not available with this protocol.\n");
+		}
 		return false;
 	default:
 		printf("Unexpected connection state!\n");
@@ -451,6 +479,16 @@ adaptive_timing_workaround(void)
 }
 
 /*
+ * Callback to store the ID block upon establishing a KWP71 connection
+ */
+static void
+ecu_id_callback(void *handle, struct diag_msg *in)
+{
+	struct diag_msg **out = (struct diag_msg **)handle;
+	*out = diag_dupmsg(in);
+}
+
+/*
  * Connect to an ECU by name or address.
  */
 static int
@@ -459,6 +497,7 @@ cmd_850_connect(int argc, char **argv)
 	int addr;
 	int rv;
 	struct diag_l0_device *dl0d;
+	struct diag_l2_data l2data;
 
 	if (!valid_arg_count(2, argc, 2))
                 return CMD_USAGE;
@@ -479,18 +518,26 @@ cmd_850_connect(int argc, char **argv)
 		return CMD_OK;
 	}
 
-	global_cfg.speed = 10400;
-	global_cfg.src = 0x13;
-	global_cfg.tgt = addr;
-	global_cfg.L1proto = DIAG_L1_ISO9141;
-	global_cfg.L2proto = DIAG_L2_PROT_KWP6227;
-	global_cfg.initmode = DIAG_L2_TYPE_SLOWINIT;
-
 	dl0d = global_dl0d;
 
 	if (dl0d == NULL) {
 		printf("No global L0. Please select + configure L0 first\n");
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+
+	if (addr == 0x10) {
+		global_cfg.speed = 9600;
+		global_cfg.tgt = addr;
+		global_cfg.L1proto = DIAG_L1_ISO9141;
+		global_cfg.L2proto = DIAG_L2_PROT_VAG;
+		global_cfg.initmode = DIAG_L2_TYPE_SLOWINIT;
+	} else {
+		global_cfg.speed = 10400;
+		global_cfg.src = 0x13;
+		global_cfg.tgt = addr;
+		global_cfg.L1proto = DIAG_L1_ISO9141;
+		global_cfg.L2proto = DIAG_L2_PROT_KWP6227;
+		global_cfg.initmode = DIAG_L2_TYPE_SLOWINIT;
 	}
 
 	rv = diag_init();
@@ -515,11 +562,39 @@ cmd_850_connect(int argc, char **argv)
 		return diag_iseterr(rv);
 	}
 
+	if (global_cfg.L2proto == DIAG_L2_PROT_VAG) {
+		(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_GET_L2_DATA, (void *)&l2data);
+		if(l2data.kb1!=0xab || l2data.kb2!=0x02) {
+			fprintf(stderr, FLFMT "_connect : wrong keybytes %02X%02X, expecting AB02\n", FL, l2data.kb1, l2data.kb2);
+			diag_l2_StopCommunications(global_l2_conn);
+			diag_l2_close(dl0d);
+			global_l2_conn = NULL;
+			global_state = STATE_IDLE;
+			return diag_iseterr(DIAG_ERR_WRONGKB);
+		}
+	}
+
 	global_state = STATE_CONNECTED;
 	printf("Connected to %s.\n", ecu_desc_by_addr(addr));
 	have_read_dtcs = false;
 
-	adaptive_timing_workaround();
+	if (get_connection_status() == CONNECTED_KWP6227) {
+		adaptive_timing_workaround();
+	} else {
+		printf("Warning: KWP71 communication is not entirely reliable yet.\n");
+		/*
+		 * M4.4 doesn't accept ReadECUIdentification request, so save
+		 * the identification block it sends at initial connection.
+		 */
+		if (ecu_id != NULL)
+			diag_freemsg(ecu_id);
+		ecu_id = NULL;
+		rv = diag_l2_recv(global_l2_conn, 300, ecu_id_callback, &ecu_id);
+		if (rv < 0)
+			return diag_iseterr(rv);
+		if (ecu_id == NULL)
+			return diag_iseterr(DIAG_ERR_NOMEM);
+	}
 
 	return CMD_OK;
 }
@@ -535,7 +610,7 @@ cmd_850_disconnect(int argc, UNUSED(char **argv))
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	desc = current_ecu_desc();
@@ -565,7 +640,7 @@ cmd_850_sendreq(int argc, char **argv)
 	if (!valid_arg_count(2, argc, sizeof(data)+1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	len = argc - 1;
@@ -591,13 +666,21 @@ cmd_850_sendreq(int argc, char **argv)
 static int
 cmd_850_ping(int argc, UNUSED(char **argv))
 {
+	int rv;
+
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
-	if (diag_l7_volvo_ping(global_l2_conn) == 0) {
+	if (get_connection_status() == CONNECTED_KWP6227) {
+		rv = diag_l7_volvo_ping(global_l2_conn);
+	} else {
+		rv = diag_l7_kwp71_ping(global_l2_conn);
+	}
+
+	if (rv == 0) {
 		printf("Pong!\n");
 	} else {
 		printf("Ping failed.\n");
@@ -615,6 +698,8 @@ interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf)
 {
 	if (ns==NS_LIVEDATA && addr==0x0300) {
 		/*ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref*/
+		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
+	} else if(ns==NS_MEMORY && addr==0x36 && global_l2_conn->diag_l2_destaddr==0x10) {
 		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
 	} else if(ns==NS_LIVEDATA && addr==0x1000) {
 		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
@@ -717,6 +802,23 @@ parse_read_arg(char *arg, struct read_or_peek_item *item)
 }
 
 /*
+ * Parse an identifier argument on an adc command line.
+ */
+static int
+parse_adc_arg(char *arg, struct read_or_peek_item *item)
+{
+	char *p;
+
+	item->ns = NS_ADC;
+	item->start = strtoul(arg, &p, 0);
+	if (*p != '\0' || item->start > 0xff) {
+		printf("Invalid identifier '%s'\n", arg);
+		return 1;
+	}
+	return 0;
+}
+
+/*
  * Parse an identifier argument on a readnv command line.
  */
 static int
@@ -785,7 +887,7 @@ read_family(int argc, char **argv, enum namespace ns)
 	if (!valid_arg_count(2, argc, 999))
                 return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	continuous = false;
@@ -811,6 +913,10 @@ read_family(int argc, char **argv, enum namespace ns)
 			if (parse_read_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
 			break;
+		case NS_ADC:
+			if (parse_adc_arg(argv[i+1], &(items[i])) != 0)
+				goto done;
+			break;
 		case NS_NV:
 			if (parse_readnv_arg(argv[i+1], &(items[i])) != 0)
 				goto done;
@@ -830,7 +936,11 @@ read_family(int argc, char **argv, enum namespace ns)
 		for (i=0; i<count; i++) {
 			if(items[i].ns != NS_MEMORY) {
 				addr = items[i].start;
-				gotbytes = diag_l7_volvo_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
+				if (get_connection_status() == CONNECTED_KWP6227) {
+					gotbytes = diag_l7_volvo_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
+				} else {
+					gotbytes = diag_l7_kwp71_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
+				}
 				if (gotbytes < 0) {
 					printf("Error reading %02X\n", addr);
 					goto done;
@@ -851,7 +961,12 @@ read_family(int argc, char **argv, enum namespace ns)
 				addr = items[i].start;
 				len = (items[i].end - items[i].start) + 1;
 				while(len > 0) {
-					if(diag_l7_volvo_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf) == ((len<8)?len:8)) {
+					if (get_connection_status() == CONNECTED_KWP6227) {
+						gotbytes = diag_l7_volvo_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
+					} else {
+						gotbytes = diag_l7_kwp71_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
+					}
+					if(gotbytes == ((len<8)?len:8)) {
 						print_hexdump_line(stdout, addr, 4, buf, (len<8)?len:8);
 						interpret_block(NS_MEMORY, addr, (len<8)?len:8, buf);
 					} else {
@@ -903,8 +1018,29 @@ cmd_850_peek(int argc, char **argv)
 static int
 cmd_850_read(int argc, char **argv)
 {
+	if(!valid_connection_status(CONNECTED_KWP6227))
+		return CMD_OK;
+
 	return read_family(argc, argv, NS_LIVEDATA);
 }
+
+/*
+ * Read and display one or more ADC readings.
+ *
+ * Takes a list of one-byte channel identifiers.
+ *
+ * The word "live" can be added at the end to continuously read and display
+ * the requested readings until interrupted.
+ */
+static int
+cmd_850_adc(int argc, char **argv)
+{
+	if(!valid_connection_status(CONNECTED_KWP71))
+		return CMD_OK;
+
+	return read_family(argc, argv, NS_ADC);
+}
+
 
 /*
  * Read and display one or more non-volatile parameters.
@@ -914,6 +1050,9 @@ cmd_850_read(int argc, char **argv)
 static int
 cmd_850_readnv(int argc, char **argv)
 {
+	if(!valid_connection_status(CONNECTED_KWP6227))
+		return CMD_OK;
+
 	return read_family(argc, argv, NS_NV);
 }
 
@@ -977,6 +1116,9 @@ cmd_850_freeze_all(void)
 static int
 cmd_850_freeze(int argc, char **argv)
 {
+	if(!valid_connection_status(CONNECTED_KWP6227))
+		return CMD_OK;
+
 	if(argc==2 && strcasecmp(argv[1], "all")==0) {
 		return cmd_850_freeze_all();
 	} else {
@@ -985,19 +1127,13 @@ cmd_850_freeze(int argc, char **argv)
 }
 
 /*
- * Display ECU identification.
+ * Query the ECU for identification and print the result.
  */
 static int
-cmd_850_id(int argc, UNUSED(char **argv))
+cmd_850_id_kwp6227(void)
 {
 	uint8_t buf[15];
 	int rv;
-
-	if (!valid_arg_count(1, argc, 1))
-		return CMD_USAGE;
-
-	if(!valid_connection_status(CONNECTED_KWP6227))
-		return CMD_OK;
 
 	rv = diag_l7_volvo_read(global_l2_conn, NS_NV, 0xf0, sizeof(buf), buf);
 	if (rv < 0) {
@@ -1022,6 +1158,85 @@ cmd_850_id(int argc, UNUSED(char **argv))
 	printf("Software ID:  %02X%02X%02X%02X revision %.3s\n", buf[8], buf[9], buf[10], buf[11], buf+12);
 
 	return CMD_OK;
+}
+
+/*
+ * Print the ECU identification we received upon initial connection.
+ */
+static int
+cmd_850_id_kwp71(void)
+{
+	int i;
+	struct diag_msg *msg;
+
+	if (ecu_id == NULL) {
+		printf("No stored ECU identification!\n");
+		return CMD_OK;
+	}
+
+	msg = ecu_id;
+
+	if (msg->len != 10) {
+		printf("Identification block was %d bytes, expected %d\n", msg->len, 10);
+		return CMD_OK;
+	}
+
+	for (i=0; i<10; i++) {
+		if (!isdigit(msg->data[i])) {
+			printf("Unexpected characters in identification block\n");
+			return CMD_OK;
+		}
+	}
+
+	printf("Order number: %c %.3s %.3s %.3s\n",msg->data[0], msg->data+1, msg->data+4, msg->data+7);
+
+	msg = msg->next;
+	if (msg == NULL)
+		return CMD_OK;
+	/* Second block seems to be meaningless, don't print it. */
+#if 0
+	print_hexdump_line(stdout, msg->type, 2, msg->data, msg->len);
+#endif
+	msg = msg->next;
+	if (msg == NULL)
+		return CMD_OK;
+
+	if (msg->len != 10) {
+		printf("Identification block was %d bytes, expected %d\n", msg->len, 10);
+		return CMD_OK;
+	}
+
+	for (i=0; i<7; i++) {
+		if (!isdigit(msg->data[i])) {
+			printf("Unexpected characters in identification block\n");
+			return CMD_OK;
+		}
+	}
+	printf("Hardware ID: P0%.7s\n", msg->data);
+
+	/* There's a fourth block but it seems to be meaningless. */
+
+	return CMD_OK;
+}
+
+/*
+ * Display ECU identification.
+ */
+static int
+cmd_850_id(int argc, UNUSED(char **argv))
+{
+	if (!valid_arg_count(1, argc, 1))
+		return CMD_USAGE;
+
+	if (!valid_connection_status(CONNECTED_EITHER))
+		return CMD_OK;
+
+	if (get_connection_status() == CONNECTED_KWP6227) {
+		return cmd_850_id_kwp6227();
+	} else {
+		return cmd_850_id_kwp71();
+	}
+
 }
 
 /*
@@ -1111,15 +1326,23 @@ cmd_850_dtc(int argc, UNUSED(char **argv))
 	uint8_t buf[12];
 	int rv;
 	int i;
+	int span;
 	char *code, *desc;
 
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
-	rv = diag_l7_volvo_dtclist(global_l2_conn, sizeof(buf), buf);
+	if (get_connection_status() == CONNECTED_KWP6227) {
+		rv = diag_l7_volvo_dtclist(global_l2_conn, sizeof(buf), buf);
+		span = 1;
+	} else {
+		rv = diag_l7_kwp71_dtclist(global_l2_conn, sizeof(buf), buf);
+		span = 5;
+	}
+
 	if (rv < 0) {
 		printf("Couldn't retrieve DTCs.\n");
 		return CMD_OK;
@@ -1132,7 +1355,7 @@ cmd_850_dtc(int argc, UNUSED(char **argv))
 	}
 
 	printf("Stored DTCs:\n");
-	for (i=0; i<rv; i++) {
+	for (i=0; i<rv; i+=span) {
 		code = dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, buf[i], &desc);
 		printf("%s (%02X) %s\n", code, buf[i], desc);
 	}
@@ -1152,7 +1375,7 @@ cmd_850_cleardtc(int argc, UNUSED(char **argv))
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	input = basic_get_input("Are you sure you wish to clear the Diagnostic Trouble Codes (y/n) ? ", stdin);
@@ -1175,7 +1398,12 @@ cmd_850_cleardtc(int argc, UNUSED(char **argv))
 		}
 	}
 
-	rv = diag_l7_volvo_cleardtc(global_l2_conn);
+	if (get_connection_status() == CONNECTED_KWP6227) {
+		rv = diag_l7_volvo_cleardtc(global_l2_conn);
+	} else {
+		rv = diag_l7_kwp71_cleardtc(global_l2_conn);
+	}
+
 	if (rv == 0) {
 		printf("No DTCs to clear!\n");
 	} else if (rv == 1) {
@@ -1216,7 +1444,9 @@ cmd_850_scan_all(int argc, UNUSED(char **argv))
 	argvout[1] = buf;
 	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
 		sprintf(buf, "%d", ecu->addr);
-		if (cmd_850_connect(2, argvout) == CMD_OK) {
+		if (ecu->addr == 0x10) {
+			/* Skip Motronic M4.4 old protocol */
+		} else if (cmd_850_connect(2, argvout) == CMD_OK) {
 			cmd_850_id(1, NULL);
 			cmd_850_dtc(1, NULL);
 			cmd_850_disconnect(1, NULL);

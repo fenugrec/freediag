@@ -1,10 +1,8 @@
-#ifndef _DIAG_L7_VOLVO_H_
-#define _DIAG_L7_VOLVO_H_
+#ifndef _DIAG_L7_H_
+#define _DIAG_L7_H_
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
- *
- * Copyright (C) 2017 Adam Goldman
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +22,7 @@
  *
  * Diag
  *
- * Volvo protocol application layer
+ * Application layer
  *
  */
 
@@ -32,16 +30,17 @@
 extern "C" {
 #endif
 
-#include "diag.h"
-#include "diag_l2.h"
-#include "diag_l7.h"
-
-int diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn);
-int diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out);
-int diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out);
-int diag_l7_volvo_cleardtc(struct diag_l2_conn *d_l2_conn);
+enum namespace {
+	NS_MEMORY,
+	NS_ROM,
+	NS_ADC,
+	NS_LIVEDATA,
+	NS_LIVEDATA2,
+	NS_NV,
+	NS_FREEZE
+};
 
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _DIAG_L7_VOLVO_H_ */
+#endif /* _DIAG_L7_H_ */
