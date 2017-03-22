@@ -48,7 +48,7 @@ int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_mil
 +* in the signal handlers.  Their behavior is undefined if they happen
 +* to occur during any other non-async-signal-safe function.
  */
-HANDLE hDiagTimer;
+HANDLE hDiagTimer = INVALID_HANDLE_VALUE;
 
 CRITICAL_SECTION periodic_lock;
 
@@ -92,6 +92,7 @@ diag_os_init(void)
 			(WAITORTIMERCALLBACK) timercallback, NULL, tmo, tmo,
 			WT_EXECUTEDEFAULT)) {
 		fprintf(stderr, FLFMT "CTQT error.\n", FL);
+		hDiagTimer = INVALID_HANDLE_VALUE;
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -133,28 +134,31 @@ int diag_os_close() {
 	DWORD err;
 
 	diag_os_init_done=0;	//diag_os_init will have to be done again past this point.
-	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
-		//success
-		goto goodexit;
+
+	if (hDiagTimer != INVALID_HANDLE_VALUE) {
+		if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
+			//success
+			goto goodexit;
+		}
+		//From MSDN : if error_io_pending, not necessary to call again.
+		err=GetLastError();
+		if (err==ERROR_IO_PENDING) {
+			//This is OK and the queue will be deleted automagically.
+			//No need to pester the user about this
+			goto goodexit;
+		}
+		//Otherwise, try again
+		fprintf(stderr, FLFMT "Could not DTQT. Retrying...", FL);
+		Sleep(500);	//should be more than enough for IO to complete...
+		if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
+			fprintf(stderr, "OK !\n");
+			goto goodexit;
+		}
+		fprintf(stderr, "Failed. Please report this.\n");
 	}
-	//From MSDN : if error_io_pending, not necessary to call again.
-	err=GetLastError();
-	if (err==ERROR_IO_PENDING) {
-		//This is OK and the queue will be deleted automagically.
-		//No need to pester the user about this
-		goto goodexit;
-	}
-	//Otherwise, try again
-	fprintf(stderr, FLFMT "Could not DTQT. Retrying...", FL);
-	Sleep(500);	//should be more than enough for IO to complete...
-	if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
-		fprintf(stderr, "OK !\n");
-		goto goodexit;
-	}
-	fprintf(stderr, "Failed. Please report this.\n");
-	return DIAG_ERR_GENERAL;
 
 goodexit:
+	hDiagTimer = INVALID_HANDLE_VALUE;
 	DeleteCriticalSection(&periodic_lock);
 	return 0;
 } 	//diag_os_close
