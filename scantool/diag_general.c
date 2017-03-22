@@ -133,7 +133,7 @@ diag_allocmsg(size_t datalen)
 struct diag_msg *
 diag_dupmsg(struct diag_msg *msg)
 {
-	struct diag_msg *newmsg, *tmsg, *cmsg;
+	struct diag_msg *newchain, *chain_last, *tmsg;
 
 	assert(msg != NULL);
 	/*
@@ -142,25 +142,27 @@ diag_dupmsg(struct diag_msg *msg)
 	 * was created, and not about the message we are duplicating
 	 */
 
-	/* newmsg : point to new chain */
-	newmsg = diag_dupsinglemsg(msg);
-	if (newmsg == NULL)
+	/* newchain : point to new chain */
+	newchain = diag_dupsinglemsg(msg);
+	if (newchain == NULL)
 		return diag_pseterr(DIAG_ERR_NOMEM);
 
-	cmsg = newmsg;
+	chain_last = newchain;
 
 	LL_FOREACH(msg->next, msg) {
 		tmsg = diag_dupsinglemsg(msg);	//copy
 		if (tmsg == NULL) {
-			diag_freemsg(newmsg);	//undo what we have so far
+			diag_freemsg(newchain);	//undo what we have so far
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
 
-		/* cmsg before tmsg == add tmsg at the end */
-		LL_PREPEND(tmsg, cmsg);
+		//append to end of chain.
+		//Not using LL_APPEND out of principle, to avoid walking the whole list every time !
+		chain_last->next = tmsg;
+		chain_last = tmsg;
 	}
 
-	return newmsg;
+	return newchain;
 }
 
 /* Duplicate a single message, don't follow the chain */
