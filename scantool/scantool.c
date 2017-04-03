@@ -641,6 +641,11 @@ l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle)
 	msg.len = len;
 	msg.data = (uint8_t *)data;
 
+	/*
+	 * Special case for l2_vag: it requires the command opcode (Block Title)
+	 * to be placed in msg.type. The other L2s consider the opcode (Service
+	 * ID, etc) to be part of the data.
+	 */
 	if (d_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_VAG) {
 		if (len < 1)
 			return DIAG_ERR_GENERAL;

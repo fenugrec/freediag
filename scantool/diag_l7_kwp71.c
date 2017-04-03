@@ -27,6 +27,9 @@
  * KWP71 is used by Bosch ECUs in various European cars from the 1990s.
  * KWP1281 is an extended(?) version of KWP71 with faster timing.
  *
+ * KWP71 and KWP1281 are similar enough that this L7 can be used with
+ * freediag's VAG (KWP1281) L2 with at least some KWP71 capable ECUs.
+ *
  */
 
 #include <stdint.h>
