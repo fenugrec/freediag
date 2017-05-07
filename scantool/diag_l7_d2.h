@@ -1,5 +1,5 @@
-#ifndef _DIAG_L7_VOLVO_H_
-#define _DIAG_L7_VOLVO_H_
+#ifndef _DIAG_L7_D2_H_
+#define _DIAG_L7_D2_H_
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
@@ -36,12 +36,12 @@ extern "C" {
 #include "diag_l2.h"
 #include "diag_l7.h"
 
-int diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn);
-int diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out);
-int diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out);
-int diag_l7_volvo_cleardtc(struct diag_l2_conn *d_l2_conn);
+int diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn);
+int diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out);
+int diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out);
+int diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn);
 
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _DIAG_L7_VOLVO_H_ */
+#endif /* _DIAG_L7_D2_H_ */

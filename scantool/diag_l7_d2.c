@@ -22,15 +22,15 @@
  *
  * Diag
  *
- * Volvo protocol application layer
+ * Volvo D2 protocol application layer
  *
  * This protocol is used by the engine and chassis ECUs for extended
  * diagnostics on the 1996-1998 Volvo 850, S40, C70, S70, V70, XC70, V90 and
- * possibly other models. On the aforementioned models, it is used over
- * KWP6227 (keyword D3 B0) transport. It seems that the same protocol is also
- * used over CAN bus on more recent models.
+ * possibly other models. On the aforementioned models, it is used over the
+ * K-line (diag_l2_d2). It seems that the same protocol is also used over
+ * CAN bus on more recent models.
  *
- * Information on this command set is available at:
+ * Information on this protocol is available at:
  *   http://jonesrh.info/volvo850/volvo_850_obdii_faq.rtf
  * Thanks to Richard H. Jones for sharing this information.
  *
@@ -46,7 +46,7 @@
 #include "diag_err.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
-#include "diag_l7_volvo.h"
+#include "diag_l7_d2.h"
 
 /*
  * Service Identifier hex values are in the manufacturer defined range.
@@ -88,7 +88,7 @@ success_p(struct diag_msg *req, struct diag_msg *resp)
  * Verify communication with the ECU.
  */
 int
-diag_l7_volvo_ping(struct diag_l2_conn *d_l2_conn)
+diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn)
 {
 	uint8_t req[] = { testerPresent };
 	int errval = 0;
@@ -201,7 +201,7 @@ read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(ui
  * be more or less than the number of bytes requested.
  */
 int
-diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out)
+diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out)
 {
 	struct diag_msg req = {0};
 	struct diag_msg *resp = NULL;
@@ -225,7 +225,7 @@ diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 		rv = read_FREEZE_req(&req.data, &req.len, addr, buflen);
 		break;
 	default:
-		fprintf(stderr, FLFMT "diag_l7_volvo_read invalid namespace %d\n", FL, ns);
+		fprintf(stderr, FLFMT "diag_l7_d2_read invalid namespace %d\n", FL, ns);
 		return DIAG_ERR_GENERAL;
 	}
 
@@ -262,7 +262,7 @@ diag_l7_volvo_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
  * Retrieve list of stored DTCs.
  */
 int
-diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
+diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
 {
 	uint8_t req[] = { readDiagnosticTroubleCodes, 1 };
 	int errval = 0;
@@ -307,7 +307,7 @@ diag_l7_volvo_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
  * ECU returned positive acknowledgement for the clear request, <0 for errors.
  */
 int
-diag_l7_volvo_cleardtc(struct diag_l2_conn *d_l2_conn)
+diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn)
 {
 	uint8_t req[] = { clearDiagnosticInformation, 1 };
 	uint8_t buf[1];
@@ -319,7 +319,7 @@ diag_l7_volvo_cleardtc(struct diag_l2_conn *d_l2_conn)
 	 * ECU will reject clearDiagnosticInformation unless preceded by
 	 * readDiagnosticTroubleCodes.
 	 */
-	rv = diag_l7_volvo_dtclist(d_l2_conn, sizeof(buf), buf);
+	rv = diag_l7_d2_dtclist(d_l2_conn, sizeof(buf), buf);
 	if (rv < 0)
 		return rv;
 	if (rv == 0)

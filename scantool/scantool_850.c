@@ -43,7 +43,7 @@
 #include "diag_os.h"
 #include "utlist.h"
 
-#include "diag_l7_volvo.h"
+#include "diag_l7_d2.h"
 #include "diag_l7_kwp71.h"
 #include "scantool.h"
 #include "scantool_cli.h"
@@ -381,7 +381,7 @@ print_ecu_list(void)
 
 enum connection_status {
 	NOT_CONNECTED,		/* Not connected */
-	CONNECTED_KWP6227,	/* Connected with D2 over K-line */
+	CONNECTED_D2,		/* Connected with D2 over K-line */
 	CONNECTED_KWP71,	/* Connected with KWP71 */
 	CONNECTED_EITHER,	/* Connected with either D2 or KWP71 */
 	CONNECTED_OTHER		/* Connected with non-Volvo protocol */
@@ -395,8 +395,8 @@ get_connection_status(void)
 {
 	if (global_state < STATE_CONNECTED) {
 		return NOT_CONNECTED;
-	} else if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_KWP6227) {
-		return CONNECTED_KWP6227;
+	} else if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_D2) {
+		return CONNECTED_D2;
 	} else if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_VAG) {
 		return CONNECTED_KWP71;
 	} else {
@@ -432,7 +432,7 @@ static bool
 valid_connection_status(unsigned int want)
 {
 	if (want == CONNECTED_EITHER) {
-		if (get_connection_status()==CONNECTED_KWP6227 || get_connection_status()==CONNECTED_KWP71)
+		if (get_connection_status()==CONNECTED_D2 || get_connection_status()==CONNECTED_KWP71)
 			return true;
 	} else if (get_connection_status() == want) {
 		return true;
@@ -449,7 +449,7 @@ valid_connection_status(unsigned int want)
 			printf("Connected with non-Volvo protocol.\n");
 		}
 		return false;
-	case CONNECTED_KWP6227:
+	case CONNECTED_D2:
 	case CONNECTED_KWP71:
 		if(want == NOT_CONNECTED) {
 			printf("Already connected to %s. Please disconnect first.\n", current_ecu_desc());
@@ -473,7 +473,7 @@ adaptive_timing_workaround(void)
 	int i;
 
 	for (i=0;i<3;i++) {
-		(void)diag_l7_volvo_ping(global_l2_conn);
+		(void)diag_l7_d2_ping(global_l2_conn);
 		diag_os_millisleep(200);
 	}
 }
@@ -536,7 +536,7 @@ cmd_850_connect(int argc, char **argv)
 		global_cfg.src = 0x13;
 		global_cfg.tgt = addr;
 		global_cfg.L1proto = DIAG_L1_ISO9141;
-		global_cfg.L2proto = DIAG_L2_PROT_KWP6227;
+		global_cfg.L2proto = DIAG_L2_PROT_D2;
 		global_cfg.initmode = DIAG_L2_TYPE_SLOWINIT;
 	}
 
@@ -578,7 +578,7 @@ cmd_850_connect(int argc, char **argv)
 	printf("Connected to %s.\n", ecu_desc_by_addr(addr));
 	have_read_dtcs = false;
 
-	if (get_connection_status() == CONNECTED_KWP6227) {
+	if (get_connection_status() == CONNECTED_D2) {
 		adaptive_timing_workaround();
 	} else {
 		printf("Warning: KWP71 communication is not entirely reliable yet.\n");
@@ -674,8 +674,8 @@ cmd_850_ping(int argc, UNUSED(char **argv))
 	if(!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
-	if (get_connection_status() == CONNECTED_KWP6227) {
-		rv = diag_l7_volvo_ping(global_l2_conn);
+	if (get_connection_status() == CONNECTED_D2) {
+		rv = diag_l7_d2_ping(global_l2_conn);
 	} else {
 		rv = diag_l7_kwp71_ping(global_l2_conn);
 	}
@@ -936,8 +936,8 @@ read_family(int argc, char **argv, enum namespace ns)
 		for (i=0; i<count; i++) {
 			if(items[i].ns != NS_MEMORY) {
 				addr = items[i].start;
-				if (get_connection_status() == CONNECTED_KWP6227) {
-					gotbytes = diag_l7_volvo_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
+				if (get_connection_status() == CONNECTED_D2) {
+					gotbytes = diag_l7_d2_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
 				} else {
 					gotbytes = diag_l7_kwp71_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
 				}
@@ -961,8 +961,8 @@ read_family(int argc, char **argv, enum namespace ns)
 				addr = items[i].start;
 				len = (items[i].end - items[i].start) + 1;
 				while(len > 0) {
-					if (get_connection_status() == CONNECTED_KWP6227) {
-						gotbytes = diag_l7_volvo_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
+					if (get_connection_status() == CONNECTED_D2) {
+						gotbytes = diag_l7_d2_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
 					} else {
 						gotbytes = diag_l7_kwp71_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
 					}
@@ -1018,7 +1018,7 @@ cmd_850_peek(int argc, char **argv)
 static int
 cmd_850_read(int argc, char **argv)
 {
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
 	return read_family(argc, argv, NS_LIVEDATA);
@@ -1050,7 +1050,7 @@ cmd_850_adc(int argc, char **argv)
 static int
 cmd_850_readnv(int argc, char **argv)
 {
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
 	return read_family(argc, argv, NS_NV);
@@ -1070,10 +1070,10 @@ cmd_850_freeze_all(void)
 	int rv;
 	int i;
 
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
-	rv = diag_l7_volvo_dtclist(global_l2_conn, sizeof(dtcs), dtcs);
+	rv = diag_l7_d2_dtclist(global_l2_conn, sizeof(dtcs), dtcs);
 	if (rv < 0) {
 		printf("Couldn't retrieve DTCs.\n");
 		return CMD_OK;
@@ -1116,7 +1116,7 @@ cmd_850_freeze_all(void)
 static int
 cmd_850_freeze(int argc, char **argv)
 {
-	if(!valid_connection_status(CONNECTED_KWP6227))
+	if(!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
 	if(argc==2 && strcasecmp(argv[1], "all")==0) {
@@ -1130,12 +1130,12 @@ cmd_850_freeze(int argc, char **argv)
  * Query the ECU for identification and print the result.
  */
 static int
-cmd_850_id_kwp6227(void)
+cmd_850_id_d2(void)
 {
 	uint8_t buf[15];
 	int rv;
 
-	rv = diag_l7_volvo_read(global_l2_conn, NS_NV, 0xf0, sizeof(buf), buf);
+	rv = diag_l7_d2_read(global_l2_conn, NS_NV, 0xf0, sizeof(buf), buf);
 	if (rv < 0) {
 		printf("Couldn't read identification.\n");
 		return CMD_OK;
@@ -1231,8 +1231,8 @@ cmd_850_id(int argc, UNUSED(char **argv))
 	if (!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
-	if (get_connection_status() == CONNECTED_KWP6227) {
-		return cmd_850_id_kwp6227();
+	if (get_connection_status() == CONNECTED_D2) {
+		return cmd_850_id_d2();
 	} else {
 		return cmd_850_id_kwp71();
 	}
@@ -1267,7 +1267,7 @@ cmd_850_dumpram(int argc, char **argv)
 		return CMD_USAGE;
 	}
 
-	if (!valid_connection_status(CONNECTED_KWP6227))
+	if (!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
 	f = fopen(argv[1], "w");
@@ -1280,7 +1280,7 @@ cmd_850_dumpram(int argc, char **argv)
 
 	addr = 0;
 	while (1) {
-		if (diag_l7_volvo_read(global_l2_conn, NS_MEMORY, addr, 8, buf) == 8) {
+		if (diag_l7_d2_read(global_l2_conn, NS_MEMORY, addr, 8, buf) == 8) {
 			happy = 1;
 			errno = 0;
 			if (print_hexdump_line(f, addr, 4, buf, 8) != 0) {
@@ -1335,8 +1335,8 @@ cmd_850_dtc(int argc, UNUSED(char **argv))
 	if(!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
-	if (get_connection_status() == CONNECTED_KWP6227) {
-		rv = diag_l7_volvo_dtclist(global_l2_conn, sizeof(buf), buf);
+	if (get_connection_status() == CONNECTED_D2) {
+		rv = diag_l7_d2_dtclist(global_l2_conn, sizeof(buf), buf);
 		span = 1;
 	} else {
 		rv = diag_l7_kwp71_dtclist(global_l2_conn, sizeof(buf), buf);
@@ -1398,8 +1398,8 @@ cmd_850_cleardtc(int argc, UNUSED(char **argv))
 		}
 	}
 
-	if (get_connection_status() == CONNECTED_KWP6227) {
-		rv = diag_l7_volvo_cleardtc(global_l2_conn);
+	if (get_connection_status() == CONNECTED_D2) {
+		rv = diag_l7_d2_cleardtc(global_l2_conn);
 	} else {
 		rv = diag_l7_kwp71_cleardtc(global_l2_conn);
 	}

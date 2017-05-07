@@ -116,7 +116,7 @@ endif()
 if(DEFINED L2LIST)
 		message("Using provided list of L2 : ${L2LIST}")
 else()
-		set(L2LIST "iso9141" "can" "iso14230" "mb1" "raw" "saej1850" "vag" "kwp6227")
+		set(L2LIST "iso9141" "can" "iso14230" "mb1" "raw" "saej1850" "vag" "d2")
 endif()
 
 

@@ -180,7 +180,7 @@ struct diag_l2_conn
 #define DIAG_L2_PROT_VAG	6	/* VAG ISO9141 based protocol */
 #define DIAG_L2_PROT_MB1	7	/* MB protocol 1 */
 #define DIAG_L2_PROT_MB2	8	/* MB protocol 2 */
-#define DIAG_L2_PROT_KWP6227	9	/* KWP6227 (keyword D3 B0 for Volvo) */
+#define DIAG_L2_PROT_D2		9	/* Volvo D2 over K-line (kw D3 B0) */
 #define DIAG_L2_PROT_MAX	10	/* Maximum number of protocols */
 
 /*

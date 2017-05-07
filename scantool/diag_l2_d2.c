@@ -20,7 +20,7 @@
  *
  * Diag
  *
- * L2 driver for KWP6227 (Keyword D3 B0) protocol
+ * L2 driver for Volvo D2 protocol over K-line (keyword D3 B0)
  *
  * This protocol is used by the engine and chassis ECUs for extended
  * diagnostics on the 1996-1998 Volvo 850, S40, C70, S70, V70, XC70, V90 and
@@ -28,13 +28,11 @@
  *
  * The message headers are similar, but not identical, to KWP2000.
  * In KWP2000, the length value in the header represents the number of
- * data bytes only in the message; in KWP6227, it also includes the trailing
- * checksum byte -- that is, the length value is 1 greater in KWP6227 than it
- * would be in KWP2000.
+ * data bytes only in the message; here, it also includes the trailing
+ * checksum byte -- that is, the length value is 1 greater than it would be
+ * in KWP2000.
  *
- * Information on KWP6227 is available at:
- *   http://jonesrh.info/volvo850/volvo_850_obdii_faq.rtf
- * Thanks to Richard H. Jones for sharing this information.
+ * See diag_l7_d2 for the corresponding application protocol.
  *
  * This driver currently works only with ELM327 interfaces.
  *
@@ -49,7 +47,7 @@
 #include "diag_os.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
-#include "diag_l2_kwp6227.h"
+#include "diag_l2_d2.h"
 
 /* replace a byte's msb with a parity bit */
 static uint8_t
@@ -69,13 +67,13 @@ with_parity(uint8_t c, enum diag_parity eo)
 }
 
 static int
-dl2p_6227_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
+dl2p_d2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 {
 	int rv;
 	uint8_t buf[3 + 62 + 1];
-	struct diag_l2_kwp6227 *dp;
+	struct diag_l2_d2 *dp;
 
-	dp = (struct diag_l2_kwp6227 *)d_l2_conn->diag_l2_proto_data;
+	dp = (struct diag_l2_d2 *)d_l2_conn->diag_l2_proto_data;
 
 	if (msg->len < 1 || msg->len > 62)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -95,7 +93,7 @@ dl2p_6227_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 }
 
 static int
-dl2p_6227_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+dl2p_d2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
 	void *handle)
 {
@@ -129,14 +127,14 @@ dl2p_6227_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 }
 
 static void
-dl2p_6227_request_callback(void *handle, struct diag_msg *in)
+dl2p_d2_request_callback(void *handle, struct diag_msg *in)
 {
 	struct diag_msg **out = (struct diag_msg **)handle;
 	*out = diag_dupsinglemsg(in);
 }
 
 static struct diag_msg *
-dl2p_6227_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+dl2p_d2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
                 int *errval)
 {
 	int rv;
@@ -150,7 +148,7 @@ dl2p_6227_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		return NULL;
 	}
 
-	rv = dl2p_6227_recv(d_l2_conn, 1000, dl2p_6227_request_callback, &rmsg);
+	rv = dl2p_d2_recv(d_l2_conn, 1000, dl2p_d2_request_callback, &rmsg);
 	if (rv < 0) {
 		*errval = rv;
 		return NULL;
@@ -162,18 +160,18 @@ dl2p_6227_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 }
 
 static int
-dl2p_6227_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
+dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 	unsigned int bitrate, target_type target, source_type source)
 {
 	struct diag_serial_settings set;
-	struct diag_l2_kwp6227 *dp;
+	struct diag_l2_d2 *dp;
 	int rv;
 	struct diag_msg wm={0};
 	uint8_t wm_data[]={0x82, 0, 0, 0xa1};
 	struct diag_l1_initbus_args in;
 
 	if (!(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) || !(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2CKSUM)) {
-		fprintf(stderr, "Can't do KWP6227 on this L0 interface yet, sorry.\n");
+		fprintf(stderr, "Can't do D2 over K-line on this L0 interface yet, sorry.\n");
 		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 	}
 
@@ -247,7 +245,7 @@ err:
 }
 
 static int
-dl2p_6227_stopcomms(struct diag_l2_conn* pX)
+dl2p_d2_stopcomms(struct diag_l2_conn* pX)
 {
 	struct diag_msg msg = {0};
 	uint8_t data[] = { 0xa0 };
@@ -258,7 +256,7 @@ dl2p_6227_stopcomms(struct diag_l2_conn* pX)
 	msg.dest = 0; msg.src = 0;	/* use default addresses */
 	msg.data = data;
 
-	rxmsg = dl2p_6227_request(pX, &msg, &errval);
+	rxmsg = dl2p_d2_request(pX, &msg, &errval);
 
 	if (rxmsg == NULL || errval) {
 		fprintf(stderr, "StopDiagnosticSession request failed, waiting for session to time out.\n");
@@ -277,7 +275,7 @@ dl2p_6227_stopcomms(struct diag_l2_conn* pX)
 }
 
 static void
-dl2p_6227_timeout(struct diag_l2_conn *d_l2_conn)
+dl2p_d2_timeout(struct diag_l2_conn *d_l2_conn)
 {
 	struct diag_msg msg = {0};
 	uint8_t data[] = { 0xa1 };
@@ -288,20 +286,20 @@ dl2p_6227_timeout(struct diag_l2_conn *d_l2_conn)
 	msg.dest = 0; msg.src = 0;	/* use default addresses */
 	msg.data = data;
 
-	rxmsg = dl2p_6227_request(d_l2_conn, &msg, &errval);
+	rxmsg = dl2p_d2_request(d_l2_conn, &msg, &errval);
 
 	if (rxmsg != NULL)
 		diag_freemsg(rxmsg);
 }
 
-const struct diag_l2_proto diag_l2_proto_kwp6227 = {
-	DIAG_L2_PROT_KWP6227,
-	"KWP6227",
+const struct diag_l2_proto diag_l2_proto_d2 = {
+	DIAG_L2_PROT_D2,
+	"D2",
 	DIAG_L2_FLAG_FRAMED | DIAG_L2_FLAG_KEEPALIVE,
-	dl2p_6227_startcomms,
-	dl2p_6227_stopcomms,
-	dl2p_6227_send,
-	dl2p_6227_recv,
-	dl2p_6227_request,
-	dl2p_6227_timeout
+	dl2p_d2_startcomms,
+	dl2p_d2_stopcomms,
+	dl2p_d2_send,
+	dl2p_d2_recv,
+	dl2p_d2_request,
+	dl2p_d2_timeout
 };
