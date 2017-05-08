@@ -116,6 +116,7 @@ static int cmd_850_dtc(int argc, UNUSED(char **argv));
 static int cmd_850_cleardtc(int argc, UNUSED(char **argv));
 static int cmd_850_freeze(int argc, char **argv);
 static int cmd_850_scan_all(int argc, UNUSED(char **argv));
+static int cmd_850_test(int argc, char **argv);
 
 const struct cmd_tbl_entry v850_cmd_table[] =
 {
@@ -152,6 +153,8 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 		cmd_850_cleardtc, 0, NULL},
 	{ "freeze", "freeze dtc1|all [dtc2 ...]", "Display freeze frame(s)",
 		cmd_850_freeze, 0, NULL},
+	{ "test", "test <testname>", "Test vehicle components",
+		cmd_850_test, 0, NULL},
 
 	{ "up", "up", "Return to previous menu level",
 		cmd_up, 0, NULL},
@@ -1477,5 +1480,35 @@ cmd_850_scan_all(int argc, UNUSED(char **argv))
 
 	printf("Scan-all done.\n");
 
+	return CMD_OK;
+}
+
+/*
+ * Test the specified vehicle component.
+ */
+static int
+cmd_850_test(int argc, char **argv) {
+	if (argc==2 && strcasecmp(argv[1], "fan1")==0 && global_l2_conn->diag_l2_destaddr==0x7a) {
+		if (diag_l7_d2_io_control(global_l2_conn, 0x0e, 3) == 0) {
+			printf("Activating engine cooling fan.\n");
+		} else {
+			printf("Unable to activate fan.\n");
+		}
+	} else if (argc==2 && strcasecmp(argv[1], "fan2")==0 && global_l2_conn->diag_l2_destaddr==0x7a) {
+		if (diag_l7_d2_io_control(global_l2_conn, 0x1f, 3) == 0) {
+			printf("Activating engine cooling fan.\n");
+		} else {
+			printf("Unable to activate fan.\n");
+		}
+	} else {
+		printf("Usage: test <testname>\n");
+		if (global_l2_conn->diag_l2_destaddr == 0x7a) {
+			printf("Available tests:\n");
+			printf("fan1 - Activate engine cooling fan, half speed (please keep fingers clear)\n");
+			printf("fan2 - Activate engine cooling fan, full speed (please keep fingers clear)\n");
+		} else {
+			printf("No available tests for this ECU.\n");
+		}
+	}
 	return CMD_OK;
 }

@@ -63,6 +63,7 @@ enum {
 	readFreezeFrameByDTC = 0xAD,
 	readDiagnosticTroubleCodes = 0xAE,
 	clearDiagnosticInformation = 0xAF,
+	inputOutputControlByLocalIdentifier = 0xB0,
 	readNVByLocalIdentifier = 0xB9
 } service_id;
 
@@ -335,6 +336,42 @@ diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn)
 		diag_freemsg(resp);
 		return 1;
 	} else {
+		diag_freemsg(resp);
+		return DIAG_ERR_ECUSAIDNO;
+	}
+}
+
+/*
+ * Activate an output or substitute an input or internal value.
+ *
+ * The ECU will activate the specified output the requested number of times,
+ * or until the diagnostic session is stopped. The duration of each activation
+ * cycle depends on which output is specified.
+ */
+int
+diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps)
+{
+	uint8_t req[] = { inputOutputControlByLocalIdentifier, id, 0x32, reps };
+	struct diag_msg msg = {0};
+	struct diag_msg *resp = NULL;
+	int rv;
+
+	msg.data = req;
+	msg.len = sizeof(req);
+	resp = diag_l2_request(d_l2_conn, &msg, &rv);
+	if (resp == NULL)
+		return rv;
+
+	if (resp->len==2 && success_p(&msg, resp)) {
+		diag_freemsg(resp);
+		return 0;
+	} else {
+		/*
+		 * ECU returns 7F B0 11 for invalid ID, or 7F B0 21 if a
+		 * previous inputOutputControlByLocalIdentifier is still in
+		 * progress. For now we return DIAG_ERR_ECUSAIDNO for any
+		 * error code.
+		 */
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
