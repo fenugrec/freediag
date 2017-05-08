@@ -1134,6 +1134,7 @@ cmd_850_id_d2(void)
 {
 	uint8_t buf[15];
 	int rv;
+	int i;
 
 	rv = diag_l7_d2_read(global_l2_conn, NS_NV, 0xf0, sizeof(buf), buf);
 	if (rv < 0) {
@@ -1156,6 +1157,23 @@ cmd_850_id_d2(void)
 
 	printf("Hardware ID: P%02X%02X%02X%02X revision %.3s\n", buf[1], buf[2], buf[3], buf[4], buf+5);
 	printf("Software ID:  %02X%02X%02X%02X revision %.3s\n", buf[8], buf[9], buf[10], buf[11], buf+12);
+
+	if (global_l2_conn->diag_l2_destaddr == 0x7a) {
+		rv = diag_l7_d2_read(global_l2_conn, NS_NV, 1, sizeof(buf), buf);
+		if (rv < 0)
+			return CMD_OK;
+		if (rv != 10) {
+			printf("Identification response was %d bytes, expected %d\n", rv, 10);
+			return CMD_OK;
+		}
+		for (i=0; i<10; i++) {
+			if (!isdigit(buf[i])) {
+				printf("Unexpected characters in identification block\n");
+				return CMD_OK;
+			}
+		}
+		printf("Order number: %c %.3s %.3s %.3s\n",buf[0], buf+1, buf+4, buf+7);
+	}
 
 	return CMD_OK;
 }
