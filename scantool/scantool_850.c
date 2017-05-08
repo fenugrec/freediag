@@ -696,7 +696,9 @@ cmd_850_ping(int argc, UNUSED(char **argv))
 static void
 interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf)
 {
-	if (ns==NS_LIVEDATA && addr==0x0300) {
+	if (ns==NS_LIVEDATA && addr==0x0200) {
+		printf("Engine Coolant Temperature: %dC (%dF)\n", buf[1]-80, (buf[1]-80)*9/5+32);
+	} else if (ns==NS_LIVEDATA && addr==0x0300) {
 		/*ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref*/
 		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
 	} else if(ns==NS_MEMORY && addr==0x36 && global_l2_conn->diag_l2_destaddr==0x10) {
