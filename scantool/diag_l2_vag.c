@@ -104,6 +104,20 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 	int timeout = msg_timeout;
 
 	while(1) {
+		if(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2FRAME) {
+			//for framed L0, must read the whole frame at once
+			rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, dp->rxbuf, MAXRBUF, timeout);
+			if(diag_l2_debug & DIAG_DEBUG_PROTO)
+				fprintf(stderr, FLFMT "after recv, rv=%d\n", FL, rv);
+			if(rv < 0) {
+				*errval = rv;
+				return diag_pseterr(rv);
+			}
+			dp->msg_finish_time = diag_os_gethrt();
+			//currently the only framed L0 for KW1281 is carsim, so don't bother validating sequence number
+			break;
+		}
+
 		//one byte at a time is sent by the ECU
 		uint8_t byte;
 		rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, &byte, 1, timeout);
@@ -570,6 +584,17 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	int retries = 0;
 	//send the block to the ECU
 	while(1) {
+		if(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2FRAME) {
+			//for framed L0, must send the whole block at once
+			rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, 0, dp->rxbuf, dp->rxbuf[0]+1, d_l2_conn->diag_l2_p4min);
+			if(diag_l2_debug & DIAG_DEBUG_PROTO)
+				fprintf(stderr, FLFMT "after send, rv=%d\n", FL, rv);
+			if(rv < 0)
+				return diag_iseterr(rv);
+			dp->msg_finish_time = diag_os_gethrt();
+			break;
+		}
+
 		//send one byte at a time
 		rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, 0, &dp->rxbuf[dp->rxoffset], 1,
 		                  d_l2_conn->diag_l2_p4min);
