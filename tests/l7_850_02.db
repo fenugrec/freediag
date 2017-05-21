@@ -2,8 +2,7 @@
 # Simulator database for KWP71
 ###################################################################
 
-# Just an example!
-# This won't actually work yet due to the in-frame acknowledgement bytes.
+CFG FRAMED
 
 #### Motronic M4.4 ####
 
@@ -14,8 +13,10 @@ RP 0xAB
 RP 0x02
 RQ 0xFD
 # ECU sends identification automatically upon init
+# A real ECU would send a multi-block telegram with several pieces of
+# information, but carsim can't do multi-block KWP71 telegrams yet, so we send
+# a single-block telegram.
 RP 0x0D 0x00 0xf6 0x31 0x32 0x33 0x34 0x35 0x36 0x37 0x38 0x39 0x30 0x03
-# ...
 
 # TesterPresent
 RQ 0x03 XXXX 0x09 0x03
