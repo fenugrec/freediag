@@ -135,6 +135,7 @@ set(SCANTOOL_TESTS
 	l0_carsim_3
 	l0_carsim_4
 	l0_carsim_5
+	l0_carsim_6
 	l2_14230_fast
 	l2_j1850p_crc
 	l2_9141_reconst

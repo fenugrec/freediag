@@ -296,7 +296,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 		}
 		num = i;
 		// compare given request with synthesized DB file request.
-		if (memcmp(data, synth_req, MIN(len, num)) == 0) {
+		if ((len >= num) && (memcmp(data, synth_req, MIN(len, num)) == 0)) {
 			// got a match, now cycle the following lines for responses.
 			request_found = 1;
 			while (!end_responses) {
