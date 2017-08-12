@@ -1488,6 +1488,9 @@ cmd_850_scan_all(int argc, UNUSED(char **argv))
  */
 static int
 cmd_850_test(int argc, char **argv) {
+	if(!valid_connection_status(CONNECTED_D2))
+		return CMD_OK;
+
 	if (argc==2 && strcasecmp(argv[1], "fan1")==0 && global_l2_conn->diag_l2_destaddr==0x7a) {
 		if (diag_l7_d2_io_control(global_l2_conn, 0x0e, 3) == 0) {
 			printf("Activating engine cooling fan.\n");
