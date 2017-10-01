@@ -185,6 +185,7 @@ void std_reset(struct cfgi *cfgp) {
 	switch (cfgp->type) {
 	case CFGT_U8:
 		cfgp->val.b = cfgp->dval.b;
+		break;
 	case CFGT_INT:
 		cfgp->val.i = cfgp->dval.i;
 		break;

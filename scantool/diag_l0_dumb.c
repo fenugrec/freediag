@@ -733,8 +733,8 @@ dumb_getflags(struct diag_l0_device *dl0d)
 
 	switch (dev->protocol) {
 	case DIAG_L1_ISO14230:
-		flags |= DIAG_L1_FAST | DIAG_L1_PREFFAST;
-		//fall through to next:
+		flags |= DIAG_L1_FAST | DIAG_L1_PREFFAST | DIAG_L1_SLOW | DIAG_L1_HALFDUPLEX;
+		break;
 	case DIAG_L1_ISO9141:
 		flags |= DIAG_L1_SLOW | DIAG_L1_HALFDUPLEX;
 		break;

@@ -669,6 +669,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 				snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
+			break;
 		case 0x09:
 			snprintf(buf2, sizeof(buf2), "Request vehicle information infotype 0x%X", msg->data[1]);
 			smartcat(buf, bufsize, buf2);
@@ -680,6 +681,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 				snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
+			break;
 		default:
 			snprintf(buf2, sizeof(buf2),"UnknownType 0x%X: Data Dump: ", msg->data[0]);
 			smartcat(buf, bufsize, buf2);
