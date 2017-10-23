@@ -38,8 +38,6 @@
 
 #include "utlist.h"
 
-#define ERR_STR_LEN 30	//length of "illegal error X" string
-
 static int diag_initialized=0;
 
 //diag_init : should be called once before doing anything.
@@ -289,6 +287,11 @@ static const struct {
 
 const char *
 diag_errlookup(const int code) {
+	// Length of "illegal error X" string. 24 characters and the hexadecimal digits.
+	enum {
+		ERR_STR_LEN = 24 + 2*sizeof(int)
+	};
+
 	unsigned i;
 	static char ill_str[ERR_STR_LEN];
 	for (i = 0; i < ARRAY_SIZE(edesc); i++)
