@@ -113,7 +113,7 @@ dl2p_d2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	if (msg == NULL)
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	memcpy(msg->data, &buf[3], (size_t)(rv - 4));
-	msg->rxtime = diag_os_chronoms(0);
+	msg->rxtime = diag_os_getms();
 	msg->src = buf[2];
 	msg->dest = buf[1];
 	msg->fmt = DIAG_FMT_FRAMED;

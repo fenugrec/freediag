@@ -151,12 +151,8 @@ on the context:
 	 One thing that needs to be guaranteed is monotonicity : the time returned by _getms()
 	 needs to be always increasing. Most system time / clock functions are not monotonic;
 	 they can jump forwards or back if time is adjusted by the user or the OS.
-	 
-	B- Logging comm events (in particular the rxtime member of struct diag_msg); this is
-	 similar to A, but the ability to use an arbitrary reference (like a stopwatch) seemed useful
-	 so I wrote diag_os_chronoms() for those cases.
-	 
-	C- Short interval, fine resolution (sub-ms) validation of certain operations. diag_os_gethrt()
+
+	B- Short interval, fine resolution (sub-ms) validation of certain operations. diag_os_gethrt()
 	and diag_os_hrtus() provide this. The Windows implementation uses
 	QueryPerformanceCounter() ; typically a monotonic 1-10MHz counter,
 	 hopefully with little overhead per call and therefore little impact on the measured operation.

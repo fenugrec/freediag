@@ -115,19 +115,6 @@ unsigned long long diag_os_gethrt(void);
  */
 unsigned long long diag_os_hrtus(unsigned long long hrdelta);
 
-//diag_os_chronoms: used for logging purposes; it doesn't need
-//to be monotonic. if treset !=0, the internal offset is adjusted
-// (offset += treset); all subsequent calls to
-//chronoms will subtract offset before returning. This allows
-//to "reset" it like a stopwatch. Ex.:
-// a = diag_os_chronoms(0)	//get current relative time
-// b = diag_os_chronoms(a) //for this and the next calls, chronoms
-//				//will return elapsed time since chronoms(0) was called.
-//Internally, chronoms must adjust the offset before calculating the
-//return value.
-unsigned long diag_os_chronoms(unsigned long treset);
-
-
 /* mutex wrapper stuff.
  * the backends use pthread, C11, winAPI etc.
  * lowest-common-denominator stuff here; regular mutexes (not necessarily recursive etc)

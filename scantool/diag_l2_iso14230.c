@@ -304,7 +304,7 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 				if (tmsg == NULL)
 					return diag_iseterr(DIAG_ERR_NOMEM);
 				memcpy(tmsg->data, dp->rxbuf, (size_t)dp->rxoffset);
-				tmsg->rxtime = diag_os_chronoms(0);
+				tmsg->rxtime = diag_os_getms();
 				dp->rxoffset = 0;
 				/*
 				 * ADD message to list

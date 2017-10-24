@@ -58,6 +58,7 @@ const char projname[]=PROJECT_NAME;
 int diag_cli_debug;	//debug level
 
 FILE		*global_logfp;		/* Monitor log output file pointer */
+unsigned long global_log_tstart;    /* timestamp datum (in ms) of beginning of log */
 #define LOG_FORMAT	"FREEDIAG log format 0.2"
 
 
@@ -413,7 +414,7 @@ log_timestamp(const char *prefix)
 {
 	unsigned long tv;
 
-	tv=diag_os_chronoms(0);
+	tv = diag_os_getms() - global_log_tstart;
 
 	fprintf(global_logfp, "%s %04lu.%03lu ", prefix, tv / 1000, tv % 1000);
 }
@@ -475,10 +476,8 @@ cmd_log(int argc, char **argv)
 	}
 
 	now = time(NULL);
-	//reset stopwatch:
-	unsigned long t1;
-	t1=diag_os_chronoms(0);
-	(void) diag_os_chronoms(t1);
+	//reset timestamp reference:
+    global_log_tstart=diag_os_getms();
 
 	fprintf(global_logfp, "%s\n", LOG_FORMAT);
 	log_timestamp("#");

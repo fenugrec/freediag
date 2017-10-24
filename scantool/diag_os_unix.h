@@ -32,7 +32,7 @@ extern "C" {
 /****** OS-specific implementation selectors ******/
 /*	These are for testing/debugging only, to force compilation of certain implementations
 	for diag_tty* and diag_os* functions.
-	
+
 	### Map of features with more than one implementation related to POSIX ###
 
 	## time-related features ##
@@ -43,7 +43,7 @@ extern "C" {
 		A) needs _POSIX_TIMERS, uses clock_nanosleep()
 		B) needs __linux__ && (uid==root), uses /dev/rtc
 		C) (available everywhere?) nanosleep() loop
-	SEL_HRT: diag_os_gethrt(), diag_os_chronoms()
+	SEL_HRT: diag_os_gethrt()
 		A) needs _POSIX_TIMERS, uses clock_gettime()
 		B) (available everywhere?) gettimeofday()
 
@@ -67,7 +67,7 @@ extern "C" {
 #define S_ALT2	2
 /** Insert desired selectors here **/
 //example:
-//#define	SEL_PERIODIC S_LINUX
+//#define	SEL_PERIODIC S_OTHER
 
 /* Default selectors: anything still undefined is set to S_AUTO which
 	means "force nothing", i.e. "use most appropriate implementation". */

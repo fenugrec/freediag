@@ -309,7 +309,7 @@ void diag_os_calibrate(void) {
 	LONGLONG tsum;
 	#define RESOL_ITERS	10
 	unsigned long long resol, maxres, tl1, tl2;	//all for _gethrt() test
-	unsigned long t1, t2, t3;	//for _getms() test
+	unsigned long t1, t2;	//for _getms() test
 
 	assert(pfconv_valid);
 
@@ -334,18 +334,6 @@ void diag_os_calibrate(void) {
 	t1=diag_os_getms();
 	while ( ((t2=diag_os_getms())-t1) ==0) {}
 	printf("diag_os_getms() resolution: ~%lums.\n", t2-t1);
-
-	//and diag_os_chronoms
-	t3=diag_os_chronoms(0);	//get time with current offset
-	t1=diag_os_chronoms(t3);	//reset stopwatch & get start time (~ 0)
-	while ( ((t2=diag_os_chronoms(0))-t1) ==0) {}
-	//here, t2-t1 is the finest resolution available. But we want to restore
-	//the previous offset in case some other function already called _chronoms()
-	//before us :
-	(void) diag_os_chronoms(-t3);	//this should do it
-
-	printf("diag_os_chronoms() : resolution: ~%lums\n", t2-t1);
-
 
 	printf("Calibrating timing, this will take a few seconds...\n");
 
@@ -396,16 +384,6 @@ void diag_os_calibrate(void) {
 //resolution and accuracy are not important; GetTickCount() is good enough
 unsigned long diag_os_getms(void) {
 	return (unsigned long) GetTickCount();
-}
-
-
-//millisecond stopwatch, arbitrarily resettable
-unsigned long diag_os_chronoms(unsigned long treset) {
-	static unsigned long offset=0;
-
-	offset += treset;
-
-	return (unsigned long) (GetTickCount() - offset);
 }
 
 //get high resolution timestamp

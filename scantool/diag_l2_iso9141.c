@@ -445,7 +445,7 @@ dl2p_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 						return diag_iseterr(DIAG_ERR_NOMEM);
 					memcpy(tmsg->data, dp->rxbuf,
 						(size_t)dp->rxoffset);
-					tmsg->rxtime = diag_os_chronoms(0);
+					tmsg->rxtime = diag_os_getms();
 
 					if (diag_l2_debug & DIAG_DEBUG_READ)
 					{

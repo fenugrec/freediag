@@ -657,7 +657,7 @@ diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts)
 	}
 
 	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		unsigned long tc=diag_os_chronoms(0);
+		unsigned long tc=diag_os_getms();
 		fprintf(stderr, FLFMT "%lu : DTR/RTS changed\n", FL, tc);
 	}
 

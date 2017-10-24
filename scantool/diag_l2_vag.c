@@ -260,7 +260,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 		memcpy(tmsg->data, &dp->rxbuf[3], (size_t)data_length);
 
 	//set the message info
-	tmsg->rxtime = diag_os_chronoms(0);
+	tmsg->rxtime = diag_os_getms();
 	tmsg->type = dp->rxbuf[2];
 	tmsg->dest = tmsg->src = 0; //these are not used by the protocol (no such info in message blocks)
 	tmsg->fmt |= DIAG_FMT_CKSUMMED; //no real checksum, but the inverted bytes thing assures data integrity

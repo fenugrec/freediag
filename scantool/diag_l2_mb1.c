@@ -284,7 +284,7 @@ dl2p_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	msg->data[0] = rxbuf[1];		/* Command */
 	memcpy(&msg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
-	msg->rxtime = diag_os_chronoms(0);
+	msg->rxtime = diag_os_getms();
 	msg->fmt = DIAG_FMT_FRAMED ;
 
 	/*
@@ -399,7 +399,7 @@ dl2p_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		rmsg->data[0] = rxbuf[1];		/* Command */
 		memcpy(&rmsg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
-		rmsg->rxtime = diag_os_chronoms(0);
+		rmsg->rxtime = diag_os_getms();
 		rmsg->fmt = DIAG_FMT_FRAMED;
 	}
 	return rmsg;

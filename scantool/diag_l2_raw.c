@@ -123,7 +123,7 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	/* This is raw, unframed data; we don't set .fmt */
 	msg.next = NULL;
 	msg.idata=NULL;
-	msg.rxtime = diag_os_chronoms(0);
+	msg.rxtime = diag_os_getms();
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
 	{
@@ -174,7 +174,7 @@ dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		return diag_pseterr(DIAG_ERR_NOMEM);
 	memcpy(&rmsg->data, rxbuf, (size_t)rv);	/* Data */
 	rmsg->fmt = 0;
-	rmsg->rxtime = diag_os_chronoms(0);
+	rmsg->rxtime = diag_os_getms();
 
 	return rmsg;
 }

@@ -202,7 +202,7 @@ struct diag_msg
 	unsigned	len;		/* calculated data length */
 	uint8_t	*data;		/* The data; can be dynamically alloc'ed */
 
-	unsigned long	 rxtime;	/* Processed time, in ms given by diag_os_chronoms(0) */
+	unsigned long	 rxtime;	/* Processing timestamp, in ms given by diag_os_getms() */
 	struct diag_msg	*next;		/* For linked lists of messages */
 
 	uint8_t	*idata;		/* For free() of data later: this is a "backup"

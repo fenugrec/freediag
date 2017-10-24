@@ -336,7 +336,7 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 		tmsg->fmt |= DIAG_FMT_CKSUMMED;	//either L1 did it or we just did
 		tmsg->fmt |= DIAG_FMT_FRAMED;
 
-		tmsg->rxtime = diag_os_chronoms(0);
+		tmsg->rxtime = diag_os_getms();
 		dp->rxoffset = 0;
 
 		diag_l2_addmsg(d_l2_conn, tmsg);

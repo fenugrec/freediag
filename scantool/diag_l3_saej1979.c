@@ -375,7 +375,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
 				msg->len = (uint8_t) sae_msglen - 4;
 			}
 
-			msg->rxtime = diag_os_chronoms(0);
+			msg->rxtime = diag_os_getms();
 
 			/* Add it to the list */
 			LL_CONCAT(d_l3_conn->msg, msg);
