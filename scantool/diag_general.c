@@ -38,7 +38,7 @@
 
 #include "utlist.h"
 
-#define ERR_STR_LEN 30	//length of "illegal error X" string
+#define ERR_STR_LEN 50	//length of "illegal error X" string
 
 static int diag_initialized=0;
 
