@@ -121,13 +121,11 @@ static void aif_monitor (UNUSED(void *data)) {
 
 	if (rv == DIAG_ERR_TIMEOUT) {
 	/* Didn't get a response, this is valid if there are no DTCs */
-	}
-	else if (rv != 0) {
+	} else if (rv != 0) {
 		fprintf(stderr, "Failed to get test results for"
 		" continuously monitored systems\n") ;
 		BadToApp() ;
-	}
-	else {
+	} else {
 		/* Currently monitored DTCs: */
 
 		for (i = 0 ; i < ecu_count ; i++) {
@@ -249,8 +247,7 @@ static void aif_scan (UNUSED(void *data)) {
 		do_j1979_ncms  (0) ; /* And non-continuously monitored tests   */
 
 		OkToApp() ;
-	}
-	else {
+	} else {
 		fprintf(stderr, "Connection to ECU failed\n") ;
 		fprintf(stderr, "Please check :\n") ;
 		fprintf(stderr, "\tAdapter is connected to PC\n") ;

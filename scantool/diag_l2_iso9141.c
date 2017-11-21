@@ -708,8 +708,7 @@ dl2p_iso9141_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		/* OK */
 		rmsg = d_l2_conn->diag_msg;
 		d_l2_conn->diag_msg = NULL;
-	}
-	else {
+	} else {
 		/* Error */
 		*errval = DIAG_ERR_TIMEOUT;
 		rmsg = NULL;

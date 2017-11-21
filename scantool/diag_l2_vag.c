@@ -159,8 +159,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 					//and go on with the regular code path
 					dp->rxoffset = 0;
 				}
-			}
-			else {
+			} else {
 				*errval = rv;
 				return diag_pseterr(rv);
 			}

@@ -135,8 +135,7 @@ dl2p_j1850_crc(uint8_t *msg_buf, int nbytes) {
 				else
 					poly=0x1c;
 				crc_reg= ( (crc_reg << 1) | 1) ^ poly;
-			}
-			else {		// case for new bit = 0
+			} else {		// case for new bit = 0
 				poly=0;
 				if (crc_reg & 0x80)
 					poly=0x1d;

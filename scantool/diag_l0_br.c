@@ -404,8 +404,7 @@ br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	if (rv == 1) {	/* 1 byte response, old type interface */
 		dev->dev_kb1 = buf[0];
 		dev->dev_kb2 = buf[0];
-	}
-	else {
+	} else {
 		dev->dev_kb1 = buf[0];
 		dev->dev_kb2 = buf[1];
 	}
@@ -450,8 +449,7 @@ br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 		if ((dev->dev_features & BR_FEATURE_FASTINIT) == 0) {
 			/* Fast init Not supported */
 			rv = DIAG_ERR_INIT_NOTSUPP;
-		}
-		else {
+		} else {
 			/* Fastinit done on 1st TX */
 			dev->dev_state = BR_STATE_KWP_FASTINIT;
 			rv = 0;

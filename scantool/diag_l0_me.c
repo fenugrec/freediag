@@ -230,8 +230,7 @@ j1850_crc(uint8_t *msg_buf, int nbytes) {
 				else
 					poly=0x1c;
 				crc_reg= ( (crc_reg << 1) | 1) ^ poly;
-			}
-			else {		// case for new bit = 0
+			} else {		// case for new bit = 0
 				poly=0;
 				if (crc_reg & 0x80)
 					poly=0x1d;
@@ -737,8 +736,7 @@ void *data, size_t len, unsigned int timeout) {
 			pdata[1] = dev->dev_kb2;
 			dev->dev_state = MULENG_STATE_OPEN;
 			return 2;
-		}
-		else if (len == 1) {
+		} else if (len == 1) {
 			*pdata = dev->dev_kb1;
 			dev->dev_state = MULENG_STATE_KWP_SENDKB2;
 			return 1;

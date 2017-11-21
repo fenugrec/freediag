@@ -67,8 +67,7 @@ static int dyno_check_allocated_table(struct dyno_measure_table * table, size_t 
     table->nbr  = 0;
     if (diag_malloc(&table->meas.measures, table->size * elt_size))
 		return DIAG_ERR_NOMEM;
-  }
-  else if (table->nbr == table->size) {
+  } else if (table->nbr == table->size) {
     /* reallocating the table if maximum capacity is reached */
     void * ptr;
 

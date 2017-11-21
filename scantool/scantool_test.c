@@ -249,8 +249,7 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv)) {
 					supported = (ep->mode1_data[1].data[3]>>i)&1;
 					value = (ep->mode1_data[1].data[3]>>(i+4))&1;
 
-				}
-				else {
+				} else {
 					supported = (ep->mode1_data[1].data[4]>>(i-4))&1;
 					value = (ep->mode1_data[1].data[5]>>(i-4))&1;
 				}

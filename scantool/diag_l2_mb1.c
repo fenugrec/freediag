@@ -218,8 +218,7 @@ dl2p_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 		if (rv >= 0) {
 			/* Full packet ! */
 			break;
-		}
-		else if (rv != DIAG_ERR_INCDATA) {
+		} else if (rv != DIAG_ERR_INCDATA) {
 			/* Bad things happened */
 			rxoffset = rv;
 			break;
@@ -371,8 +370,7 @@ dl2p_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 			*errval = rv;
 		else
 			*errval = DIAG_ERR_BADDATA;
-	}
-	else {
+	} else {
 		/*
 		 * Ok, alloc a message
 		 */
