@@ -169,8 +169,7 @@ extern "C" {
  */
 
 /* Argument for DIAG_IOCTL_INITBUS */
-struct diag_l1_initbus_args
-{
+struct diag_l1_initbus_args {
 	uint8_t	type;	/* Init type */
 	uint8_t	addr;	/* ECU (target) address, if iso9141 or 14230 init */
 	uint8_t	testerid;	/* tester address, for 14230 init */

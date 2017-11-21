@@ -36,22 +36,19 @@ extern "C" {
 #define DYNO_USAGE  -1  /* Bad usage */
 
 /* structure for loss measure tables */
-typedef struct dyno_loss_measure
-{
+typedef struct dyno_loss_measure {
   int millis; /* number of milliseconds */
 	int	speed;  /* m/s * 1000 */
 } dyno_loss_measure;
 
 /* structure for measure tables */
-typedef struct dyno_measure
-{
+typedef struct dyno_measure {
   int millis; /* number of milliseconds */
 	int	rpm;    /* rpm */
 } dyno_measure;
 
 /* structure for dyno results */
-typedef struct dyno_result
-{
+typedef struct dyno_result {
   int rpm; /* rev per minute */
   int power; /* power (W) */
   int power_ch; /* power (ch DYN) */

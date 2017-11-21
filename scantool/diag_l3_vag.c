@@ -48,8 +48,7 @@
  *
  */
 static int
-diag_l3_vag_start(struct diag_l3_conn *d_l3_conn)
-{
+diag_l3_vag_start(struct diag_l3_conn *d_l3_conn) {
 	struct diag_l2_data l2data;
 	struct diag_l2_conn *d_l2_conn;
 
@@ -81,8 +80,7 @@ diag_l3_vag_start(struct diag_l3_conn *d_l3_conn)
 
 void
 diag_l3_vag_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
-struct diag_msg *msg, char *buf, size_t bufsize)
-{
+struct diag_msg *msg, char *buf, size_t bufsize) {
 	char buf2[128];
 	char buf3[16];
 	const char *s;

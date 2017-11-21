@@ -76,22 +76,22 @@ struct elm_device {
 
 
 // possible error messages returned by the ELM IC
-static const char * elm323_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?", NULL};
+static const char * elm323_errors[] = {"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?", NULL};
 
-static const char * elm327_errors[]={"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?",
+static const char * elm327_errors[] = {"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?",
 						"ACT ALERT", "BUFFER FULL", "BUS ERROR", "CAN ERROR", "LP ALERT",
 						"LV RESET", "<RX ERROR", "STOPPED", "UNABLE TO CONNECT", "ERR", NULL};
 
 // authentic VS clone identification strings.
 // I know of no elm323 clones. 327 clones may not support some commands (atfi, atsi, atkw) and thus need fallback methods
-static const char * elm323_official[]={"2.0",NULL};	//authentic 323 firmware versions, possibly incomplete list
-static const char * elm323_clones[]={NULL};	//known cloned versions
-static const char * elm327_official[]={"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3a", "1.3", "1.4b", "2.0", NULL};
-static const char * elm327_clones[]={"1.4", "1.4a", "1.5a", "1.5", "2.1", NULL};
+static const char * elm323_official[] = {"2.0",NULL};	//authentic 323 firmware versions, possibly incomplete list
+static const char * elm323_clones[] = {NULL};	//known cloned versions
+static const char * elm327_official[] = {"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3a", "1.3", "1.4b", "2.0", NULL};
+static const char * elm327_clones[] = {"1.4", "1.4a", "1.5a", "1.5", "2.1", NULL};
 
 // baud rates for host to elm32x communication. Start with user-specified speed, then try common values
 #define ELM_CUSTOMSPEED ((unsigned) -1)
-static const unsigned elm_speeds[]={ELM_CUSTOMSPEED, 38400, 9600, 115200, 0};
+static const unsigned elm_speeds[] = {ELM_CUSTOMSPEED, 38400, 9600, 115200, 0};
 
 
 extern const struct diag_l0 diag_l0_elm;
@@ -113,8 +113,7 @@ static void elm_close(struct diag_l0_device *dl0d);
  * variables etc
  */
 static int
-elm_init(void)
-{
+elm_init(void) {
 	static int elm_initdone=0;
 
 	if (elm_initdone)
@@ -183,8 +182,7 @@ void elm_del(struct diag_l0_device *dl0d) {
 
 
 static void
-elm_close(struct diag_l0_device *dl0d)
-{
+elm_close(struct diag_l0_device *dl0d) {
 	uint8_t buf[]="ATPC\x0D";
 	struct elm_device *dev;
 
@@ -246,8 +244,7 @@ static const char * elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data)
 //		(prompt_good && ATZ or ATKW command was sent) , since response doesn't contain "OK" for ATZ or ATKW.
 //elm_sendcmd should not be called from outside diag_l0_elm.c.
 static int
-elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp)
-{
+elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp) {
 	//note : we better not request (len == (size_t) -1) bytes ! The casts between ssize_t and size_t are
 	// "muddy" in here
 	//ssize_t xferd;
@@ -355,8 +352,7 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsign
  * ELM settings used : no echo (E0), headers on (H1), linefeeds off (L0), mem off (M0)
  */
 static int
-elm_open(struct diag_l0_device *dl0d, int iProtocol)
-{
+elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	int i,rv;
 	struct elm_device *dev;
 	struct diag_serial_settings sset;
@@ -599,8 +595,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol)
  * Unsupported by some (all?) clones !! (they handle the init internally, on demand)
  */
 static int
-elm_fastinit(struct diag_l0_device *dl0d)
-{
+elm_fastinit(struct diag_l0_device *dl0d) {
 	uint8_t * cmds= (uint8_t *) "ATFI\x0D";
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
@@ -616,8 +611,7 @@ elm_fastinit(struct diag_l0_device *dl0d)
 
 
 static int
-elm_slowinit(struct diag_l0_device *dl0d)
-{
+elm_slowinit(struct diag_l0_device *dl0d) {
 	uint8_t * cmds=(uint8_t *)"ATSI\x0D";
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
@@ -638,13 +632,12 @@ elm_slowinit(struct diag_l0_device *dl0d)
 // non-OBD ECUs may not work with this. ELM clones suck...
 // TODO : add argument to allow either a 01 00 request (SID1 PID0, J1979) or 3E (iso14230 TesterPresent) request to force init.
 static int
-elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout)
-{
+elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout) {
 	int rv;
 	struct elm_device *dev;
 	uint8_t buf[MAXRBUF];
-	uint8_t generic_data[]={0x01,0x00}; // J1979 request only
-	uint8_t iso9141_data[]={0x68,0x6a,0xf1,0x01,0x00}; // with ISO9141 hdr
+	uint8_t generic_data[] = {0x01,0x00}; // J1979 request only
+	uint8_t iso9141_data[] = {0x68,0x6a,0xf1,0x01,0x00}; // with ISO9141 hdr
 	const char *err_str;
 
 	dev = dl0d->l0_int;
@@ -693,8 +686,7 @@ elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout)
 
 // set wakeup message
 static int
-elm_updatewm(struct diag_l0_device *dl0d)
-{
+elm_updatewm(struct diag_l0_device *dl0d) {
 	struct elm_device *dev;
 	uint8_t wm[18];
 
@@ -712,8 +704,7 @@ elm_updatewm(struct diag_l0_device *dl0d)
  * ret 0 if ok
  */
 static int
-elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
-{
+elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	const uint8_t *buf;
 	int rv = DIAG_ERR_INIT_NOTSUPP;
 	unsigned int timeout=0;	//for bogus init
@@ -923,8 +914,7 @@ static int elm_purge(struct diag_l0_device *dl0d) {
 
 static int
 elm_send(struct diag_l0_device *dl0d,
-	UNUSED(const char *subinterface), const void *data, size_t len)
-{
+	UNUSED(const char *subinterface), const void *data, size_t len) {
 	uint8_t buf[ELM_BUFSIZE];
 	struct elm_device *dev = dl0d->l0_int;
 	//ssize_t xferd;
@@ -1019,8 +1009,7 @@ elm_send(struct diag_l0_device *dl0d,
  */
 static int
 elm_recv(struct diag_l0_device *dl0d,
-	UNUSED(const char *subinterface), void *data, size_t len, unsigned int timeout)
-{
+	UNUSED(const char *subinterface), void *data, size_t len, unsigned int timeout) {
 	int rv, xferd;
 	struct elm_device *dev = dl0d->l0_int;
 	uint8_t rxbuf[3*MAXRBUF +1];	//I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
@@ -1165,8 +1154,7 @@ static int elm_setwm(struct diag_l0_device *dl0d, struct diag_msg *pmsg) {
 
 
 static uint32_t
-elm_getflags(struct diag_l0_device *dl0d)
-{
+elm_getflags(struct diag_l0_device *dl0d) {
 
 	struct elm_device *dev;
 	uint32_t flags=0;

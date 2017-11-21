@@ -122,8 +122,7 @@ const int _RQST_HANDLE_READINESS = RQST_HANDLE_READINESS; 	//Readiness tests
 
 
 struct diag_msg *
-find_ecu_msg(int byte, databyte_type val)
-{
+find_ecu_msg(int byte, databyte_type val) {
 	ecu_data_t *ep;
 	struct diag_msg *rxmsg = NULL;
 	unsigned int i;
@@ -161,8 +160,7 @@ find_ecu_msg(int byte, databyte_type val)
  * of data on certain vehicles
  */
 void
-j1979_data_rcv(void *handle, struct diag_msg *msg)
-{
+j1979_data_rcv(void *handle, struct diag_msg *msg) {
 	assert(msg != NULL);
 	uint8_t *data;
 	struct diag_msg *tmsg;
@@ -407,8 +405,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg)
  * just print the data
  */
 void
-j1979_watch_rcv(void *handle, struct diag_msg *msg)
-{
+j1979_watch_rcv(void *handle, struct diag_msg *msg) {
 	struct diag_msg *tmsg;
 	int i=0;
 
@@ -429,8 +426,7 @@ j1979_watch_rcv(void *handle, struct diag_msg *msg)
 
 
 void
-l2raw_data_rcv(UNUSED(void *handle), struct diag_msg *msg)
-{
+l2raw_data_rcv(UNUSED(void *handle), struct diag_msg *msg) {
 	/*
 	 * Layer 2 call back, just print the data, this is used if we
 	 * do a "read" and we haven't yet added a L3 protocol
@@ -444,8 +440,7 @@ l2raw_data_rcv(UNUSED(void *handle), struct diag_msg *msg)
  * to a mode 1 PID 0/0x20/0x40 request
  */
 int
-l2_check_pid_bits(uint8_t *data, int pid)
-{
+l2_check_pid_bits(uint8_t *data, int pid) {
 	int offset;
 	int bit;
 
@@ -469,10 +464,9 @@ l2_check_pid_bits(uint8_t *data, int pid)
 
 int
 l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t p2,
-	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle)
-{
+	uint8_t p3, uint8_t p4, uint8_t p5, uint8_t p6, void *handle) {
 	assert(d_conn != NULL);
-	struct diag_msg msg={0};
+	struct diag_msg msg = {0};
 	uint8_t data[7];
 	int ihandle;
 	int rv;
@@ -603,9 +597,8 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
  * Send some data to the ECU (L3)
  */
 int
-l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle)
-{
-	struct diag_msg msg={0};
+l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle) {
+	struct diag_msg msg = {0};
 	int rv;
 	if (len > 255)
 		return DIAG_ERR_GENERAL;
@@ -627,9 +620,8 @@ l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle)
  * Same but L2 type
  */
 int
-l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle)
-{
-	struct diag_msg msg={0};
+l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle) {
+	struct diag_msg msg = {0};
 	int rv;
 	if (len > 255)
 		return DIAG_ERR_GENERAL;
@@ -667,8 +659,7 @@ l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle)
  * Clear data that is relevant to an ECU
  */
 static int
-clear_data(void)
-{
+clear_data(void) {
 	ecu_count = 0;
 	memset(ecu_info, 0, sizeof(ecu_info));
 
@@ -685,8 +676,7 @@ clear_data(void)
   * returns L2 file descriptor
  */
 static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
-	flag_type type, unsigned int bitrate, target_type target, source_type source )
-{
+	flag_type type, unsigned int bitrate, target_type target, source_type source ) {
 	int rv;
 	struct diag_l0_device *dl0d = global_dl0d;
 	struct diag_l2_conn *d_conn = NULL;
@@ -749,8 +739,7 @@ static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
  * 9141 init
  */
 int
-do_l2_9141_start(int destaddr)
-{
+do_l2_9141_start(int destaddr) {
 	struct diag_l2_conn *d_conn;
 
 	d_conn = do_l2_common_start(DIAG_L1_ISO9141, DIAG_L2_PROT_ISO9141,
@@ -770,8 +759,7 @@ do_l2_9141_start(int destaddr)
  * 14120 init
  */
 int
-do_l2_14230_start(int init_type)
-{
+do_l2_14230_start(int init_type) {
 	struct diag_l2_conn *d_conn;
 	flag_type flags = 0;
 
@@ -800,8 +788,7 @@ do_l2_14230_start(int init_type)
  * J1850 init, J1850 interface type passed as l1_type
  */
 static int
-do_l2_j1850_start(int l1_type)
-{
+do_l2_j1850_start(int l1_type) {
 	flag_type flags = 0;
 	struct diag_l2_conn *d_conn;
 
@@ -829,8 +816,7 @@ do_l2_j1850_start(int l1_type)
  * It is used in "Interuptible" mode when doing "monitor" command
  */
 int
-do_j1979_getdata(int interruptible)
-{
+do_j1979_getdata(int interruptible) {
 	unsigned int i,j;
 	int rv;
 	struct diag_l3_conn *d_conn;
@@ -919,8 +905,7 @@ do_j1979_getdata(int interruptible)
  *
  * This is the basic work horse routine
  */
-void do_j1979_basics()
-{
+void do_j1979_basics() {
 	ecu_data_t *ep;
 	unsigned int i;
 	int o2monitoring = 0;
@@ -1001,8 +986,7 @@ void do_j1979_basics()
 }
 
 int
-print_single_dtc(databyte_type d0, databyte_type d1)
-{
+print_single_dtc(databyte_type d0, databyte_type d1) {
 	char buf[256];
 
 	uint8_t db[2];
@@ -1017,8 +1001,7 @@ print_single_dtc(databyte_type d0, databyte_type d1)
 }
 
 static void
-print_dtcs(uint8_t *data, uint8_t len)
-{
+print_dtcs(uint8_t *data, uint8_t len) {
 	/* Print the DTCs just received */
 	int i, j;
 
@@ -1033,8 +1016,7 @@ print_dtcs(uint8_t *data, uint8_t len)
  * Get test results for constantly monitored systems
  */
 void
-do_j1979_cms()
-{
+do_j1979_cms() {
 	int rv;
 	unsigned int i;
 	struct diag_l3_conn *d_conn;
@@ -1073,8 +1055,7 @@ do_j1979_cms()
  * Get test results for non-constantly monitored systems
  */
 void
-do_j1979_ncms(int printall)
-{
+do_j1979_ncms(int printall) {
 	int rv;
 	struct diag_l3_conn *d_conn;
 	unsigned int i, j;
@@ -1130,8 +1111,7 @@ do_j1979_ncms(int printall)
  * the ECU)
  */
 void
-do_j1979_getmodeinfo(uint8_t mode, int response_offset)
-{
+do_j1979_getmodeinfo(uint8_t mode, int response_offset) {
 	int rv;
 	struct diag_l3_conn *d_conn;
 	int pid;
@@ -1222,8 +1202,7 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset)
  * what the ECU supports
  */
 void
-do_j1979_getpids()
-{
+do_j1979_getpids() {
 	ecu_data_t *ep;
 	unsigned int i, j;
 
@@ -1259,8 +1238,7 @@ do_j1979_getpids()
  * Do the O2 tests for this O2 sensor
  */
 void
-do_j1979_O2tests()
-{
+do_j1979_O2tests() {
 	int i;
 
 	if (merged_mode5_info[0] == 0) {
@@ -1282,8 +1260,7 @@ do_j1979_O2tests()
  * O2sensor is the bit number
  */
 void
-do_j1979_getO2tests(int O2sensor)
-{
+do_j1979_getO2tests(int O2sensor) {
 
 	int rv;
 	struct diag_l3_conn *d_conn;
@@ -1314,8 +1291,7 @@ do_j1979_getO2tests(int O2sensor)
  * and test, and wait for those tests to complete
  */
 int
-do_j1979_getdtcs()
-{
+do_j1979_getdtcs() {
 	int rv;
 	struct diag_l3_conn *d_conn;
 	ecu_data_t *ep;
@@ -1396,8 +1372,7 @@ do_j1979_getdtcs()
  * Get supported DTCS
  */
 int
-do_j1979_getO2sensors()
-{
+do_j1979_getO2sensors() {
 	int rv;
 	struct diag_l3_conn *d_conn;
 	unsigned int i, j;
@@ -1436,8 +1411,7 @@ do_j1979_getO2sensors()
 }
 
 int
-diag_cleardtc(void)
-{
+diag_cleardtc(void) {
 	/* Clear DTCs */
 	struct diag_l3_conn *d_conn;
 	int rv;
@@ -1480,8 +1454,7 @@ const struct protocol protocols[] = {
  * This will set global_l3_conn. Ret 0 if ok
  */
 int
-ecu_connect(void)
-{
+ecu_connect(void) {
 	int connected=0;
 	int rv = DIAG_ERR_GENERAL;
 	const struct protocol *p;
@@ -1539,8 +1512,7 @@ ecu_connect(void)
  * Initialise
  */
 static int
-do_init(void)
-{
+do_init(void) {
 	clear_data();
 
 	return 0;
@@ -1549,8 +1521,7 @@ do_init(void)
 /*
  * Explain command line usage
  */
-static void do_usage (void)
-{
+static void do_usage (void) {
 	fprintf( stderr, "FreeDiag ScanTool:\n\n" ) ;
 	fprintf( stderr, "  Usage -\n" ) ;
 	fprintf( stderr, "	scantool [-h][-a|-c][-f <file]\n\n" ) ;
@@ -1568,8 +1539,7 @@ static void do_usage (void)
 
 
 static void format_o2(char *buf, int maxlen, UNUSED(int english),
-	const struct pid *p, response_t *data, int n)
-{
+	const struct pid *p, response_t *data, int n) {
 		double v = DATA_SCALED(p, DATA_1(p, n, data));
 		int t = DATA_1(p, n + 1, data);
 
@@ -1582,8 +1552,7 @@ static void format_o2(char *buf, int maxlen, UNUSED(int english),
 
 static void
 format_aux(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
-	response_t *data, int n)
-{
+	response_t *data, int n) {
 		snprintf(buf, maxlen, (DATA_RAW(p, n, data) & 1) ? "PTO Active" : "----");
 }
 
@@ -1591,8 +1560,7 @@ format_aux(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
 
 static void
 format_fuel(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
-	response_t *data, int n)
-{
+	response_t *data, int n) {
 		int s = DATA_1(p, n, data);
 
 		switch (s) {
@@ -1621,8 +1589,7 @@ format_fuel(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
 
 
 static void
-format_data(char *buf, int maxlen, int english, const struct pid *p, response_t *data, int n)
-{
+format_data(char *buf, int maxlen, int english, const struct pid *p, response_t *data, int n) {
 		double v;
 
 		v = DATA_SCALED(p, DATA_RAW(p, n, data));
@@ -1717,8 +1684,7 @@ static const struct pid pids[] = {
 };
 
 
-const struct pid *get_pid ( unsigned int i )
-{
+const struct pid *get_pid ( unsigned int i ) {
 	if ( i >= ARRAY_SIZE(pids) )
 		return NULL ;
 
@@ -1731,8 +1697,7 @@ const struct pid *get_pid ( unsigned int i )
  */
 
 int
-main(int argc, char **argv)
-{
+main(int argc, char **argv) {
 	int user_interface = 1 ;
 	int i ;
 	const char *startfile=NULL;	/* optional commands to run at startup */

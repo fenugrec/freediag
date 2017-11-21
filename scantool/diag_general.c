@@ -44,8 +44,7 @@ static int diag_initialized=0;
 
 //diag_init : should be called once before doing anything.
 //and call diag_end before terminating.
-int diag_init(void)	//returns 0 if normal exit
-{
+int diag_init(void) {	//returns 0 if normal exit
 	int rv;
 
 	if (diag_initialized)
@@ -95,8 +94,7 @@ int diag_end(void) {
 /** Message handling **/
 
 struct diag_msg *
-diag_allocmsg(size_t datalen)
-{
+diag_allocmsg(size_t datalen) {
 	struct diag_msg *newmsg;
 
 	if (datalen > DIAG_MAX_MSGLEN) {
@@ -131,8 +129,7 @@ diag_allocmsg(size_t datalen)
 
 /* Duplicate a message, and its contents including all chained messages. XXX nobody uses this !? */
 struct diag_msg *
-diag_dupmsg(struct diag_msg *msg)
-{
+diag_dupmsg(struct diag_msg *msg) {
 	struct diag_msg *newchain, *chain_last, *tmsg;
 
 	assert(msg != NULL);
@@ -168,8 +165,7 @@ diag_dupmsg(struct diag_msg *msg)
 /* Duplicate a single message, don't follow the chain */
 // (leave ->next undefined)
 struct diag_msg *
-diag_dupsinglemsg(struct diag_msg *msg)
-{
+diag_dupsinglemsg(struct diag_msg *msg) {
 	struct diag_msg *newmsg;
 
 	assert(msg != NULL);
@@ -196,8 +192,7 @@ diag_dupsinglemsg(struct diag_msg *msg)
 // it's easier to see the whole call stack leading to the failure.
 // Of course, not async safe.
 void
-diag_freemsg(struct diag_msg *msg)
-{
+diag_freemsg(struct diag_msg *msg) {
 	if (msg == NULL) return;
 
 	if (msg->next != NULL) {
@@ -235,8 +230,7 @@ uint8_t diag_cks1(const uint8_t * data, unsigned int len) {
 //diag_data_dump : print (len) bytes of uint8_t *data
 //to the specified FILE (stderr, etc.)
 void
-diag_data_dump(FILE *out, const void *data, size_t len)
-{
+diag_data_dump(FILE *out, const void *data, size_t len) {
 	const uint8_t *p = (const uint8_t *)data;
 	size_t i;
 	for (i=0; i<len; i++)
@@ -245,8 +239,7 @@ diag_data_dump(FILE *out, const void *data, size_t len)
 
 //smartcat() : make sure s1 is not too large, then strncat
 //it does NOT verify if *p1 is large enough !
-void smartcat(char *p1, const size_t s1, const char *p2 )
-{
+void smartcat(char *p1, const size_t s1, const char *p2 ) {
 	assert ( s1 > strlen(p1) + strlen (p2) + 1 ) ;
 	strncat(p1, p2, s1);
 }
@@ -334,8 +327,7 @@ diag_geterr(void) {
 // also checks for size !=0
 // ret 0 if ok
 int diag_flcalloc(const char *name, const int line,
-	void **pp, size_t n, size_t s)
-{
+	void **pp, size_t n, size_t s) {
 	void *p;
 
 	//sanity check: make sure we weren't given a null ptr
@@ -415,8 +407,7 @@ void strlist_free(char ** list, int elems) {
  * Message print out / debug routines
  */
 void
-diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum)
-{
+diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum) {
 	if (timestamp)
 		fprintf(fp, "%lu.%03lu: ",
 			msg->rxtime / 1000, msg->rxtime % 1000);
@@ -425,8 +416,7 @@ diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum)
 }
 
 void
-diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp)
-{
+diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp) {
 	struct diag_msg *tmsg;
 	int i=0;
 

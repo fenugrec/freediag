@@ -46,8 +46,7 @@
 /*
  * SAEJ1850 specific data
  */
-struct diag_l2_j1850
-{
+struct diag_l2_j1850 {
 	uint8_t type;		/* FAST/SLOW/CARB */
 
 	uint8_t srcaddr;	/* Src address used */
@@ -76,8 +75,7 @@ static int
 dl2p_j1850_startcomms(struct diag_l2_conn	*d_l2_conn,
 UNUSED(flag_type flags),
 UNUSED(unsigned int bitrate),
-target_type target, source_type source)
-{
+target_type target, source_type source) {
 	struct diag_l2_j1850 *dp;
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
@@ -108,8 +106,7 @@ target_type target, source_type source)
 /*
 */
 static int
-dl2p_j1850_stopcomms(struct diag_l2_conn* d_l2_conn)
-{
+dl2p_j1850_stopcomms(struct diag_l2_conn* d_l2_conn) {
 	struct diag_l2_j1850 *dp;
 
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
@@ -125,26 +122,21 @@ dl2p_j1850_stopcomms(struct diag_l2_conn* d_l2_conn)
 
 /* Thanks to B. Roadman's web site for this CRC code */
 uint8_t
-dl2p_j1850_crc(uint8_t *msg_buf, int nbytes)
-{
+dl2p_j1850_crc(uint8_t *msg_buf, int nbytes) {
 	uint8_t crc_reg=0xff,poly,i,j;
 	uint8_t *byte_point;
 	uint8_t bit_point;
 
-	for (i=0, byte_point=msg_buf; i<nbytes; ++i, ++byte_point)
-	{
-		for (j=0, bit_point=0x80 ; j<8; ++j, bit_point>>=1)
-		{
-			if (bit_point & *byte_point)	// case for new bit = 1
-			{
+	for (i=0, byte_point=msg_buf; i<nbytes; ++i, ++byte_point) {
+		for (j=0, bit_point=0x80 ; j<8; ++j, bit_point>>=1) {
+			if (bit_point & *byte_point) {	// case for new bit = 1
 				if (crc_reg & 0x80)
 					poly=1;	// define the polynomial
 				else
 					poly=0x1c;
 				crc_reg= ( (crc_reg << 1) | 1) ^ poly;
 			}
-			else		// case for new bit = 0
-			{
+			else {		// case for new bit = 0
 				poly=0;
 				if (crc_reg & 0x80)
 					poly=0x1d;
@@ -162,8 +154,7 @@ dl2p_j1850_crc(uint8_t *msg_buf, int nbytes)
  * ret 0 if ok
  */
 static int
-dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
-{
+dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int l1flags, rv, l1protocol;
 	struct diag_l2_j1850 *dp;
 
@@ -231,8 +222,7 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  * Ret 0 if ok, whether or not there were any messages.
  */
 static int
-dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
-{
+dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	int rv;
 	struct diag_l2_j1850 *dp;
 	unsigned long long t_done;	//time elapsed
@@ -351,8 +341,7 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 static int
 dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
-	void *handle)
-{
+	void *handle) {
 	int rv;
 	struct diag_msg	*tmsg;
 
@@ -370,8 +359,7 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	/*
 	 * We now have data stored on the L2 descriptor
 	 */
-	if (diag_l2_debug & DIAG_DEBUG_READ)
-	{
+	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "calling rcv msg=%p callback, handle=%p\n",
 			FL, (void *)d_l2_conn->diag_msg, (void *)handle);	//%pcallback! we won't try to printf the callback pointer.
 	}
@@ -397,8 +385,7 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
  */
 static struct diag_msg *
 dl2p_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-		int *errval)
-{
+		int *errval) {
 	int rv;
 	struct diag_msg *rmsg = NULL;
 

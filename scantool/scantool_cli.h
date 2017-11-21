@@ -33,8 +33,7 @@
 extern "C" {
 #endif
 
-typedef struct cmd_tbl_entry
-{
+typedef struct cmd_tbl_entry {
 	const char *command;		/* Command name */
 	const char *usage;		/* Usage info */
 	const char *help;		/* Help Text */

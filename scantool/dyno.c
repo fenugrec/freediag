@@ -38,12 +38,10 @@
 #define MIN(_a_, _b_) (((_a_) < (_b_) ? (_a_) : (_b_)))
 
 /* generic measures table */
-struct dyno_measure_table
-{
+struct dyno_measure_table {
   int size; /* allocated size */
   int nbr;  /* number of elements in the table */
-  union     /* table of measures */
-  {
+  union {   /* table of measures */
     dyno_loss_measure * loss_measures;
     dyno_measure * measures;
   } meas;
@@ -62,18 +60,15 @@ struct dyno_measure_table measure_table;
  *****************************************************************************/
 
 /* Check table allocated size before addind a new element */
-static int dyno_check_allocated_table(struct dyno_measure_table * table, size_t elt_size)
-{
-  if (table->meas.measures == NULL)
-  {
+static int dyno_check_allocated_table(struct dyno_measure_table * table, size_t elt_size) {
+  if (table->meas.measures == NULL) {
     /* allocating the table */
     table->size = DYNO_DEFAULT_TABLE_SIZE;
     table->nbr  = 0;
     if (diag_malloc(&table->meas.measures, table->size * elt_size))
 		return DIAG_ERR_NOMEM;
   }
-  else if (table->nbr == table->size)
-  {
+  else if (table->nbr == table->size) {
     /* reallocating the table if maximum capacity is reached */
     void * ptr;
 
@@ -94,10 +89,8 @@ static int dyno_check_allocated_table(struct dyno_measure_table * table, size_t 
 }
 
 /* reset table content */
-static int dyno_table_reset(struct dyno_measure_table * table)
-{
-  if (table->meas.measures != NULL)
-  {
+static int dyno_table_reset(struct dyno_measure_table * table) {
+  if (table->meas.measures != NULL) {
     free(table->meas.measures);
     table->meas.measures = NULL;
   }
@@ -118,8 +111,7 @@ int dyno_mass;
 /*
  * Sets the mass of the vehicle
  */
-int dyno_set_mass(int mass)
-{
+int dyno_set_mass(int mass) {
   dyno_mass = mass;
   return DYNO_OK;
 }
@@ -127,8 +119,7 @@ int dyno_set_mass(int mass)
 /*
  * Gets the mass of the vehicle
  */
-int dyno_get_mass()
-{
+int dyno_get_mass() {
   return dyno_mass;
 }
 
@@ -146,8 +137,7 @@ int dyno_gear;
 /*
  * Set ratio from speed (m/s * 1000) and rpm
  */
-int dyno_set_gear(int speed, int rpm)
-{
+int dyno_set_gear(int speed, int rpm) {
   dyno_gear = speed * DYNO_GEAR_ACCURACY / rpm;
   return DYNO_OK;
 }
@@ -155,8 +145,7 @@ int dyno_set_gear(int speed, int rpm)
 /*
  * Get speed (in m/s * 1000) from rpm
  */
-int dyno_get_speed_from_rpm(int rpm)
-{
+int dyno_get_speed_from_rpm(int rpm) {
   int speed;
   speed = rpm * dyno_gear / DYNO_GEAR_ACCURACY; /* m/s * 1000 */
   return speed;
@@ -174,8 +163,7 @@ int dyno_get_speed_from_rpm(int rpm)
 int dyno_loss_needs_calculation=0;
 
 /* Add loss measure */
-int dyno_loss_add_measure(int millis, int speed)
-{
+int dyno_loss_add_measure(int millis, int speed) {
   /* check memory allocation */
   dyno_check_allocated_table(&loss_measure_table, sizeof(dyno_measure));
 
@@ -212,8 +200,7 @@ double dyno_loss_f;
  */
 
 /* get acceleration between 2 measures (m/s^2) */
-static double dyno_loss_a_inter(int i, int j)
-{
+static double dyno_loss_a_inter(int i, int j) {
   double a;
   dyno_loss_measure * measure0;
   dyno_loss_measure * measure1;
@@ -235,8 +222,7 @@ static double dyno_loss_a_inter(int i, int j)
 }
 
 /* a(i) (m/s^2) */
-static double dyno_loss_a(int i)
-{
+static double dyno_loss_a(int i) {
   double a;
 
   if (i <= 0)
@@ -250,14 +236,12 @@ static double dyno_loss_a(int i)
 }
 
 /* get y(i) */
-static double dyno_loss_y(int i)
-{
+static double dyno_loss_y(int i) {
   return (0 - dyno_mass * dyno_loss_a(i));
 }
 
 /* Calculate d and f factors */
-static int dyno_loss_calculate(void)
-{
+static int dyno_loss_calculate(void) {
   int i, nb;
   double sum;
   dyno_loss_measure * measure0;
@@ -266,8 +250,7 @@ static int dyno_loss_calculate(void)
   /* calculate d */
   nb = loss_measure_table.nbr - 1;
   sum = 0;
-  for (i=0; i<nb; i++)
-  {
+  for (i=0; i<nb; i++) {
     double d;
 
     /* select measures */
@@ -283,8 +266,7 @@ static int dyno_loss_calculate(void)
   /* calculate f */
   nb = loss_measure_table.nbr;
   sum = 0;
-  for (i=0; i<nb; i++)
-  {
+  for (i=0; i<nb; i++) {
     double f;
 
     measure0 = &loss_measure_table.meas.loss_measures[i];
@@ -300,8 +282,7 @@ static int dyno_loss_calculate(void)
 }
 
 /* Reset all dyno loss measures */
-int dyno_loss_reset()
-{
+int dyno_loss_reset() {
   dyno_table_reset(&loss_measure_table);
 
   dyno_loss_d = 0;
@@ -311,8 +292,7 @@ int dyno_loss_reset()
 }
 
 /* Get d value */
-double dyno_loss_get_d()
-{
+double dyno_loss_get_d() {
   if (dyno_loss_needs_calculation == 1)
     dyno_loss_calculate();
 
@@ -320,27 +300,23 @@ double dyno_loss_get_d()
 }
 
 /* Get f value */
-double dyno_loss_get_f()
-{
+double dyno_loss_get_f() {
   if (dyno_loss_needs_calculation == 1)
     dyno_loss_calculate();
 
   return dyno_loss_f;
 }
 
-void dyno_loss_set_d(double d)
-{
+void dyno_loss_set_d(double d) {
   dyno_loss_d = d;
 }
 
-void dyno_loss_set_f(double f)
-{
+void dyno_loss_set_f(double f) {
   dyno_loss_f = f;
 }
 
 /* Calculate loss power from speed (m/s2 * 1000) */
-static long dyno_loss_power(long speed)
-{
+static long dyno_loss_power(long speed) {
   double power;
 
   if (dyno_loss_needs_calculation == 1)
@@ -357,8 +333,7 @@ static long dyno_loss_power(long speed)
  *****************************************************************************/
 
 /* Add a measure */
-int dyno_add_measure(int millis, int rpm)
-{
+int dyno_add_measure(int millis, int rpm) {
   /* check memory allocation */
   dyno_check_allocated_table(&measure_table, sizeof(dyno_measure));
 
@@ -373,20 +348,17 @@ int dyno_add_measure(int millis, int rpm)
 }
 
 /* Reset all dyno data */
-int dyno_reset()
-{
+int dyno_reset() {
   return dyno_table_reset(&measure_table);
 }
 
 /* Get number of measures */
-int dyno_get_nb_measures()
-{
+int dyno_get_nb_measures() {
   return measure_table.nbr;
 }
 
 /* Get all measures */
-int dyno_get_measures(dyno_measure * measures, int size)
-{
+int dyno_get_measures(dyno_measure * measures, int size) {
   /* copy measures */
   memcpy(measures, measure_table.meas.measures, MIN(size, measure_table.nbr) * sizeof(dyno_measure));
 
@@ -407,8 +379,7 @@ int dyno_get_measures(dyno_measure * measures, int size)
 /*
  * Calculate power between 2 acceleration measures
  */
-static void dyno_calculate_result(dyno_measure * measure0, dyno_measure * measure1, dyno_result * result)
-{
+static void dyno_calculate_result(dyno_measure * measure0, dyno_measure * measure1, dyno_result * result) {
   /* effective power and lost power */
   int p_dyno, p_loss;
 
@@ -433,14 +404,12 @@ static void dyno_calculate_result(dyno_measure * measure0, dyno_measure * measur
 /*
  * Calculate results
  */
-static void dyno_calculate_results(dyno_result * results)
-{
+static void dyno_calculate_results(dyno_result * results) {
   int i;
   int nb = dyno_get_nb_results();
 
   /* for each measure, calculate result */
-  for (i=0; i<nb; i++)
-  {
+  for (i=0; i<nb; i++) {
     dyno_calculate_result(&measure_table.meas.measures[i], &measure_table.meas.measures[i+1], &results[i]);
   }
 }
@@ -448,8 +417,7 @@ static void dyno_calculate_results(dyno_result * results)
 /*
  * Get number of results
  */
-int dyno_get_nb_results()
-{
+int dyno_get_nb_results() {
   return (measure_table.nbr - 1);
 }
 
@@ -457,8 +425,7 @@ int dyno_get_nb_results()
  * Get dyno results
  */
 
-int dyno_get_results(dyno_result * results, UNUSED(int size))
-{
+int dyno_get_results(dyno_result * results, UNUSED(int size)) {
   if ((dyno_mass == 0) || (dyno_gear == 0))
     return DYNO_USAGE;
 
@@ -470,8 +437,7 @@ int dyno_get_results(dyno_result * results, UNUSED(int size))
 /*
  * Smooth results
  */
-int dyno_smooth_results(dyno_result * results, int size)
-{
+int dyno_smooth_results(dyno_result * results, int size) {
   dyno_result * rawresults;
   int i;
 
@@ -480,8 +446,7 @@ int dyno_smooth_results(dyno_result * results, int size)
     return DIAG_ERR_NOMEM;
   memcpy(rawresults, results, size * sizeof(dyno_result));
 
-  for (i=1; i<size-1; i++)
-  {
+  for (i=1; i<size-1; i++) {
     /* smooth using nearby values */
     results[i].power    = (rawresults[i-1].power + rawresults[i].power + rawresults[i+1].power) / 3;
     results[i].power_ch = POWER_CH(results[i].power);
@@ -497,15 +462,13 @@ int dyno_smooth_results(dyno_result * results, int size)
 /*
  * Save measures and results to a file
  */
-void dyno_save(char * filename, dyno_result * results, int size)
-{
+void dyno_save(char * filename, dyno_result * results, int size) {
   char buffer[MAXRBUF];
   int i;
 
   /* open file */
   FILE * fd = fopen (filename, "w");
-  if (fd == NULL)
-  {
+  if (fd == NULL) {
     printf("Failed opening %s for writing\n", filename);
     return;
   }
@@ -532,8 +495,7 @@ void dyno_save(char * filename, dyno_result * results, int size)
   sprintf(buffer, "RPM\tPower (W)\tPower (ch)\tTorque (N.m)\n");
   fwrite(buffer, strlen(buffer), sizeof(char), fd);
 
-  for (i=0; i<size; i++)
-  {
+  for (i=0; i<size; i++) {
     sprintf(buffer, "%d\t%d\t%d\t%d\n",
       results[i].rpm, results[i].power, results[i].power_ch, results[i].torque);
     fwrite(buffer, strlen(buffer), sizeof(char), fd);
@@ -544,8 +506,7 @@ void dyno_save(char * filename, dyno_result * results, int size)
 
 
   /* saving run measures */
-  if (measure_table.nbr > 0)
-  {
+  if (measure_table.nbr > 0) {
     printf("-> saving run measures...\n");
 
     sprintf(buffer, "Run measures\n");
@@ -554,8 +515,7 @@ void dyno_save(char * filename, dyno_result * results, int size)
     sprintf(buffer, "Time (ms)\tRPM\tSpeed (m/s)\tSpeed (km/h)\n");
     fwrite(buffer, strlen(buffer), sizeof(char), fd);
 
-    for (i=0; i<measure_table.nbr; i++)
-    {
+    for (i=0; i<measure_table.nbr; i++) {
       sprintf(buffer, "%d\t%d\t%7.3f\t%7.3f\n",
         measure_table.meas.measures[i].millis,
         measure_table.meas.measures[i].rpm,
@@ -586,8 +546,7 @@ void dyno_save(char * filename, dyno_result * results, int size)
 
 
   /* saving loss measures, if any */
-  if (loss_measure_table.nbr > 0)
-  {
+  if (loss_measure_table.nbr > 0) {
 
     printf("-> saving loss measures...\n");
 
@@ -597,8 +556,7 @@ void dyno_save(char * filename, dyno_result * results, int size)
     sprintf(buffer, "Time (ms)\tSpeed (m/s)\tSpeed (km/h)\n");
     fwrite(buffer, strlen(buffer), sizeof(char), fd);
 
-    for (i=0; i<loss_measure_table.nbr; i++)
-    {
+    for (i=0; i<loss_measure_table.nbr; i++) {
       sprintf(buffer, "%d\t%7.3f\t%7.3f\n",
         loss_measure_table.meas.loss_measures[i].millis,
         loss_measure_table.meas.loss_measures[i].speed/1000.0,

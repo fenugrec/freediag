@@ -46,16 +46,14 @@
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 #define PT_REPEAT	1000	//after the nominal timeout period the timer will expire every PT_REPEAT us.
 static void
-diag_tty_rw_timeout_handler(UNUSED(int sig), siginfo_t *si, UNUSED(void *uc))
-{
+diag_tty_rw_timeout_handler(UNUSED(int sig), siginfo_t *si, UNUSED(void *uc)) {
 	assert(si->si_value.sival_ptr != NULL);
 	((struct unix_tty_int *)(si->si_value.sival_ptr))->pt_expired = 1;
 	return;
 }
 #endif
 
-ttyp * diag_tty_open(const char *portname)
-{
+ttyp * diag_tty_open(const char *portname) {
 	int rv;
 	struct unix_tty_int *uti;
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
@@ -246,8 +244,7 @@ ttyp * diag_tty_open(const char *portname)
 }
 
 /* Close up the TTY and restore. */
-void diag_tty_close(ttyp *tty_int)
-{
+void diag_tty_close(ttyp *tty_int) {
 	struct unix_tty_int *uti = tty_int;
 
 	if (!uti) return;
@@ -298,7 +295,7 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 
 	fd = uti->fd;
 
-	const unsigned int std_table[]= {
+	const unsigned int std_table[] = {
 		0, 50, 75, 110,
 		134, 150, 200, 300,
 		600, 1200, 1800, 2400,
@@ -311,7 +308,7 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 	#endif
 	};
 	//std_names must match speeds in std_table !
-	const speed_t std_names[]= {
+	const speed_t std_names[] = {
 		B0, B50, B75, B110,
 		B134, B150, B200, B300,
 		B600, B1200, B1800, B2400,
@@ -382,8 +379,7 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 		ss_new.flags |= ASYNC_SPD_CUST | ASYNC_LOW_LATENCY;
 
 		/* And tell the kernel the new settings */
-		if (ioctl(fd, TIOCSSERIAL, &ss_new) < 0)
-		{
+		if (ioctl(fd, TIOCSSERIAL, &ss_new) < 0) {
 			fprintf(stderr,
 				FLFMT "setspeed(cust): ioctl failed: %s\n", FL, strerror(errno));
 			return 0;
@@ -506,8 +502,7 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
  * Set speed/parity etc, return 0 if ok
  */
 int
-diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset)
-{
+diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset) {
 	int rv;
 	int fd;
 	struct unix_tty_int *uti = tty_int;
@@ -625,8 +620,7 @@ diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset)
  * Set/Clear DTR and RTS lines, as specified
  */
 int
-diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts)
-{
+diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts) {
 	int flags;	/* Current flag values. */
 	struct unix_tty_int *uti = tty_int;
 	int setflags = 0, clearflags = 0;
@@ -668,9 +662,8 @@ diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts)
 // In addition, this calculates + enforces a write timeout based on the number of bytes.
 // But write timeouts should be very rare, and are considered an error
 ssize_t
-diag_tty_write(ttyp *tty_int, const void *buf, const size_t count)
+diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
-{
 	ssize_t rv;
 	struct unix_tty_int *uti = tty_int;
 	size_t n;
@@ -748,7 +741,7 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count)
 	/* No POSIX timers, this should be OK for everything else
 	 * Technique: write loop, manually check timeout
 	 */
-{
+
 	ssize_t rv;
 	ssize_t n;
 	size_t c = count;
@@ -810,9 +803,8 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count)
 
 
 ssize_t
-diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout)
+diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
-{
 	ssize_t rv;
 	size_t n;
 	int expired;
@@ -883,7 +875,7 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout)
  //no posix timers and it's not linux
 	//Loop with { select() with a timeout;
 	// read() ; manually check timeout}
-{
+
 	ssize_t rv;
 	ssize_t n;
 	uint8_t *p;
@@ -989,7 +981,6 @@ finished:
  * Also, it calls select() very very often (why is tv={0} ?)
  */
 
-{
 	struct timeval tv;
 	unsigned int time;
 	int rv,fd,retval;
@@ -1056,12 +1047,11 @@ finished:
 	close(fd);
 
 	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		if (time>=timeout){
+		if (time>=timeout) {
 			fprintf(stderr, FLFMT "timed out: %ums\n",FL,timeout*1000/2048);
 		}
 
-	switch (rv)
-	{
+	switch (rv) {
 	case 0:
 		/* Timeout */
 	//this doesn't require a diag_iseterr() call, as is the case when diag_tty_read
@@ -1129,8 +1119,7 @@ int diag_tty_iflush(ttyp *tty_int) {
 
 
 // ideally use TIOCSBRK, if defined (probably in sys/ioctl.h)
-int diag_tty_break(ttyp *tty_int, const unsigned int ms)
-{
+int diag_tty_break(ttyp *tty_int, const unsigned int ms) {
 #ifdef TIOCSBRK
 // TIOCSBRK: set TX break until TIOCCBRK. Ideal for our use but not in POSIX.
 /*

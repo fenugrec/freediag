@@ -52,8 +52,7 @@ enum BR_STATE {BR_STATE_CLOSED, BR_STATE_KWP_SENDKB1,
 	BR_STATE_KWP_SENDKB2, BR_STATE_KWP_FASTINIT,
 	BR_STATE_OPEN };
 
-struct br_device
-{
+struct br_device {
 	int protocol;
 	int dev_features;	/* Device features */
 	enum BR_STATE dev_state;		/* State for 5 baud startup stuff */
@@ -103,8 +102,7 @@ static void br_close(struct diag_l0_device *dl0d);
  * variables, etc.
  */
 static int
-br_init(void)
-{
+br_init(void) {
 	/* Global init flag */
 	static int br_initdone=0;
 
@@ -161,8 +159,7 @@ static struct cfgi* br_getcfg(struct diag_l0_device *dl0d) {
 }
 
 static void
-br_close(struct diag_l0_device *dl0d)
-{
+br_close(struct diag_l0_device *dl0d) {
 	if (!dl0d) return;
 
 	struct br_device *dev = dl0d->l0_int;
@@ -178,8 +175,7 @@ br_close(struct diag_l0_device *dl0d)
 }
 
 static int
-br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
-{
+br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 	struct br_device *dev = dl0d->l0_int;
 
 	if (txlen <=0)
@@ -197,8 +193,7 @@ br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
  * Open the diagnostic device, return a file descriptor,
  * record the original state of term interface so we can restore later
  */
-static int br_open(struct diag_l0_device *dl0d, int iProtocol)
-{
+static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	struct br_device *dev = dl0d->l0_int;
 	int rv;
 	uint8_t buf[4];	/* Was MAXRBUF. We only use 1! */
@@ -272,8 +267,7 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol)
 
 	/* If it's J1850, send initialisation string now */
 	rv = 0;
-	switch (iProtocol)
-	{
+	switch (iProtocol) {
 	case DIAG_L1_J1850_VPW:
 		rv = br_initialise(dl0d, 0, 0);
 		break;
@@ -305,8 +299,7 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol)
  * returns -1 on error or the keybyte value
  */
 static int
-br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr)
-{
+br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr) {
 	struct br_device *dev =
 		(struct br_device *)dl0d->l0_int;
 
@@ -355,8 +348,7 @@ br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr)
 	 * a J1850 initialisation request was done before a 9141 one ...
 	 */
 	dev->dev_features = 0;
-	switch (rv)
-	{
+	switch (rv) {
 	case 1:
 		dev->dev_features |= BR_FEATURE_SETADDR; /* All allow this */
 		break;
@@ -381,8 +373,7 @@ br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr)
  * keybytes
  */
 static int
-br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
-{
+br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	struct br_device *dev =
 		(struct br_device *)dl0d->l0_int;
 	/*
@@ -410,13 +401,11 @@ br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 	/*
 	 * Now set the keybytes from what weve sent
 	 */
-	if (rv == 1)	/* 1 byte response, old type interface */
-	{
+	if (rv == 1) {	/* 1 byte response, old type interface */
 		dev->dev_kb1 = buf[0];
 		dev->dev_kb2 = buf[0];
 	}
-	else
-	{
+	else {
 		dev->dev_kb1 = buf[0];
 		dev->dev_kb2 = buf[1];
 	}
@@ -436,8 +425,7 @@ br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
  * fastinit, and doing slowinit now
  */
 static int
-br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
-{
+br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	int rv = 0;
 	struct br_device *dev;
 
@@ -454,19 +442,16 @@ br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 
 	diag_tty_iflush(dev->tty_int); /* Flush unread input */
 
-	switch (in->type)
-	{
+	switch (in->type) {
 	case DIAG_L1_INITBUS_5BAUD:
 		rv = br_slowinit(dl0d, in);
 		break;
 	case DIAG_L1_INITBUS_FAST:
-		if ((dev->dev_features & BR_FEATURE_FASTINIT) == 0)
-		{
+		if ((dev->dev_features & BR_FEATURE_FASTINIT) == 0) {
 			/* Fast init Not supported */
 			rv = DIAG_ERR_INIT_NOTSUPP;
 		}
-		else
-		{
+		else {
 			/* Fastinit done on 1st TX */
 			dev->dev_state = BR_STATE_KWP_FASTINIT;
 			rv = 0;
@@ -488,8 +473,7 @@ br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
  * if the BR interface tells us theres a congested bus
  */
 static int
-br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout)
-{
+br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 	uint8_t firstbyte;
 	size_t readlen;
 	int rv;
@@ -566,8 +550,7 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout)
  */
 static int
 br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
-		 const void *dp, size_t txlen)
-{
+		 const void *dp, size_t txlen) {
 	struct br_device *dev =
 		(struct br_device *)dl0d->l0_int;
 	int rv, j1850mode;
@@ -643,8 +626,7 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 static int
 br_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-const void *data, size_t len)
-{
+const void *data, size_t len) {
 	int rv = 0;
 
 	struct br_device *dev;
@@ -723,8 +705,7 @@ const void *data, size_t len)
 static int
 br_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-void *data, size_t len, unsigned int timeout)
-{
+void *data, size_t len, unsigned int timeout) {
 	int xferd, rv, retrycnt;
 	uint8_t *pdata = (uint8_t *)data;
 
@@ -862,8 +843,7 @@ void *data, size_t len, unsigned int timeout)
 
 
 static uint32_t
-br_getflags(struct diag_l0_device *dl0d)
-{
+br_getflags(struct diag_l0_device *dl0d) {
 	/*
 	 * ISO14230/J1850 protocol does L2 framing, ISO9141 is just
 	 * raw, once initialised

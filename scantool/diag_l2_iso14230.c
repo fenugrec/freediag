@@ -55,8 +55,7 @@
 static int
 dl2p_14230_decode(uint8_t *data, int len,
 		 uint8_t *hdrlen, int *datalen, uint8_t *source, uint8_t *dest,
-		int first_frame)
-{
+		int first_frame) {
 	uint8_t dl;
 
 	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
@@ -68,8 +67,7 @@ dl2p_14230_decode(uint8_t *data, int len,
 	dl = data[0] & 0x3f;
 	if (dl == 0) {
 		/* Additional length field present */
-		switch (data[0] & 0xC0)
-		{
+		switch (data[0] & 0xC0) {
 		case 0x80:
 		case 0xC0:
 			/* Addresses supplied, additional len byte */
@@ -145,8 +143,7 @@ dl2p_14230_decode(uint8_t *data, int len,
 		return diag_iseterr(DIAG_ERR_BADDATA);
 
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO)
-	{
+	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "decode hdrlen=%d, datalen=%d, cksum=1\n",
 			FL, *hdrlen, *datalen);
 	}
@@ -194,8 +191,7 @@ dl2p_14230_decode(uint8_t *data, int len,
 
  */
 static int
-dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
-{
+dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	struct diag_l2_14230 *dp;
 	int rv, l1_doesl2frame, l1flags;
 	unsigned int tout;
@@ -494,10 +490,9 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
  */
 static int
 dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
-	unsigned int bitrate, target_type target, source_type source)
-{
+	unsigned int bitrate, target_type target, source_type source) {
 	struct diag_l2_14230 *dp;
-	struct diag_msg msg={0};
+	struct diag_msg msg = {0};
 	uint8_t data[MAXRBUF];
 	int rv;
 	unsigned int wait_time;
@@ -786,9 +781,8 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
  * STATE_CLOSING so the keepalive should be disabled
  */
 static int
-dl2p_14230_stopcomms(struct diag_l2_conn* pX)
-{
-	struct diag_msg stopmsg={0};
+dl2p_14230_stopcomms(struct diag_l2_conn* pX) {
+	struct diag_msg stopmsg = {0};
 	struct diag_msg *rxmsg;
 	uint8_t stopreq=DIAG_KW2K_SI_SPR;
 	int errval=0;
@@ -841,8 +835,7 @@ dl2p_14230_stopcomms(struct diag_l2_conn* pX)
  * argument msg must have .len, .data, .dest and .src assigned.
  */
 static int
-dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
-{
+dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 	size_t len;
 	uint8_t buf[MAXRBUF];
@@ -898,7 +891,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 
 
-	if ((dp->modeflags & ISO14230_FMTLEN)|| !(dp->modeflags & ISO14230_LENBYTE))  {
+	if ((dp->modeflags & ISO14230_FMTLEN)|| !(dp->modeflags & ISO14230_LENBYTE)) {
 		//if ECU supports length in format byte, or doesn't support extra len byte
 		if (msg->len < 64) {
 			buf[0] |= msg->len;
@@ -960,8 +953,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 static int
 dl2p_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
-	void *handle)
-{
+	void *handle) {
 	int rv;
 
 	/* Call internal routine */
@@ -997,8 +989,7 @@ dl2p_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 //Sends using diag_l2_send() in order to have the timestamps updated
 static struct diag_msg *
 dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-		int *errval)
-{
+		int *errval) {
 	int rv;
 	struct diag_msg *rmsg = NULL;
 	int retries=3;	//if we get a BusyRepeatRequest response.
@@ -1099,10 +1090,9 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
  * soon, so send it a keepalive message now.
  */
 static void
-dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn)
-{
+dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn) {
 	struct diag_l2_14230 *dp;
-	struct diag_msg msg={0};
+	struct diag_msg msg = {0};
 	uint8_t data[256];
 	unsigned int timeout;
 	int debug_l2_orig=diag_l2_debug;	//save debug flags; disable them for this procedure

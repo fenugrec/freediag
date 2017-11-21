@@ -117,11 +117,10 @@ static pthread_mutex_t periodic_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void
 #if defined(_POSIX_TIMERS) && (SEL_PERIODIC==S_POSIX || SEL_PERIODIC==S_AUTO)
-diag_os_periodic(UNUSED(union sigval sv))
+diag_os_periodic(UNUSED(union sigval sv)) {
 #else
-diag_os_periodic(UNUSED(int unused))
+diag_os_periodic(UNUSED(int unused)) {
 #endif
-{
 	/* Warning: these indirectly use non-async-signal-safe functions
 	* Their behavior is undefined if they happen
 	* to occur during any other non-async-signal-safe function.
@@ -137,8 +136,7 @@ diag_os_periodic(UNUSED(int unused))
 //for keepalive messages, and selects + calibrates timer functions.
 //return 0 if ok
 int
-diag_os_init(void)
-{
+diag_os_init(void) {
 	const long tmo = ALARM_TIMEOUT;
 
 	if (diag_os_init_done)
@@ -237,7 +235,7 @@ int diag_os_close() {
 	timer_delete(ptimer_id);
 #else
 	//stop the interval timer:
-	struct itimerval tv={{0,0},{0, 0}};
+	struct itimerval tv = {{0,0},{0, 0}};
 	setitimer(ITIMER_REAL, &tv, 0);
 
 	//and  set the SIGALRM handler to default, whatever that is
@@ -255,8 +253,7 @@ int diag_os_close() {
 
 //return after (ms) milliseconds.
 void
-diag_os_millisleep(unsigned int ms)
-{
+diag_os_millisleep(unsigned int ms) {
 	unsigned long long t1,t2;	//for verification
 	long int offsetus;
 
@@ -415,8 +412,7 @@ diag_os_ipending(void) {
 //will harm nothing. There is no "opposite" function of this, to
 //reset normal priority.
 int
-diag_os_sched(void)
-{
+diag_os_sched(void) {
 	static int os_sched_done=0;
 	int rv=0;
 
@@ -428,8 +424,7 @@ diag_os_sched(void)
 	/*
 	 * Check privileges
 	 */
-	if (getuid() != 0)
-	{
+	if (getuid() != 0) {
 		static int suser_warned;
 		if (suser_warned == 0) {
 			suser_warned = 1;
@@ -445,8 +440,7 @@ diag_os_sched(void)
 
 		/* Set real time UNIX scheduling */
 		p.sched_priority = 1;
-		if ( sched_setscheduler(getpid(), SCHED_FIFO, &p) < 0)
-		{
+		if ( sched_setscheduler(getpid(), SCHED_FIFO, &p) < 0) {
 			fprintf(stderr, FLFMT "sched_setscheduler failed: %s.\n",
 				FL, strerror(errno));
 			r = -1;
@@ -676,7 +670,7 @@ unsigned long long diag_os_gethrt(void) {
 	assert(discover_done);
 #if defined(_POSIX_TIMERS) && (SEL_HRT==S_POSIX || SEL_HRT==S_AUTO)
 	//units : ns
-	struct timespec curtime={0};
+	struct timespec curtime = {0};
 
 	clock_gettime(clkid_gt, &curtime);
 

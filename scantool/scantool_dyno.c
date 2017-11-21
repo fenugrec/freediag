@@ -62,8 +62,7 @@ static int cmd_dyno_save(int argc, char **argv);
 
 void reset_results(void);
 
-const struct cmd_tbl_entry dyno_cmd_table[] =
-{
+const struct cmd_tbl_entry dyno_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_dyno_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
@@ -100,8 +99,7 @@ const struct cmd_tbl_entry dyno_cmd_table[] =
 /*
  * Show/Sets the mass of the vehicle
  */
-static int cmd_dyno_mass(int argc, char **argv)
-{
+static int cmd_dyno_mass(int argc, char **argv) {
 	int mass=0;
 
 	if (argc > 1)
@@ -130,8 +128,7 @@ static int cmd_dyno_mass(int argc, char **argv)
 
 /* measure speed */
 // return <0 if error
-static int measure_data(uint8_t data_pid, ecu_data_t *ep)
-{
+static int measure_data(uint8_t data_pid, ecu_data_t *ep) {
 	int rv;
 
 	if (global_l3_conn == NULL) {
@@ -161,8 +158,7 @@ int counter;
 unsigned long tv0d;	/* measuring time */
 
 /* fake loss measures */
-int fake_loss_measure_data()
-{
+int fake_loss_measure_data() {
 	unsigned long tv;
 	unsigned long elapsed; /* elapsed time */
 	int speed;
@@ -238,8 +234,7 @@ int fake_loss_measure_data()
 
 int counter2;
 /* fake run measures */
-int fake_run_measure_data(int data_pid)
-{
+int fake_run_measure_data(int data_pid) {
   int rpm;
 
   diag_os_millisleep(250);
@@ -278,8 +273,7 @@ int dyno_loss_done;
  * Determine power lost by aerodynamic and friction forces
  */
 
-static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
-{
+static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data_t *ep;
 
 	int speed;              /* measured speed */
@@ -385,8 +379,7 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv))
 /*
  * Manually enter aerodynamic and friction forces d and f parameters
  */
-static int cmd_dyno_setloss(int argc, char **argv)
-{
+static int cmd_dyno_setloss(int argc, char **argv) {
 	if (argc > 1) {
 		int assigned;
 		double d;
@@ -424,8 +417,7 @@ static int cmd_dyno_setloss(int argc, char **argv)
  * Run dyno
  */
 
-static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
-{
+static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data_t *ep;
 
 	int speed;						/* measured speed */
@@ -539,8 +531,7 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv))
  *****************************************************************************/
 
 /* Get measures for specified type */
-static void get_measures(dyno_measure ** measures, int * nb_measures)
-{
+static void get_measures(dyno_measure ** measures, int * nb_measures) {
 	/* allocate memory */
 	(*nb_measures) = dyno_get_nb_measures();
 	if ((*nb_measures)==0)
@@ -553,8 +544,7 @@ static void get_measures(dyno_measure ** measures, int * nb_measures)
 }
 
 /* Display given measures */
-static void display_measures(dyno_measure * measures, int nb_measures)
-{
+static void display_measures(dyno_measure * measures, int nb_measures) {
 	int i;
 
 	for (i=0; i<nb_measures; i++) {
@@ -572,8 +562,7 @@ static void display_measures(dyno_measure * measures, int nb_measures)
 
 /* Display all measures */
 
-static int cmd_dyno_measures(UNUSED(int argc), UNUSED(char **argv))
-{
+static int cmd_dyno_measures(UNUSED(int argc), UNUSED(char **argv)) {
 	dyno_measure * measures = NULL;
 	int nb_measures = 0;
 
@@ -590,8 +579,7 @@ static int cmd_dyno_measures(UNUSED(int argc), UNUSED(char **argv))
 
 
 /* Display results */
-static void display_results(dyno_result * results, int nb)
-{
+static void display_results(dyno_result * results, int nb) {
 	int i;
 
 	int max_power_i = 0;
@@ -627,8 +615,7 @@ static void display_results(dyno_result * results, int nb)
 #define DYNO_GRAPH_HEIGHT 21
 
 /* Display graphs */
-static void display_graphs(dyno_result * results, int nb)
-{
+static void display_graphs(dyno_result * results, int nb) {
 	int row, col, step;
 
 	int max_power_i = 0;
@@ -685,8 +672,7 @@ static void display_graphs(dyno_result * results, int nb)
 }
 
 /* Get the results in global vars */
-static void get_results(void)
-{
+static void get_results(void) {
 	/* allocating memory for the results table */
 	if (dyno_results == NULL) {
 		dyno_nb_results = dyno_get_nb_results();
@@ -704,8 +690,7 @@ static void get_results(void)
 }
 
 /* Reset results */
-void reset_results(void)
-{
+void reset_results(void) {
 	if (dyno_results != NULL)
 		free(dyno_results);
 	dyno_results = NULL;
@@ -716,8 +701,7 @@ void reset_results(void)
  * Display dyno results
  */
 
-static int cmd_dyno_result(UNUSED(int argc), UNUSED(char **argv))
-{
+static int cmd_dyno_result(UNUSED(int argc), UNUSED(char **argv)) {
 	get_results();
 
 	/* Check data */
@@ -734,8 +718,7 @@ static int cmd_dyno_result(UNUSED(int argc), UNUSED(char **argv))
  * Display dyno graphs
  */
 
-static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv))
-{
+static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv)) {
 	get_results();
 
 	/* Check data */
@@ -756,8 +739,7 @@ static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv))
 /*
  * Save dyno measures and results to a file
  */
-static int cmd_dyno_save(int argc, char **argv)
-{
+static int cmd_dyno_save(int argc, char **argv) {
 	char * filename;
 
 	get_results();
@@ -787,8 +769,7 @@ static int cmd_dyno_save(int argc, char **argv)
 
 		/* Remove pending "\n" and "\r", if any */
 		while ((filename[strlen(filename)-1] == '\n') ||
-					 (filename[strlen(filename)-1] == '\r'))
-		{
+					 (filename[strlen(filename)-1] == '\r')) {
 			filename[strlen(filename)-1] = '\0';
 		}
 	}
@@ -803,7 +784,6 @@ static int cmd_dyno_save(int argc, char **argv)
 
 /* Display help */
 static int
-cmd_dyno_help(int argc, char **argv)
-{
+cmd_dyno_help(int argc, char **argv) {
 	return help_common(argc, argv, dyno_cmd_table);
 }

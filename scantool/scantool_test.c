@@ -40,8 +40,7 @@ static int cmd_test_cms(int argc, char **argv);
 static int cmd_test_ncms(int argc, char **argv);
 static int cmd_test_readiness(int argc, char **argv);
 
-const struct cmd_tbl_entry test_cmd_table[] =
-{
+const struct cmd_tbl_entry test_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_test_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
@@ -69,8 +68,7 @@ const struct cmd_tbl_entry test_cmd_table[] =
 };
 
 static int
-cmd_test_help(int argc, char **argv)
-{
+cmd_test_help(int argc, char **argv) {
 	return help_common(argc, argv, test_cmd_table);
 }
 
@@ -80,8 +78,7 @@ cmd_test_help(int argc, char **argv)
  * return data length (excluding 0x00 termination) if ok (data written to *obuf)
  */
 static unsigned
-get_vit_info(struct diag_l3_conn *d_conn, uint8_t itype, uint8_t *obuf, unsigned buflen)
-{
+get_vit_info(struct diag_l3_conn *d_conn, uint8_t itype, uint8_t *obuf, unsigned buflen) {
 	struct diag_msg *msg, *msgcur;
 	int rv;
 	unsigned offset ;
@@ -94,7 +91,7 @@ get_vit_info(struct diag_l3_conn *d_conn, uint8_t itype, uint8_t *obuf, unsigned
 	}
 
 	msg = find_ecu_msg(0, 0x49);
-	if (msg == NULL){
+	if (msg == NULL) {
 		printf("No Mode 9 response\n");
 		return 0;
 	}
@@ -117,12 +114,10 @@ get_vit_info(struct diag_l3_conn *d_conn, uint8_t itype, uint8_t *obuf, unsigned
 /* Request Vehicle Info */
 
 static int
-cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv)) {
 	struct diag_l3_conn *d_conn;
 
-	if (global_state < STATE_SCANDONE)
-	{
+	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
 		return CMD_OK;
 	}
@@ -180,10 +175,8 @@ cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv))
 
 
 static int
-cmd_test_cms(UNUSED(int argc), UNUSED(char **argv))
-{
-	if (global_state < STATE_SCANDONE)
-	{
+cmd_test_cms(UNUSED(int argc), UNUSED(char **argv)) {
+	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
 		return CMD_OK;
 	}
@@ -193,10 +186,8 @@ cmd_test_cms(UNUSED(int argc), UNUSED(char **argv))
 
 
 static int
-cmd_test_ncms(UNUSED(int argc), UNUSED(char **argv))
-{
-	if (global_state < STATE_SCANDONE)
-	{
+cmd_test_ncms(UNUSED(int argc), UNUSED(char **argv)) {
+	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
 		return CMD_OK;
 	}
@@ -206,8 +197,7 @@ cmd_test_ncms(UNUSED(int argc), UNUSED(char **argv))
 
 
 static int
-cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv)) {
 	int rv;
 	struct diag_l3_conn *d_conn;
 	ecu_data_t *ep;
@@ -231,8 +221,7 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 
 	d_conn = global_l3_conn;
 
-	if (global_state < STATE_CONNECTED)
-	{
+	if (global_state < STATE_CONNECTED) {
 		printf("Not connected to ECU\n");
 		return CMD_OK;
 	}
@@ -242,32 +231,26 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 			0x00, 0x00, 0x00, 0x00,
 			(void *)&_RQST_HANDLE_READINESS);
 
-	if ((rv < 0) || (find_ecu_msg(0, 0x41) == NULL))
-	{
+	if ((rv < 0) || (find_ecu_msg(0, 0x41) == NULL)) {
 		printf("Mode 1 PID 1 request failed\n");
 		return CMD_OK;
 	}
 
 	/* And process results */
-	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++)
-	{
-		if (ep->mode1_data[1].type == TYPE_GOOD)
-		{
+	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
+		if (ep->mode1_data[1].type == TYPE_GOOD) {
 			int supported, value;
 
-			for (i=0; i<12; i++)
-			{
+			for (i=0; i<12; i++) {
 				text = test_names[i];
 				if (text == NULL)
 					continue;
-				if (i<4)
-				{
+				if (i<4) {
 					supported = (ep->mode1_data[1].data[3]>>i)&1;
 					value = (ep->mode1_data[1].data[3]>>(i+4))&1;
 
 				}
-				else
-				{
+				else {
 					supported = (ep->mode1_data[1].data[4]>>(i-4))&1;
 					value = (ep->mode1_data[1].data[5]>>(i-4))&1;
 				}

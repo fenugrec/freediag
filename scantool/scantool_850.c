@@ -118,8 +118,7 @@ static int cmd_850_freeze(int argc, char **argv);
 static int cmd_850_scan_all(int argc, UNUSED(char **argv));
 static int cmd_850_test(int argc, char **argv);
 
-const struct cmd_tbl_entry v850_cmd_table[] =
-{
+const struct cmd_tbl_entry v850_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_850_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
@@ -167,8 +166,7 @@ const struct cmd_tbl_entry v850_cmd_table[] =
 };
 
 static int
-cmd_850_help(int argc, char **argv)
-{
+cmd_850_help(int argc, char **argv) {
 	return help_common(argc, argv, v850_cmd_table);
 }
 
@@ -177,8 +175,7 @@ cmd_850_help(int argc, char **argv)
  * Returns a static buffer that will be reused on the next call.
  */
 static char *
-capitalize(const char *in)
-{
+capitalize(const char *in) {
 	static char buf[80];
 
 	strncpy(buf, in, sizeof(buf));
@@ -193,8 +190,7 @@ capitalize(const char *in)
  * Look up an ECU by name.
  */
 static struct ecu_info *
-ecu_info_by_name(const char *name)
-{
+ecu_info_by_name(const char *name) {
 	struct ecu_info *ecu;
 
 	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
@@ -209,8 +205,7 @@ ecu_info_by_name(const char *name)
  * Get an ECU's address by name.
  */
 static int
-ecu_addr_by_name(const char *name)
-{
+ecu_addr_by_name(const char *name) {
 	struct ecu_info *ecu;
 	unsigned long int i;
 	char *p;
@@ -236,8 +231,7 @@ ecu_addr_by_name(const char *name)
  * Get an ECU's description by address.
  */
 static char *
-ecu_desc_by_addr(uint8_t addr)
-{
+ecu_desc_by_addr(uint8_t addr) {
 	struct ecu_info *ecu;
 	static char buf[7];
 
@@ -254,8 +248,7 @@ ecu_desc_by_addr(uint8_t addr)
  * Get the description of the currently connected ECU.
  */
 static char *
-current_ecu_desc(void)
-{
+current_ecu_desc(void) {
 	int addr;
 
 	if (global_state < STATE_CONNECTED)
@@ -275,8 +268,7 @@ current_ecu_desc(void)
  * Returns a static buffer that will be reused on the next call.
  */
 static char *
-dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc)
-{
+dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
 	static char printable[7+1];
 	static char *empty="";
 	struct ecu_info *ecu_entry;
@@ -312,8 +304,7 @@ dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc)
  * Get the DTC prefix for the currently connected ECU.
  */
 static char *
-current_dtc_prefix(void)
-{
+current_dtc_prefix(void) {
 	struct ecu_info *ecu;
 
 	if (global_state < STATE_CONNECTED)
@@ -332,8 +323,7 @@ current_dtc_prefix(void)
  * failure.
  */
 static uint16_t
-dtc_raw_by_printable(char *printable)
-{
+dtc_raw_by_printable(char *printable) {
 	char prefix[8];
 	uint16_t suffix;
 	char *p, *q, *r;
@@ -373,8 +363,7 @@ dtc_raw_by_printable(char *printable)
  * present in the vehicle.
  */
 static void
-print_ecu_list(void)
-{
+print_ecu_list(void) {
 	struct ecu_info *ecu;
 
 	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
@@ -394,8 +383,7 @@ enum connection_status {
  * Indicates whether we're currently connected.
  */
 static enum connection_status
-get_connection_status(void)
-{
+get_connection_status(void) {
 	if (global_state < STATE_CONNECTED) {
 		return NOT_CONNECTED;
 	} else if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_D2) {
@@ -412,8 +400,7 @@ get_connection_status(void)
  * minimum and maximum. If not, print a message and return false.
  */
 static bool
-valid_arg_count(int min, int argc, int max)
-{
+valid_arg_count(int min, int argc, int max) {
 	if(argc < min) {
                 printf("Too few arguments\n");
                 return false;
@@ -432,8 +419,7 @@ valid_arg_count(int min, int argc, int max)
  * for this command. If not, print a message and return false.
  */
 static bool
-valid_connection_status(unsigned int want)
-{
+valid_connection_status(unsigned int want) {
 	if (want == CONNECTED_EITHER) {
 		if (get_connection_status()==CONNECTED_D2 || get_connection_status()==CONNECTED_KWP71)
 			return true;
@@ -471,8 +457,7 @@ valid_connection_status(unsigned int want)
  * response time.
  */
 static void
-adaptive_timing_workaround(void)
-{
+adaptive_timing_workaround(void) {
 	int i;
 
 	for (i=0;i<3;i++) {
@@ -485,8 +470,7 @@ adaptive_timing_workaround(void)
  * Callback to store the ID block upon establishing a KWP71 connection
  */
 static void
-ecu_id_callback(void *handle, struct diag_msg *in)
-{
+ecu_id_callback(void *handle, struct diag_msg *in) {
 	struct diag_msg **out = (struct diag_msg **)handle;
 	*out = diag_dupmsg(in);
 }
@@ -495,8 +479,7 @@ ecu_id_callback(void *handle, struct diag_msg *in)
  * Connect to an ECU by name or address.
  */
 static int
-cmd_850_connect(int argc, char **argv)
-{
+cmd_850_connect(int argc, char **argv) {
 	int addr;
 	int rv;
 	struct diag_l0_device *dl0d;
@@ -606,8 +589,7 @@ cmd_850_connect(int argc, char **argv)
  * Close the current connection.
  */
 static int
-cmd_850_disconnect(int argc, UNUSED(char **argv))
-{
+cmd_850_disconnect(int argc, UNUSED(char **argv)) {
 	char *desc;
 
 	if (!valid_arg_count(1, argc, 1))
@@ -633,8 +615,7 @@ cmd_850_disconnect(int argc, UNUSED(char **argv))
  * Send a raw command and print the response.
  */
 static int
-cmd_850_sendreq(int argc, char **argv)
-{
+cmd_850_sendreq(int argc, char **argv) {
 	uint8_t data[MAXRBUF] = {0};
 	unsigned int len;
 	unsigned int i;
@@ -667,8 +648,7 @@ cmd_850_sendreq(int argc, char **argv)
  * Verify communication with the ECU.
  */
 static int
-cmd_850_ping(int argc, UNUSED(char **argv))
-{
+cmd_850_ping(int argc, UNUSED(char **argv)) {
 	int rv;
 
 	if (!valid_arg_count(1, argc, 1))
@@ -697,8 +677,7 @@ cmd_850_ping(int argc, UNUSED(char **argv))
  * scaled value.
  */
 static void
-interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf)
-{
+interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf) {
 	if (ns==NS_LIVEDATA && addr==0x0200) {
 		printf("Engine Coolant Temperature: %dC (%dF)\n", buf[1]-80, (buf[1]-80)*9/5+32);
 	} else if (ns==NS_LIVEDATA && addr==0x0300) {
@@ -716,8 +695,7 @@ interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf)
  * Try to interpret all the live data values in the buffer.
  */
 static void
-interpret_block(enum namespace ns, uint16_t addr, int len, uint8_t *buf)
-{
+interpret_block(enum namespace ns, uint16_t addr, int len, uint8_t *buf) {
 	int i;
 
 	if (ns != NS_MEMORY)
@@ -733,8 +711,7 @@ interpret_block(enum namespace ns, uint16_t addr, int len, uint8_t *buf)
  * values.
  */
 static int
-print_hexdump_line(FILE *f, uint16_t addr, int addr_chars, uint8_t *buf, uint16_t len)
-{
+print_hexdump_line(FILE *f, uint16_t addr, int addr_chars, uint8_t *buf, uint16_t len) {
 	if (fprintf(f, "%0*X:", addr_chars, addr) < 0)
 		return 1;
 	while (len--) {
@@ -756,8 +733,7 @@ struct read_or_peek_item {
  * Parse an address argument on a peek command line.
  */
 static int
-parse_peek_arg(char *arg, struct read_or_peek_item *item)
-{
+parse_peek_arg(char *arg, struct read_or_peek_item *item) {
 	char *p, *q;
 
 	item->ns = NS_MEMORY;
@@ -785,8 +761,7 @@ parse_peek_arg(char *arg, struct read_or_peek_item *item)
  * Parse an identifier argument on a read command line.
  */
 static int
-parse_read_arg(char *arg, struct read_or_peek_item *item)
-{
+parse_read_arg(char *arg, struct read_or_peek_item *item) {
 	char *p;
 
 	if(arg[0] == '*') {
@@ -810,8 +785,7 @@ parse_read_arg(char *arg, struct read_or_peek_item *item)
  * Parse an identifier argument on an adc command line.
  */
 static int
-parse_adc_arg(char *arg, struct read_or_peek_item *item)
-{
+parse_adc_arg(char *arg, struct read_or_peek_item *item) {
 	char *p;
 
 	item->ns = NS_ADC;
@@ -827,8 +801,7 @@ parse_adc_arg(char *arg, struct read_or_peek_item *item)
  * Parse an identifier argument on a readnv command line.
  */
 static int
-parse_readnv_arg(char *arg, struct read_or_peek_item *item)
-{
+parse_readnv_arg(char *arg, struct read_or_peek_item *item) {
 	char *p;
 
 	item->ns = NS_NV;
@@ -844,8 +817,7 @@ parse_readnv_arg(char *arg, struct read_or_peek_item *item)
  * Parse an identifier argument on a freeze command line.
  */
 static int
-parse_freeze_arg(char *arg, struct read_or_peek_item *item)
-{
+parse_freeze_arg(char *arg, struct read_or_peek_item *item) {
 	char *p;
 
 	item->ns = NS_FREEZE;
@@ -879,8 +851,7 @@ parse_freeze_arg(char *arg, struct read_or_peek_item *item)
  * Execute a read, peek or readnv command.
  */
 static int
-read_family(int argc, char **argv, enum namespace ns)
-{
+read_family(int argc, char **argv, enum namespace ns) {
 	int count;
 	int i;
 	bool continuous;
@@ -1004,8 +975,7 @@ done:
  * the requested addresses until interrupted.
  */
 static int
-cmd_850_peek(int argc, char **argv)
-{
+cmd_850_peek(int argc, char **argv) {
 	return read_family(argc, argv, NS_MEMORY);
 }
 
@@ -1021,8 +991,7 @@ cmd_850_peek(int argc, char **argv)
  * the requested addresses until interrupted.
  */
 static int
-cmd_850_read(int argc, char **argv)
-{
+cmd_850_read(int argc, char **argv) {
 	if(!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
@@ -1038,8 +1007,7 @@ cmd_850_read(int argc, char **argv)
  * the requested readings until interrupted.
  */
 static int
-cmd_850_adc(int argc, char **argv)
-{
+cmd_850_adc(int argc, char **argv) {
 	if(!valid_connection_status(CONNECTED_KWP71))
 		return CMD_OK;
 
@@ -1053,8 +1021,7 @@ cmd_850_adc(int argc, char **argv)
  * Takes a list of one-byte identifier values.
  */
 static int
-cmd_850_readnv(int argc, char **argv)
-{
+cmd_850_readnv(int argc, char **argv) {
 	if(!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
@@ -1065,8 +1032,7 @@ cmd_850_readnv(int argc, char **argv)
  * Read and display freeze frames for all stored DTCs.
  */
 static int
-cmd_850_freeze_all(void)
-{
+cmd_850_freeze_all(void) {
 	uint8_t dtcs[12];
 	int count;
 	char *argbuf;
@@ -1119,8 +1085,7 @@ cmd_850_freeze_all(void)
  * EFI-xxx, AT-xxx, etc designation.
  */
 static int
-cmd_850_freeze(int argc, char **argv)
-{
+cmd_850_freeze(int argc, char **argv) {
 	if(!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
@@ -1135,8 +1100,7 @@ cmd_850_freeze(int argc, char **argv)
  * Query the ECU for identification and print the result.
  */
 static int
-cmd_850_id_d2(void)
-{
+cmd_850_id_d2(void) {
 	uint8_t buf[15];
 	int rv;
 	int i;
@@ -1187,8 +1151,7 @@ cmd_850_id_d2(void)
  * Print the ECU identification we received upon initial connection.
  */
 static int
-cmd_850_id_kwp71(void)
-{
+cmd_850_id_kwp71(void) {
 	int i;
 	struct diag_msg *msg;
 
@@ -1246,8 +1209,7 @@ cmd_850_id_kwp71(void)
  * Display ECU identification.
  */
 static int
-cmd_850_id(int argc, UNUSED(char **argv))
-{
+cmd_850_id(int argc, UNUSED(char **argv)) {
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
@@ -1274,8 +1236,7 @@ cmd_850_id(int argc, UNUSED(char **argv))
  * when a read attempt fails.
  */
 static int
-cmd_850_dumpram(int argc, char **argv)
-{
+cmd_850_dumpram(int argc, char **argv) {
 	uint16_t addr;
 	FILE *f;
 	bool happy;
@@ -1344,8 +1305,7 @@ cmd_850_dumpram(int argc, char **argv)
  * Display list of stored DTCs.
  */
 static int
-cmd_850_dtc(int argc, UNUSED(char **argv))
-{
+cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	uint8_t buf[12];
 	int rv;
 	int i;
@@ -1390,8 +1350,7 @@ cmd_850_dtc(int argc, UNUSED(char **argv))
  * Clear stored DTCs.
  */
 static int
-cmd_850_cleardtc(int argc, UNUSED(char **argv))
-{
+cmd_850_cleardtc(int argc, UNUSED(char **argv)) {
 	char *input;
 	int rv;
 
@@ -1450,8 +1409,7 @@ done:
  * same car.
  */
 static int
-cmd_850_scan_all(int argc, UNUSED(char **argv))
-{
+cmd_850_scan_all(int argc, UNUSED(char **argv)) {
 	struct ecu_info *ecu;
 	char *argvout[2];
 	char buf[4];

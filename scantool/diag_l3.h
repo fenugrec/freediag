@@ -36,8 +36,7 @@ struct diag_msg;
 
 /** Layer 3 connection info
  */
-struct diag_l3_conn
-{
+struct diag_l3_conn {
 	struct diag_l2_conn	*d_l3l2_conn;
 	int d_l3l2_flags;		/* Flags from L2 */
 	uint32_t d_l3l1_flags;		/* Flags from L1 */

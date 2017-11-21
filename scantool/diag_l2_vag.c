@@ -60,8 +60,7 @@
 /*
  * ISO vag specific data
  */
-struct diag_l2_vag
-{
+struct diag_l2_vag {
 	uint8_t seq_nr; //Sequence number
 	uint8_t master; //Master flag, 1 = us, 0 = ECU
 	uint8_t first_telegram_started;
@@ -85,8 +84,7 @@ struct diag_l2_vag
  * Returns 0 on success, errorcode<0 on errors
  */
 static struct diag_msg *
-diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_timeout)
-{
+diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_timeout) {
 	int rv;
 	struct diag_l2_vag *dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
 	//prepare a No Acknowledge message - we may need one
@@ -274,8 +272,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
  * Will store the received telegram in the d_l2_conn->diag_msg.
  */
 int
-diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
-{
+diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	struct diag_l2_vag *dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
 	struct diag_msg ack;
 	unsigned long long elapsed_time, msg_timeout;
@@ -401,8 +398,7 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout)
 
 static int
 dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
-                             unsigned int bitrate, target_type target, UNUSED(source_type source))
-{
+                             unsigned int bitrate, target_type target, UNUSED(source_type source)) {
 	struct diag_serial_settings set;
 	struct diag_l2_vag *dp;
 	int rv;
@@ -519,8 +515,7 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 }
 
 //free what _startcomms alloc'ed
-static int dl2p_vag_stopcomms(struct diag_l2_conn *d_l2_conn)
-{
+static int dl2p_vag_stopcomms(struct diag_l2_conn *d_l2_conn) {
 	//according to SAE J2818 if we want to finish the session
 	//we should just stop sending anything and let the ECU timeout;
 	//but of course l3 can implement the endcomms SID
@@ -546,8 +541,7 @@ static int dl2p_vag_stopcomms(struct diag_l2_conn *d_l2_conn)
  * Sends a single Block (message) to the ECU
  */
 static int
-dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
-{
+dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv = 0;
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
@@ -671,8 +665,7 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 static int
 dl2p_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
                        void (*callback)(void *handle, struct diag_msg *msg),
-                       void *handle)
-{
+                       void *handle) {
 	int rv;
 
 	if(diag_l2_debug & DIAG_DEBUG_PROTO && timeout != 0)
@@ -718,8 +711,7 @@ dl2p_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 }
 
 static struct diag_msg *
-dl2p_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval)
-{
+dl2p_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval) {
 	int rv, na_retry_cnt = 0;
 	struct diag_msg *rmsg;
 	struct diag_l2_vag *dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
@@ -781,8 +773,7 @@ dl2p_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errv
  * so send it a keepalive message now.
  */
 static void
-dl2p_vag_timeout(struct diag_l2_conn *d_l2_conn)
-{
+dl2p_vag_timeout(struct diag_l2_conn *d_l2_conn) {
 	struct diag_msg ack;
 	memset(&ack, 0, sizeof(ack));
 	ack.type = KWP1281_SID_ACK;

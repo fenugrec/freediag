@@ -51,8 +51,7 @@ static const char *l3_iso14230_neglookup(const int id);
  */
 char *
 diag_l3_iso14230_decode_response(struct diag_msg *msg,
-	char *buf, const size_t bufsize)
-{
+	char *buf, const size_t bufsize) {
 	char buf2[80];
 
 	switch (msg->data[0]) {
@@ -124,8 +123,7 @@ diag_l3_iso14230_decode_response(struct diag_msg *msg,
 //proto over an iso14230 L2 proto. Running an iso14230 L3 over anything other
 //than iso14230 is meaningless.
 static int
-diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
-{
+diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 	int rv;
 	struct diag_l2_conn *d_conn;
 
@@ -152,8 +150,7 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
  * call L3 callback routine
  */
 static void
-diag_l3_14230_rxcallback(void *handle, struct diag_msg *msg)
-{
+diag_l3_14230_rxcallback(void *handle, struct diag_msg *msg) {
 	/*
 	 * Got some data from L2, build it into a L3 message, if
 	 * message is complete call next layer callback routine
@@ -227,8 +224,7 @@ diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 
 void
 diag_l3_iso14230_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
-struct diag_msg *msg, char *buf, size_t bufsize)
-{
+struct diag_msg *msg, char *buf, size_t bufsize) {
 	if (msg->data[0] & 0x40)
 		snprintf(buf, bufsize, "ISO14230 response ");
 	else
@@ -241,12 +237,10 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 /*
  * Table of english descriptions of the ISO14230 SIDs
  */
-static const struct
-{
+static const struct {
 	const int id;
 	const char *service;
-} sids[] =
-{
+} sids[] = {
 	{DIAG_KW2K_SI_STADS, 	"startDiagnosticSession"},
 	{DIAG_KW2K_SI_ER, 	"ecuReset"},
 	{DIAG_KW2K_SI_RDFFD, 	"readFreezeFrameData"},
@@ -285,8 +279,7 @@ static const struct
 	{DIAG_KW2K_SI_ATP, 	"accessTimingParameters"},
 };
 
-static const char *l3_iso14230_sidlookup(const int id)
-{
+static const char *l3_iso14230_sidlookup(const int id) {
 	unsigned i;
 	for (i = 0; i < ARRAY_SIZE(sids); i++)
 		if (sids[i].id == id)
@@ -299,12 +292,10 @@ static const char *l3_iso14230_sidlookup(const int id)
 /*
  * Table of english descriptions of the ISO14230 NegResponse codes
  */
-static const struct
-{
+static const struct {
 	const int id;
 	const char *response;
-} negresps[] =
-{
+} negresps[] = {
 	{DIAG_KW2K_RC_GR,	"generalReject"},
 	{DIAG_KW2K_RC_SNS,	"serviceNotSupported"},
 	{DIAG_KW2K_RC_SFNS_IF,	"subFunctionNotSupported-Invalid Format"},
@@ -336,8 +327,7 @@ static const struct
 	{0, 			NULL},
 };
 
-static const char *l3_iso14230_neglookup(const int id)
-{
+static const char *l3_iso14230_neglookup(const int id) {
 	unsigned i;
 	for (i = 0; i < ARRAY_SIZE(negresps); i++)
 		if (negresps[i].id == id)

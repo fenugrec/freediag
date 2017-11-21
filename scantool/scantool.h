@@ -41,8 +41,7 @@ extern "C" {
 
 
 /* Structure to hold responses */
-typedef struct response
-{
+typedef struct response {
 	uint8_t	type;
 	uint8_t	len;
 	uint8_t	data[7];
@@ -58,8 +57,7 @@ typedef struct response
  * - one request can result in more than one ECU responding, and so
  * the data is stored in this
  */
-typedef struct ecu_data
-{
+typedef struct ecu_data {
 	uint8_t 	valid;		/* Valid flag */
 	uint8_t	ecu_addr;	/* Address */
 
@@ -163,8 +161,7 @@ struct pid ;
 /* format <numbytes> bytes of data into buf, up to <maxlen> chars. */
 typedef void (formatter)(char *buf, int maxlen, int units, const struct pid *, response_t *, int numbytes);
 
-struct pid
-{
+struct pid {
 	int pidID ;
 	const char *desc ;
 	formatter *cust_snprintf ;

@@ -71,8 +71,7 @@ enum {
  * Indicates whether a response was a positive acknowledgement of the request.
  */
 static bool
-success_p(struct diag_msg *req, struct diag_msg *resp)
-{
+success_p(struct diag_msg *req, struct diag_msg *resp) {
 	if (resp->len < 1)
 		return false;
 
@@ -89,8 +88,7 @@ success_p(struct diag_msg *req, struct diag_msg *resp)
  * Verify communication with the ECU.
  */
 int
-diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn)
-{
+diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn) {
 	uint8_t req[] = { testerPresent };
 	int errval = 0;
 	struct diag_msg msg = {0};
@@ -114,8 +112,7 @@ diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn)
 
 /* The request message for reading memory */
 static int
-read_MEMORY_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, uint8_t count)
-{
+read_MEMORY_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, uint8_t count) {
 	static uint8_t req[] = { readMemoryByAddress, 0, 99, 99, 1, 99 };
 
 	req[2] = (addr>>8)&0xff;
@@ -128,8 +125,7 @@ read_MEMORY_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, uint8_t c
 
 /* The request message for reading live data by 1-byte identifier */
 static int
-read_LIVEDATA_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count))
-{
+read_LIVEDATA_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count)) {
 	static uint8_t req[] = { readDataByLocalIdentifier, 99, 1 };
 
 	req[1] = addr&0xff;
@@ -145,8 +141,7 @@ read_LIVEDATA_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(
 
 /* The request message for reading live data by 2-byte ident (CAN bus only?) */
 static int
-read_LIVEDATA2_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count))
-{
+read_LIVEDATA2_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count)) {
 	static uint8_t req[] = { readDataByLongLocalIdentifier, 99, 99, 1 };
 	req[1] = (addr>>8)&0xff;
 	req[2] = addr&0xff;
@@ -157,8 +152,7 @@ read_LIVEDATA2_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED
 
 /* The request message for reading non-volatile data */
 static int
-read_NV_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count))
-{
+read_NV_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count)) {
 	static uint8_t req[] = { readNVByLocalIdentifier, 99 };
 
 	req[1] = addr&0xff;
@@ -174,8 +168,7 @@ read_NV_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_
 
 /* The request message for reading freeze frames */
 static int
-read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count))
-{
+read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count)) {
 	static uint8_t req[] = { readFreezeFrameByDTC, 99, 0 };
 
 	req[1] = addr&0xff;
@@ -202,8 +195,7 @@ read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(ui
  * be more or less than the number of bytes requested.
  */
 int
-diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out)
-{
+diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out) {
 	struct diag_msg req = {0};
 	struct diag_msg *resp = NULL;
 	int datalen;
@@ -263,8 +255,7 @@ diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr
  * Retrieve list of stored DTCs.
  */
 int
-diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
-{
+diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) {
 	uint8_t req[] = { readDiagnosticTroubleCodes, 1 };
 	int errval = 0;
 	struct diag_msg msg = {0};
@@ -308,8 +299,7 @@ diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
  * ECU returned positive acknowledgement for the clear request, <0 for errors.
  */
 int
-diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn)
-{
+diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn) {
 	uint8_t req[] = { clearDiagnosticInformation, 1 };
 	uint8_t buf[1];
 	struct diag_msg msg = {0};
@@ -349,8 +339,7 @@ diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn)
  * cycle depends on which output is specified.
  */
 int
-diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps)
-{
+diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps) {
 	uint8_t req[] = { inputOutputControlByLocalIdentifier, id, 0x32, reps };
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;

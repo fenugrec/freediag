@@ -63,8 +63,7 @@ static struct l2_internal_t l2internal = {0};
  * @return NULL if not found
  */
 static struct diag_l2_link *
-diag_l2_findlink(struct diag_l0_device *dl0d)
-{
+diag_l2_findlink(struct diag_l0_device *dl0d) {
 	struct diag_l2_link *dl2l=NULL;
 
 	LL_FOREACH(l2internal.dl2l_list, dl2l) {
@@ -81,8 +80,7 @@ diag_l2_findlink(struct diag_l0_device *dl0d)
  * Always returns 0
  */
 
-static int diag_l2_rmconn(struct diag_l2_conn *dl2c)
-{
+static int diag_l2_rmconn(struct diag_l2_conn *dl2c) {
 	assert(dl2c !=NULL);
 
 	diag_os_lock(l2internal.connlist_mtx);
@@ -105,8 +103,7 @@ static int diag_l2_rmconn(struct diag_l2_conn *dl2c)
  * In order for this to work well, all L2
  */
 void
-diag_l2_timer(void)
-{
+diag_l2_timer(void) {
 	struct diag_l2_conn	*d_l2_conn;
 
 	unsigned long now;
@@ -147,8 +144,7 @@ diag_l2_timer(void)
  * (if msg was a chain of messages, they all get added so they don't get lost)
  */
 void
-diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
-{
+diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	LL_CONCAT(d_l2_conn->diag_msg, msg);
 	return;
 }
@@ -160,8 +156,7 @@ diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 /*
  * Init called to initialise local structures
  */
-int diag_l2_init()
-{
+int diag_l2_init() {
 
 	if (l2internal.init_done)
 		return 0;
@@ -193,8 +188,7 @@ int diag_l2_end() {
  * is not used anymore...
  */
 static int
-diag_l2_closelink(struct diag_l2_link *dl2l)
-{
+diag_l2_closelink(struct diag_l2_link *dl2l) {
 	assert(dl2l != NULL);
 
 
@@ -225,8 +219,7 @@ diag_l2_closelink(struct diag_l2_link *dl2l)
  * to know later (and asks L1)
  */
 int
-diag_l2_open(struct diag_l0_device *dl0d, int L1protocol)
-{
+diag_l2_open(struct diag_l0_device *dl0d, int L1protocol) {
 	int rv;
 	struct diag_l2_link *dl2l;
 
@@ -333,8 +326,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
  */
 struct diag_l2_conn *
 diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_type flags,
-	unsigned int bitrate, target_type target, source_type source)
-{
+	unsigned int bitrate, target_type target, source_type source) {
 	struct diag_l2_conn	*d_l2_conn;
 	const struct diag_l2_proto *dl2p;
 
@@ -467,8 +459,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
  * and removes it from l2internal.dl2conn_list
  */
 int
-diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
-{
+diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn) {
 	assert(d_l2_conn != NULL);
 
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSING;
@@ -502,8 +493,7 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn)
  * and updates the timestamps
  */
 int
-diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
-{
+diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
@@ -529,8 +519,7 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
  * This is synchronous and sleeps and is meant too.
  */
 struct diag_msg *
-diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval)
-{
+diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval) {
 	struct diag_msg *rxmsg;
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
@@ -567,8 +556,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
  */
 int
 diag_l2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
-{
+	void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
 	int rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_READ)
@@ -594,8 +582,7 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
  * Unix ioctl()
  * ret 0 if ok
  */
-int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data)
-{
+int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data) {
 	struct diag_l0_device *dl0d;
 	int rv = 0;
 	struct diag_l2_data *d;

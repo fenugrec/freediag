@@ -46,8 +46,7 @@
 static void do_aif_command (void) ;
 static int debugging = 0 ;
 
-static void toApp (char command)
-{
+static void toApp (char command) {
 	putc(command, stdout) ;
 }
 
@@ -69,10 +68,8 @@ static void aif_vw(void *data) { (void) data; BadToApp() ; }
 static void aif_dyno(void *data) { (void) data; BadToApp() ; }
 
 
-static void aif_monitor (UNUSED(void *data))
-{
-	if (global_state < STATE_CONNECTED)
-	{
+static void aif_monitor (UNUSED(void *data)) {
+	if (global_state < STATE_CONNECTED) {
 		fprintf(stderr, "scantool: Can't monitor - car is not yet connected.\n");
 		BadToApp() ;
 		return ;
@@ -84,8 +81,7 @@ static void aif_monitor (UNUSED(void *data))
 	* whenever it requests it.
 	*/
 
-	while (1)
-	{
+	while (1) {
 		unsigned int i ;
 		int rv = do_j1979_getdata(1) ;
 		struct diag_l3_conn *d_conn ;
@@ -93,21 +89,17 @@ static void aif_monitor (UNUSED(void *data))
 
 		/* New request arrived. */
 
-		if (rv)
-		{
+		if (rv) {
 			unsigned int j ;
 
-			for (j = 0 ; get_pid(j) != NULL ; j++)
-			{
+			for (j = 0 ; get_pid(j) != NULL ; j++) {
 				const struct pid *p = get_pid(j) ;
 				ecu_data_t   *ep ;
 				char buf[24] ;
 
-				for (i = 0, ep = ecu_info ; i < ecu_count ; i++, ep++)
-				{
+				for (i = 0, ep = ecu_info ; i < ecu_count ; i++, ep++) {
 					if (DATA_VALID(p, ep->mode1_data) ||
-					DATA_VALID(p, ep->mode2_data))
-					{
+					DATA_VALID(p, ep->mode2_data)) {
 						if (DATA_VALID(p, ep->mode1_data))
 							p->cust_snprintf(buf, sizeof(buf), global_cfg.units, p, ep->mode1_data, 2);
 
@@ -127,8 +119,7 @@ static void aif_monitor (UNUSED(void *data))
 	rv = l3_do_j1979_rqst(d_conn, 0x07, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, (void *)&_RQST_HANDLE_NORMAL) ;
 
-	if (rv == DIAG_ERR_TIMEOUT)
-	{
+	if (rv == DIAG_ERR_TIMEOUT) {
 	/* Didn't get a response, this is valid if there are no DTCs */
 	}
 	else if (rv != 0) {
@@ -136,16 +127,14 @@ static void aif_monitor (UNUSED(void *data))
 		" continuously monitored systems\n") ;
 		BadToApp() ;
 	}
-	else
-	{
+	else {
 		/* Currently monitored DTCs: */
 
 		for (i = 0 ; i < ecu_count ; i++) {
 			LL_FOREACH(ecu_info[i].rxmsg, msg) {
 				int i, j ;
 
-				for (i = 0, j = 1 ; i < 3 ; i++, j += 2)
-				{
+				for (i = 0, j = 1 ; i < 3 ; i++, j += 2) {
 					char buf[256];
 					uint8_t db[2];
 
@@ -170,35 +159,30 @@ static void aif_monitor (UNUSED(void *data))
 }
 
 
-static void aif_set (void *data)
-{
+static void aif_set (void *data) {
 	int sub_command = ((unsigned char *) data)[0] ;
 
 	switch (sub_command) {
-		case FREEDIAG_AIF_SET_UNITS :
-		{
+		case FREEDIAG_AIF_SET_UNITS : {
 			int units = ((unsigned char *) data)[1] ;
 
 			if (debugging)
 				fprintf(stderr, "Setting units to %d\n", units) ;
 
-			switch (units)
-			{
+			switch (units) {
 				case FREEDIAG_AIF_SET_UNITS_US     : global_cfg.units = 1 ; break ;
 				case FREEDIAG_AIF_SET_UNITS_METRIC : global_cfg.units = 0 ; break ;
 				default        					: BadToApp() ; return ;
 			}
 			break ;
 		}
-		case FREEDIAG_AIF_SET_PORT :
-		{
+		case FREEDIAG_AIF_SET_PORT : {
 			int port = ((unsigned char *) data)[1] ;
 
 			if (debugging)
 				fprintf(stderr, "Setting port to %d\n", port) ;
 
-			if (port < 0 || port > 9)
-			{
+			if (port < 0 || port > 9) {
 				BadToApp() ;
 				return ;
 			}
@@ -218,14 +202,12 @@ static void aif_set (void *data)
 }
 
 
-static void aif_noop (UNUSED(void *data))
-{
+static void aif_noop (UNUSED(void *data)) {
 	OkToApp() ;
 }
 
 
-static void aif_exit (UNUSED(void *data))
-{
+static void aif_exit (UNUSED(void *data)) {
 	OkToApp() ;
 	fprintf(stderr, "scantool: Exiting.\n") ;
 	set_close();
@@ -233,16 +215,13 @@ static void aif_exit (UNUSED(void *data))
 }
 
 
-static void aif_disconnect (UNUSED(void *data))
-{
-	if (global_state < STATE_CONNECTED)
-	{
+static void aif_disconnect (UNUSED(void *data)) {
+	if (global_state < STATE_CONNECTED) {
 		OkToApp() ;
 		return ;
 	}
 
-	if (global_state >= STATE_L3ADDED)
-	{
+	if (global_state >= STATE_L3ADDED) {
 		/* Close L3 protocol */
 		diag_l3_stop(global_l3_conn);
 	}
@@ -258,24 +237,20 @@ static void aif_disconnect (UNUSED(void *data))
 
 
 
-static void aif_scan (UNUSED(void *data))
-{
-	if (global_state >= STATE_CONNECTED)
-	{
+static void aif_scan (UNUSED(void *data)) {
+	if (global_state >= STATE_CONNECTED) {
 		OkToApp() ;
 		return ;
 	}
 
-	if (ecu_connect() == 0)
-	{
+	if (ecu_connect() == 0) {
 		do_j1979_basics () ; /* Ask basic info from ECU */
 		do_j1979_cms	() ; /* Get test results for monitored systems */
 		do_j1979_ncms  (0) ; /* And non-continuously monitored tests   */
 
 		OkToApp() ;
 	}
-	else
-	{
+	else {
 		fprintf(stderr, "Connection to ECU failed\n") ;
 		fprintf(stderr, "Please check :\n") ;
 		fprintf(stderr, "\tAdapter is connected to PC\n") ;
@@ -288,8 +263,7 @@ static void aif_scan (UNUSED(void *data))
 }
 
 
-static void aif_debug (void *data)
-{
+static void aif_debug (void *data) {
 	debugging = ((char *) data)[0] ;
 
 	OkToApp() ;
@@ -301,8 +275,7 @@ static void aif_debug (void *data)
 
 typedef void (*aif_func) (void *) ;
 
-struct AIFcommand
-{
+struct AIFcommand {
 	const int	   code   ;
 	const int	   length ;
 	const char	 *name   ;
@@ -310,8 +283,7 @@ struct AIFcommand
 } ;
 
 
-const struct AIFcommand aif_commands[] =
-{
+const struct AIFcommand aif_commands[] = {
 	{ FREEDIAG_AIF_NO_OP	, 0, "Do Nothing"			, aif_noop	  },
 	{ FREEDIAG_AIF_EXIT	 , 0, "Exit ScanTool"		 , aif_exit	  },
 	{ FREEDIAG_AIF_MONITOR  , 0, "Monitor"			   , aif_monitor   },
@@ -330,36 +302,31 @@ const struct AIFcommand aif_commands[] =
 } ;
 
 
-static void do_aif_command (void)
-{
+static void do_aif_command (void) {
 	char data_buffer[FREEDIAG_AIF_INPUT_MAX] ;
 	int i, j ;
 
 	const struct AIFcommand *command=NULL ;
 	int cmd = fgetc(stdin) ;
 
-	if (cmd == -1)
-	{
+	if (cmd == -1) {
 		fprintf (stderr,
 		"scantool: Unexpected EOF from Application Interface\n") ;
 		BadToApp() ;
 		exit (1) ;
 	}
 
-	for (i = 0 ; aif_commands[i] . name != NULL ; i++)
-	{
+	for (i = 0 ; aif_commands[i] . name != NULL ; i++) {
 		command = & (aif_commands[i]) ;
 
-		if (command->code == cmd)
-		{
+		if (command->code == cmd) {
 			if (debugging)
 			fprintf(stderr, "CMD: %d %s\n", cmd, command->name) ;
 
 			break ;
 		}
 	}
-	if (command->name == NULL)
-	{
+	if (command->name == NULL) {
 		fprintf(stderr,
 		"scantool: Application sent AIF an illegal command '%d'\n",
 		cmd) ;
@@ -378,8 +345,7 @@ static void do_aif_command (void)
 }
 
 
-void enter_aif (const char *name)
-{
+void enter_aif (const char *name) {
 	fprintf(stderr, "%s AIF: version %s\n", name, PACKAGE_VERSION) ;
 	set_init() ;
 

@@ -23,8 +23,7 @@
 #include "diag_l0.h"
 #include "diag_l1.h"
 
-struct dt_device
-{
+struct dt_device {
 	int protocol;	//set in dt_open with specified iProtocol
 	struct diag_serial_settings serial;
 
@@ -104,8 +103,7 @@ const void *data, size_t len);
  * variables etc
  */
 static int
-dt_init(void)
-{
+dt_init(void) {
 	/* Global init flag */
 	static int dt_initdone=0;
 
@@ -518,8 +516,7 @@ static struct cfgi* dt_getcfg(struct diag_l0_device *dl0d) {
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
  */
-static int dt_open(struct diag_l0_device *dl0d, int testnum)
-{
+static int dt_open(struct diag_l0_device *dl0d, int testnum) {
 	struct dt_device *dev;
 	struct diag_serial_settings pset;
 	int dumbopts;
@@ -638,8 +635,7 @@ static int dt_open(struct diag_l0_device *dl0d, int testnum)
 
 
 static void
-dt_close(UNUSED(struct diag_l0_device *dl0d))
-{
+dt_close(UNUSED(struct diag_l0_device *dl0d)) {
 	return;
 }
 
@@ -654,8 +650,7 @@ dt_close(UNUSED(struct diag_l0_device *dl0d))
 static int
 dt_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-const void *data, size_t len)
-{
+const void *data, size_t len) {
 	struct dt_device *dev = dl0d->l0_int;
 
 	/*
@@ -693,8 +688,7 @@ const void *data, size_t len)
 static int
 dt_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-UNUSED(void *data), size_t len, unsigned int timeout)
-{
+UNUSED(void *data), size_t len, unsigned int timeout) {
 	fprintf(stderr,
 		FLFMT "link %p recv upto %ld bytes timeout %u; doing nothing.\n",
 		FL, (void *)dl0d, (long)len, timeout);
@@ -707,8 +701,7 @@ UNUSED(void *data), size_t len, unsigned int timeout)
  */
 static int
 dt_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pset)
-{
+const struct diag_serial_settings *pset) {
 	struct dt_device *dev;
 
 	dev = (struct dt_device *)(dl0d->l0_int);
@@ -720,8 +713,7 @@ const struct diag_serial_settings *pset)
 
 
 static uint32_t
-dt_getflags(UNUSED(struct diag_l0_device *dl0d))
-{
+dt_getflags(UNUSED(struct diag_l0_device *dl0d)) {
 	return DIAG_L1_HALFDUPLEX;
 }
 

@@ -186,8 +186,7 @@ struct debugflags_descr {
  * There's probably no application for 0-length messages, but currently the various functions
  * don't complain when allocating/duplicating empty data.
  */
-struct diag_msg
-{
+struct diag_msg {
 	uint8_t	fmt;			/* Message format (doesn't absolutely need to be uint8_t) : */
 	#define DIAG_FMT_ISO_FUNCADDR	0x01	/* ISO Functional addressing (default : phys) */
 	#define DIAG_FMT_FRAMED		0x02	/* Rcvd data is framed, ie not raw. XXX DEPRECATED ! L0..L2 all do this.*/

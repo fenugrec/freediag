@@ -53,8 +53,7 @@ static int cmd_diag_reml3(UNUSED(int argc), UNUSED(char **argv));
 static int cmd_diag_probe(int argc, char **argv);
 static int cmd_diag_fastprobe(int argc, char **argv);
 
-const struct cmd_tbl_entry diag_cmd_table[] =
-{
+const struct cmd_tbl_entry diag_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_diag_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
@@ -93,14 +92,12 @@ const struct cmd_tbl_entry diag_cmd_table[] =
 };
 
 static int
-cmd_diag_help(int argc, char **argv)
-{
+cmd_diag_help(int argc, char **argv) {
 	return help_common(argc, argv, diag_cmd_table);
 }
 
 static int
-cmd_diag_addl3(int argc, char **argv)
-{
+cmd_diag_addl3(int argc, char **argv) {
 	int i;
 	const char *proto;
 
@@ -191,8 +188,7 @@ static int cmd_diag_reml3(UNUSED(int argc), UNUSED(char **argv)) {
 //This should stop searching at the first succesful init
 //and update the global connection
 static int
-cmd_diag_probe_common(int argc, char **argv, int fastflag)
-{
+cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 	unsigned int start, end, i;
 	int rv;
 	struct diag_l0_device *dl0d = global_dl0d;
@@ -315,14 +311,12 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag)
 }
 
 static int
-cmd_diag_probe(int argc, char **argv)
-{
+cmd_diag_probe(int argc, char **argv) {
 	return cmd_diag_probe_common(argc, argv, 0);
 }
 
 static int
-cmd_diag_fastprobe(int argc, char **argv)
-{
+cmd_diag_fastprobe(int argc, char **argv) {
 	return cmd_diag_probe_common(argc, argv, 1);
 }
 
@@ -332,8 +326,7 @@ cmd_diag_fastprobe(int argc, char **argv)
  * Currently only called from cmd_diag_connect;
  */
 static int
-do_l2_generic_start(void)
-{
+do_l2_generic_start(void) {
 	struct diag_l2_conn *d_conn;
 	struct diag_l0_device *dl0d = global_dl0d;
 	int rv;
@@ -387,8 +380,7 @@ do_l2_generic_start(void)
 //cmd_diag_connect : attempt to connect to ECU
 //using the current global l2proto, l1proto, etc.
 static int
-cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv)) {
 	int rv;
 
 	if (argc > 1) {
@@ -418,8 +410,7 @@ cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv))
 //Currently, this stops + removes the current global L3 conn.
 //If there are no more L3 conns, also stop + close the global L2 conn.
 static int
-cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv)) {
 	if (argc > 1) {
 		return CMD_USAGE;
 	}
@@ -452,8 +443,7 @@ cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv))
 
 
 static int
-cmd_diag_read(int argc, char **argv)
-{
+cmd_diag_read(int argc, char **argv) {
 	unsigned int timeout = 0;
 
 	if (global_state < STATE_CONNECTED) {
@@ -480,8 +470,7 @@ cmd_diag_read(int argc, char **argv)
  * Send some data, and wait for a response
  */
 static int
-cmd_diag_sendreq(int argc, char **argv)
-{
+cmd_diag_sendreq(int argc, char **argv) {
 	uint8_t	data[MAXRBUF];
 	unsigned int	i,j,len;
 	int	rv;

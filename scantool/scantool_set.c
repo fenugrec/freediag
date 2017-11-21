@@ -49,8 +49,7 @@ struct diag_l0_device *global_dl0d;
 /*
  * XXX All commands should probably have optional "init" hooks.
  */
-int set_init(void)
-{
+int set_init(void) {
 	/* Reset parameters to defaults. */
 
 	global_cfg.speed = 10400;	/* Comms speed; ECUs will probably send at 10416 bps (96us per bit) */
@@ -77,8 +76,7 @@ int set_init(void)
 	return 0;
 }
 
-void set_close(void)
-{
+void set_close(void) {
 	return;
 }
 
@@ -98,8 +96,7 @@ static int cmd_set_initmode(int argc, char **argv);
 static int cmd_set_display(int argc, char **argv);
 static int cmd_set_interface(int argc, char **argv);
 
-const struct cmd_tbl_entry set_cmd_table[] =
-{
+const struct cmd_tbl_entry set_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_set_help, 0, NULL},
 	{ "?", "help [command]", "Gives help for a command",
@@ -145,16 +142,14 @@ const struct cmd_tbl_entry set_cmd_table[] =
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
 
-const char * const l1_names[] = //these MUST be in the same order as they are listed in diag_l1.h !!
-{
+const char * const l1_names[] = { //these MUST be in the same order as they are listed in diag_l1.h !!
 	"ISO9141", "ISO14230",
 	"J1850-VPW", "J1850-PWM", "CAN", "", "", "RAW", NULL
 };
 
 //These MUST match the DIAG_L2_TYPE_* flags in diag_l2.h  so that
 // l2_initmodes[DIAG_L2_TYPE_XX] == "XX" !!
-const char * const l2_initmodes[] =
-{
+const char * const l2_initmodes[] = {
 	"5BAUD", "FAST", "CARB", NULL
 };
 
@@ -249,8 +244,7 @@ static int cmd_set_custom(int argc, char **argv) {
 }
 
 static int
-cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_set_show(UNUSED(int argc), UNUSED(char **argv)) {
 	/* Show stuff; calling the cmd_set_*() functions with argc=0 displays the current setting. */
 	cmd_set_interface(0,NULL);
 	cmd_set_speed(0, NULL);
@@ -279,8 +273,7 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv))
 }
 
 
-static int cmd_set_interface(int argc, char **argv)
-{
+static int cmd_set_interface(int argc, char **argv) {
 	const struct diag_l0 *iter;
 
 	if (argc <= 1) {
@@ -345,8 +338,7 @@ static int cmd_set_interface(int argc, char **argv)
 }
 
 static int
-cmd_set_display(int argc, char **argv)
-{
+cmd_set_display(int argc, char **argv) {
 	if (argc > 1) {
 		if (strcasecmp(argv[1], "english") == 0)
 			global_cfg.units = 1;
@@ -362,8 +354,7 @@ cmd_set_display(int argc, char **argv)
 }
 
 static int
-cmd_set_speed(int argc, char **argv)
-{
+cmd_set_speed(int argc, char **argv) {
 	if (argc > 1) {
 		if (strcmp(argv[1], "?") == 0) {
 			return CMD_USAGE;
@@ -377,8 +368,7 @@ cmd_set_speed(int argc, char **argv)
 }
 
 static int
-cmd_set_testerid(int argc, char **argv)
-{
+cmd_set_testerid(int argc, char **argv) {
 	if (argc > 1) {
 		int tmp;
 		if (strncmp(argv[1], "?", 1) == 0) {
@@ -397,8 +387,7 @@ cmd_set_testerid(int argc, char **argv)
 }
 
 static int
-cmd_set_destaddr(int argc, char **argv)
-{
+cmd_set_destaddr(int argc, char **argv) {
 	if (argc > 1) {
 		int tmp;
 		if (strncmp(argv[1], "?", 1) == 0) {
@@ -418,8 +407,7 @@ cmd_set_destaddr(int argc, char **argv)
 }
 
 static int
-cmd_set_addrtype(int argc, char **argv)
-{
+cmd_set_addrtype(int argc, char **argv) {
 	if (argc > 1) {
 		if (strncmp(argv[1], "func", 4) == 0)
 			global_cfg.addrtype = 1;
@@ -435,8 +423,7 @@ cmd_set_addrtype(int argc, char **argv)
 	return CMD_OK;
 }
 
-static int cmd_set_l2protocol(int argc, char **argv)
-{
+static int cmd_set_l2protocol(int argc, char **argv) {
 	if (argc > 1) {
 		int i, helping = 0, found = 0;
 		if (strcmp(argv[1], "?") == 0) {
@@ -471,21 +458,18 @@ static int cmd_set_l2protocol(int argc, char **argv)
 	return CMD_OK;
 }
 
-static int cmd_set_l1protocol(int argc, char **argv)
-{
+static int cmd_set_l1protocol(int argc, char **argv) {
 	if (argc > 1) {
 		int i, helping = 0, found = 0;
 		if (strcmp(argv[1], "?") == 0) {
 			helping = 1;
 			printf("L1 protocol: valid names are ");
 		}
-		for (i=0; l1_names[i] != NULL; i++)
-		{
+		for (i=0; l1_names[i] != NULL; i++) {
 			if (helping && *l1_names[i])
 				printf("%s ", l1_names[i]);
 			else
-				if (strcasecmp(argv[1], l1_names[i]) == 0)
-				{
+				if (strcasecmp(argv[1], l1_names[i]) == 0) {
 					global_cfg.L1proto = 1 << i;
 					found = 1;
 				}
@@ -513,8 +497,7 @@ static int cmd_set_l1protocol(int argc, char **argv)
 	return CMD_OK;
 }
 
-static int cmd_set_initmode(int argc, char **argv)
-{
+static int cmd_set_initmode(int argc, char **argv) {
 	if (argc > 1) {
 		int i, helping = 0, found = 0;
 		if (strcmp(argv[1], "?") == 0) {
@@ -548,7 +531,6 @@ static int cmd_set_initmode(int argc, char **argv)
 }
 
 static int
-cmd_set_help(int argc, char **argv)
-{
+cmd_set_help(int argc, char **argv) {
 	return help_common(argc, argv, set_cmd_table);
 }

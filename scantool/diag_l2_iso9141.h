@@ -62,8 +62,7 @@ extern "C" {
 /*
  * ISO9141 specific data
  */
-struct diag_l2_iso9141
-{
+struct diag_l2_iso9141 {
 	uint8_t srcaddr;	// Src address used, normally 0xF1 (tester)
 	uint8_t target;	// Target address used, normally 0x33 (ISO9141)
 

@@ -50,8 +50,7 @@ dl2p_mb1_startcomms( struct diag_l2_conn *d_l2_conn,
 UNUSED(flag_type flags),
 unsigned int bitrate,
 target_type target,
-UNUSED(source_type source))
-{
+UNUSED(source_type source)) {
 	struct diag_l1_initbus_args in;
 	uint8_t cbuf[2];
 	int rv;
@@ -105,8 +104,7 @@ UNUSED(source_type source))
 		return diag_iseterr(rv);
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		&cbuf[1], 1, 100);
-	if (rv < 0)
-	{
+	if (rv < 0) {
 		return diag_iseterr(rv);
 	}
 
@@ -153,13 +151,11 @@ dl2p_mb1_stopcomms(UNUSED(struct diag_l2_conn* dl2c)) {
  * Data/len is received data/len
  */
 static int
-dl2p_mb1_decode(uint8_t *data, int len, int *msglen)
-{
+dl2p_mb1_decode(uint8_t *data, int len, int *msglen) {
 	uint16_t cksum;
 	int i;
 
-	if (diag_l2_debug & DIAG_DEBUG_READ)
-	{
+	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "decode len %d", FL, len);
 		for (i = 0; i < len ; i++)
 			fprintf(stderr, " 0x%X", data[i]&0xff);
@@ -177,16 +173,14 @@ dl2p_mb1_decode(uint8_t *data, int len, int *msglen)
 
 	for (i=0, cksum=0; i < len-2; i++)
 		cksum += data[i];
-	if (data[len-2] != (cksum &0xff))
-	{
+	if (data[len-2] != (cksum &0xff)) {
 		if (diag_l2_debug & DIAG_DEBUG_READ)
 			fprintf(stderr, FLFMT "recv cksum 0x%02X 0x%02X, wanted 0x%X\n",
 				FL, data[len-1] & 0xff,
 				data[len-2] &0xff, cksum & 0xffff);
 		return diag_iseterr(DIAG_ERR_BADCSUM);
 	}
-	if (data[len-1] != ((cksum>>8) & 0xff))
-	{
+	if (data[len-1] != ((cksum>>8) & 0xff)) {
 		if (diag_l2_debug & DIAG_DEBUG_READ)
 			fprintf(stderr, FLFMT "recv cksum 0x%02X 0x%02X, wanted 0x%X\n",
 				FL, data[len-1] & 0xff,
@@ -202,8 +196,7 @@ dl2p_mb1_decode(uint8_t *data, int len, int *msglen)
  */
 static int
 dl2p_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	uint8_t *data, int len)
-{
+	uint8_t *data, int len) {
 	int rxoffset, rv;
 	unsigned int tout;
 	int msglen;
@@ -214,8 +207,7 @@ dl2p_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	msglen = 0;
 	readlen = 3;
 	while ( (rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
-			&data[rxoffset], readlen, tout)) > 0)
-	{
+			&data[rxoffset], readlen, tout)) > 0) {
 		rxoffset += rv;
 		tout = 100;
 
@@ -223,13 +215,11 @@ dl2p_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 
 		rv = dl2p_mb1_decode(data, rxoffset, &msglen);
 
-		if (rv >= 0)
-		{
+		if (rv >= 0) {
 			/* Full packet ! */
 			break;
 		}
-		else if (rv != DIAG_ERR_INCDATA)
-		{
+		else if (rv != DIAG_ERR_INCDATA) {
 			/* Bad things happened */
 			rxoffset = rv;
 			break;
@@ -254,8 +244,7 @@ dl2p_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
  */
 static int
 dl2p_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
-{
+	void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
 	uint8_t	rxbuf[MAXRBUF];
 	int rv;
 	struct diag_msg *msg;
@@ -270,8 +259,7 @@ dl2p_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 		fprintf(stderr,
 			FLFMT "recv conn %p got %d byte message\n",
 				FL, (void *)d_l2_conn, rv);	//%pcallback! we won't try to printf the callback pointer.
-	if (rv < 5)
-	{
+	if (rv < 5) {
 		/* Bad, minimum message is 5 bytes */
 		return diag_iseterr(DIAG_ERR_BADDATA);
 	}
@@ -307,8 +295,7 @@ dl2p_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
  * ret 0 if ok
  */
 static int
-dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
-{
+dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 	unsigned int sleeptime;
 	uint8_t txbuf[MAXRBUF];
@@ -343,8 +330,7 @@ dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 	txbuf[msg->len+3] = (uint8_t) ((cksum>>8) & 0xff);
 
 	if ( (diag_l2_debug & DIAG_DEBUG_WRITE) &&
-			(diag_l2_debug & DIAG_DEBUG_DATA))
-	{
+			(diag_l2_debug & DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "About to send %d bytes: ", FL, txbuf[2]);
 		for (i=0; i<txbuf[2]; i++)
 			fprintf(stderr, "0x%02X ", txbuf[i]);
@@ -360,15 +346,13 @@ dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 
 static struct diag_msg *
 dl2p_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-		int *errval)
-{
+		int *errval) {
 	int rv;
 	struct diag_msg *rmsg = NULL;
 	uint8_t	rxbuf[MAXRBUF];
 
 	rv = diag_l2_send(d_l2_conn, msg);
-	if (rv < 0)
-	{
+	if (rv < 0) {
 		*errval = rv;
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -381,16 +365,14 @@ dl2p_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		fprintf(stderr,
 			FLFMT "msg receive conn %p got %d byte message\n",
 				FL, (void *)d_l2_conn, rv);
-	if (rv < 5 || rv > (255+4))
-	{
+	if (rv < 5 || rv > (255+4)) {
 		/* Bad, minimum message is 5 bytes, or error happened */
 		if (rv < 0)
 			*errval = rv;
 		else
 			*errval = DIAG_ERR_BADDATA;
 	}
-	else
-	{
+	else {
 		/*
 		 * Ok, alloc a message
 		 */
@@ -410,9 +392,8 @@ dl2p_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
  * Timeout, called to send idle packet to keep link to ECU alive
  */
 static void
-dl2p_mb1_timeout(struct diag_l2_conn *d_l2_conn)
-{
-	struct diag_msg msg={0};
+dl2p_mb1_timeout(struct diag_l2_conn *d_l2_conn) {
+	struct diag_msg msg = {0};
 	uint8_t txbuf[8];
 	uint8_t rxbuf[1000];
 	int rv;

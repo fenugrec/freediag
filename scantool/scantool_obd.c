@@ -21,8 +21,7 @@
 
 //cmd_watch : this creates a diag_l3_conn
 static int
-cmd_watch(int argc, char **argv)
-{
+cmd_watch(int argc, char **argv) {
 	int rv;
 	struct diag_l2_conn *d_l2_conn;
 	struct diag_l3_conn *d_l3_conn=NULL;
@@ -155,8 +154,7 @@ cmd_watch(int argc, char **argv)
  * units
  */
 static void
-print_current_data(bool english)
-{
+print_current_data(bool english) {
 	char buf[24];
 	ecu_data_t *ep;
 	unsigned int i;
@@ -194,8 +192,7 @@ print_current_data(bool english)
 }
 
 static void
-log_response(int ecu, response_t *r)
-{
+log_response(int ecu, response_t *r) {
 	assert(global_logfp != NULL);
 
 	/* Only print good records */
@@ -208,8 +205,7 @@ log_response(int ecu, response_t *r)
 }
 
 static void
-log_current_data(void)
-{
+log_current_data(void) {
 	response_t *r;
 	ecu_data_t *ep;
 	unsigned int i;
@@ -237,8 +233,7 @@ log_current_data(void)
 }
 
 static int
-cmd_monitor(int argc, char **argv)
-{
+cmd_monitor(int argc, char **argv) {
 	int rv;
 	bool english = 0;
 
@@ -292,8 +287,7 @@ cmd_monitor(int argc, char **argv)
 // scan : use existing L3 J1979 connection, or establish a new one by trying all known protos.
 
 static int
-cmd_scan(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
 	int rv=DIAG_ERR_GENERAL;
 	if (argc > 1)
 		return CMD_USAGE;
@@ -347,8 +341,7 @@ cmd_scan(UNUSED(int argc), UNUSED(char **argv))
 
 
 static int
-cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 	char *input;
 
 	if (global_state < STATE_CONNECTED) {
@@ -377,8 +370,7 @@ cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv))
 
 
 static int
-cmd_ecus(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data_t *ep;
 	unsigned int i;
 
@@ -400,16 +392,12 @@ cmd_ecus(UNUSED(int argc), UNUSED(char **argv))
 }
 
 static void
-print_resp_info(UNUSED(int mode), response_t *data)
-{
+print_resp_info(UNUSED(int mode), response_t *data) {
 
 	int i;
-	for (i=0; i<256; i++)
-	{
-		if (data->type != TYPE_UNTESTED)
-		{
-			if (data->type == TYPE_GOOD)
-			{
+	for (i=0; i<256; i++) {
+		if (data->type != TYPE_UNTESTED) {
+			if (data->type == TYPE_GOOD) {
 				printf("0x%02X: ", i );
 				diag_data_dump(stdout, data->data, data->len);
 				printf("\n");
@@ -424,26 +412,21 @@ print_resp_info(UNUSED(int mode), response_t *data)
 
 
 static int
-cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data_t *ep;
 	int i;
 
 	printf("Current Data\n");
-	for (i=0, ep=ecu_info; i<MAX_ECU; i++,ep++)
-	{
-		if (ep->valid)
-		{
+	for (i=0, ep=ecu_info; i<MAX_ECU; i++,ep++) {
+		if (ep->valid) {
 			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
 			print_resp_info(1, ep->mode1_data);
 		}
 	}
 
 	printf("Freezeframe Data\n");
-	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++)
-	{
-		if (ep->valid)
-		{
+	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++) {
+		if (ep->valid) {
 			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
 			print_resp_info(2, ep->mode2_data);
 		}
@@ -457,8 +440,7 @@ cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv))
 
 /*print_pidinfo() : print supported PIDs (0 to 0x60) */
 static void
-print_pidinfo(int mode, uint8_t *pid_data)
-{
+print_pidinfo(int mode, uint8_t *pid_data) {
 	int i,j;	/* j : # pid per line */
 
 	printf(" Mode %d:", mode);
@@ -475,21 +457,17 @@ print_pidinfo(int mode, uint8_t *pid_data)
 }
 
 
-static int cmd_pids(UNUSED(int argc), UNUSED(char **argv))
-{
+static int cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data_t *ep;
 	int i;
 
-	if (global_state < STATE_SCANDONE)
-	{
+	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
 		return CMD_OK;
 	}
 
-	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++)
-	{
-		if (ep->valid)
-		{
+	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++) {
+		if (ep->valid) {
 			printf("ECU %d address 0x%02X: Supported PIDs:\n",
 				i, ep->ecu_addr & 0xff);
 			print_pidinfo(1, ep->mode1_info);
@@ -505,8 +483,7 @@ static int cmd_pids(UNUSED(int argc), UNUSED(char **argv))
 	return CMD_OK;
 }
 
-const struct cmd_tbl_entry scantool_cmd_table[]=
-{
+const struct cmd_tbl_entry scantool_cmd_table[] = {
 	{ "scan", "scan", "Start SCAN process", cmd_scan, 0, NULL},
 	{ "monitor", "monitor [english/metric]", "Continuously monitor rpm etc",
 		cmd_monitor, 0, NULL},

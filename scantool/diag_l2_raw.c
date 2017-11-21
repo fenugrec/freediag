@@ -47,8 +47,7 @@ dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn,
 UNUSED(flag_type flags),
 unsigned int bitrate,
 target_type target,
-source_type source)
-{
+source_type source) {
 	int rv;
 	struct diag_serial_settings set;
 
@@ -74,8 +73,7 @@ source_type source)
 */
 
 int
-dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn* pX))
-{
+dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn* pX)) {
 	return 0;
 }
 
@@ -84,8 +82,7 @@ dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn* pX))
  * ret 0 if ok
  */
 int
-dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
-{
+dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_WRITE)
@@ -103,10 +100,9 @@ dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 */
 int
 dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	void (*callback)(void *handle, struct diag_msg *msg), void *handle)
-{
+	void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
 	uint8_t rxbuf[MAXRBUF];
-	struct diag_msg msg={0};	//local message structure that will disappear when we return
+	struct diag_msg msg = {0};	//local message structure that will disappear when we return
 	int rv;
 
 	/*
@@ -125,8 +121,7 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	msg.idata=NULL;
 	msg.rxtime = diag_os_getms();
 
-	if (diag_l2_debug & DIAG_DEBUG_READ)
-	{
+	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "l2_proto_raw_recv: handle=%p\n", FL,
 			(void *)handle);	//%pcallback! we won't try to printf the callback pointer.
 	}
@@ -145,8 +140,7 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 */
 struct diag_msg *
 dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-		int *errval)
-{
+		int *errval) {
 	int rv;
 	struct diag_msg *rmsg = NULL;
 	uint8_t rxbuf[MAXRBUF];

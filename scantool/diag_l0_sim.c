@@ -68,8 +68,7 @@ const char *simfile_default=DB_FILE;	//default filename
 
 
 // ECU responses linked list:
-struct sim_ecu_response
-{
+struct sim_ecu_response {
 	char *text; // unparsed text for the response!
 	uint8_t *data; // parsed final response.
 	uint8_t len; // final response length.
@@ -77,8 +76,7 @@ struct sim_ecu_response
 };
 
 /* Internal state (struct diag_l0_device->l0_int) */
-struct sim_device
-{
+struct sim_device {
 	int protocol;
 	FILE* fp; // DB file pointer.
 	// Configuration variables.
@@ -126,8 +124,7 @@ static void sim_close(struct diag_l0_device *dl0d);
 
 // Allocates one new ecu response and fills it with given text.
 struct sim_ecu_response*
-sim_new_ecu_response_txt(const char* text)
-{
+sim_new_ecu_response_txt(const char* text) {
 	struct sim_ecu_response *resp;
 	int rv;
 
@@ -154,8 +151,7 @@ sim_new_ecu_response_txt(const char* text)
 // Allocates one new ecu response and fills it with given data.
 // (not used yet, here for "just in case")
 struct sim_ecu_response*
-sim_new_ecu_response_bin(const uint8_t* data, const uint8_t len)
-{
+sim_new_ecu_response_bin(const uint8_t* data, const uint8_t len) {
 	struct sim_ecu_response *resp;
 
 	if (diag_calloc(&resp, 1))
@@ -179,8 +175,7 @@ sim_new_ecu_response_bin(const uint8_t* data, const uint8_t len)
 
 // Frees an ecu response and returns the next one in the list.
 struct sim_ecu_response*
-sim_free_ecu_response(struct sim_ecu_response** resp)
-{
+sim_free_ecu_response(struct sim_ecu_response** resp) {
 	struct sim_ecu_response* next_resp = NULL;
 
 	if (resp && *resp) {
@@ -203,8 +198,7 @@ sim_free_ecu_response(struct sim_ecu_response** resp)
 
 
 // Frees all responses from the given one until the end of the list.
-void sim_free_ecu_responses(struct sim_ecu_response** resp_pp)
-{
+void sim_free_ecu_responses(struct sim_ecu_response** resp_pp) {
 	struct sim_ecu_response** temp_resp_pp = resp_pp;
 	uint8_t count = 0;
 
@@ -222,8 +216,7 @@ void sim_free_ecu_responses(struct sim_ecu_response** resp_pp)
 }
 
 // for debug purposes.
-void sim_dump_ecu_responses(struct sim_ecu_response* resp_p)
-{
+void sim_dump_ecu_responses(struct sim_ecu_response* resp_p) {
 	struct sim_ecu_response* tresp;
 	uint8_t count = 0;
 
@@ -237,8 +230,7 @@ void sim_dump_ecu_responses(struct sim_ecu_response* resp_p)
 
 
 // Builds a list of responses for a request, by finding them in the DB file.
-void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8_t* data, const uint8_t len)
-{
+void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8_t* data, const uint8_t len) {
 #define TAG_REQUEST "RQ"
 #define TAG_RESPONSE "RP"
 #define VALUE_DONTCARE "XXXX"
@@ -264,8 +256,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 	// search for the given request.
 	while (!request_found && !end_responses) {
 		// get a line from DB file.
-		if (fgets(line_buf, sizeof(line_buf), fp) == NULL)
-		{
+		if (fgets(line_buf, sizeof(line_buf), fp) == NULL) {
 			// EOF reached.
 			break;
 		}
@@ -345,8 +336,7 @@ void sim_find_responses(struct sim_ecu_response** resp_pp, FILE* fp, const uint8
 
 // Returns a value between 0x00 and 0xFF calculated as the trigonometric
 // sine of the current system time (with a period of one second).
-uint8_t sine1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
-{
+uint8_t sine1(UNUSED(uint8_t *data), UNUSED(uint8_t pos)) {
 	unsigned long now=diag_os_getms();
 	//sin() returns a float between -1.0 and 1.0
 	return (uint8_t) (0x7F * sin(now * 6.283185 / 1000));
@@ -354,15 +344,13 @@ uint8_t sine1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
 
 // Returns a value between 0x00 and 0xFF directly proportional
 // to the value of the current system time (with a period of one second).
-uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos))
-{
+uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos)) {
 	unsigned long now=diag_os_getms();
 	return (uint8_t) (0xFF * (now % 1000));
 }
 
 // Returns a value copied from the specified position in the request.
-uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[])
-{
+uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[]) {
 	int index;
 	bool increment = 0;
 	bool bogus = 0;
@@ -395,8 +383,7 @@ uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[])
 
 // Parses a response's text to data.
 // Replaces special tokens with function results. This mangles resp_p->text, which shouldn't be a problem
-void sim_parse_response(struct sim_ecu_response* resp_p, uint8_t req[])
-{
+void sim_parse_response(struct sim_ecu_response* resp_p, uint8_t req[]) {
 #define TOKEN_SINE1	 "sin1"
 #define TOKEN_SAWTOOTH1 "swt1"
 #define TOKEN_ISO9141CS "cks1"
@@ -449,8 +436,7 @@ void sim_parse_response(struct sim_ecu_response* resp_p, uint8_t req[])
 
 // Reads the configuration options from the file.
 // Stores them in globals.
-void sim_read_cfg(struct sim_device *dev)
-{
+void sim_read_cfg(struct sim_device *dev) {
 	FILE *fp = dev->fp;
 	char *p; // temp string pointer.
 	char line_buf[21]; // 20 chars generally enough for a config token.
@@ -524,8 +510,7 @@ void sim_read_cfg(struct sim_device *dev)
 
 // Initializes the simulator.
 static int
-sim_init(void)
-{
+sim_init(void) {
 	return 0;
 }
 
@@ -570,8 +555,7 @@ sim_del(struct diag_l0_device * dl0d) {
 
 // Opens the simulator DB file
 int
-sim_open(struct diag_l0_device *dl0d, int iProtocol)
-{
+sim_open(struct diag_l0_device *dl0d, int iProtocol) {
 	struct sim_device *dev;
 	const char *simfile;
 
@@ -612,8 +596,7 @@ sim_open(struct diag_l0_device *dl0d, int iProtocol)
 
 // Closes the simulator DB file; cleanup after _sim_open()
 static void
-sim_close(struct diag_l0_device *dl0d)
-{
+sim_close(struct diag_l0_device *dl0d) {
 	assert(dl0d != NULL);
 	//if (!dl0d) return;
 
@@ -640,8 +623,7 @@ sim_close(struct diag_l0_device *dl0d)
 
 // Simulates the bus initialization.
 static int
-sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
-{
+sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	struct sim_device *dev;
 	uint8_t synch_patt[1];
 	const uint8_t sim_break = 0x00;
@@ -690,8 +672,7 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 static int
 sim_send(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
-		 const void *data, const size_t len)
-{
+		 const void *data, const size_t len) {
 	struct sim_device * dev = dl0d->l0_int;
 
 	if (len <= 0)
@@ -735,8 +716,7 @@ sim_send(struct diag_l0_device *dl0d,
 static int
 sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
-		void *data, size_t len, unsigned int timeout)
-{
+		void *data, size_t len, unsigned int timeout) {
 	size_t xferd;
 	struct sim_ecu_response* resp_p = NULL;
 	struct sim_device * dev = dl0d->l0_int;
@@ -782,8 +762,7 @@ sim_recv(struct diag_l0_device *dl0d,
 // The simulator doesn't need half-duplex or
 // P4 timing, and implements all types of init.
 static uint32_t
-sim_getflags(struct diag_l0_device *dl0d)
-{
+sim_getflags(struct diag_l0_device *dl0d) {
 	struct sim_device * dev = dl0d->l0_int;
 	int ret;
 
@@ -841,8 +820,7 @@ static int sim_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 // and pointers to functions.
 // Like any simulator, it "implements" all protocols
 // (it only depends on the content of the DB file).
-const struct diag_l0 diag_l0_sim =
-{
+const struct diag_l0 diag_l0_sim = {
 	"Car Simulator interface",
 	"CARSIM",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM | DIAG_L1_ISO9141 | DIAG_L1_ISO14230 | DIAG_L1_RAW,

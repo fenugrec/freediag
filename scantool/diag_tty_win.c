@@ -27,8 +27,7 @@ struct tty_int {
 };
 
 //diag_tty_open : open specified port for L0
-ttyp * diag_tty_open(const char *portname)
-{
+ttyp * diag_tty_open(const char *portname) {
 	int rv;
 	struct tty_int *wti;
 	size_t n = strlen(portname) + 1;
@@ -103,8 +102,7 @@ ttyp * diag_tty_open(const char *portname)
 } //diag_tty_open
 
 /* Close up the TTY and restore. */
-void diag_tty_close(ttyp *ttyh)
-{
+void diag_tty_close(ttyp *ttyh) {
 	struct tty_int *wti = ttyh;
 
 	if (!wti) return;
@@ -132,8 +130,7 @@ void diag_tty_close(ttyp *ttyh)
  */
 int
 diag_tty_setup(ttyp *ttyh,
-	const struct diag_serial_settings *pset)
-{
+	const struct diag_serial_settings *pset) {
 	HANDLE devhandle;		//just to clarify code
 	struct tty_int *wti = ttyh;
 	DCB *devstate;
@@ -162,8 +159,7 @@ diag_tty_setup(ttyp *ttyh,
 
 
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
 		fprintf(stderr, FLFMT "dev %p; %dbps %d,%d,%d \n",
 			FL, (void *)devhandle, pset->speed,
 			pset->databits, pset->stopbits, pset->parflag);
@@ -253,8 +249,7 @@ diag_tty_setup(ttyp *ttyh,
  * ret 0 if ok
  */
 int
-diag_tty_control(ttyp *ttyh, unsigned int dtr, unsigned int rts)
-{
+diag_tty_control(ttyp *ttyh, unsigned int dtr, unsigned int rts) {
 	unsigned int escapefunc;
 	struct tty_int *wti = ttyh;
 
@@ -382,8 +377,7 @@ diag_tty_read(ttyp *ttyh, void *buf, size_t count, unsigned int timeout) {
  * ret 0 if ok
  *
  */
-int diag_tty_iflush(ttyp *ttyh)
-{
+int diag_tty_iflush(ttyp *ttyh) {
 	uint8_t buf[MAXRBUF];
 	int rv;
 	struct tty_int *wti = ttyh;

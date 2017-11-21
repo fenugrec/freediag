@@ -40,8 +40,7 @@
 #include "diag_l0.h"
 #include "diag_l1.h"
 
-struct dumb_device
-{
+struct dumb_device {
 	int	protocol;	//set in dumb_open with specified iProtocol
 	struct	diag_serial_settings serial;
 
@@ -125,8 +124,7 @@ static void dumb_close(struct diag_l0_device *dl0d);
  * variables etc
  */
 static int
-dumb_init(void)
-{
+dumb_init(void) {
 	return 0;
 }
 
@@ -189,8 +187,7 @@ static struct cfgi* dumb_getcfg(struct diag_l0_device *dl0d) {
 }
 
 
-static int dumb_open(struct diag_l0_device *dl0d, int iProtocol)
-{
+static int dumb_open(struct diag_l0_device *dl0d, int iProtocol) {
 	struct dumb_device *dev;
 	int dumbopts;
 
@@ -239,8 +236,7 @@ static int dumb_open(struct diag_l0_device *dl0d, int iProtocol)
 
 //dumb_close : close TTY handle.
 static void
-dumb_close(struct diag_l0_device *dl0d)
-{
+dumb_close(struct diag_l0_device *dl0d) {
 	if (!dl0d) return;
 
 	struct dumb_device *dev = dl0d->l0_int;
@@ -264,8 +260,7 @@ dumb_close(struct diag_l0_device *dl0d)
  * Exceptionally we dont diag_iseterr on return since _initbus() takes care of that.
  */
 static int
-dumb_fastinit(struct diag_l0_device *dl0d)
-{
+dumb_fastinit(struct diag_l0_device *dl0d) {
 	struct dumb_device *dev = dl0d->l0_int;
 	int rv=0;
 	uint8_t cbuf[MAXRBUF];
@@ -345,8 +340,7 @@ dumb_fastinit(struct diag_l0_device *dl0d)
 // Returns after stop bit is finished + time for diag_tty_read to flush echo. (max 20ms) (NOT the sync byte!)
 
 static void
-dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
-{
+dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr) {
 	/*
 	 * The bus has been high for w0 ms already, now send the
 	 * 8 bit ecuaddr at 5 baud LSB first
@@ -416,8 +410,7 @@ dumb_Lline(struct diag_l0_device *dl0d, uint8_t ecuaddr)
  */
 static int
 dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
-	struct dumb_device *dev)
-{
+	struct dumb_device *dev) {
 	uint8_t cbuf[10];
 	int rv;
 	unsigned int tout;
@@ -578,8 +571,7 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
  * responsible for waiting W5, W0 or Tidle before calling initbus().
  */
 static int
-dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
-{
+dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	int rv = DIAG_ERR_INIT_NOTSUPP;
 
 	struct dumb_device *dev;
@@ -637,8 +629,7 @@ static int dumb_iflush(struct diag_l0_device *dl0d) {
 static int
 dumb_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-const void *data, size_t len)
-{
+const void *data, size_t len) {
 	/*
 	 * This will be called byte at a time unless P4 timing parameter is zero
 	 * as the L1 code that called this will be adding the P4 gap between
@@ -675,8 +666,7 @@ const void *data, size_t len)
 static int
 dumb_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-void *data, size_t len, unsigned int timeout)
-{
+void *data, size_t len, unsigned int timeout) {
 	int rv;
 	struct dumb_device *dev = dl0d->l0_int;
 
@@ -708,8 +698,7 @@ void *data, size_t len, unsigned int timeout)
  */
 static int
 dumb_setspeed(struct diag_l0_device *dl0d,
-const struct diag_serial_settings *pset)
-{
+const struct diag_serial_settings *pset) {
 	struct dumb_device *dev;
 
 	dev = (struct dumb_device *)dl0d->l0_int;
@@ -721,8 +710,7 @@ const struct diag_serial_settings *pset)
 
 
 static uint32_t
-dumb_getflags(struct diag_l0_device *dl0d)
-{
+dumb_getflags(struct diag_l0_device *dl0d) {
 	struct dumb_device *dev;
 	int flags=0;
 

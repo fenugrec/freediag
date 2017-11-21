@@ -86,8 +86,7 @@ static int cmd_source(int argc, char **argv);
 const struct cmd_tbl_entry *root_cmd_table;	/* point to current root table */
 
 /* this table is appended to the "extra" cmdtable to construct the whole root cmd table */
-static const struct cmd_tbl_entry basic_cmd_table[]=
-{
+static const struct cmd_tbl_entry basic_cmd_table[] = {
 	{ "log", "log <filename>", "Log monitor data to <filename>",
 		cmd_log, FLAG_FILE_ARG, NULL},
 	{ "stoplog", "stoplog", "Stop logging", cmd_stoplog, 0, NULL},
@@ -144,8 +143,7 @@ static const struct cmd_tbl_entry *completion_cmd_level;
 #define INPUT_MAX 1024
 
 char *
-basic_get_input(const char *prompt, FILE *instream)
-{
+basic_get_input(const char *prompt, FILE *instream) {
 	char *input;
 	bool do_prompt;
 
@@ -180,8 +178,7 @@ basic_get_input(const char *prompt, FILE *instream)
 
 /* Caller must free returned buffer */
 static char *
-get_input(const char *prompt)
-{
+get_input(const char *prompt) {
 	char *input;
 	/* XXX Does readline change the prompt? */
 	char localprompt[128];
@@ -194,8 +191,7 @@ get_input(const char *prompt)
 }
 
 char *
-command_generator(const char *text, int state)
-{
+command_generator(const char *text, int state) {
 	static int list_index, length;
 	const struct cmd_tbl_entry *cmd_entry;
 
@@ -222,8 +218,7 @@ command_generator(const char *text, int state)
 }
 
 char **
-scantool_completion(const char *text, int start, UNUSED(int end))
-{
+scantool_completion(const char *text, int start, UNUSED(int end)) {
 	char **matches;
 
 	//start == 0 is when the command line is either empty or contains only whitespaces
@@ -300,8 +295,7 @@ scantool_completion(const char *text, int start, UNUSED(int end))
 }
 
 static void
-readline_init(const struct cmd_tbl_entry *curtable)
-{
+readline_init(const struct cmd_tbl_entry *curtable) {
 	//preset levels for current table
 	current_cmd_level = curtable;
 	completion_cmd_level = curtable;
@@ -313,8 +307,7 @@ readline_init(const struct cmd_tbl_entry *curtable)
 #else	// so no libreadline
 
 static char *
-get_input(const char *prompt)
-{
+get_input(const char *prompt) {
 	return basic_get_input(prompt, stdin);
 }
 
@@ -323,8 +316,7 @@ static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {}
 #endif	//HAVE_LIBREADLINE
 
 static char *
-command_line_input(const char *prompt, FILE *instream)
-{
+command_line_input(const char *prompt, FILE *instream) {
 	if (instream == stdin) {
 		return get_input(prompt);
 	}
@@ -334,8 +326,7 @@ command_line_input(const char *prompt, FILE *instream)
 }
 
 int
-help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
-{
+help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 /*	int i;*/
 	const struct cmd_tbl_entry *ctp;
 
@@ -382,15 +373,13 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table)
 }
 
 static int
-cmd_help(int argc, char **argv)
-{
+cmd_help(int argc, char **argv) {
 	return help_common(argc, argv, root_cmd_table);
 }
 
 
 static int
-cmd_date(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
 	struct tm *tm;
 	time_t now;
 
@@ -403,15 +392,13 @@ cmd_date(UNUSED(int argc), UNUSED(char **argv))
 
 
 static int
-cmd_rem(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_rem(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
 
 void
-log_timestamp(const char *prefix)
-{
+log_timestamp(const char *prefix) {
 	unsigned long tv;
 
 	tv = diag_os_getms() - global_log_tstart;
@@ -420,8 +407,7 @@ log_timestamp(const char *prefix)
 }
 
 static void
-log_command(int argc, char **argv)
-{
+log_command(int argc, char **argv) {
 	int i;
 
 	if (!global_logfp)
@@ -434,8 +420,7 @@ log_command(int argc, char **argv)
 }
 
 static int
-cmd_log(int argc, char **argv)
-{
+cmd_log(int argc, char **argv) {
 	char autofilename[20]="";
 	char *file;
 	time_t now;
@@ -490,8 +475,7 @@ cmd_log(int argc, char **argv)
 
 
 static int
-cmd_stoplog(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_stoplog(UNUSED(int argc), UNUSED(char **argv)) {
 	/* Turn off logging */
 	if (global_logfp == NULL) {
 		printf("Logging was not on\n");
@@ -505,8 +489,7 @@ cmd_stoplog(UNUSED(int argc), UNUSED(char **argv))
 }
 
 static int
-cmd_play(int argc, char **argv)
-{
+cmd_play(int argc, char **argv) {
 	FILE *fp;
 	//int linenr;
 
@@ -584,8 +567,7 @@ static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, co
  * If argc is supplied, then this is one shot cli, ie run the command
  */
 static int
-do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv)
-{
+do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv) {
 	/* Build up argc/argv */
 	const struct cmd_tbl_entry *ctp;
 	int cmd_argc;
@@ -596,7 +578,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 	int i;
 
 	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
-	static char nullstr[2]={0,0};
+	static char nullstr[2] = {0,0};
 
 #ifdef HAVE_LIBREADLINE
 	//set the current command level for command completion
@@ -621,13 +603,11 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 
 			/* Parse it */
 			inptr = input;
-			if (*inptr == '@') 	//printing comment
-			{
+			if (*inptr == '@') {	//printing comment
 				printf("%s\n", inptr);
 				continue;
 			}
-			if (*inptr == '#')		//non-printing comment
-			{
+			if (*inptr == '#') {		//non-printing comment
 				continue;
 			}
 			cmd_argc = 0;
@@ -731,8 +711,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
  * ret CMD_FAILED if file was unreadable
  * forward CMD_EXIT if applicable */
 static int
-command_file(const char *filename)
-{
+command_file(const char *filename) {
 	int rv;
 	FILE *fstream;
 
@@ -745,8 +724,7 @@ command_file(const char *filename)
 }
 
 static int
-cmd_source(int argc, char **argv)
-{
+cmd_source(int argc, char **argv) {
 	char *file;
 	int rv;
 
@@ -766,8 +744,7 @@ cmd_source(int argc, char **argv)
 
 //rc_file : returns CMD_OK or CMD_EXIT only.
 static int
-rc_file(void)
-{
+rc_file(void) {
 	int rv;
 	//this loads either a $home/.<progname>.rc or ./<progname>.ini (in order of preference)
 	//to load general settings.
@@ -846,8 +823,7 @@ rc_file(void)
 
 /* start a cli with <name> as a prompt, and optionally run the <initscript> file */
 void
-enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable)
-{
+enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable) {
 	int rc_rv=CMD_OK;
 	global_logfp = NULL;
 	progname = name;
@@ -919,8 +895,7 @@ exit_cleanup:
  * [-][0-9] : dec
  * Returns 0 if unable to decode.
  */
-int htoi(char *buf)
-{
+int htoi(char *buf) {
 	/* Hex text to int */
 	int rv = 0;
 	int base = 10;
@@ -970,8 +945,7 @@ int htoi(char *buf)
 /*
  * Wait until ENTER is pressed
  */
-void wait_enter(const char *message)
-{
+void wait_enter(const char *message) {
 	printf(message);
 	while (1) {
 		int ch = getc(stdin);
@@ -983,21 +957,18 @@ void wait_enter(const char *message)
 /*
  * Determine whether ENTER has been pressed
  */
-int pressed_enter()
-{
+int pressed_enter() {
 	return diag_os_ipending();
 }
 
 
 int
-cmd_up(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_up(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_UP;
 }
 
 
 int
-cmd_exit(UNUSED(int argc), UNUSED(char **argv))
-{
+cmd_exit(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_EXIT;
 }

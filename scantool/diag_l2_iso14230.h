@@ -34,8 +34,7 @@
 /*
  * ISO 14230 specific data
  */
-struct diag_l2_14230
-{
+struct diag_l2_14230 {
 	uint8_t initype;		/* init type : FAST/SLOW/CARB */
 
 	uint8_t srcaddr;	/* Src address used */

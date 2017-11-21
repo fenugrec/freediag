@@ -44,8 +44,7 @@ extern "C" {
 //diag_l2_link : elements of the diag_l2_links linked-list.
 //An l2 link associates an existing diag_l0_device with
 //one L1 proto and L1 flags.
-struct diag_l2_link
-{
+struct diag_l2_link {
 	struct diag_l0_device * 	l2_dl0d;	/* Link we're using to talk to lower layer */
 	int	l1proto;		/* L1 protocol used; see diag_l1.h*/
 
@@ -63,8 +62,7 @@ struct diag_msg;
  * There is one of these per ECU we are talking to - we may be talking to
  * more than one ECU per L1 link
  */
-struct diag_l2_conn
-{
+struct diag_l2_conn {
 	enum {
 		DIAG_L2_STATE_CLOSED,	/* Not in use (but not free for anyones use !!) */
 		DIAG_L2_STATE_SENTCONREQ,	/* Sent connection request (waiting for response/reject) */
@@ -249,8 +247,7 @@ extern const struct diag_l2_proto *l2proto_list[];
 //this isn't used frequently but L3_vag will eventually need it,
 //and cmd_diag_probe uses it to report found ECUs.
 
-struct	diag_l2_data
-{
+struct	diag_l2_data {
 	uint8_t physaddr;	/* Physical address of ECU */
 	uint8_t kb1;		/* Keybyte 0 */
 	uint8_t kb2;		/* Keybyte 1 */

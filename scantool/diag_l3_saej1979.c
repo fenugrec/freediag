@@ -57,8 +57,7 @@ struct l3_j1979_int {
  * Get this wrong and all will fail, it's used to frame the incoming messages
  * properly
  */
-static int diag_l3_j1979_getlen(uint8_t *data, int len)
-{
+static int diag_l3_j1979_getlen(uint8_t *data, int len) {
 	static const int rqst_lengths[] = { -1, 2, 3, 1, 1, 2, 2, 1, 7, 2 };
 	int rv;
 	uint8_t mode;
@@ -218,8 +217,7 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len)
  * aren't any headers.
  */
 static int
-diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
-{
+diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 	int rv;
 	struct diag_l2_conn *d_conn;
 	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
@@ -258,8 +256,7 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg)
  * call L3 callback routine
  */
 static void
-diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
-{
+diag_l3_rcv_callback(void *handle, struct diag_msg *msg) {
 	/*
 	 * Got some data from L2, build it into a L3 message, if
 	 * message is complete call next layer callback routine
@@ -304,8 +301,7 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg)
  *
  */
 static void
-diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
-{
+diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn) {
 	/* Process the received data into messages if complete */
 	struct diag_msg *msg;
 	int sae_msglen;
@@ -402,8 +398,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn)
  */
 static int
 diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
-	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle)
-{
+	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle) {
 	int rv;
 	struct diag_msg *msg;
 	unsigned int tout;
@@ -541,8 +536,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 
 void
 diag_l3_j1979_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
-struct diag_msg *msg, char *buf, size_t bufsize)
-{
+struct diag_msg *msg, char *buf, size_t bufsize) {
 	unsigned i, j;
 
 	char buf2[80];
@@ -685,8 +679,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 		default:
 			snprintf(buf2, sizeof(buf2),"UnknownType 0x%02X: Data Dump: ", msg->data[0]);
 			smartcat(buf, bufsize, buf2);
-			for (i=0; i < msg->len; i++)
-			{
+			for (i=0; i < msg->len; i++) {
 				snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
 				smartcat(buf, bufsize, buf2);
 			}
@@ -698,7 +691,7 @@ struct diag_msg *msg, char *buf, size_t bufsize)
 //Send a service 1, pid 0 request and check for a valid reply.
 //ret 0 if ok
 static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
-	struct diag_msg msg={0};
+	struct diag_msg msg = {0};
 	struct diag_msg *rxmsg;
 	uint8_t data[6];
 	int errval;
@@ -785,8 +778,7 @@ int dl3_j1979_stop(struct diag_l3_conn *d_l3_conn) {
  * return 0 if ok
  */
 static int
-diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms)
-{
+diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms) {
 	int rv;
 	int debug_l2_orig=diag_l2_debug;	//save debug flags; disable them for this procedure
 	int debug_l1_orig=diag_l1_debug;

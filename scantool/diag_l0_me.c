@@ -140,8 +140,7 @@ static const struct {
 	{0xF3, "CAN hardware did not respond to USB request"}
 };
 
-static const char *me_geterr(const int err)
-{
+static const char *me_geterr(const int err) {
 	unsigned i;
 	for (i = 0; i < ARRAY_SIZE(me_errs); i++) {
 		if (me_errs[i].code == err) {
@@ -152,8 +151,7 @@ static const char *me_geterr(const int err)
 	return "[undefined]";
 }
 
-struct muleng_device
-{
+struct muleng_device {
 	int protocol;
 	int dev_wakeup;		/* Contains wakeup type for next packet */
 	int dev_state;		/* State for 5 baud startup stuff */
@@ -190,8 +188,7 @@ static void muleng_close(struct diag_l0_device *dl0d);
  * variables etc
  */
 static int
-muleng_init(void)
-{
+muleng_init(void) {
 /* Global init flag */
 	static int muleng_initdone=0;
 
@@ -207,8 +204,7 @@ muleng_init(void)
 
 /* Put in the ME checksum at the correct place */
 static int
-muleng_txcksum(uint8_t *data)
-{
+muleng_txcksum(uint8_t *data) {
 	uint8_t cksum;
 
 	cksum = diag_cks1(&data[1], 12);
@@ -221,26 +217,21 @@ muleng_txcksum(uint8_t *data)
  * this algo is from  B. Roadman's website.
  */
 static uint8_t
-j1850_crc(uint8_t *msg_buf, int nbytes)
-{
+j1850_crc(uint8_t *msg_buf, int nbytes) {
 	uint8_t crc_reg=0xff,poly,i,j;
 	uint8_t *byte_point;
 	uint8_t bit_point;
 
-	for (i=0, byte_point=msg_buf; i<nbytes; ++i, ++byte_point)
-	{
-		for (j=0, bit_point=0x80 ; j<8; ++j, bit_point>>=1)
-		{
-			if (bit_point & *byte_point)	// case for new bit = 1
-			{
+	for (i=0, byte_point=msg_buf; i<nbytes; ++i, ++byte_point) {
+		for (j=0, bit_point=0x80 ; j<8; ++j, bit_point>>=1) {
+			if (bit_point & *byte_point) {	// case for new bit = 1
 				if (crc_reg & 0x80)
 					poly=1;	// define the polynomial
 				else
 					poly=0x1c;
 				crc_reg= ( (crc_reg << 1) | 1) ^ poly;
 			}
-			else		// case for new bit = 0
-			{
+			else {		// case for new bit = 0
 				poly=0;
 				if (crc_reg & 0x80)
 					poly=0x1d;
@@ -300,8 +291,7 @@ me_guess_rxlen(uint8_t *buf) {
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
  */
-static int muleng_open(struct diag_l0_device *dl0d, int iProtocol)
-{
+static int muleng_open(struct diag_l0_device *dl0d, int iProtocol) {
 	int rv;
 	struct muleng_device *dev;
 	struct diag_serial_settings set;
@@ -402,8 +392,7 @@ static struct cfgi* muleng_getcfg(struct diag_l0_device *dl0d) {
 
 
 static void
-muleng_close(struct diag_l0_device *dl0d)
-{
+muleng_close(struct diag_l0_device *dl0d) {
 	if (!dl0d) return;
 	struct muleng_device *dev = dl0d->l0_int;
 
@@ -423,16 +412,14 @@ muleng_close(struct diag_l0_device *dl0d)
  * Safe write routine; return 0 on success
  */
 static int
-muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
-{
+muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 	struct muleng_device *dev = dl0d->l0_int;
 
 	if (txlen <=0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) )
-	{
+			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
 		fprintf(stderr, FLFMT "device link %p sending to ME device: ",
 			FL, (void *)dl0d);
 		diag_data_dump(stderr, dp, txlen);
@@ -460,8 +447,7 @@ muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen)
  */
 static int
 muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
-		struct muleng_device *dev)
-{
+		struct muleng_device *dev) {
 	/*
 	 * Slow init
 	 * Build message into send buffer, and calculate checksum
@@ -585,8 +571,7 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
  * fastinit, and doing slowinit now
  */
 static int
-muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
-{
+muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	int rv = 0;
 	struct muleng_device *dev;
 
@@ -603,8 +588,7 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 
 	if (in->type == DIAG_L1_INITBUS_5BAUD)
 		rv = muleng_slowinit(dl0d, in, dev);
-	else
-	{
+	else {
 		/* Do wakeup on first TX */
 		dev->dev_wakeup = in->type;
 		dev->dev_state = MULENG_STATE_FASTSTART;
@@ -624,8 +608,7 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in)
 static int
 muleng_send(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-const void *data, size_t len)
-{
+const void *data, size_t len) {
 	int rv;
 	uint8_t cmd;
 
@@ -642,19 +625,16 @@ const void *data, size_t len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE)
-	{
+	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "device link %p send %ld bytes protocol %d ",
 			FL, (void *)dl0d, (long)len, dev->protocol);
-		if (diag_l0_debug & DIAG_DEBUG_DATA)
-		{
+		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 			fprintf(stderr, "\n");
 		}
 	}
 
-	if (dev->dev_state == MULENG_STATE_RAW)
-	{
+	if (dev->dev_state == MULENG_STATE_RAW) {
 		/* Raw mode, no pretty processing */
 		rv = muleng_write(dl0d, data, len);
 		return rv;
@@ -664,8 +644,7 @@ const void *data, size_t len)
 	 * Figure out cmd to send depending on the hardware we have been
 	 * told to use and whether we need to do fastinit or not
 	 */
-	switch (dev->protocol)
-	{
+	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:
 		cmd = 0x10;
 		break;
@@ -730,8 +709,7 @@ const void *data, size_t len)
 static int
 muleng_recv(struct diag_l0_device *dl0d,
 UNUSED(const char *subinterface),
-void *data, size_t len, unsigned int timeout)
-{
+void *data, size_t len, unsigned int timeout) {
 	ssize_t xferd;
 	int rv;
 	uint8_t *pdata = (uint8_t *)data;
@@ -752,18 +730,15 @@ void *data, size_t len, unsigned int timeout)
 	 * user are the keybytes received from the interface, and where
 	 * we are using the interface in pass thru mode on ISO-9141 protocols
 	 */
-	switch (dev->dev_state)
-	{
+	switch (dev->dev_state) {
 	case MULENG_STATE_KWP_SENDKB1:
-		if (len >= 2)
-		{
+		if (len >= 2) {
 			pdata[0] = dev->dev_kb1;
 			pdata[1] = dev->dev_kb2;
 			dev->dev_state = MULENG_STATE_OPEN;
 			return 2;
 		}
-		else if (len == 1)
-		{
+		else if (len == 1) {
 			*pdata = dev->dev_kb1;
 			dev->dev_state = MULENG_STATE_KWP_SENDKB2;
 			return 1;
@@ -772,8 +747,7 @@ void *data, size_t len, unsigned int timeout)
 
 
 	case MULENG_STATE_KWP_SENDKB2:
-		if (len >= 1)
-		{
+		if (len >= 1) {
 			*pdata = dev->dev_kb2;
 			dev->dev_state = MULENG_STATE_OPEN;
 			return 1;
@@ -797,8 +771,7 @@ void *data, size_t len, unsigned int timeout)
 		break;
 	}
 
-	if (dev->dev_rxlen >= 14)
-	{
+	if (dev->dev_rxlen >= 14) {
 		/*
 		 * There's a full packet been received, but the user
 		 * has only asked for a few bytes from it previously
@@ -851,7 +824,7 @@ void *data, size_t len, unsigned int timeout)
 	/* Verify ME response checksum, 2nd byte onward */
 
 	xferd = diag_cks1(&dev->dev_rxbuf[1], 12);
-	if ((xferd & 0xff) != dev->dev_rxbuf[13]) 	{
+	if ((xferd & 0xff) != dev->dev_rxbuf[13]) {
 
 /* XXX, we should deal with this properly rather than just printing a message */
 		fprintf(stderr,"Got bad checksum from ME device 0x%X != 0x%X\n",
@@ -865,8 +838,7 @@ void *data, size_t len, unsigned int timeout)
 	/*
 	 * Check the type
 	 */
-	if (dev->dev_rxbuf[1] == ME_RESP_ERROR)
-	{
+	if (dev->dev_rxbuf[1] == ME_RESP_ERROR) {
 		/* It's an error message not a data frame */
 		dev->dev_rxlen = 0;
 		dev->resp_len = 0;
@@ -877,8 +849,7 @@ void *data, size_t len, unsigned int timeout)
 				FL, (void *)dl0d, dev->dev_rxbuf[3], me_geterr(dev->dev_rxbuf[3]),
 				dev->dev_rxbuf[2], dev->dev_rxbuf[4]);
 
-		switch (dev->dev_rxbuf[3])
-		{
+		switch (dev->dev_rxbuf[3]) {
 		case 0x05:	/* No ISO response to request */
 		case 0x07:	/* No J1850 response to request */
 		case 0x0c:	/* No KWP response to request */
@@ -916,8 +887,7 @@ void *data, size_t len, unsigned int timeout)
 }
 
 static uint32_t
-muleng_getflags(struct diag_l0_device *dl0d)
-{
+muleng_getflags(struct diag_l0_device *dl0d) {
 	/*
 	 * ISO14230/J1850 protocol does L2 framing, ISO9141 doesn't
 	 */
@@ -927,8 +897,7 @@ muleng_getflags(struct diag_l0_device *dl0d)
 	dev = (struct muleng_device *)dl0d->l0_int;
 
 	flags = DIAG_L1_AUTOSPEED;
-	switch (dev->protocol)
-	{
+	switch (dev->protocol) {
 	case DIAG_L1_J1850_VPW:
 	case DIAG_L1_J1850_PWM:
 			flags |= DIAG_L1_DOESL2CKSUM;

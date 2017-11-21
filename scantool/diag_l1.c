@@ -55,8 +55,7 @@ static int diag_l1_initdone=0;
 
 //diag_l1_init : parse through l0dev_list and call each ->init()
 int
-diag_l1_init(void)
-{
+diag_l1_init(void) {
 	if (diag_l1_initdone)
 		return 0;
 
@@ -94,8 +93,7 @@ int diag_l1_end(void) {
  *
  */
 int
-diag_l1_open(struct diag_l0_device *dl0d, int l1protocol)
-{
+diag_l1_open(struct diag_l0_device *dl0d, int l1protocol) {
 	if (diag_l1_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr, FLFMT "diag_l1_open(0x%p, l1 proto=%d\n", FL,
 				(void *)dl0d, l1protocol);
@@ -111,8 +109,7 @@ diag_l1_open(struct diag_l0_device *dl0d, int l1protocol)
 //diag_l1_close : call the ->close member of the
 //specified diag_l0_device.
 void
-diag_l1_close(struct diag_l0_device *dl0d)
-{
+diag_l1_close(struct diag_l0_device *dl0d) {
 	if (diag_l1_debug & DIAG_DEBUG_CLOSE)
 		fprintf(stderr, FLFMT "entering diag_l1_close: dl0d=%p\n", FL,
 			(void *) dl0d);
@@ -141,8 +138,7 @@ int diag_l1_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
  * Returns 0 on success
  */
 int
-diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *data, size_t len, unsigned int p4)
-{
+diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *data, size_t len, unsigned int p4) {
 	int rv = DIAG_ERR_GENERAL;
 	uint32_t l0flags;
 	uint8_t duplexbuf[MAXRBUF];
@@ -244,8 +240,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
  */
 int
 diag_l1_recv(struct diag_l0_device *dl0d,
-	const char *subinterface, void *data, size_t len, unsigned int timeout)
-{
+	const char *subinterface, void *data, size_t len, unsigned int timeout) {
 	int rv;
 	if (!len)
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -276,15 +271,13 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 
 
 //diag_l1_getflags: returns l0 flags
-uint32_t diag_l1_getflags(struct diag_l0_device *dl0d)
-{
+uint32_t diag_l1_getflags(struct diag_l0_device *dl0d) {
 	return diag_l0_getflags(dl0d);
 }
 
 //diag_l1_gettype: returns l1proto_mask :supported L1 protos
 //of the l0 driver
-int diag_l1_gettype(struct diag_l0_device *dl0d)
-{
+int diag_l1_gettype(struct diag_l0_device *dl0d) {
 	return dl0d->dl0->l1proto_mask;
 }
 

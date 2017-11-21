@@ -72,8 +72,7 @@ enum {
  * Verify communication with the ECU.
  */
 int
-diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn)
-{
+diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn) {
 	int errval = 0;
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;
@@ -95,8 +94,7 @@ diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn)
 
 /* The request message for reading memory */
 static int
-read_MEMORY_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count)
-{
+read_MEMORY_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count) {
 	static struct diag_msg msg = { 0 };
 	static uint8_t data[3];
 
@@ -113,8 +111,7 @@ read_MEMORY_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint
 
 /* The request message for reading ROM */
 static int
-read_ROM_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count)
-{
+read_ROM_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count) {
 	static struct diag_msg msg = { 0 };
 	static uint8_t data[3];
 
@@ -131,8 +128,7 @@ read_ROM_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t
 
 /* The request message for taking ADC readings */
 static int
-read_ADC_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr)
-{
+read_ADC_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr) {
 	static struct diag_msg msg = { 0 };
 	static uint8_t data[1];
 
@@ -162,8 +158,7 @@ read_ADC_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr)
  * bytes requested. Returns the actual byte count received.
  */
 int
-diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out)
-{
+diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out) {
 	struct diag_msg *req;
 	struct diag_msg *resp = NULL;
 	uint8_t wantresp;
@@ -217,8 +212,7 @@ diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
  * small for the full response.
  */
 int
-diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
-{
+diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) {
 	int errval = 0;
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;
@@ -263,8 +257,7 @@ diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out)
  * ECU returned positive acknowledgement for the clear request, <0 for errors.
  */
 int
-diag_l7_kwp71_cleardtc(struct diag_l2_conn *d_l2_conn)
-{
+diag_l7_kwp71_cleardtc(struct diag_l2_conn *d_l2_conn) {
 	uint8_t buf[1];
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;

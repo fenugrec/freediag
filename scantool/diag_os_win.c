@@ -37,7 +37,7 @@
 
 static int diag_os_init_done=0;
 
-LARGE_INTEGER perfo_freq={{0,0}};	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
+LARGE_INTEGER perfo_freq = {{0,0}};	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
 float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds, i.e. [us]=[counts]*pf_conv
 static int pfconv_valid=0;	//flag after querying perfo_freq; nothing will not work without a performance counter
 int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_millisleep & diag_os_calibrate
@@ -74,8 +74,7 @@ VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
 //calls diag_os_sched to increase thread priority.
 //return 0 if ok
 int
-diag_os_init(void)
-{
+diag_os_init(void) {
 	unsigned long tmo=ALARM_TIMEOUT;
 
 	if (diag_os_init_done)
@@ -166,8 +165,7 @@ goodexit:
 
 //
 void
-diag_os_millisleep(unsigned int ms)
-{
+diag_os_millisleep(unsigned int ms) {
 	//This version self-corrects if Sleep() overshoots;
 	//if it undershoots then we run an empty loop for the remaining
 	//time. Eventually "correction" should contain the biggest
@@ -232,8 +230,7 @@ diag_os_ipending(void) {
 //reset normal priority.
 //we ifdef the body of the function according to the OS capabilities
 int
-diag_os_sched(void)
-{
+diag_os_sched(void) {
 	static int os_sched_done=0;
 	int rv=0;
 

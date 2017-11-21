@@ -30,8 +30,7 @@ struct diag_l0;
  * A "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
  * and a hardware resource (serial port, file, etc.)
  */
-struct diag_l0_device
-{
+struct diag_l0_device {
 	void *l0_int;					/** Handle for internal L0 data */
 	const struct diag_l0 *dl0;		/** The L0 driver's diag_l0 */
 
@@ -40,8 +39,7 @@ struct diag_l0_device
 
 
 // diag_l0 : every diag_l0_???.c "driver" fills in one of these to describe itself.
-struct diag_l0
-{
+struct diag_l0 {
 	const char	*longname;	/* Useful textual name, unused at the moment */
 	const char	*shortname;	/* Short, unique text name for user interface */
 

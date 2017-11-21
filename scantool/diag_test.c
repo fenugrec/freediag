@@ -77,8 +77,7 @@ static bool run_tests(void) {
 
 
 int
-main(int argc,  char **argv)
-{
+main(int argc,  char **argv) {
 	bool rv;
 	(void) argc;
 	(void) argv;

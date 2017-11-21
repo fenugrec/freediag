@@ -51,8 +51,7 @@
 
 /* replace a byte's msb with a parity bit */
 static uint8_t
-with_parity(uint8_t c, enum diag_parity eo)
-{
+with_parity(uint8_t c, enum diag_parity eo) {
 	uint8_t p;
 	int i;
 
@@ -67,8 +66,7 @@ with_parity(uint8_t c, enum diag_parity eo)
 }
 
 static int
-dl2p_d2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
-{
+dl2p_d2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 	uint8_t buf[3 + 62 + 1];
 	struct diag_l2_d2 *dp;
@@ -95,8 +93,7 @@ dl2p_d2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg)
 static int
 dl2p_d2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	void (*callback)(void *handle, struct diag_msg *msg),
-	void *handle)
-{
+	void *handle) {
 	int rv;
 	uint8_t buf[3 + 62 + 1];
 	struct diag_msg *msg;
@@ -127,16 +124,14 @@ dl2p_d2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 }
 
 static void
-dl2p_d2_request_callback(void *handle, struct diag_msg *in)
-{
+dl2p_d2_request_callback(void *handle, struct diag_msg *in) {
 	struct diag_msg **out = (struct diag_msg **)handle;
 	*out = diag_dupsinglemsg(in);
 }
 
 static struct diag_msg *
 dl2p_d2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-                int *errval)
-{
+                int *errval) {
 	int rv;
 	struct diag_msg *rmsg;
 
@@ -161,13 +156,12 @@ dl2p_d2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 
 static int
 dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
-	unsigned int bitrate, target_type target, source_type source)
-{
+	unsigned int bitrate, target_type target, source_type source) {
 	struct diag_serial_settings set;
 	struct diag_l2_d2 *dp;
 	int rv;
-	struct diag_msg wm={0};
-	uint8_t wm_data[]={0x82, 0, 0, 0xa1};
+	struct diag_msg wm = {0};
+	uint8_t wm_data[] = {0x82, 0, 0, 0xa1};
 	struct diag_l1_initbus_args in;
 
 	if (!(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) || !(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2CKSUM)) {
@@ -245,8 +239,7 @@ err:
 }
 
 static int
-dl2p_d2_stopcomms(struct diag_l2_conn* pX)
-{
+dl2p_d2_stopcomms(struct diag_l2_conn* pX) {
 	struct diag_msg msg = {0};
 	uint8_t data[] = { 0xa0 };
 	int errval = 0;
@@ -275,8 +268,7 @@ dl2p_d2_stopcomms(struct diag_l2_conn* pX)
 }
 
 static void
-dl2p_d2_timeout(struct diag_l2_conn *d_l2_conn)
-{
+dl2p_d2_timeout(struct diag_l2_conn *d_l2_conn) {
 	struct diag_msg msg = {0};
 	uint8_t data[] = { 0xa1 };
 	int errval = 0;

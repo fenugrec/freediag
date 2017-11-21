@@ -287,10 +287,9 @@ do {                                                                            
 #define LL_COUNT(head,el,counter)                                                              \
     LL_COUNT2(head,el,counter,next)                                                            \
 
-#define LL_COUNT2(head,el,counter,next)                                                        \
-{                                                                                              \
+#define LL_COUNT2(head,el,counter,next) {                                                      \
     counter = 0;                                                                               \
-    LL_FOREACH2(head,el,next){ ++counter; }                                                    \
+    LL_FOREACH2(head,el,next) { ++counter; }                                                   \
 }
 
 #define LL_FOREACH(head,el)                                                                    \
