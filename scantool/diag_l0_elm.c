@@ -76,18 +76,18 @@ struct elm_device {
 
 
 // possible error messages returned by the ELM IC
-static const char * elm323_errors[] = {"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?", NULL};
+static const char *elm323_errors[] = {"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?", NULL};
 
-static const char * elm327_errors[] = {"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?",
+static const char *elm327_errors[] = {"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?",
 						"ACT ALERT", "BUFFER FULL", "BUS ERROR", "CAN ERROR", "LP ALERT",
 						"LV RESET", "<RX ERROR", "STOPPED", "UNABLE TO CONNECT", "ERR", NULL};
 
 // authentic VS clone identification strings.
 // I know of no elm323 clones. 327 clones may not support some commands (atfi, atsi, atkw) and thus need fallback methods
-static const char * elm323_official[] = {"2.0",NULL};	//authentic 323 firmware versions, possibly incomplete list
-static const char * elm323_clones[] = {NULL};	//known cloned versions
-static const char * elm327_official[] = {"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3a", "1.3", "1.4b", "2.0", NULL};
-static const char * elm327_clones[] = {"1.4", "1.4a", "1.5a", "1.5", "2.1", NULL};
+static const char *elm323_official[] = {"2.0",NULL};	//authentic 323 firmware versions, possibly incomplete list
+static const char *elm323_clones[] = {NULL};	//known cloned versions
+static const char *elm327_official[] = {"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3a", "1.3", "1.4b", "2.0", NULL};
+static const char *elm327_clones[] = {"1.4", "1.4a", "1.5a", "1.5", "2.1", NULL};
 
 // baud rates for host to elm32x communication. Start with user-specified speed, then try common values
 #define ELM_CUSTOMSPEED ((unsigned) -1)
@@ -127,7 +127,7 @@ elm_init(void) {
 	return 0;
 }
 
-int elm_new(struct diag_l0_device * dl0d) {
+int elm_new(struct diag_l0_device *dl0d) {
 	struct elm_device *dev;
 
 	assert(dl0d);
@@ -156,7 +156,7 @@ int elm_new(struct diag_l0_device * dl0d) {
 	return 0;
 }
 
-struct cfgi* elm_getcfg(struct diag_l0_device *dl0d) {
+struct cfgi *elm_getcfg(struct diag_l0_device *dl0d) {
 	struct elm_device *dev;
 	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
 
@@ -210,9 +210,9 @@ elm_close(struct diag_l0_device *dl0d) {
 //elm_parse_errors : look for known error messages in the reply.
 // return any match or NULL if nothing found.
 // data[] must be \0-terminated !
-static const char * elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) {
+static const char *elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) {
 	struct elm_device *dev;
-	const char ** elm_errors;	//just used to select between the 2 error lists
+	const char **elm_errors;	//just used to select between the 2 error lists
 	int i;
 
 	dev = (struct elm_device *) dl0d->l0_int;
@@ -359,8 +359,8 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	const uint8_t *buf;
 	uint8_t rxbuf[ELM_BUFSIZE];
 
-	const char ** elm_official;
-	const char ** elm_clones;	//point to elm323_ or elm327_ clone and official version string lists
+	const char **elm_official;
+	const char **elm_clones;	//point to elm323_ or elm327_ clone and official version string lists
 
 	assert(dl0d);
 	dev = dl0d->l0_int;
@@ -596,7 +596,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
  */
 static int
 elm_fastinit(struct diag_l0_device *dl0d) {
-	uint8_t * cmds= (uint8_t *) "ATFI\x0D";
+	uint8_t *cmds= (uint8_t *) "ATFI\x0D";
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO)
 		fprintf(stderr, FLFMT "ELM forced fastinit...\n", FL);
@@ -612,7 +612,7 @@ elm_fastinit(struct diag_l0_device *dl0d) {
 
 static int
 elm_slowinit(struct diag_l0_device *dl0d) {
-	uint8_t * cmds=(uint8_t *)"ATSI\x0D";
+	uint8_t *cmds=(uint8_t *)"ATSI\x0D";
 
 	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "ELM forced slowinit...\n", FL);

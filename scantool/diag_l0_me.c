@@ -381,7 +381,7 @@ static void muleng_del(struct diag_l0_device *dl0d) {
 	return;
 }
 
-static struct cfgi* muleng_getcfg(struct diag_l0_device *dl0d) {
+static struct cfgi *muleng_getcfg(struct diag_l0_device *dl0d) {
 	struct muleng_device *dev;
 	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
 

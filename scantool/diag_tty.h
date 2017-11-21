@@ -54,13 +54,13 @@ typedef void ttyp;	//used as "(tty_internal_struct *) ttyp" in tty code
  * strlist_free()
  *
  */
-char ** diag_tty_getportlist(int *numports);
+char **diag_tty_getportlist(int *numports);
 
 /** Open serial port
  * @param portname: serial port device / file / tty name
  * @return new ttyp handle if ok, NULL if failed
  */
-ttyp * diag_tty_open(const char *portname);
+ttyp *diag_tty_open(const char *portname);
 
 /** Close serial port
  *

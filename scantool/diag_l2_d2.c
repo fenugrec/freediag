@@ -239,7 +239,7 @@ err:
 }
 
 static int
-dl2p_d2_stopcomms(struct diag_l2_conn* pX) {
+dl2p_d2_stopcomms(struct diag_l2_conn *pX) {
 	struct diag_msg msg = {0};
 	uint8_t data[] = { 0xa0 };
 	int errval = 0;

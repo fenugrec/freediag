@@ -66,7 +66,7 @@ void diag_l0_del(struct diag_l0_device *dl0d) {
 	return;
 }
 
-struct cfgi* diag_l0_getcfg(struct diag_l0_device *dl0d) {
+struct cfgi *diag_l0_getcfg(struct diag_l0_device *dl0d) {
 	if (!dl0d) return NULL;
 
 	if (dl0d->dl0->_getcfg) return dl0d->dl0->_getcfg(dl0d);

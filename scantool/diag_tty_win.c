@@ -27,7 +27,7 @@ struct tty_int {
 };
 
 //diag_tty_open : open specified port for L0
-ttyp * diag_tty_open(const char *portname) {
+ttyp *diag_tty_open(const char *portname) {
 	int rv;
 	struct tty_int *wti;
 	size_t n = strlen(portname) + 1;
@@ -546,7 +546,7 @@ int diag_tty_fastbreak(ttyp *ttyh, const unsigned int ms) {
  * https://github.com/Comer352L/FreeSSM
  */
 
-char ** diag_tty_getportlist(int *numports) {
+char **diag_tty_getportlist(int *numports) {
 	HKEY hKey;				// handle to registry key
 	DWORD index = 0;			// index registry-key: unsigned int (32bit)
 	char ValueName[256] = "";
@@ -566,10 +566,10 @@ char ** diag_tty_getportlist(int *numports) {
 	cv = RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", 0, KEY_READ, &hKey);
 	if (cv == ERROR_SUCCESS) {
 		while ((RegEnumValueA(hKey, index, ValueName, &szValueName, NULL, NULL,Data,&szData)) == ERROR_SUCCESS) {
-			if (!strncmp((char*)Data,"COM",3)) {
+			if (!strncmp((char *)Data,"COM",3)) {
 				// CHECK IF PORT IS AVAILABLE (not in use):
 				char NTdevName[30] = "\\\\.\\";	// => "\\.\"
-				strncpy(NTdevName+4, (char*)Data, 25);
+				strncpy(NTdevName+4, (char *)Data, 25);
 				/* NOTE: MS-DOS device names ("COMx") are not reliable if x is > 9 !!!
 					=> device can not be opened (error 2 "The system cannot find the file specified.")
 					Using NT device names instead ("\\.\COMx") which work in all cases.

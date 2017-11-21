@@ -85,13 +85,13 @@ struct diag_l3_proto {
 	int (*diag_l3_proto_ioctl)(struct diag_l3_conn *, int cmd, void *data);
 
 	//proto_request : send request and return a new message with the reply, and error in *errval (0 if ok)
-	struct diag_msg * (*diag_l3_proto_request)(struct diag_l3_conn*,
-		struct diag_msg* txmsg, int* errval);
+	struct diag_msg *(*diag_l3_proto_request)(struct diag_l3_conn *,
+		struct diag_msg *txmsg, int *errval);
 
 	/* Decode msg to printable text in *buf */
 	void (*diag_l3_proto_decode)(struct diag_l3_conn *,
 		struct diag_msg *msg,
-		char * buf,
+		char *buf,
 		const size_t bufsize);
 
 	/* Timer (optional)
@@ -111,7 +111,7 @@ struct diag_l3_proto {
  * make sure to diag_l3_stop afterwards to free() the diag_l3_conn !
  * This adds the new l3 connection to the diag_l3_list linked-list
  */
-struct diag_l3_conn * diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn);
+struct diag_l3_conn *diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn);
 
 /** Stop L3 connection
  *
@@ -172,8 +172,8 @@ int diag_l3_base_recv(struct diag_l3_conn *, unsigned int,
 	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *);
 //XXX diag_l3_base_ioctl : there's no code for this one ?
 //int diag_l3_base_ioctl(struct diag_l3_conn *, int cmd, void *data);
-struct diag_msg * diag_l3_base_request(struct diag_l3_conn *dl3c,
-	struct diag_msg* txmsg, int* errval);
+struct diag_msg *diag_l3_base_request(struct diag_l3_conn *dl3c,
+	struct diag_msg *txmsg, int *errval);
 
 
 

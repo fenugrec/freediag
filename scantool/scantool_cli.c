@@ -799,7 +799,7 @@ rc_file(void) {
 
 
 #ifdef USE_INIFILE
-	char * inihomeinit;
+	char *inihomeinit;
 	if (diag_malloc(&inihomeinit, strlen(progname) + strlen(".ini") + 1)) {
 		diag_iseterr(DIAG_ERR_NOMEM);
 		return CMD_OK;

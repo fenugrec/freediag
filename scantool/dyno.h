@@ -99,21 +99,21 @@ int dyno_reset(void);
 int dyno_get_nb_measures(void);
 
 /* Get all measures */
-int dyno_get_measures(dyno_measure * measures, int size);
+int dyno_get_measures(dyno_measure *measures, int size);
 
 
 /* Get number of results */
 int dyno_get_nb_results(void);
 
 /* Get power and torque results */
-int dyno_get_results(dyno_result * results, int size);
+int dyno_get_results(dyno_result *results, int size);
 
 /* smooth results */
-int dyno_smooth_results(dyno_result * results, int size);
+int dyno_smooth_results(dyno_result *results, int size);
 
 
 /* save measures and results to a file */
-void dyno_save(char * filename, dyno_result * results, int size);
+void dyno_save(char *filename, dyno_result *results, int size);
 
 #if defined(__cplusplus)
 }

@@ -115,8 +115,8 @@ extern "C" {
 
 	Could we someday have a sane way of setting integer baud rates ? pfah.
 	 */
-	extern int cfsetispeed(struct termios* __termios_p, speed_t __speed);
-	extern int cfsetospeed(struct termios* __termios_p, speed_t __speed);
+	extern int cfsetispeed(struct termios *__termios_p, speed_t __speed);
+	extern int cfsetospeed(struct termios *__termios_p, speed_t __speed);
 #else
 	#include <termios.h>	//has speed_t, tcsetattr, struct termios, cfset*speed, etc
 #endif // USE_TERMIOS2

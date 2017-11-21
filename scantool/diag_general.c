@@ -217,7 +217,7 @@ diag_freemsg(struct diag_msg *msg) {
 
 // diag_cks1: return simple 8-bit checksum of
 // [len] bytes at *data. Everybody needs this !
-uint8_t diag_cks1(const uint8_t * data, unsigned int len) {
+uint8_t diag_cks1(const uint8_t *data, unsigned int len) {
 	uint8_t rv=0;
 
 	while (len > 0) {
@@ -374,7 +374,7 @@ int diag_flmalloc(const char *name, const int line, void **pp, size_t s) {
 
 /* Add a string to array-of-strings (argv style)
 */
-char ** strlist_add(char ** list, const char * news, int elems) {
+char **strlist_add(char **list, const char *news, int elems) {
 	char **templist;
 	char *temp;
 
@@ -393,7 +393,7 @@ char ** strlist_add(char ** list, const char * news, int elems) {
 }
 
 /* Free argv-style list */
-void strlist_free(char ** list, int elems) {
+void strlist_free(char **list, int elems) {
 	if (!list) return;
 
 	while (elems > 0) {

@@ -43,7 +43,7 @@ dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn, flag_type flags,
 /*
 */
 int
-dl2p_raw_stopcomms(struct diag_l2_conn* pX);
+dl2p_raw_stopcomms(struct diag_l2_conn *pX);
 
 /*
  * Just send the data, with no processing etc

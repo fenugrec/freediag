@@ -105,7 +105,7 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid);
 
 /** get param value: generates new string to be free'd by caller
 */
-char * diag_cfg_getstr(struct cfgi *cfgp);
+char *diag_cfg_getstr(struct cfgi *cfgp);
 
 /** free contents of *cfgp but not the struct itself
  */

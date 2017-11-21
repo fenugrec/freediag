@@ -48,7 +48,7 @@ void diag_dtc_init(void) {
  * @return pointer to *buf, which may be useful to printf or fprintf...
  */
 
-char * diag_dtc_decode(uint8_t *data, int len,
+char *diag_dtc_decode(uint8_t *data, int len,
 	UNUSED(const char *vehicle), UNUSED(const char *ecu),
 	enum diag_dtc_protocol protocol,
 	char *buf, const size_t bufsize) {

@@ -675,7 +675,7 @@ clear_data(void) {
  * - opens a Layer 2 device for the specified Layer 1 protocol
   * returns L2 file descriptor
  */
-static struct diag_l2_conn * do_l2_common_start(int L1protocol, int L2protocol,
+static struct diag_l2_conn *do_l2_common_start(int L1protocol, int L2protocol,
 	flag_type type, unsigned int bitrate, target_type target, source_type source ) {
 	int rv;
 	struct diag_l0_device *dl0d = global_dl0d;

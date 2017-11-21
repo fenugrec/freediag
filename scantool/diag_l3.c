@@ -184,7 +184,7 @@ int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, unsigned int cmd, void *data) 
 struct diag_msg *
 diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) {
 	struct diag_msg *rxmsg;
-	const struct diag_l3_proto * dl3p = dl3c->d_l3_proto;
+	const struct diag_l3_proto *dl3p = dl3c->d_l3_proto;
 
 	if (diag_l3_debug & DIAG_DEBUG_WRITE)
 		fprintf(stderr,
@@ -275,8 +275,8 @@ diag_l3_base_recv(struct diag_l3_conn *d_l3_conn,
 //this implementation is rather naive and untested. It simply forwards the
 //txmsg straight to the L2 request function and returns the response msg
 //as-is.
-struct diag_msg * diag_l3_base_request(struct diag_l3_conn *dl3c,
-	struct diag_msg* txmsg, int* errval) {
+struct diag_msg *diag_l3_base_request(struct diag_l3_conn *dl3c,
+	struct diag_msg *txmsg, int *errval) {
 
 	struct diag_msg *rxmsg = NULL;
 

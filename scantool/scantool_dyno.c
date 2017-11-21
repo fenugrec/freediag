@@ -47,7 +47,7 @@
 
 
 
-dyno_result * dyno_results;
+dyno_result *dyno_results;
 int dyno_nb_results;
 
 static int cmd_dyno_help(int argc, char **argv);
@@ -531,7 +531,7 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
  *****************************************************************************/
 
 /* Get measures for specified type */
-static void get_measures(dyno_measure ** measures, int * nb_measures) {
+static void get_measures(dyno_measure **measures, int *nb_measures) {
 	/* allocate memory */
 	(*nb_measures) = dyno_get_nb_measures();
 	if ((*nb_measures)==0)
@@ -544,7 +544,7 @@ static void get_measures(dyno_measure ** measures, int * nb_measures) {
 }
 
 /* Display given measures */
-static void display_measures(dyno_measure * measures, int nb_measures) {
+static void display_measures(dyno_measure *measures, int nb_measures) {
 	int i;
 
 	for (i=0; i<nb_measures; i++) {
@@ -563,7 +563,7 @@ static void display_measures(dyno_measure * measures, int nb_measures) {
 /* Display all measures */
 
 static int cmd_dyno_measures(UNUSED(int argc), UNUSED(char **argv)) {
-	dyno_measure * measures = NULL;
+	dyno_measure *measures = NULL;
 	int nb_measures = 0;
 
 	printf("Dyno measures :\n");
@@ -579,7 +579,7 @@ static int cmd_dyno_measures(UNUSED(int argc), UNUSED(char **argv)) {
 
 
 /* Display results */
-static void display_results(dyno_result * results, int nb) {
+static void display_results(dyno_result *results, int nb) {
 	int i;
 
 	int max_power_i = 0;
@@ -615,7 +615,7 @@ static void display_results(dyno_result * results, int nb) {
 #define DYNO_GRAPH_HEIGHT 21
 
 /* Display graphs */
-static void display_graphs(dyno_result * results, int nb) {
+static void display_graphs(dyno_result *results, int nb) {
 	int row, col, step;
 
 	int max_power_i = 0;
@@ -740,7 +740,7 @@ static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv)) {
  * Save dyno measures and results to a file
  */
 static int cmd_dyno_save(int argc, char **argv) {
-	char * filename;
+	char *filename;
 
 	get_results();
 

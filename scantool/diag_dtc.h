@@ -43,7 +43,7 @@ enum diag_dtc_protocol {
 //do not use *allocs or open handles in diag_dtc_init !
 void diag_dtc_init(void);
 
-char* diag_dtc_decode(uint8_t *data, int len,
+char *diag_dtc_decode(uint8_t *data, int len,
 	const char *vehicle, const char *ecu, enum diag_dtc_protocol protocol,
 	char *buf, const size_t bufsize);
 

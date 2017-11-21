@@ -45,7 +45,7 @@ extern "C" {
 //An l2 link associates an existing diag_l0_device with
 //one L1 proto and L1 flags.
 struct diag_l2_link {
-	struct diag_l0_device * 	l2_dl0d;	/* Link we're using to talk to lower layer */
+	struct diag_l0_device *l2_dl0d;	/* Link we're using to talk to lower layer */
 	int	l1proto;		/* L1 protocol used; see diag_l1.h*/
 
 	uint32_t	l1flags;		/* L1 flags, filled with diag_l1_getflags in diag_l2_open*/
@@ -328,7 +328,7 @@ int diag_l2_close(struct diag_l0_device *);
  *	@param source - source (tester) initialisation address
  * 	@return a new struct diag_l2_conn for representing the connection
  */
-struct diag_l2_conn * diag_l2_StartCommunications(struct diag_l0_device *, int L2protocol,
+struct diag_l2_conn *diag_l2_StartCommunications(struct diag_l0_device *, int L2protocol,
 	flag_type flags, unsigned int bitrate, target_type target, source_type source );
 
 /** Stop talking to an ECU;
@@ -403,21 +403,21 @@ struct diag_l2_proto {
 	//_StartCommunications: the l2 proto implementation of this should modify
 	//the timing parameters in diag_l2_conn if required; by default in
 	//diag_l2_startcommunications() iso14230 timings are used.
-	int (*diag_l2_proto_startcomms)(struct diag_l2_conn*,
+	int (*diag_l2_proto_startcomms)(struct diag_l2_conn *,
 		flag_type, unsigned int bitrate, target_type, source_type);
-	int (*diag_l2_proto_stopcomms)(struct diag_l2_conn*);
+	int (*diag_l2_proto_stopcomms)(struct diag_l2_conn *);
 	//diag_l2_proto_send : returns 0 if ok
-	int (*diag_l2_proto_send)(struct diag_l2_conn*, struct diag_msg*);
+	int (*diag_l2_proto_send)(struct diag_l2_conn *, struct diag_msg *);
 	//diag_l2_proto_recv: ret 0 if ok
 	int (*diag_l2_proto_recv)(struct diag_l2_conn *d_l2_conn,
 		unsigned int timeout, void (*callback)(void *handle, struct diag_msg *msg),
 		void *handle);
 	//diag_l2_proto_request : return a new diag_msg if succesful.
-	struct diag_msg * (*diag_l2_proto_request)(struct diag_l2_conn*,
-		struct diag_msg*, int*);
+	struct diag_msg *(*diag_l2_proto_request)(struct diag_l2_conn *,
+		struct diag_msg *, int *);
 	//diag_l2_proto_timeout : this is called periodically (interval
 	//defined in struct diag_l2_conn, usually to send keepalive messages.
-	void (*diag_l2_proto_timeout)(struct diag_l2_conn*);
+	void (*diag_l2_proto_timeout)(struct diag_l2_conn *);
 };
 
 #if defined(__cplusplus)

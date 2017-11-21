@@ -171,8 +171,8 @@ enum debugflag_enum {OPEN=DIAG_DEBUG_OPEN,
 // struct debugflags_descr : filled + used in scantool_debug.c
 struct debugflags_descr {
 	enum debugflag_enum mask;
-	const char * descr;		//associate short description for each flag.
-	const char * shortdescr;
+	const char *descr;		//associate short description for each flag.
+	const char *shortdescr;
 };
 
 /*
@@ -321,12 +321,12 @@ int diag_flmalloc(const char *name, const int line, void **p, size_t s);
 * @param elems: number of elements already in table
 * @return new table ptr, NULL if failed
 */
-char ** strlist_add(char ** list, const char * news, int elems);
+char **strlist_add(char **list, const char *news, int elems);
 
 /** Free argv-style string list
 * @param elems: number of strings in list
 */
-void strlist_free(char ** slist, int elems);
+void strlist_free(char **slist, int elems);
 
 #if defined(__cplusplus)
 }

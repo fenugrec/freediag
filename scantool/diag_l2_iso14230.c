@@ -781,12 +781,12 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
  * STATE_CLOSING so the keepalive should be disabled
  */
 static int
-dl2p_14230_stopcomms(struct diag_l2_conn* pX) {
+dl2p_14230_stopcomms(struct diag_l2_conn *pX) {
 	struct diag_msg stopmsg = {0};
 	struct diag_msg *rxmsg;
 	uint8_t stopreq=DIAG_KW2K_SI_SPR;
 	int errval=0;
-	char * debugstr;
+	char *debugstr;
 
 	stopmsg.len=1;
 	stopmsg.data=&stopreq;

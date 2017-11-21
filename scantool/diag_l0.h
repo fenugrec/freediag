@@ -59,7 +59,7 @@ struct diag_l0 {
 	/* These are called from the "public funcs" listed below. */
 
 	int (*_new)(struct diag_l0_device *);
-	struct cfgi* (*_getcfg)(struct diag_l0_device *);
+	struct cfgi *(*_getcfg)(struct diag_l0_device *);
 	void (*_del)(struct diag_l0_device *);
 	int (*_open)(struct diag_l0_device *, int l1_proto);
 	void (*_close)(struct diag_l0_device *);
@@ -85,7 +85,7 @@ struct diag_l0_device *diag_l0_new(const char *shortname);
 
 /** Get linked-list of config items.
  * @return NULL if no items exist */
-struct cfgi* diag_l0_getcfg(struct diag_l0_device *);
+struct cfgi *diag_l0_getcfg(struct diag_l0_device *);
 
 
 /** Delete L0 driver instance.

@@ -138,7 +138,7 @@ UNUSED(source_type source)) {
 }
 
 static int
-dl2p_mb1_stopcomms(UNUSED(struct diag_l2_conn* dl2c)) {
+dl2p_mb1_stopcomms(UNUSED(struct diag_l2_conn *dl2c)) {
 	return 0;
 }
 

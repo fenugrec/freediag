@@ -257,7 +257,7 @@ do {                                                                            
   if ((head) == (del)) {                                                                       \
     (head)=(head)->next;                                                                       \
   } else {                                                                                     \
-    char *_tmp = (char*)(head);                                                                \
+    char *_tmp = (char *)(head);                                                                \
     while ((head)->next && ((head)->next != (del))) {                                          \
       head = (head)->next;                                                                     \
     }                                                                                          \
@@ -265,7 +265,7 @@ do {                                                                            
       (head)->next = ((del)->next);                                                            \
     }                                                                                          \
     {                                                                                          \
-      char **_head_alias = (char**)&(head);                                                    \
+      char **_head_alias = (char **)&(head);                                                    \
       *_head_alias = _tmp;                                                                     \
     }                                                                                          \
   }                                                                                            \

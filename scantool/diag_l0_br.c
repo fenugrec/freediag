@@ -150,7 +150,7 @@ static void br_del(struct diag_l0_device *dl0d) {
 	return;
 }
 
-static struct cfgi* br_getcfg(struct diag_l0_device *dl0d) {
+static struct cfgi *br_getcfg(struct diag_l0_device *dl0d) {
 	struct br_device *dev;
 	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
 

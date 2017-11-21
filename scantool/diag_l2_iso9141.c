@@ -246,7 +246,7 @@ dl2p_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
  * so we just "undo" what iso9141_startcomms did.
  */
 static int
-dl2p_iso9141_stopcomms(struct diag_l2_conn* d_l2_conn) {
+dl2p_iso9141_stopcomms(struct diag_l2_conn *d_l2_conn) {
 	struct diag_l2_iso9141 *dp;
 
 	dp = (struct diag_l2_iso9141 *)d_l2_conn->diag_l2_proto_data;

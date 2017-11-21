@@ -142,14 +142,14 @@ const struct cmd_tbl_entry set_cmd_table[] = {
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
 
-const char * const l1_names[] = { //these MUST be in the same order as they are listed in diag_l1.h !!
+const char *const l1_names[] = { //these MUST be in the same order as they are listed in diag_l1.h !!
 	"ISO9141", "ISO14230",
 	"J1850-VPW", "J1850-PWM", "CAN", "", "", "RAW", NULL
 };
 
 //These MUST match the DIAG_L2_TYPE_* flags in diag_l2.h  so that
 // l2_initmodes[DIAG_L2_TYPE_XX] == "XX" !!
-const char * const l2_initmodes[] = {
+const char *const l2_initmodes[] = {
 	"5BAUD", "FAST", "CARB", NULL
 };
 

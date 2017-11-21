@@ -53,7 +53,7 @@ diag_tty_rw_timeout_handler(UNUSED(int sig), siginfo_t *si, UNUSED(void *uc)) {
 }
 #endif
 
-ttyp * diag_tty_open(const char *portname) {
+ttyp *diag_tty_open(const char *portname) {
 	int rv;
 	struct unix_tty_int *uti;
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
@@ -1260,7 +1260,7 @@ static bool test_ttyness(const char *pname) {
  * Adapted from FreeSSM :
  * https://github.com/Comer352L/FreeSSM
  */
-char ** diag_tty_getportlist(int *numports) {
+char **diag_tty_getportlist(int *numports) {
 	char ffn[256] = "";				// full filename incl. path
 	const char *devroot="/dev/";
 	const char *devusbroot="/dev/usb";

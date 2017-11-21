@@ -263,7 +263,7 @@ diag_os_sched(void) {
 //message associated with the specified os_errno
 // XXX this is not async-safe / re-entrant !
 //
-const char * diag_os_geterr(OS_ERRTYPE os_errno) {
+const char *diag_os_geterr(OS_ERRTYPE os_errno) {
 	//to make this re-entrant, we would need CreateMutex OpenMutex etc.
 	static char errbuf[160]="";
 

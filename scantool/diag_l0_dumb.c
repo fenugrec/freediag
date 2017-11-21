@@ -178,7 +178,7 @@ static void dumb_del(struct diag_l0_device *dl0d) {
 	return;
 }
 
-static struct cfgi* dumb_getcfg(struct diag_l0_device *dl0d) {
+static struct cfgi *dumb_getcfg(struct diag_l0_device *dl0d) {
 	struct dumb_device *dev;
 	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
 

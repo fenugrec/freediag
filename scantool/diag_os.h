@@ -81,7 +81,7 @@ void diag_os_calibrate(void);
  * @note Caller must not free() the string.
  * This should only be used from OS-specific code ! (diag_os*.c and diag_tty_*.c )
  */
-const char * diag_os_geterr(OS_ERRTYPE os_errno);
+const char *diag_os_geterr(OS_ERRTYPE os_errno);
 
 /* Scheduler */
 int diag_os_sched(void);

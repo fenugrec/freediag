@@ -73,7 +73,7 @@ source_type source) {
 */
 
 int
-dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn* pX)) {
+dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn *pX)) {
 	return 0;
 }
 

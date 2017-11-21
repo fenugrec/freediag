@@ -116,7 +116,7 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid) {
 
 //get param value, as new string to be free'd by caller.
 //for u8 / int types, sprintf with %X and %d formatters respectively
-char * diag_cfg_getstr(struct cfgi *cfgp) {
+char *diag_cfg_getstr(struct cfgi *cfgp) {
 	char *str;
 	const char *fmt;
 	size_t len;

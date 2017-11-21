@@ -478,7 +478,7 @@ diag_os_sched(void) {
 //Either gets the last error if os_errno==0, or print the
 //message associated with the specified os_errno
 // XXX this is not async-safe / re-entrant !
-const char * diag_os_geterr(OS_ERRTYPE os_errno) {
+const char *diag_os_geterr(OS_ERRTYPE os_errno) {
 	//we'll suppose strerr is satisfactory.
 	return (const char *) strerror(os_errno? os_errno : errno);
 //	static char errbuf[30];
@@ -490,7 +490,7 @@ const char * diag_os_geterr(OS_ERRTYPE os_errno) {
 
 #ifdef _POSIX_TIMERS
 //internal use. ret 0 if ok
-static int diag_os_testgt(clockid_t ckid, char * ckname) {
+static int diag_os_testgt(clockid_t ckid, char *ckname) {
 	struct timespec tmtest;
 	if (clock_gettime(ckid, &tmtest) == 0) {
 		printf("clock_gettime(): using %s\n", ckname);
@@ -500,7 +500,7 @@ static int diag_os_testgt(clockid_t ckid, char * ckname) {
 	return -1;
 }
 //internal use. ret 0 if ok
-static int diag_os_testns(clockid_t ckid, char * ckname) {
+static int diag_os_testns(clockid_t ckid, char *ckname) {
 	struct timespec rqtp;
 	rqtp.tv_sec = 0;
 	rqtp.tv_nsec = 0;	//bogus interval for nanosleep test
