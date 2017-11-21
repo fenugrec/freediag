@@ -585,9 +585,9 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	diag_tty_iflush(dev->tty_int); /* Empty the receive buffer, wait for idle bus */
 
-	if (in->type == DIAG_L1_INITBUS_5BAUD)
+	if (in->type == DIAG_L1_INITBUS_5BAUD) {
 		rv = muleng_slowinit(dl0d, in, dev);
-	else {
+	} else {
 		/* Do wakeup on first TX */
 		dev->dev_wakeup = in->type;
 		dev->dev_state = MULENG_STATE_FASTSTART;

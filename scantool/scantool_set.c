@@ -346,8 +346,9 @@ cmd_set_display(int argc, char **argv) {
 			global_cfg.units = 0;
 		else
 			return CMD_USAGE;
-	} else
+	} else {
 		printf("display: %s units\n", global_cfg.units?"english":"metric");
+	}
 
 	return CMD_OK;
 }

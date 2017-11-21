@@ -401,9 +401,10 @@ print_resp_info(UNUSED(int mode), response_t *data) {
 				printf("0x%02X: ", i );
 				diag_data_dump(stdout, data->data, data->len);
 				printf("\n");
-			} else
+			} else {
 				printf("0x%02X: Failed 0x%X\n",
 					i, data->data[1]);
+			}
 		}
 		data++;
 	}
