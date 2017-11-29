@@ -174,7 +174,7 @@ void elm_del(struct diag_l0_device *dl0d) {
 
 	diag_cfg_clear(&dev->port);
 	diag_cfg_clear(&dev->speed);
-	if(dev->wm != NULL)
+	if (dev->wm != NULL)
 		diag_freemsg(dev->wm);
 	free(dev);
 	return;
@@ -376,7 +376,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	dev->atsh[0]=0; dev->atsh[1]=0; dev->atsh[2]=0;
 
 	//throw away previous wakeup message setting, if any
-	if(dev->wm != NULL)
+	if (dev->wm != NULL)
 		diag_freemsg(dev->wm);
 	dev->wm = NULL;
 
@@ -950,10 +950,10 @@ elm_send(struct diag_l0_device *dl0d,
 
 		// if ISO9141 protocol setting with KWP message format,
 		// adjust receive filter
-		if((dev->atsh[0] & 0x80) &&
+		if ((dev->atsh[0] & 0x80) &&
 		   (dev->atsh[2] == (unsigned int)((uint8_t *)data)[2])) {
 			// already sent ATSR for this address
-		} else if((unsigned int)((uint8_t *)data)[0] & 0x80) {
+		} else if ((unsigned int)((uint8_t *)data)[0] & 0x80) {
 			sprintf((char *)buf, "ATSR %02X\x0D",
 				(unsigned int)((uint8_t *)data)[2]);
 			rv=elm_sendcmd(dl0d, buf, 8, 500, NULL);
@@ -978,7 +978,7 @@ elm_send(struct diag_l0_device *dl0d,
 		fprintf(stderr, FLFMT "ELM: (sending string %s)\n", FL, (char *) buf);
 	}
 
-	if(dev->protocol & DIAG_L1_ISO9141) {
+	if (dev->protocol & DIAG_L1_ISO9141) {
 		i -= 6;
 		rv=diag_tty_write(dev->tty_int, buf+6, i+1); // skip header
 	} else {

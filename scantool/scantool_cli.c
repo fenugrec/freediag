@@ -196,19 +196,19 @@ command_generator(const char *text, int state) {
 	const struct cmd_tbl_entry *cmd_entry;
 
 	//a new word to complete
-	if(state == 0) {
+	if (state == 0) {
 		list_index = 0;
 		length = strlen(text);
 	}
 
 	//find the command
-	while(completion_cmd_level[list_index].command != NULL) {
+	while (completion_cmd_level[list_index].command != NULL) {
 		cmd_entry = &completion_cmd_level[list_index];
 		list_index++;
-		if(strncmp(cmd_entry->command, text, length) == 0 && !(cmd_entry->flags & FLAG_HIDDEN)) {
+		if (strncmp(cmd_entry->command, text, length) == 0 && !(cmd_entry->flags & FLAG_HIDDEN)) {
 			char *ret_name;
 			//we must return a copy of the string; libreadline frees it for us
-			if(diag_malloc(&ret_name, strlen(cmd_entry->command)+1) != 0)
+			if (diag_malloc(&ret_name, strlen(cmd_entry->command)+1) != 0)
 				return (char *)NULL;
 			strcpy(ret_name, cmd_entry->command);
 			return ret_name;
@@ -222,7 +222,7 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 	char **matches;
 
 	//start == 0 is when the command line is either empty or contains only whitespaces
-	if(start == 0) {
+	if (start == 0) {
 		//we are at the beginning of the command line, so the completion command level is equal to the current command level
 		completion_cmd_level = current_cmd_level;
 		rl_attempted_completion_over = 0;
@@ -241,21 +241,21 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 		size_t cmd_length = strcspn(cmd, " ");
 
 		//check all completed commands
-		while(cmd_length > 0 && cmd[cmd_length] == ' ') {
+		while (cmd_length > 0 && cmd[cmd_length] == ' ') {
 			//find out what it might be...
 			bool found = 0;
-			for(int i = 0; parsed_level[i].command != NULL; i++) {
+			for (int i = 0; parsed_level[i].command != NULL; i++) {
 				//if found the command on the current level
-				if(!(parsed_level[i].flags & FLAG_HIDDEN) &&
+				if (!(parsed_level[i].flags & FLAG_HIDDEN) &&
 				   strlen(parsed_level[i].command) == cmd_length &&
 				   strncmp(parsed_level[i].command, cmd, cmd_length) == 0) {
 					//does it have sub-commands?
-					if(parsed_level[i].sub_cmd_tbl != NULL) {
+					if (parsed_level[i].sub_cmd_tbl != NULL) {
 						//go deeper
 						parsed_level = parsed_level[i].sub_cmd_tbl;
 						rl_attempted_completion_over = 0;
 						found = 1;
-					} else if(parsed_level[i].flags & FLAG_FILE_ARG) {
+					} else if (parsed_level[i].flags & FLAG_FILE_ARG) {
 						//the command accepts a filename as an argument, so use the libreadline's filename completion
 						rl_attempted_completion_over = 0;
 						return NULL;
@@ -269,7 +269,7 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 				}
 			}
 			//went through all commands and didn't find anything? then it is an unknown command
-			if(!found) {
+			if (!found) {
 				rl_attempted_completion_over = 1;
 				return NULL;
 			}
@@ -288,7 +288,7 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 	}
 
 	matches = rl_completion_matches(text, command_generator);
-	if(matches == NULL)
+	if (matches == NULL)
 		//this will disable the default (filename and username) completion in case no command matches are found
 		rl_attempted_completion_over = 1;
 	return matches;

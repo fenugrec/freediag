@@ -78,7 +78,7 @@ ttyp *diag_tty_open(const char *portname) {
 	sa.sa_flags = SA_SIGINFO;
 	sa.sa_sigaction = diag_tty_rw_timeout_handler;
 	sigemptyset(&sa.sa_mask);
-	if(sigaction(SIGUSR1, &sa, NULL) != 0) {
+	if (sigaction(SIGUSR1, &sa, NULL) != 0) {
 		fprintf(stderr, FLFMT "Could not set-up action for timeout timer... report this\n", FL);
 		free(uti);
 		return diag_pseterr(DIAG_ERR_GENERAL);
@@ -87,7 +87,7 @@ ttyp *diag_tty_open(const char *portname) {
 	to_sigev.sigev_notify = SIGEV_SIGNAL;
 	to_sigev.sigev_signo = SIGUSR1;
 	to_sigev.sigev_value.sival_ptr = uti;
-	if(timer_create(timeout_clkid, &to_sigev, &uti->timerid) != 0) {
+	if (timer_create(timeout_clkid, &to_sigev, &uti->timerid) != 0) {
 		fprintf(stderr, FLFMT "Could not create timeout timer... report this\n", FL);
 		free(uti);
 		return diag_pseterr(DIAG_ERR_GENERAL);
@@ -691,7 +691,7 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 
 	n=0;
 
-	while(n < count) {
+	while (n < count) {
 		if (uti->pt_expired)
 			break;
 
@@ -714,7 +714,7 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	it.it_value.tv_sec = it.it_value.tv_nsec = 0;
 	timer_settime(uti->timerid, 0, &it, NULL);
 
-	if(rv < 0) {
+	if (rv < 0) {
 		//errors other than EINTR
 		fprintf(stderr, FLFMT "write to fd %d returned %s.\n", FL, uti->fd, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -831,7 +831,7 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 	p = (uint8_t *)buf;
 	errno = 0;
 
-	while(n < count) {
+	while (n < count) {
 		if (uti->pt_expired) {
 			expired=1;
 			break;
@@ -857,8 +857,8 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 	timer_settime(uti->timerid, 0, &it, NULL);
 
 	//if anything has been read, then return the number of read bytes; return timeout error otherwise
-	if(rv >= 0) {
-		if(n > 0)
+	if (rv >= 0) {
+		if (n > 0)
 			return n;
 		else if (expired)
 			return DIAG_ERR_TIMEOUT;	//without diag_iseterr() !

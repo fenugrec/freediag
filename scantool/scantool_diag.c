@@ -198,7 +198,7 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 	if (argc < 2) {
 		return CMD_USAGE;
 	}
-	if  (strcmp(argv[1], "?") == 0) {
+	if (strcmp(argv[1], "?") == 0) {
 		return CMD_USAGE;
 	}
 

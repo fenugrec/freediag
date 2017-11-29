@@ -942,7 +942,7 @@ void do_j1979_basics() {
 
 		if (ep->mode1_data[0x1c].type == TYPE_GOOD) {
 			fprintf(stderr, "ECU %d is ", i);
-			switch(ep->mode1_data[0x1c].data[2]) {
+			switch (ep->mode1_data[0x1c].data[2]) {
 			case 1:
 				fprintf(stderr, "OBD II (California ARB)");
 				break;

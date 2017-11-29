@@ -280,11 +280,11 @@ dl2p_iso9141_decode(uint8_t *data, int len,
 	}
 
 	//Check header bytes:
-	if(data[0] != 0x48 || data[1] != 0x6B )
+	if (data[0] != 0x48 || data[1] != 0x6B )
 		return diag_iseterr(DIAG_ERR_BADDATA);
 
 	//verify minimal length
-	if(len - OHLEN_ISO9141 > 0) {
+	if (len - OHLEN_ISO9141 > 0) {
 		*datalen = len - OHLEN_ISO9141;
 	} else {
 		if (diag_l2_debug & DIAG_DEBUG_PROTO)
@@ -369,7 +369,7 @@ dl2p_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	// Frames get acumulated in the protocol structure list.
 	state = ST_STATE1;
 	while (1) {
-		switch(state) {
+		switch (state) {
 			case ST_STATE1:
 				// Ready for first byte, use timeout
 				// specified by user.
@@ -546,7 +546,7 @@ dl2p_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 		// If L1 doesn't strip the checksum byte, verify it:
 		if ((l1flags & DIAG_L1_STRIPSL2CKSUM) == 0) {
 			uint8_t rx_cs = tmsg->data[tmsg->len - 1];
-			if(rx_cs != diag_cks1(tmsg->data, tmsg->len - 1)) {
+			if (rx_cs != diag_cks1(tmsg->data, tmsg->len - 1)) {
 				fprintf(stderr, FLFMT "Checksum error in received message!\n", FL);
 				tmsg->fmt |= DIAG_FMT_BADCS;
 			} else {
@@ -635,7 +635,7 @@ dl2p_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		FL, (void *)d_l2_conn, (void *)msg);
 
 	// Check if the payload plus the overhead (and checksum) exceed protocol packet size:
-	if(msg->len + OHLEN_ISO9141 > MAXLEN_ISO9141) {
+	if (msg->len + OHLEN_ISO9141 > MAXLEN_ISO9141) {
 		fprintf(stderr, FLFMT "send: Message payload exceeds maximum allowed by protocol!\n", FL);
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}

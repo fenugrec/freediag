@@ -181,7 +181,7 @@ capitalize(const char *in) {
 	strncpy(buf, in, sizeof(buf));
 	buf[sizeof(buf)-1] = '\0';
 
-	if(isalpha(buf[0]) && islower(buf[0]))
+	if (isalpha(buf[0]) && islower(buf[0]))
 		buf[0] = toupper(buf[0]);
 	return buf;
 }
@@ -214,7 +214,7 @@ ecu_addr_by_name(const char *name) {
 		i = strtoul(name, &p, 0);
 		if (*p != '\0')
 			return -1;
-		if(i > 0x7f)
+		if (i > 0x7f)
 			return -1;
 		return i;
 	}
@@ -256,7 +256,7 @@ current_ecu_desc(void) {
 
 	addr = global_l2_conn->diag_l2_destaddr;
 
-	if((addr < 0) || (addr > 0x7f))
+	if ((addr < 0) || (addr > 0x7f))
 		return "???";
 
 	return ecu_desc_by_addr(addr);
@@ -287,7 +287,7 @@ dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
 	for (dtc_entry = dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
 		if (dtc_entry->ecu_addr == addr && dtc_entry->raw_value == raw) {
 			suffix = dtc_entry->dtc_suffix;
-			if(desc != NULL)
+			if (desc != NULL)
 				*desc = dtc_entry->desc;
 			sprintf(printable, "%s-%03d", prefix, suffix);
 			return printable;
@@ -401,12 +401,12 @@ get_connection_status(void) {
  */
 static bool
 valid_arg_count(int min, int argc, int max) {
-	if(argc < min) {
+	if (argc < min) {
                 printf("Too few arguments\n");
                 return false;
 	}
 
-	if(argc > max) {
+	if (argc > max) {
 		printf("Too many arguments\n");
 		return false;
 	}
@@ -427,12 +427,12 @@ valid_connection_status(unsigned int want) {
 		return true;
 	}
 
-	switch(get_connection_status()) {
+	switch (get_connection_status()) {
 	case NOT_CONNECTED:
 		printf("Not connected.\n");
 		return false;
 	case CONNECTED_OTHER:
-		if(want == NOT_CONNECTED) {
+		if (want == NOT_CONNECTED) {
 			printf("Already connected with non-Volvo protocol. Please use 'diag disconnect'.\n");
 		} else {
 			printf("Connected with non-Volvo protocol.\n");
@@ -440,7 +440,7 @@ valid_connection_status(unsigned int want) {
 		return false;
 	case CONNECTED_D2:
 	case CONNECTED_KWP71:
-		if(want == NOT_CONNECTED) {
+		if (want == NOT_CONNECTED) {
 			printf("Already connected to %s. Please disconnect first.\n", current_ecu_desc());
 		} else {
 			printf("This function is not available with this protocol.\n");
@@ -495,7 +495,7 @@ cmd_850_connect(int argc, char **argv) {
 		return CMD_USAGE;
 	}
 
-	if(!valid_connection_status(NOT_CONNECTED))
+	if (!valid_connection_status(NOT_CONNECTED))
 		return CMD_OK;
 
 	addr = ecu_addr_by_name(argv[1]);
@@ -550,7 +550,7 @@ cmd_850_connect(int argc, char **argv) {
 
 	if (global_cfg.L2proto == DIAG_L2_PROT_VAG) {
 		(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_GET_L2_DATA, (void *)&l2data);
-		if(l2data.kb1!=0xab || l2data.kb2!=0x02) {
+		if (l2data.kb1!=0xab || l2data.kb2!=0x02) {
 			fprintf(stderr, FLFMT "_connect : wrong keybytes %02X%02X, expecting AB02\n", FL, l2data.kb1, l2data.kb2);
 			diag_l2_StopCommunications(global_l2_conn);
 			diag_l2_close(dl0d);
@@ -595,7 +595,7 @@ cmd_850_disconnect(int argc, UNUSED(char **argv)) {
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_EITHER))
+	if (!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	desc = current_ecu_desc();
@@ -624,7 +624,7 @@ cmd_850_sendreq(int argc, char **argv) {
 	if (!valid_arg_count(2, argc, sizeof(data)+1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_EITHER))
+	if (!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	len = argc - 1;
@@ -635,9 +635,9 @@ cmd_850_sendreq(int argc, char **argv) {
 	rv = l2_do_send( global_l2_conn, data, len,
 		(void *)&_RQST_HANDLE_DECODE);
 
-	if(rv == DIAG_ERR_TIMEOUT) {
+	if (rv == DIAG_ERR_TIMEOUT) {
 		printf("No data received\n");
-	} else if(rv != 0) {
+	} else if (rv != 0) {
 		printf("sendreq: failed error %d\n", rv);
 	}
 
@@ -654,7 +654,7 @@ cmd_850_ping(int argc, UNUSED(char **argv)) {
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_EITHER))
+	if (!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	if (get_connection_status() == CONNECTED_D2) {
@@ -683,9 +683,9 @@ interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf)
 	} else if (ns==NS_LIVEDATA && addr==0x0300) {
 		/*ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref*/
 		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
-	} else if(ns==NS_MEMORY && addr==0x36 && global_l2_conn->diag_l2_destaddr==0x10) {
+	} else if (ns==NS_MEMORY && addr==0x36 && global_l2_conn->diag_l2_destaddr==0x10) {
 		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
-	} else if(ns==NS_LIVEDATA && addr==0x1000) {
+	} else if (ns==NS_LIVEDATA && addr==0x1000) {
 		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
 		printf("MAF sensor signal: %.2f V\n", (float)buf[0]*9460/8250*5/256);
 	}
@@ -764,7 +764,7 @@ static int
 parse_read_arg(char *arg, struct read_or_peek_item *item) {
 	char *p;
 
-	if(arg[0] == '*') {
+	if (arg[0] == '*') {
 		if (arg[1] == '\0') {
 			printf("Invalid identifier '%s'\n", arg);
 			return 1;
@@ -823,7 +823,7 @@ parse_freeze_arg(char *arg, struct read_or_peek_item *item) {
 	item->ns = NS_FREEZE;
 	if (isalpha(arg[0])) {
 		item->start = dtc_raw_by_printable(arg);
-		if(item->start == 0xffff) {
+		if (item->start == 0xffff) {
 			printf("Invalid identifier '%s'\n", arg);
 			return 1;
 		}
@@ -832,12 +832,12 @@ parse_freeze_arg(char *arg, struct read_or_peek_item *item) {
 		item->start = strtoul(arg, &p, 0);
 		if (*p != '\0' || item->start > 0xff) {
 			printf("Invalid identifier '%s'\n", arg);
-			if(isdigit(arg[0]) && arg[0]!='0' && *p=='\0')
+			if (isdigit(arg[0]) && arg[0]!='0' && *p=='\0')
 				printf("Did you mean %s-%s?\n", current_dtc_prefix(), arg);
 			return 1;
 		}
-		if(isdigit(arg[0]) && arg[0]!='0') {
-			if(item->start < 100) {
+		if (isdigit(arg[0]) && arg[0]!='0') {
+			if (item->start < 100) {
 				printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean 0x%s?\n", item->start, item->start, arg);
 			} else {
 				printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean %s-%s?\n", item->start, item->start, current_dtc_prefix(), arg);
@@ -863,7 +863,7 @@ read_family(int argc, char **argv, enum namespace ns) {
 	if (!valid_arg_count(2, argc, 999))
                 return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_EITHER))
+	if (!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	continuous = false;
@@ -910,7 +910,7 @@ read_family(int argc, char **argv, enum namespace ns) {
 	diag_os_ipending();
 	while (1) {
 		for (i=0; i<count; i++) {
-			if(items[i].ns != NS_MEMORY) {
+			if (items[i].ns != NS_MEMORY) {
 				addr = items[i].start;
 				if (get_connection_status() == CONNECTED_D2) {
 					gotbytes = diag_l7_d2_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
@@ -921,7 +921,7 @@ read_family(int argc, char **argv, enum namespace ns) {
 					printf("Error reading %02X\n", addr);
 					goto done;
 				}
-				if(items[i].ns == NS_FREEZE)
+				if (items[i].ns == NS_FREEZE)
 					printf("%s  ", dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, addr, NULL));
 				if (gotbytes == 0) {
 					printf("%02X: no data\n", addr);
@@ -936,13 +936,13 @@ read_family(int argc, char **argv, enum namespace ns) {
 			} else {
 				addr = items[i].start;
 				len = (items[i].end - items[i].start) + 1;
-				while(len > 0) {
+				while (len > 0) {
 					if (get_connection_status() == CONNECTED_D2) {
 						gotbytes = diag_l7_d2_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
 					} else {
 						gotbytes = diag_l7_kwp71_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
 					}
-					if(gotbytes == ((len<8)?len:8)) {
+					if (gotbytes == ((len<8)?len:8)) {
 						print_hexdump_line(stdout, addr, 4, buf, (len<8)?len:8);
 						interpret_block(NS_MEMORY, addr, (len<8)?len:8, buf);
 					} else {
@@ -992,7 +992,7 @@ cmd_850_peek(int argc, char **argv) {
  */
 static int
 cmd_850_read(int argc, char **argv) {
-	if(!valid_connection_status(CONNECTED_D2))
+	if (!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
 	return read_family(argc, argv, NS_LIVEDATA);
@@ -1008,7 +1008,7 @@ cmd_850_read(int argc, char **argv) {
  */
 static int
 cmd_850_adc(int argc, char **argv) {
-	if(!valid_connection_status(CONNECTED_KWP71))
+	if (!valid_connection_status(CONNECTED_KWP71))
 		return CMD_OK;
 
 	return read_family(argc, argv, NS_ADC);
@@ -1022,7 +1022,7 @@ cmd_850_adc(int argc, char **argv) {
  */
 static int
 cmd_850_readnv(int argc, char **argv) {
-	if(!valid_connection_status(CONNECTED_D2))
+	if (!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
 	return read_family(argc, argv, NS_NV);
@@ -1041,7 +1041,7 @@ cmd_850_freeze_all(void) {
 	int rv;
 	int i;
 
-	if(!valid_connection_status(CONNECTED_D2))
+	if (!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
 	rv = diag_l7_d2_dtclist(global_l2_conn, sizeof(dtcs), dtcs);
@@ -1086,10 +1086,10 @@ cmd_850_freeze_all(void) {
  */
 static int
 cmd_850_freeze(int argc, char **argv) {
-	if(!valid_connection_status(CONNECTED_D2))
+	if (!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
-	if(argc==2 && strcasecmp(argv[1], "all")==0) {
+	if (argc==2 && strcasecmp(argv[1], "all")==0) {
 		return cmd_850_freeze_all();
 	} else {
 		return read_family(argc, argv, NS_FREEZE);
@@ -1245,7 +1245,7 @@ cmd_850_dumpram(int argc, char **argv) {
 
 	if (argc == 2) {
 		fast = false;
-	} else if(argc == 3 && strcasecmp(argv[2], "fast") == 0) {
+	} else if (argc == 3 && strcasecmp(argv[2], "fast") == 0) {
 		fast = true;
 	} else {
 		return CMD_USAGE;
@@ -1315,7 +1315,7 @@ cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_EITHER))
+	if (!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	if (get_connection_status() == CONNECTED_D2) {
@@ -1357,7 +1357,7 @@ cmd_850_cleardtc(int argc, UNUSED(char **argv)) {
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(CONNECTED_EITHER))
+	if (!valid_connection_status(CONNECTED_EITHER))
 		return CMD_OK;
 
 	input = basic_get_input("Are you sure you wish to clear the Diagnostic Trouble Codes (y/n) ? ", stdin);
@@ -1417,7 +1417,7 @@ cmd_850_scan_all(int argc, UNUSED(char **argv)) {
 	if (!valid_arg_count(1, argc, 1))
 		return CMD_USAGE;
 
-	if(!valid_connection_status(NOT_CONNECTED))
+	if (!valid_connection_status(NOT_CONNECTED))
 		return CMD_OK;
 
 	printf("Scanning all ECUs.\n");
@@ -1446,7 +1446,7 @@ cmd_850_scan_all(int argc, UNUSED(char **argv)) {
  */
 static int
 cmd_850_test(int argc, char **argv) {
-	if(!valid_connection_status(CONNECTED_D2))
+	if (!valid_connection_status(CONNECTED_D2))
 		return CMD_OK;
 
 	if (argc==2 && strcasecmp(argv[1], "fan1")==0 && global_l2_conn->diag_l2_destaddr==0x7a) {

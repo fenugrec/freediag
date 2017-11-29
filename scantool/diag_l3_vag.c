@@ -87,7 +87,7 @@ struct diag_msg *msg, char *buf, size_t bufsize) {
 
 	fprintf(stderr, FLFMT "Obviously broken code !\n", FL);
 
-	switch(msg->type) {
+	switch (msg->type) {
 	case DIAG_VAG_CMD_DTC_CLEAR:
 		s = "Clear DTCs";
 		break;
@@ -117,7 +117,7 @@ struct diag_msg *msg, char *buf, size_t bufsize) {
 	snprintf(buf2, sizeof(buf2), "Data : ");
 	smartcat(buf, bufsize, buf2);
 
-	for(int i=3; i < msg->data[0]; i++) {
+	for (int i=3; i < msg->data[0]; i++) {
 		snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 		smartcat(buf, bufsize, buf2);
 	}
