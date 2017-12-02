@@ -29,6 +29,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include <stdint.h>
+
 #include "diag.h"
 #include "diag_os.h"
 #include "diag_err.h"
@@ -257,7 +259,7 @@ static const struct {
 } edesc[] = {
 	{ DIAG_ERR_GENERAL, "Unspecified Error" },
 	{ DIAG_ERR_BADFD, "Invalid FileDescriptor passed to routine" },
-	{ DIAG_ERR_NOMEM, "Malloc/Calloc/Strdup/etc failed - ran out of memory " },
+	{ DIAG_ERR_NOMEM, "Malloc/Calloc/Strdup/etc failed - ran out of memory" },
 
 	{ DIAG_ERR_INIT_NOTSUPP, "Initbus type not supported by H/W" },
 	{ DIAG_ERR_PROTO_NOTSUPP, "Protocol not supported by H/W" },
@@ -277,6 +279,7 @@ static const struct {
 	{ DIAG_ERR_ECUSAIDNO, "Ecu returned negative" },
 	{ DIAG_ERR_RCFILE, "Trouble loading .rc or .ini file" },
 	{ DIAG_ERR_CMDFILE, "Trouble with sourcing commands" },
+	{ DIAG_ERR_BADVAL, "Invalid value passed to routine" },
 	{ DIAG_ERR_BADCFG, "Bad config/param" },
 };
 
@@ -323,52 +326,40 @@ diag_geterr(void) {
 
 /* Memory allocation */
 
-//diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
-// also checks for size !=0
-// ret 0 if ok
-int diag_flcalloc(const char *name, const int line,
-	void **pp, size_t n, size_t s) {
-	void *p;
+// Stores pointer to a newly allocated buffer of n*s bytes to pp.
+// Also takes filename and line to report for debugging purposes.
+// Returns 0 in the absence of errors.
+int diag_fl_alloc(const char *fName, const int line,
+	void **pp, size_t n, size_t s, bool allocIsCalloc) {
+	char allocator;
+	char *errMsg = "%s:%d: %calloc(%ld, %ld) failed: %s\n";
 
-	//sanity check: make sure we weren't given a null ptr
-	//or a null size.
-
-	if ((s !=0) && (pp != NULL)) {
-		p = calloc(n, s);
+	if (allocIsCalloc) {
+		allocator = 'c';
 	} else {
-		p=NULL;
+		allocator = 'm';
 	}
 
-	*pp = p;
+	// Check for null or overflow-causing parameters.
+	if (pp == NULL || n == 0 || s == 0 || (SIZE_MAX / s) < n) {
+		if (pp != NULL) {
+			*pp = NULL;
+		}
+		fprintf(stderr, errMsg, fName, line, allocator,
+			n, s, "Invalid arguments");
+		return diag_iseterr(DIAG_ERR_BADVAL);
+	}
 
-	if (p == NULL) {
-		fprintf(stderr,
-			"%s:%d: calloc(%ld, %ld) failed: %s\n", name, line,
-			(long)n, (long)s, strerror(errno));
+	if (allocIsCalloc) {
+		*pp = calloc(1, n * s);
+	} else {
+		*pp = malloc(n * s);
+	}
+	if (*pp == NULL) {
+		fprintf(stderr, errMsg, fName, line, allocator,
+			n, s, strerror(errno));
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	}
-
-	return 0;
-}
-
-
-//flmalloc = malloc with logging (filename+line) and size check (!=0)
-int diag_flmalloc(const char *name, const int line, void **pp, size_t s) {
-	void *p;
-
-	if ((s !=0) && (pp != NULL)) {
-		p = malloc(s);
-	} else {
-		p=NULL;
-	}
-	*pp = p;
-	if (p == NULL) {
-		fprintf(stderr,
-			"%s:%d: malloc(%ld) failed: %s\n", name, line,
-			(long)s, strerror(errno));
-		return diag_iseterr(DIAG_ERR_NOMEM);
-	}
-
 	return 0;
 }
 
@@ -384,7 +375,7 @@ char **strlist_add(char **list, const char *news, int elems) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
 	}
 	temp = malloc((strlen(news) * sizeof(char)) + 1);
-	if (!temp) {
+	if (temp == NULL) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
 	}
 	strcpy(temp, news);

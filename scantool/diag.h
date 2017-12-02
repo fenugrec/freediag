@@ -288,18 +288,14 @@ const char *diag_errlookup(const int code);
 
 /*
  * "calloc" and "malloc" that log errors when they fail.
- * As with the seterr functions, only "diag_calloc" and diag_malloc
+ * As with the seterr functions, only "diag_calloc" and "diag_malloc"
  * are intended to be called directly.
  *
  */
 
-//diag_flcalloc (srcfilename, srcfileline, ptr, num,size) = allocate (num*size) bytes
-//do not call directly!
-int diag_flcalloc(const char *name, const int line,
-	void **p, size_t n, size_t s);
-
-//diag_flmalloc : do not call directly !
-int diag_flmalloc(const char *name, const int line, void **p, size_t s);
+// Do not call directly.
+int diag_fl_alloc(const char *fName, const int line,
+	void **pp, size_t n, size_t s, bool allocIsCalloc);
 
 /** calloc() with logging (clears data)
  * @param P: *ptr
@@ -307,15 +303,14 @@ int diag_flmalloc(const char *name, const int line, void **p, size_t s);
  * @note there is no size argument - it gets it directly
  * using sizeof. This makes it a little unusual, but reduces potential errors.
  */
-#define diag_calloc(P, N) diag_flcalloc(CURFILE, __LINE__, \
-	((void **)(P)), (N), sizeof(*(*P)))
+#define diag_calloc(P, N) diag_fl_alloc(CURFILE, __LINE__, \
+	((void **)(P)), (N), sizeof(**(P)), true)
 
 /** malloc() with logging.
- * @param P: *ptr
- * @param S: size
+ * Same as diag_calloc, but without clearing.
  */
-#define diag_malloc(P, S) diag_flmalloc(CURFILE, __LINE__, \
-	((void **)(P)), (S))
+#define diag_malloc(P, N) diag_fl_alloc(CURFILE, __LINE__, \
+	((void **)(P)), (N), sizeof(**(P)), false)
 
 /** Add a string to array-of-strings (argv style)
 * @param elems: number of elements already in table

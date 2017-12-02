@@ -60,25 +60,25 @@ struct dyno_measure_table measure_table;
  *****************************************************************************/
 
 /* Check table allocated size before addind a new element */
-static int dyno_check_allocated_table(struct dyno_measure_table *table, size_t elt_size) {
+static int dyno_check_allocated_table(struct dyno_measure_table *table) {
   if (table->meas.measures == NULL) {
     /* allocating the table */
     table->size = DYNO_DEFAULT_TABLE_SIZE;
     table->nbr  = 0;
-    if (diag_malloc(&table->meas.measures, table->size * elt_size))
+    if (diag_malloc(&table->meas.measures, table->size))
 		return DIAG_ERR_NOMEM;
   } else if (table->nbr == table->size) {
     /* reallocating the table if maximum capacity is reached */
-    void *ptr;
+    dyno_measure *ptr;
 
     /* new table size */
     table->size *= 2;
 
     /* allocating, transfering data */
-    if (diag_malloc(&ptr, table->size * elt_size))
+    if (diag_malloc(&ptr, table->size))
 		return DIAG_ERR_NOMEM;
 
-    memcpy(ptr, table->meas.measures, table->nbr * elt_size);
+    memcpy(ptr, table->meas.measures, table->nbr * sizeof(*(table->meas.measures)));
 
     /* free old memory */
     free(table->meas.measures);
@@ -164,7 +164,7 @@ int dyno_loss_needs_calculation=0;
 /* Add loss measure */
 int dyno_loss_add_measure(int millis, int speed) {
   /* check memory allocation */
-  dyno_check_allocated_table(&loss_measure_table, sizeof(dyno_measure));
+  dyno_check_allocated_table(&loss_measure_table);
 
   /* storing measure */
   loss_measure_table.meas.loss_measures[loss_measure_table.nbr].millis = millis;
@@ -334,7 +334,7 @@ static long dyno_loss_power(long speed) {
 /* Add a measure */
 int dyno_add_measure(int millis, int rpm) {
   /* check memory allocation */
-  dyno_check_allocated_table(&measure_table, sizeof(dyno_measure));
+  dyno_check_allocated_table(&measure_table);
 
   /* storing measure */
   measure_table.meas.measures[measure_table.nbr].millis = millis;
@@ -441,7 +441,7 @@ int dyno_smooth_results(dyno_result *results, int size) {
   int i;
 
   /* smooth results */
-  if (diag_malloc(&rawresults, size * sizeof(dyno_result)))
+  if (diag_malloc(&rawresults, size))
     return DIAG_ERR_NOMEM;
   memcpy(rawresults, results, size * sizeof(dyno_result));
 

@@ -536,7 +536,7 @@ static void get_measures(dyno_measure **measures, int *nb_measures) {
 	(*nb_measures) = dyno_get_nb_measures();
 	if ((*nb_measures)==0)
 		return;
-	if (diag_malloc(measures, (*nb_measures) * sizeof(dyno_measure)))
+	if (diag_malloc(measures, (*nb_measures)))
 		return;
 
 	/* get measures */
@@ -678,7 +678,7 @@ static void get_results(void) {
 		dyno_nb_results = dyno_get_nb_results();
 		if (dyno_nb_results == 0)
 			return;
-		if (diag_malloc(&dyno_results, dyno_nb_results * sizeof(dyno_result)))
+		if (diag_malloc(&dyno_results, dyno_nb_results))
 			return;
 	}
 

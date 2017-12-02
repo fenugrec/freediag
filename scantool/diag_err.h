@@ -32,7 +32,7 @@ extern "C" {
 
 //Note : update diag_general.c when modifying error codes
 //Values should be <0, as many functions return a positive int on success
-#define DIAG_ERR_GENERAL	-1	/* Unspecified Error*/
+#define DIAG_ERR_GENERAL	-1	/* Unspecified Error */
 #define DIAG_ERR_BADFD	-2	/* Invalid FileDescriptor passed to routine */
 #define DIAG_ERR_NOMEM	-3	/* Malloc/Calloc/Strdup/etc failed - ran out of memory */
 
@@ -52,10 +52,11 @@ extern "C" {
 #define DIAG_ERR_BADRATE	-22	/* Bit rate specified doesn't match ECU */
 
 #define DIAG_ERR_ECUSAIDNO	-32	/* Ecu returned negative */
-#define DIAG_ERR_RCFILE -40 /*trouble with rc/ini file*/
-#define DIAG_ERR_CMDFILE -41 /*trouble with sourcing commands*/
+#define DIAG_ERR_RCFILE -40	/* trouble with rc/ini file */
+#define DIAG_ERR_CMDFILE -41	/* trouble with sourcing commands */
 
-#define DIAG_ERR_BADCFG	-44	/*Bad config param */
+#define DIAG_ERR_BADVAL -43	/* Invalid value passed to routine */
+#define DIAG_ERR_BADCFG	-44	/* Bad config param */
 
 #if defined(__cplusplus)
 }
