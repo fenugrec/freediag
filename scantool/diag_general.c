@@ -98,21 +98,25 @@ int diag_end(void) {
 struct diag_msg *
 diag_allocmsg(size_t datalen) {
 	struct diag_msg *newmsg;
+	int rv;
 
 	if (datalen > DIAG_MAX_MSGLEN) {
 		fprintf(stderr, FLFMT "_allocmsg with >%d bytes !? report this !\n", FL, DIAG_MAX_MSGLEN);
 		return diag_pseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_calloc(&newmsg, 1))
-		return diag_pseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&newmsg, 1);
+	if (rv != 0) {
+		return diag_pseterr(rv);
+	}
 
 	newmsg->iflags |= DIAG_MSG_IFLAG_MALLOC;
 
 	if (datalen) {
-		if (diag_calloc(&newmsg->idata, datalen)) {
+		rv = diag_calloc(&newmsg->idata, datalen);
+		if (rv != 0) {
 			free(newmsg);
-			return diag_pseterr(DIAG_ERR_NOMEM);
+			return diag_pseterr(rv);
 		}
 	} else {
 		newmsg->idata = NULL;

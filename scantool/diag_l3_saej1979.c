@@ -748,8 +748,10 @@ int diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
 
 	assert(d_l3_conn != NULL);
 
-	if (diag_calloc(&l3i, 1))
-		return diag_iseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&l3i, 1);
+	if (rv != 0) {
+		return diag_iseterr(rv);
+	}
 
 	d_l3_conn->l3_int = l3i;
 

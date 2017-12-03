@@ -73,8 +73,10 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 		/*
 		 * Malloc us a L3
 		 */
-		if (diag_calloc(&d_l3_conn, 1))
-			return diag_pseterr(DIAG_ERR_NOMEM);
+		rv = diag_calloc(&d_l3_conn, 1);
+		if (rv != 0) {
+			return diag_pseterr(rv);
+		}
 
 		d_l3_conn->d_l3l2_conn = d_l2_conn;
 		d_l3_conn->d_l3_proto = dp;

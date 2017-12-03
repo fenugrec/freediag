@@ -129,23 +129,27 @@ elm_init(void) {
 
 int elm_new(struct diag_l0_device *dl0d) {
 	struct elm_device *dev;
+	int rv;
 
 	assert(dl0d);
 
-	if (diag_calloc(&dev, 1))
-		return diag_iseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&dev, 1);
+	if (rv != 0)
+		return diag_iseterr(rv);
 
 	dl0d->l0_int = dev;
 
-	if (diag_cfgn_tty(&dev->port)) {
+	rv = diag_cfgn_tty(&dev->port);
+	if (rv != 0) {
 		free(dev);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+		return diag_iseterr(rv);
 	}
 
-	if (diag_cfgn_int(&dev->speed, 38400, 38400)) {
+	rv = diag_cfgn_int(&dev->speed, 38400, 38400);
+	if (rv != 0) {
 		diag_cfg_clear(&dev->port);
 		free(dev);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+		return diag_iseterr(rv);
 	}
 	dev->speed.descr = CFGSPEED_DESCR;
 	dev->speed.shortname = CFGSPEED_SHORTN;

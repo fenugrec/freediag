@@ -41,6 +41,7 @@ void diag_cfg_reset(struct cfgi *cfgp) {
 
 int diag_cfg_setstr(struct cfgi *cfgp, const char *str) {
 	size_t slen;
+	int rv;
 
 	if (cfgp->type != CFGT_STR) {
 		return diag_iseterr(DIAG_ERR_BADCFG);
@@ -51,8 +52,9 @@ int diag_cfg_setstr(struct cfgi *cfgp, const char *str) {
 		free(cfgp->val.str);
 		cfgp->val.str = NULL;
 	}
-	if (diag_malloc(&cfgp->val.str, slen+1)) {
-		return diag_iseterr(DIAG_ERR_NOMEM);
+	rv = diag_malloc(&cfgp->val.str, slen+1);
+	if (rv != 0) {
+		return diag_iseterr(rv);
 	}
 	cfgp->dyn_val = 1;	//need to free
 	strcpy(cfgp->val.str, str);
@@ -120,6 +122,7 @@ char *diag_cfg_getstr(struct cfgi *cfgp) {
 	char *str;
 	const char *fmt;
 	size_t len;
+	int rv;
 	switch (cfgp->type) {
 	case CFGT_U8:
 		len=5;
@@ -139,8 +142,9 @@ char *diag_cfg_getstr(struct cfgi *cfgp) {
 		break;
 	}
 
-	if (diag_malloc(&str, len)) {
-		return diag_pseterr(DIAG_ERR_NOMEM);
+	rv = diag_malloc(&str, len);
+	if (rv != 0) {
+		return diag_pseterr(rv);
 	}
 
 	snprintf(str, len, fmt, cfgp->val.str);
@@ -237,9 +241,10 @@ void tty_refresh(struct cfgi *cfgp) {
 
 //new TTY / serial port config item
 int diag_cfgn_tty(struct cfgi *cfgp) {
-
-	if (diag_cfgn_str(cfgp, tty_def, tty_descr, tty_sn))
-		return DIAG_ERR_GENERAL;
+	int rv = diag_cfgn_str(cfgp, tty_def, tty_descr, tty_sn);
+	if (rv != 0) {
+		return rv;
+	}
 
 	cfgp->refresh = &tty_refresh;
 	std_reset(cfgp);
@@ -293,15 +298,19 @@ int diag_cfgn_bool(struct cfgi *cfgp, bool val, bool def) {
 //ordinary string, copies *def for its default value; sets descr and shortname ptrs
 int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const char *sn) {
 	char *val, *dval;
+	int rv;
 
 	assert(def && descr && sn);
 
 	cfgp->type = CFGT_STR;
-	if (diag_malloc(&dval, strlen(def)+1))
-		return diag_iseterr(DIAG_ERR_NOMEM);
-	if (diag_malloc(&val, strlen(def)+1)) {
+	rv = diag_malloc(&dval, strlen(def)+1);
+	if (rv != 0) {
+		return diag_iseterr(rv);
+	}
+	rv = diag_malloc(&val, strlen(def)+1);
+	if (rv != 0) {
 		free(dval);
-		return diag_iseterr(DIAG_ERR_NOMEM);
+		return diag_iseterr(rv);
 	}
 
 	cfgp->dval.str = dval;

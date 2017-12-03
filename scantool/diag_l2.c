@@ -365,9 +365,10 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	}
 
 	/* Create new L2 connection */
-	if (diag_calloc(&d_l2_conn, 1)) {
+	rv = diag_calloc(&d_l2_conn, 1);
+	if (rv != 0) {
 		diag_os_unlock(l2internal.connlist_mtx);
-		return diag_pseterr(DIAG_ERR_NOMEM);
+		return diag_pseterr(rv);
 	}
 	d_l2_conn->diag_link = dl2l;
 

@@ -741,6 +741,7 @@ static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv)) {
  */
 static int cmd_dyno_save(int argc, char **argv) {
 	char *filename;
+	int rv;
 
 	get_results();
 
@@ -754,14 +755,18 @@ static int cmd_dyno_save(int argc, char **argv) {
 	if (argc > 1) {
 		/* Get filename from command arguments */
 		size_t length = strlen(argv[1]);
-		if (diag_malloc(&filename, length + 1))
-			return DIAG_ERR_NOMEM;
+		rv = diag_malloc(&filename, length + 1);
+		if (rv != 0) {
+			return rv;
+		}
 		strcpy(filename, argv[1]);
 	} else {
 		/* Get filename from user input */
 		size_t nbytes = 256;
-		if (diag_malloc(&filename, nbytes + 1))
-			return DIAG_ERR_NOMEM;
+		rv = diag_malloc(&filename, nbytes + 1);
+		if (rv != 0) {
+			return rv;
+		}
 
 		printf("Enter filename: ");
 		if (fgets(filename, (int)nbytes, stdin) == 0)
