@@ -405,8 +405,10 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 
 	struct diag_l1_initbus_args in;
 
-	if (diag_calloc(&dp, 1))
-		return diag_iseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&dp, 1);
+	if (rv != 0) {
+		return diag_iseterr(rv);
+	}
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
 	//set several initial values needed by checks performed in the send/receive code

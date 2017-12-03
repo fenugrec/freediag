@@ -800,8 +800,9 @@ rc_file(void) {
 
 #ifdef USE_INIFILE
 	char *inihomeinit;
-	if (diag_malloc(&inihomeinit, strlen(progname) + strlen(".ini") + 1)) {
-		diag_iseterr(DIAG_ERR_NOMEM);
+	rv = diag_malloc(&inihomeinit, strlen(progname) + strlen(".ini") + 1);
+	if (rv != 0) {
+		diag_iseterr(rv);
 		return CMD_OK;
 	}
 

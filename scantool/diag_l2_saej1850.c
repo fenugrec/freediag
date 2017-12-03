@@ -77,14 +77,16 @@ UNUSED(flag_type flags),
 UNUSED(unsigned int bitrate),
 target_type target, source_type source) {
 	struct diag_l2_j1850 *dp;
+	int rv;
 
 	if (diag_l2_debug & DIAG_DEBUG_OPEN)
 		fprintf(stderr,
 			FLFMT "diag_l2_j1850_startcomms dl2conn %p\n",
 				FL, (void *)d_l2_conn);
 
-	if (diag_calloc(&dp, 1))
-		return diag_iseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&dp, 1);
+	if (rv != 0)
+		return diag_iseterr(rv);
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
 

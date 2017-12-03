@@ -172,8 +172,10 @@ dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 	if ((flags & DIAG_L2_TYPE_INITMASK) != DIAG_L2_TYPE_SLOWINIT)
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
 
-	if (diag_calloc(&dp, 1))
-		return diag_iseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&dp, 1);
+	if (rv != 0) {
+		return diag_iseterr(rv);
+	}
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
 

@@ -61,12 +61,15 @@ struct dyno_measure_table measure_table;
 
 /* Check table allocated size before addind a new element */
 static int dyno_check_allocated_table(struct dyno_measure_table *table) {
+  int rv;
   if (table->meas.measures == NULL) {
     /* allocating the table */
     table->size = DYNO_DEFAULT_TABLE_SIZE;
     table->nbr  = 0;
-    if (diag_malloc(&table->meas.measures, table->size))
-		return DIAG_ERR_NOMEM;
+    rv = diag_malloc(&table->meas.measures, table->size);
+    if (rv != 0) {
+      return rv;
+    }
   } else if (table->nbr == table->size) {
     /* reallocating the table if maximum capacity is reached */
     dyno_measure *ptr;
@@ -75,8 +78,10 @@ static int dyno_check_allocated_table(struct dyno_measure_table *table) {
     table->size *= 2;
 
     /* allocating, transfering data */
-    if (diag_malloc(&ptr, table->size))
-		return DIAG_ERR_NOMEM;
+    rv = diag_malloc(&ptr, table->size);
+    if (rv != 0) {
+	return rv;
+    }
 
     memcpy(ptr, table->meas.measures, table->nbr * sizeof(*(table->meas.measures)));
 
@@ -438,11 +443,13 @@ int dyno_get_results(dyno_result *results, UNUSED(int size)) {
  */
 int dyno_smooth_results(dyno_result *results, int size) {
   dyno_result *rawresults;
-  int i;
+  int i, rv;
 
   /* smooth results */
-  if (diag_malloc(&rawresults, size))
-    return DIAG_ERR_NOMEM;
+  rv = diag_malloc(&rawresults, size);
+  if (rv != 0) {
+    return rv;
+  }
   memcpy(rawresults, results, size * sizeof(dyno_result));
 
   for (i=1; i<size-1; i++) {

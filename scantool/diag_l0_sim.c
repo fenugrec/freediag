@@ -153,18 +153,22 @@ struct sim_ecu_response
 struct sim_ecu_response
 *sim_new_ecu_response_bin(const uint8_t *data, const uint8_t len) {
 	struct sim_ecu_response *resp;
+	int rv;
 
-	if (diag_calloc(&resp, 1))
-		return diag_pseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&resp, 1);
+	if (rv != 0) {
+		return diag_pseterr(rv);
+	}
 	resp->data = NULL;
 	resp->len = 0;
 	resp->text = NULL;
 	resp->next = NULL;
 
 	if ((len > 0) && (data != NULL)) {
-		if (diag_calloc(&resp->data, len)) {
+		rv = diag_calloc(&resp->data, len);
+		if (rv != 0) {
 			free(resp);
-			return diag_pseterr(DIAG_ERR_NOMEM);
+			return diag_pseterr(rv);
 		}
 		memcpy(resp->data, data, len);
 		resp->len = len;

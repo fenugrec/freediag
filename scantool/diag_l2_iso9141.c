@@ -185,8 +185,10 @@ dl2p_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 			FLFMT "_startcomms conn %p %ubps tgt=0x%X src=0x%X\n",
 			FL, (void *)d_l2_conn, bitrate, target, source);
 
-	if (diag_calloc(&dp, 1))
-		return diag_iseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&dp, 1);
+	if (rv != 0) {
+		return diag_iseterr(rv);
+	}
 
 	dp->srcaddr = source;
 	dp->target = target;

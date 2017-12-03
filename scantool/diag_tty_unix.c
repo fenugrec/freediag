@@ -64,8 +64,9 @@ ttyp *diag_tty_open(const char *portname) {
 
 	assert(portname);
 
-	if ((rv=diag_calloc(&uti,1))) {
-		return diag_pseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&uti,1);
+	if (rv != 0) {
+		return diag_pseterr(rv);
 	}
 
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)

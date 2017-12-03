@@ -132,23 +132,28 @@ dumb_init(void) {
 static int
 dumb_new(struct diag_l0_device *dl0d) {
 	struct dumb_device *dev;
+	int rv;
 
 	assert(dl0d);
 
-	if (diag_calloc(&dev, 1))
-		return diag_iseterr(DIAG_ERR_NOMEM);
-
-	dl0d->l0_int = dev;
-
-	if (diag_cfgn_tty(&dev->port)) {
-		free(dev);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+	rv = diag_calloc(&dev, 1);
+	if (rv != 0) {
+		return diag_iseterr(rv);
 	}
 
-	if (diag_cfgn_int(&dev->dumbopts, DUMBDEFAULTS, DUMBDEFAULTS)) {
+	dl0d->l0_int = dev;
+	
+	rv = diag_cfgn_tty(&dev->port);
+	if (rv != 0) {
+		free(dev);
+		return diag_iseterr(rv);
+	}
+
+	rv = diag_cfgn_int(&dev->dumbopts, DUMBDEFAULTS, DUMBDEFAULTS);
+	if (rv != 0) {
 		diag_cfg_clear(&dev->port);
 		free(dev);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+		return diag_iseterr(rv);
 	}
 
 	/* finish filling the dumbopts cfgi */
