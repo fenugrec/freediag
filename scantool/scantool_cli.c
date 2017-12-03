@@ -946,7 +946,7 @@ int htoi(char *buf) {
  * Wait until ENTER is pressed
  */
 void wait_enter(const char *message) {
-	printf(message);
+	printf("%s", message);
 	while (1) {
 		int ch = getc(stdin);
 		if (ch == '\n')
