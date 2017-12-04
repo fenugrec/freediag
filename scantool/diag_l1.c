@@ -56,12 +56,13 @@ static int diag_l1_initdone=0;
 //diag_l1_init : parse through l0dev_list and call each ->init()
 int
 diag_l1_init(void) {
-	if (diag_l1_initdone)
+	if (diag_l1_initdone) {
 		return 0;
+	}
 
-	if (diag_l1_debug & DIAG_DEBUG_INIT)
-		fprintf(stderr,FLFMT "entered diag_l1_init\n", FL);
-
+	if (diag_l1_debug & DIAG_DEBUG_INIT) {
+		fprintf(stderr, FLFMT "entered diag_l1_init\n", FL);
+	}
 
 	/* Now call the init routines for the L0 devices */
 
@@ -94,13 +95,15 @@ int diag_l1_end(void) {
  */
 int
 diag_l1_open(struct diag_l0_device *dl0d, int l1protocol) {
-	if (diag_l1_debug & DIAG_DEBUG_OPEN)
+	if (diag_l1_debug & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "diag_l1_open(0x%p, l1 proto=%d\n", FL,
-				(void *)dl0d, l1protocol);
+			(void *)dl0d, l1protocol);
+	}
 
 	/* Check h/w supports this l1 protocol */
-	if ((dl0d->dl0->l1proto_mask & l1protocol) == 0)
+	if ((dl0d->dl0->l1proto_mask & l1protocol) == 0) {
 		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
+	}
 
 	/* Call the open routine with the requested L1 protocol */
 	return diag_l0_open(dl0d, l1protocol);
@@ -110,9 +113,10 @@ diag_l1_open(struct diag_l0_device *dl0d, int l1protocol) {
 //specified diag_l0_device.
 void
 diag_l1_close(struct diag_l0_device *dl0d) {
-	if (diag_l1_debug & DIAG_DEBUG_CLOSE)
+	if (diag_l1_debug & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "entering diag_l1_close: dl0d=%p\n", FL,
-			(void *) dl0d);
+			(void *)dl0d);
+	}
 	if (dl0d) {
 		diag_l0_close(dl0d);
 	}
@@ -143,8 +147,9 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 	uint32_t l0flags;
 	uint8_t duplexbuf[MAXRBUF];
 
-	if (len > MAXRBUF)
+	if (len > MAXRBUF) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	l0flags = diag_l1_getflags(dl0d);
 
@@ -193,8 +198,9 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 
 		while (len--) {
 			rv = diag_l0_send(dl0d, subinterface, dp, 1);
-			if (rv != 0)
+			if (rv != 0) {
 				break;
+			}
 
 			/*
 			 * If half duplex, read back the echo, if
@@ -212,19 +218,23 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 				}
 
 				if (c != *dp) {
-					if (c == *dp - 1)
+					if (c == *dp - 1) {
 						fprintf(stderr,"Half duplex interface not echoing!\n");
-					else
-						fprintf(stderr,"Bus Error: got 0x%X expected 0x%X\n",
+					} else {
+						fprintf(stderr,
+							"Bus Error: got 0x%X "
+							"expected 0x%X\n",
 							c, *dp);
+					}
 					rv = DIAG_ERR_BUSERROR;
 					break;
 				}
 			}
 			dp++;
 
-			if (p4)	/* Inter byte gap */
+			if (p4) { /* Inter byte gap */
 				diag_os_millisleep(p4);
+			}
 		}
 	}
 
@@ -242,14 +252,21 @@ int
 diag_l1_recv(struct diag_l0_device *dl0d,
 	const char *subinterface, void *data, size_t len, unsigned int timeout) {
 	int rv;
-	if (!len)
+	if (!len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
-	if (diag_l1_debug & DIAG_DEBUG_READ)
-		fprintf(stderr, FLFMT "_recv request len=%d, timeout=%u;", FL, (int) len, timeout);
+	if (diag_l1_debug & DIAG_DEBUG_READ) {
+		fprintf(stderr, FLFMT "_recv request len=%d, timeout=%u;", FL,
+			(int)len, timeout);
+	}
 
-	if (timeout==0)
-		fprintf(stderr, FLFMT "Interesting : L1 read with timeout=0. Report this !\n", FL);
+	if (timeout == 0) {
+		fprintf(stderr,
+			FLFMT
+			"Interesting : L1 read with timeout=0. Report this !\n",
+			FL);
+	}
 
 	rv=diag_l0_recv(dl0d, subinterface, data, len, timeout);
 	if (!rv) {

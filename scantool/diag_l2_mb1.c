@@ -58,17 +58,19 @@ UNUSED(source_type source)) {
 	uint8_t rxbuf[MAXRBUF];
 	struct diag_serial_settings set;
 
-	if (diag_l2_debug & DIAG_DEBUG_INIT)
-		fprintf(stderr,
-			FLFMT "startcomms conn %p\n", FL, (void *)d_l2_conn);
+	if (diag_l2_debug & DIAG_DEBUG_INIT) {
+		fprintf(stderr, FLFMT "startcomms conn %p\n", FL,
+			(void *)d_l2_conn);
+	}
 
 	/*
 	 * If 0 has been specified, use a suitable default
 	 */
-	if (bitrate == 0)
+	if (bitrate == 0) {
 		baud = 9600;
-	else
+	} else {
 		baud = bitrate;
+	}
 	d_l2_conn->diag_l2_speed = baud;
 
 	set.speed = bitrate;
@@ -78,8 +80,9 @@ UNUSED(source_type source)) {
 
 	/* Set the speed as shown */
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, (void *) &set);
-	if (rv < 0)
+	if (rv < 0) {
 		return diag_iseterr(rv);
+	}
 
 	/* Flush unread input, then wait for idle bus. */
 	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
@@ -91,8 +94,9 @@ UNUSED(source_type source)) {
 	in.type = DIAG_L1_INITBUS_5BAUD;
 	in.addr = target;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
-	if (rv < 0)
+	if (rv < 0) {
 		return diag_iseterr(rv);
+	}
 
 	/*
 	 * L0 code should have set correct baud rate now etc
@@ -100,17 +104,19 @@ UNUSED(source_type source)) {
 	 */
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		cbuf, 1, 100);
-	if (rv < 0)
+	if (rv < 0) {
 		return diag_iseterr(rv);
+	}
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		&cbuf[1], 1, 100);
 	if (rv < 0) {
 		return diag_iseterr(rv);
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_INIT)
+	if (diag_l2_debug & DIAG_DEBUG_INIT) {
 		fprintf(stderr, FLFMT "startcomms conn %p got kb 0x%X 0x%X\n",
-				FL, (void *)d_l2_conn, cbuf[0], cbuf[1]);
+			FL, (void *)d_l2_conn, cbuf[0], cbuf[1]);
+	}
 
 	/*
 	 * Check the received keybytes
@@ -118,10 +124,12 @@ UNUSED(source_type source)) {
 	d_l2_conn->diag_l2_kb1 = cbuf[0];
 	d_l2_conn->diag_l2_kb2 = cbuf[1];
 
-	if (cbuf[0] != 0xC2)
+	if (cbuf[0] != 0xC2) {
 		return diag_iseterr(DIAG_ERR_WRONGKB);
-	if (cbuf[1] != 0xCD)
+	}
+	if (cbuf[1] != 0xCD) {
 		return diag_iseterr(DIAG_ERR_WRONGKB);
+	}
 
 	/*
 	 * Set the P3max (idle timer) to 1 second
@@ -157,34 +165,42 @@ dl2p_mb1_decode(uint8_t *data, int len, int *msglen) {
 
 	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "decode len %d", FL, len);
-		for (i = 0; i < len ; i++)
-			fprintf(stderr, " 0x%X", data[i]&0xff);
+		for (i = 0; i < len; i++) {
+			fprintf(stderr, " 0x%X", data[i] & 0xff);
+		}
 		fprintf(stderr, "\n");
 	}
 	*msglen = 0;
 
-	if (len < 3)
+	if (len < 3) {
 		return diag_iseterr(DIAG_ERR_INCDATA);
+	}
 
-	if (data[2] > len)
+	if (data[2] > len) {
 		return diag_iseterr(DIAG_ERR_INCDATA);
+	}
 
 	*msglen = data[3];
 
-	for (i=0, cksum=0; i < len-2; i++)
+	for (i = 0, cksum = 0; i < len - 2; i++) {
 		cksum += data[i];
+	}
 	if (data[len-2] != (cksum &0xff)) {
-		if (diag_l2_debug & DIAG_DEBUG_READ)
-			fprintf(stderr, FLFMT "recv cksum 0x%02X 0x%02X, wanted 0x%X\n",
-				FL, data[len-1] & 0xff,
-				data[len-2] &0xff, cksum & 0xffff);
+		if (diag_l2_debug & DIAG_DEBUG_READ) {
+			fprintf(stderr,
+				FLFMT "recv cksum 0x%02X 0x%02X, wanted 0x%X\n",
+				FL, data[len - 1] & 0xff, data[len - 2] & 0xff,
+				cksum & 0xffff);
+		}
 		return diag_iseterr(DIAG_ERR_BADCSUM);
 	}
 	if (data[len-1] != ((cksum>>8) & 0xff)) {
-		if (diag_l2_debug & DIAG_DEBUG_READ)
-			fprintf(stderr, FLFMT "recv cksum 0x%02X 0x%02X, wanted 0x%X\n",
-				FL, data[len-1] & 0xff,
-				data[len-2] &0xff, cksum & 0xffff);
+		if (diag_l2_debug & DIAG_DEBUG_READ) {
+			fprintf(stderr,
+				FLFMT "recv cksum 0x%02X 0x%02X, wanted 0x%X\n",
+				FL, data[len - 1] & 0xff, data[len - 2] & 0xff,
+				cksum & 0xffff);
+		}
 		return diag_iseterr(DIAG_ERR_BADCSUM);
 	}
 	return 0;
@@ -226,12 +242,13 @@ dl2p_mb1_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 
 		/* Not full, read some more */
 
-		if (msglen)
+		if (msglen) {
 			readlen = msglen - rxoffset;
-		else if (rxoffset < 3)
+		} else if (rxoffset < 3) {
 			readlen = 3;
-		else
+		} else {
 			readlen = len - rxoffset;
+		}
 	}
 	return rxoffset;
 }
@@ -251,13 +268,15 @@ dl2p_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	rv = dl2p_mb1_int_recv(d_l2_conn, timeout, rxbuf,
 		sizeof(rxbuf));
 
-	if (rv < 0 || rv>(255+4))
+	if (rv < 0 || rv > (255 + 4)) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
-	if (diag_l2_debug & DIAG_DEBUG_READ)
-		fprintf(stderr,
-			FLFMT "recv conn %p got %d byte message\n",
-				FL, (void *)d_l2_conn, rv);	//%pcallback! we won't try to printf the callback pointer.
+	if (diag_l2_debug & DIAG_DEBUG_READ) {
+		fprintf(stderr, FLFMT "recv conn %p got %d byte message\n", FL,
+			(void *)d_l2_conn, rv); //%pcallback! we won't try to
+						//printf the callback pointer.
+	}
 	if (rv < 5) {
 		/* Bad, minimum message is 5 bytes */
 		return diag_iseterr(DIAG_ERR_BADDATA);
@@ -267,8 +286,9 @@ dl2p_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	 * Ok, alloc a message
 	 */
 	msg = diag_allocmsg((size_t)(rv - 4));
-	if (msg == NULL)
+	if (msg == NULL) {
 		return diag_iseterr(DIAG_ERR_NOMEM);
+	}
 	msg->data[0] = rxbuf[1];		/* Command */
 	memcpy(&msg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
 	msg->rxtime = diag_os_getms();
@@ -277,14 +297,16 @@ dl2p_mb1_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	/*
 	 * Call user callback routine
 	 */
-	if (callback)
+	if (callback) {
 		callback(handle, msg);
+	}
 
 	/* No longer needed */
 	diag_freemsg(msg);
 
-	if (diag_l2_debug & DIAG_DEBUG_READ)
+	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "recv() callback completed\n", FL);
+	}
 
 	return 0;
 }
@@ -301,10 +323,10 @@ dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	uint16_t cksum;
 	unsigned i;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr,
-			FLFMT "diag_l2_send %p, msg %p called\n",
-				FL, (void *)d_l2_conn, (void *)msg);
+	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+		fprintf(stderr, FLFMT "diag_l2_send %p, msg %p called\n", FL,
+			(void *)d_l2_conn, (void *)msg);
+	}
 
 	/*
 	 * Make sure enough time between last receive and this send
@@ -313,8 +335,9 @@ dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	 * delay happened before
 	 */
 	sleeptime = d_l2_conn->diag_l2_p3min;
-	if (sleeptime > 0)
+	if (sleeptime > 0) {
 		diag_os_millisleep(sleeptime);
+	}
 
 	txbuf[0] = d_l2_conn->diag_l2_destaddr;
 	txbuf[1] = msg->data[0]; 	/* Command */
@@ -322,8 +345,9 @@ dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	memcpy(&txbuf[3], &msg->data[1], (size_t)(msg->len-1));
 
 	/* Checksum is 16 bit addition, in LSB order on packet */
-	for (i = 0, cksum = 0; i < (msg->len+2) ; i++)
+	for (i = 0, cksum = 0; i < (msg->len + 2); i++) {
 		cksum += txbuf[i];
+	}
 
 	txbuf[msg->len+2] = (uint8_t) (cksum & 0xff);
 	txbuf[msg->len+3] = (uint8_t) ((cksum>>8) & 0xff);
@@ -331,8 +355,9 @@ dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	if ( (diag_l2_debug & DIAG_DEBUG_WRITE) &&
 			(diag_l2_debug & DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "About to send %d bytes: ", FL, txbuf[2]);
-		for (i=0; i<txbuf[2]; i++)
+		for (i = 0; i < txbuf[2]; i++) {
 			fprintf(stderr, "0x%02X ", txbuf[i]);
+		}
 		fprintf(stderr, "\n");
 	}
 
@@ -360,23 +385,26 @@ dl2p_mb1_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	rv = dl2p_mb1_int_recv(d_l2_conn, 1000, rxbuf,
 		sizeof(rxbuf));
 
-	if (diag_l2_debug & DIAG_DEBUG_READ)
+	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr,
-			FLFMT "msg receive conn %p got %d byte message\n",
-				FL, (void *)d_l2_conn, rv);
+			FLFMT "msg receive conn %p got %d byte message\n", FL,
+			(void *)d_l2_conn, rv);
+	}
 	if (rv < 5 || rv > (255+4)) {
 		/* Bad, minimum message is 5 bytes, or error happened */
-		if (rv < 0)
+		if (rv < 0) {
 			*errval = rv;
-		else
+		} else {
 			*errval = DIAG_ERR_BADDATA;
+		}
 	} else {
 		/*
 		 * Ok, alloc a message
 		 */
 		rmsg = diag_allocmsg((size_t)(rv - 4));
-		if (rmsg == NULL)
+		if (rmsg == NULL) {
 			return diag_pseterr(DIAG_ERR_NOMEM);
+		}
 		rmsg->data[0] = rxbuf[1];		/* Command */
 		memcpy(&rmsg->data[1], &rxbuf[3], (size_t)(rv - 3));	/* Data */
 		rmsg->rxtime = diag_os_getms();
@@ -397,9 +425,10 @@ dl2p_mb1_timeout(struct diag_l2_conn *d_l2_conn) {
 	int rv;
 
 	/* XXX Not async-signal-safe */
-	if (diag_l2_debug & DIAG_DEBUG_TIMER)
-		fprintf(stderr, FLFMT "timeout conn %p\n",
-				FL, (void *)d_l2_conn);
+	if (diag_l2_debug & DIAG_DEBUG_TIMER) {
+		fprintf(stderr, FLFMT "timeout conn %p\n", FL,
+			(void *)d_l2_conn);
+	}
 
 	txbuf[0] = 0x50;	/* Idle command */
 	txbuf[1] = 0x01;
@@ -410,8 +439,9 @@ dl2p_mb1_timeout(struct diag_l2_conn *d_l2_conn) {
 	rv =  diag_l2_send(d_l2_conn, &msg);
 
 	/* And receive/ignore the response */
-	if (rv >= 0)
-		(void) dl2p_mb1_int_recv(d_l2_conn, 1000, rxbuf, sizeof(rxbuf));
+	if (rv >= 0) {
+		(void)dl2p_mb1_int_recv(d_l2_conn, 1000, rxbuf, sizeof(rxbuf));
+	}
 	return;
 }
 

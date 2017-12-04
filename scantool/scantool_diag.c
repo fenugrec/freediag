@@ -177,8 +177,10 @@ static int cmd_diag_reml3(UNUSED(int argc), UNUSED(char **argv)) {
 
 	rv=diag_l3_stop(old_dl3c);
 
-	if (global_l3_conn==NULL)
-		global_state = STATE_CONNECTED;		//we probably still have an L2 hanging there
+	if (global_l3_conn == NULL) {
+		global_state = STATE_CONNECTED; // we probably still have an L2
+						// hanging there
+	}
 
 	return rv? diag_iseterr(rv):0;
 }
@@ -222,8 +224,9 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 
 
 	if (fastflag && argc>=4) {
-		if (strcasecmp(argv[3], "func") == 0)
+		if (strcasecmp(argv[3], "func") == 0) {
 			funcmode = DIAG_L2_TYPE_FUNCADDR;
+		}
 	}
 
 	if ((start > 255) || (end > 255)) {
@@ -245,12 +248,13 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 	rv = diag_l2_open(dl0d, DIAG_L1_ISO9141);
 	if (rv) {
 		printf("Failed to open hardware interface, error 0x%X",rv);
-		if (rv == DIAG_ERR_PROTO_NOTSUPP)
+		if (rv == DIAG_ERR_PROTO_NOTSUPP) {
 			printf(", does not support requested L1 protocol\n");
-		else if (rv == DIAG_ERR_BADIFADAPTER)
+		} else if (rv == DIAG_ERR_BADIFADAPTER) {
 			printf(", adapter probably not connected\n");
-		else
+		} else {
 			printf("\n");
+		}
 		return CMD_FAILED;
 	}
 
@@ -259,19 +263,21 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 		printf("\t0x%X ", i);
 		fflush(stdout) ;
 
-
-		if (fastflag)
+		if (fastflag) {
 			d_conn = diag_l2_StartCommunications(dl0d,
 				DIAG_L2_PROT_ISO14230,
 				DIAG_L2_TYPE_FASTINIT | funcmode,
 				global_cfg.speed, (target_type) i, global_cfg.src);
-		else
-			d_conn = diag_l2_StartCommunications(dl0d,
-				DIAG_L2_PROT_ISO9141,
-				DIAG_L2_TYPE_SLOWINIT,
-				global_cfg.speed, (target_type) i, global_cfg.src);
+		} else {
+			d_conn = diag_l2_StartCommunications(
+				dl0d, DIAG_L2_PROT_ISO9141,
+				DIAG_L2_TYPE_SLOWINIT, global_cfg.speed,
+				(target_type)i, global_cfg.src);
+		}
 
-		if (d_conn == NULL) continue;
+		if (d_conn == NULL) {
+			continue;
+		}
 
 		int gotsome;
 		struct diag_l2_data d;
@@ -284,23 +290,26 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 
 		/* Get the keybytes */
 		diag_l2_ioctl(d_conn, DIAG_IOCTL_GET_L2_DATA, &d);
-		if (fastflag)
+		if (fastflag) {
 			printf("Keybytes: 0x%X 0x%X\n", d.kb1, d.kb2);
-		else
+		} else {
 			printf("received: 0x%X 0x%X\n", d.kb1, d.kb2);
+		}
 
 		/* Now read some data */
 
 		rv = 0; gotsome = 0;
 		while (rv >= 0) {
 			rv = diag_l2_recv(d_conn, 100, l2raw_data_rcv, NULL);
-			if (rv > 0)
+			if (rv > 0) {
 				gotsome = 1;
+			}
 		}
-		if (gotsome)
+		if (gotsome) {
 			printf("\n");
-		else if (rv != DIAG_ERR_TIMEOUT)
+		} else if (rv != DIAG_ERR_TIMEOUT) {
 			printf("- read failed %d\n", rv);
+		}
 
 		return CMD_OK;
 	}	//for addresses
@@ -352,10 +361,11 @@ do_l2_generic_start(void) {
 		return diag_iseterr(rv);
 	}
 
-	if (global_cfg.addrtype)
+	if (global_cfg.addrtype) {
 		flags = DIAG_L2_TYPE_FUNCADDR;
-	else
+	} else {
 		flags = 0;
+	}
 
 	flags |= (global_cfg.initmode & DIAG_L2_TYPE_INITMASK) ;
 
@@ -451,8 +461,9 @@ cmd_diag_read(int argc, char **argv) {
 		return CMD_OK;
 	}
 
-	if (argc > 1)
-		timeout = (unsigned int) atoi(argv[1]) * 1000;
+	if (argc > 1) {
+		timeout = (unsigned int)atoi(argv[1]) * 1000;
+	}
 
 	if (global_state < STATE_L3ADDED) {
 		/* No L3 protocol, do L2 stuff */
@@ -507,10 +518,11 @@ cmd_diag_sendreq(int argc, char **argv) {
 	}
 
 	if (rv != 0) {
-		if (rv == DIAG_ERR_TIMEOUT)
+		if (rv == DIAG_ERR_TIMEOUT) {
 			printf("No data received\n");
-		else
+		} else {
 			printf("sendreq: failed error %d\n", rv);
+		}
 	}
 	return CMD_OK;
 }

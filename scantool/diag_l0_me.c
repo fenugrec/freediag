@@ -192,8 +192,9 @@ muleng_init(void) {
 /* Global init flag */
 	static int muleng_initdone=0;
 
-	if (muleng_initdone)
+	if (muleng_initdone) {
 		return 0;
+	}
 
 	/* Do required scheduling tweaks */
 	diag_os_sched();
@@ -225,15 +226,17 @@ j1850_crc(uint8_t *msg_buf, int nbytes) {
 	for (i=0, byte_point=msg_buf; i<nbytes; ++i, ++byte_point) {
 		for (j=0, bit_point=0x80 ; j<8; ++j, bit_point>>=1) {
 			if (bit_point & *byte_point) {	// case for new bit = 1
-				if (crc_reg & 0x80)
+				if (crc_reg & 0x80) {
 					poly=1;	// define the polynomial
-				else
-					poly=0x1c;
+				} else {
+					poly = 0x1c;
+				}
 				crc_reg= ( (crc_reg << 1) | 1) ^ poly;
 			} else {		// case for new bit = 0
 				poly=0;
-				if (crc_reg & 0x80)
-					poly=0x1d;
+				if (crc_reg & 0x80) {
+					poly = 0x1d;
+				}
 				crc_reg= (crc_reg << 1) ^ poly;
 			}
 		}
@@ -266,11 +269,15 @@ me_guess_rxlen(uint8_t *buf) {
 		switch (msg_type) {
 		case ME_RESP_PWM:
 		case ME_RESP_VPW:
-			if (j1850_crc(&buf[2], len) == buf[2 + len]) return len+1;
+			if (j1850_crc(&buf[2], len) == buf[2 + len]) {
+				return len + 1;
+			}
 			break;
 		case ME_RESP_14230:
 		case ME_RESP_ISO:
-			if (diag_cks1(&buf[2], len) == buf[2 + len]) return len+1;
+			if (diag_cks1(&buf[2], len) == buf[2 + len]) {
+				return len + 1;
+			}
 			break;
 		default:
 			break;
@@ -377,7 +384,9 @@ static void muleng_del(struct diag_l0_device *dl0d) {
 	assert(dl0d);
 
 	dev = dl0d->l0_int;
-	if (!dev) return;
+	if (!dev) {
+		return;
+	}
 
 	diag_cfg_clear(&dev->port);
 	diag_cfg_clear(&dev->dev_addr);
@@ -387,7 +396,9 @@ static void muleng_del(struct diag_l0_device *dl0d) {
 
 static struct cfgi *muleng_getcfg(struct diag_l0_device *dl0d) {
 	struct muleng_device *dev;
-	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+	if (dl0d == NULL) {
+		return diag_pseterr(DIAG_ERR_BADCFG);
+	}
 
 	dev = dl0d->l0_int;
 	return &dev->port;
@@ -396,12 +407,14 @@ static struct cfgi *muleng_getcfg(struct diag_l0_device *dl0d) {
 
 static void
 muleng_close(struct diag_l0_device *dl0d) {
-	if (!dl0d) return;
+	if (!dl0d) {
+		return;
+	}
 	struct muleng_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr, FLFMT "link %p closing\n",
-			FL, (void *)dl0d);
+	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
+		fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
+	}
 
 	diag_tty_close(dev->tty_int);
 	dev->tty_int = NULL;
@@ -418,8 +431,9 @@ static int
 muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 	struct muleng_device *dev = dl0d->l0_int;
 
-	if (txlen <=0)
+	if (txlen <= 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
 			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
@@ -479,8 +493,9 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 	 * Calculate the checksum, and send the request
 	 */
 	(void)muleng_txcksum(txbuf);
-	if ((rv = muleng_write(dl0d, txbuf, 15)))
+	if ((rv = muleng_write(dl0d, txbuf, 15))) {
 		return diag_iseterr(rv);
+	}
 
 	/*
 	 * Get answer
@@ -494,8 +509,9 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		 * the 10 bit (1+8+1) address at 5 baud
 		 */
 		rv = diag_tty_read(dev->tty_int, rxbuf, 1, 2350);
-		if (rv != 1)
+		if (rv != 1) {
 			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
 
 		if (rxbuf[0] == 0x40) {
 			/* Problem ..., got an error message */
@@ -506,9 +522,11 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		}
 		baud = me_baud_table[rxbuf[0]];
 
-		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "device link %p setting baud to %u\n",
-				FL, (void *)dl0d, baud);
+		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+			fprintf(stderr,
+				FLFMT "device link %p setting baud to %u\n", FL,
+				(void *)dl0d, baud);
+		}
 
 		if (baud) {
 			struct diag_serial_settings set;
@@ -528,11 +546,13 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		/* XXX
 		 * Should get an ack back, rather than an error response
 		 */
-		if ((rv = diag_tty_read(dev->tty_int, rxbuf, 14, 200)) < 0)
+		if ((rv = diag_tty_read(dev->tty_int, rxbuf, 14, 200)) < 0) {
 			return diag_iseterr(rv);
+		}
 
-		if (rxbuf[1] == ME_RESP_ERROR)
+		if (rxbuf[1] == ME_RESP_ERROR) {
 			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
 
 		/*
  		 * Now send the "get keybyte" request, and wait for
@@ -543,14 +563,17 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		txbuf[1] = 0x86;
 		(void)muleng_txcksum(txbuf);
 		rv = muleng_write(dl0d, txbuf, 15);
-		if (rv < 0)
+		if (rv < 0) {
 			return diag_iseterr(rv);
+		}
 
-		if ((rv = diag_tty_read(dev->tty_int, rxbuf, 14, 200)) < 0)
+		if ((rv = diag_tty_read(dev->tty_int, rxbuf, 14, 200)) < 0) {
 			return diag_iseterr(rv);
+		}
 
-		if (rxbuf[1] == ME_RESP_ERROR)	/* Error */
+		if (rxbuf[1] == ME_RESP_ERROR) { /* Error */
 			return diag_iseterr(rv);
+		}
 		/*
 		 * Store the keybytes
 		 */
@@ -580,12 +603,16 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	dev = (struct muleng_device *)dl0d->l0_int;
 
-	if (!dev)
+	if (!dev) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		fprintf(stderr, FLFMT "device link %p info %p initbus type %d proto %d\n",
+	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+		fprintf(stderr,
+			FLFMT
+			"device link %p info %p initbus type %d proto %d\n",
 			FL, (void *)dl0d, (void *)dev, in->type, dev->protocol);
+	}
 
 	diag_tty_iflush(dev->tty_int); /* Empty the receive buffer, wait for idle bus */
 
@@ -620,8 +647,9 @@ const void *data, size_t len) {
 
 	dev = (struct muleng_device *)dl0d->l0_int;
 
-	if (len <= 0)
+	if (len <= 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	if (len > 255) {
 		fprintf(stderr, FLFMT "_send : requesting too many bytes !\n", FL);
@@ -653,10 +681,11 @@ const void *data, size_t len) {
 		break;
 
 	case DIAG_L1_ISO14230:
-		if (dev->dev_wakeup == DIAG_L1_INITBUS_FAST)
+		if (dev->dev_wakeup == DIAG_L1_INITBUS_FAST) {
 			cmd = 0x87;
-		else
+		} else {
 			cmd = 0x88;
+		}
 		dev->dev_wakeup = 0;	/* We've done the wakeup now */
 		break;
 
@@ -720,13 +749,18 @@ void *data, size_t len, unsigned int timeout) {
 	struct muleng_device *dev;
 	dev = (struct muleng_device *)dl0d->l0_int;
 
-	if (!len)
+	if (!len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ)
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr,
-			FLFMT "link %p recv upto %ld bytes timeout %u, rxlen %d offset %d\n",
-			FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen, dev->dev_rdoffset);
+			FLFMT
+			"link %p recv upto %ld bytes timeout %u, rxlen %d "
+			"offset %d\n",
+			FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
+			dev->dev_rdoffset);
+	}
 
 	/*
 	 * Deal with 5 Baud init states where first two bytes read by
@@ -759,9 +793,10 @@ void *data, size_t len, unsigned int timeout) {
 
 	case MULENG_STATE_RAW:
 		xferd = diag_tty_read(dev->tty_int, data, len, timeout);
-		if (diag_l0_debug & DIAG_DEBUG_READ)
+		if (diag_l0_debug & DIAG_DEBUG_READ) {
 			fprintf(stderr, FLFMT "link %p read %ld bytes\n", FL,
 				(void *)dl0d, (long)xferd);
+		}
 		return xferd;
 
 	case MULENG_STATE_FASTSTART:
@@ -813,7 +848,9 @@ void *data, size_t len, unsigned int timeout) {
 	}
 
 	dev->dev_rxlen += rv;
-	if (dev->dev_rxlen != 14) return DIAG_ERR_TIMEOUT;
+	if (dev->dev_rxlen != 14) {
+		return DIAG_ERR_TIMEOUT;
+	}
 
 	/* OK, got whole message */
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
@@ -845,11 +882,15 @@ void *data, size_t len, unsigned int timeout) {
 		dev->dev_rxlen = 0;
 		dev->resp_len = 0;
 
-		if (diag_l0_debug & DIAG_DEBUG_READ)
+		if (diag_l0_debug & DIAG_DEBUG_READ) {
 			fprintf(stderr,
-				FLFMT "link %p ME returns err 0x%X : %s; s/w v 0x%X i/f cap. 0x%X\n",
-				FL, (void *)dl0d, dev->dev_rxbuf[3], me_geterr(dev->dev_rxbuf[3]),
-				dev->dev_rxbuf[2], dev->dev_rxbuf[4]);
+				FLFMT
+				"link %p ME returns err 0x%X : %s; s/w v 0x%X "
+				"i/f cap. 0x%X\n",
+				FL, (void *)dl0d, dev->dev_rxbuf[3],
+				me_geterr(dev->dev_rxbuf[3]), dev->dev_rxbuf[2],
+				dev->dev_rxbuf[4]);
+		}
 
 		switch (dev->dev_rxbuf[3]) {
 		case 0x05:	/* No ISO response to request */
@@ -919,10 +960,10 @@ muleng_getflags(struct diag_l0_device *dl0d) {
 
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO)
-		fprintf(stderr,
-			FLFMT "getflags link %p proto %d flags 0x%X\n",
+	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+		fprintf(stderr, FLFMT "getflags link %p proto %d flags 0x%X\n",
 			FL, (void *)dl0d, dev->protocol, flags);
+	}
 
 	return flags ;
 }

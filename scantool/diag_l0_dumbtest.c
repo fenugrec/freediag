@@ -107,9 +107,9 @@ dt_init(void) {
 	/* Global init flag */
 	static int dt_initdone=0;
 
-	if (dt_initdone)
+	if (dt_initdone) {
 		return 0;
-
+	}
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
@@ -130,7 +130,9 @@ static void dtest_1(struct diag_l0_device *dl0d) {
 	fprintf(stderr, "Starting test 1: pulsing TXD=1, 1s, TXD=0, 500ms:");
 	for (i=0; i<=4; i++) {
 		diag_os_millisleep(1000);
-		if (diag_tty_break(dev->tty_int, 500)) break;
+		if (diag_tty_break(dev->tty_int, 500)) {
+			break;
+		}
 		fprintf(stderr, ".");
 	}
 	fprintf(stderr, "\n");
@@ -167,9 +169,13 @@ static void dtest_3(struct diag_l0_device *dl0d) {
 	fprintf(stderr, "Starting test 3: pulsing RTS=1, 1s, RTS=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
-		if (diag_tty_control(dev->tty_int, !(dev->clr_dtr), 1)) break;
+		if (diag_tty_control(dev->tty_int, !(dev->clr_dtr), 1)) {
+			break;
+		}
 		diag_os_millisleep(1000);
-		if (diag_tty_control(dev->tty_int, !(dev->clr_dtr), 0)) break;
+		if (diag_tty_control(dev->tty_int, !(dev->clr_dtr), 0)) {
+			break;
+		}
 		diag_os_millisleep(500);
 		fprintf(stderr, ".");
 	}
@@ -185,9 +191,13 @@ static void dtest_4(struct diag_l0_device *dl0d) {
 	fprintf(stderr, "Starting test 4: pulsing DTR=1, 1s, DTR=0, 500ms:");
 
 	for (i=0; i<=4; i++) {
-		if (diag_tty_control(dev->tty_int, 1, dev->set_rts)) break;
+		if (diag_tty_control(dev->tty_int, 1, dev->set_rts)) {
+			break;
+		}
 		diag_os_millisleep(1000);
-		if (diag_tty_control(dev->tty_int, 0, dev->set_rts)) break;
+		if (diag_tty_control(dev->tty_int, 0, dev->set_rts)) {
+			break;
+		}
 		diag_os_millisleep(500);
 		fprintf(stderr, ".");
 	}
@@ -255,8 +265,9 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 	for (i=0; i<DT7_ITERS; i++) {
 		echo=i-1;	//init to bad value
 		ti=diag_os_gethrt();	//get starting time.
-		if (dt_send(dl0d, NULL, &i, 1))
+		if (dt_send(dl0d, NULL, &i, 1)) {
 			break;
+		}
 
 		rv = diag_tty_read(dev->tty_int, &echo, 1, 1000);
 		if (rv != 1) {
@@ -265,8 +276,9 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 		}
 		tf = tf + diag_os_gethrt() - ti;
 		//check echo
-		if (echo != i)
+		if (echo != i) {
 			badechos++;
+		}
 
 		if ((10*i/DT7_ITERS) != pc) {
 			pc +=1;
@@ -292,14 +304,15 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 #define DT8_ITERS 10
 	fprintf(stderr, "Starting test 8: half duplex block echo removal:");
 	//fill i[] first
-	for (i=0; i<DT8_MSIZE; i++)
-		tx[i]=(uint8_t) i;
-
+	for (i = 0; i < DT8_MSIZE; i++) {
+		tx[i] = (uint8_t)i;
+	}
 
 	for (i=0; i<=DT8_ITERS; i++) {
 		ti=diag_os_gethrt();	//get starting time.
-		if (dt_send(dl0d, NULL, tx, DT8_MSIZE))
+		if (dt_send(dl0d, NULL, tx, DT8_MSIZE)) {
 			break;
+		}
 
 		rv = diag_tty_read(dev->tty_int, echo, DT8_MSIZE, 100 + 5*DT8_MSIZE);
 		if (rv != DT8_MSIZE) {
@@ -370,7 +383,9 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 		tf=0;
 		for (iters=0; iters < DT11_ITERS; iters++) {
 			uint8_t tc = i;
-			if ((rv=dt_send(dl0d, NULL, &tc, 1))) goto failed;
+			if ((rv = dt_send(dl0d, NULL, &tc, 1))) {
+				goto failed;
+			}
 			t0=diag_os_gethrt();
 			if ((rv=diag_tty_read(dev->tty_int, garbage, MAXRBUF, i)) != 1) {
 				// failed: purge + try next timeout value
@@ -409,7 +424,9 @@ static void dtest_12(struct diag_l0_device *dl0d) {
 		for (iters=0; iters < DT12_ITERS; iters++) {
 			unsigned long long tt1;
 			t0 = diag_os_gethrt();
-			if (dt_send(dl0d, NULL, garbage, i)) goto failed;
+			if (dt_send(dl0d, NULL, garbage, i)) {
+				goto failed;
+			}
 			tt1 = diag_os_gethrt();
 			tf = tf + (tt1 - t0);
 			printf("\t%luus", (long unsigned int) (diag_os_hrtus(tt1-t0)));
@@ -418,7 +435,9 @@ static void dtest_12(struct diag_l0_device *dl0d) {
 		ts2= (diag_os_gethrt() - ts1) / DT12_ITERS;
 		tf = tf / DT12_ITERS;
 		printf(" => avg=%dms / %dms\n", (int) (diag_os_hrtus(tf)/1000), (int) (diag_os_hrtus(ts2)/1000));
-		if (i==1) i=0;
+		if (i == 1) {
+			i = 0;
+		}
 	}
 	return;
 failed:
@@ -462,8 +481,9 @@ dt_new(struct diag_l0_device *dl0d) {
 	assert(dl0d);
 
 	rv = diag_calloc(&dev, 1);
-	if (rv != 0)
+	if (rv != 0) {
 		return diag_iseterr(rv);
+	}
 
 	dl0d->l0_int = dev;
 
@@ -499,7 +519,9 @@ static void dt_del(struct diag_l0_device *dl0d) {
 	assert(dl0d);
 
 	dev = dl0d->l0_int;
-	if (!dev) return;
+	if (!dev) {
+		return;
+	}
 
 	diag_cfg_clear(&dev->port);
 	diag_cfg_clear(&dev->dumbopts);
@@ -509,7 +531,9 @@ static void dt_del(struct diag_l0_device *dl0d) {
 
 static struct cfgi *dt_getcfg(struct diag_l0_device *dl0d) {
 	struct dt_device *dev;
-	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+	if (dl0d == NULL) {
+		return diag_pseterr(DIAG_ERR_BADCFG);
+	}
 
 	dev = dl0d->l0_int;
 	return &dev->port;
@@ -662,14 +686,16 @@ const void *data, size_t len) {
 	 * as the L1 code that called this will be adding the P4 gap between
 	 * bytes
 	 */
-	if (len <= 0)
+	if (len <= 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "dt_send dl0d=%p , len=%ld. ",
 			FL, (void *)dl0d, (long)len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA)
+		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
+		}
 		fprintf(stderr, "\n");
 	}
 

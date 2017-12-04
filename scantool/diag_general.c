@@ -49,17 +49,21 @@ static int diag_initialized=0;
 int diag_init(void) {	//returns 0 if normal exit
 	int rv;
 
-	if (diag_initialized)
+	if (diag_initialized) {
 		return 0;
+	}
 
 	//XXX This is interesting: the following functions only ever return 0...
 
-	if ((rv = diag_l1_init()))
+	if ((rv = diag_l1_init())) {
 		return diag_iseterr(rv);
-	if ((rv = diag_l2_init()))
+	}
+	if ((rv = diag_l2_init())) {
 		return diag_iseterr(rv);
-	if ((rv = diag_os_init()))
+	}
+	if ((rv = diag_os_init())) {
 		return diag_iseterr(rv);
+	}
 
 	diag_dtc_init();
 	diag_initialized = 1;
@@ -71,8 +75,9 @@ int diag_init(void) {	//returns 0 if normal exit
 //this is the "opposite" of diag_init
 int diag_end(void) {
 	int rv=0;
-	if (! diag_initialized)
+	if (!diag_initialized) {
 		return 0;
+	}
 
 	if (diag_l2_end()) {
 		fprintf(stderr, FLFMT "Could not close L2 level\n", FL);
@@ -147,8 +152,9 @@ diag_dupmsg(struct diag_msg *msg) {
 
 	/* newchain : point to new chain */
 	newchain = diag_dupsinglemsg(msg);
-	if (newchain == NULL)
+	if (newchain == NULL) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
+	}
 
 	chain_last = newchain;
 
@@ -178,8 +184,9 @@ diag_dupsinglemsg(struct diag_msg *msg) {
 	/* Dup first msg */
 
 	newmsg = diag_allocmsg(msg->len);
-	if (newmsg == NULL)
+	if (newmsg == NULL) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
+	}
 
 	newmsg->fmt = msg->fmt;
 	newmsg->type = msg->type;
@@ -187,8 +194,9 @@ diag_dupsinglemsg(struct diag_msg *msg) {
 	newmsg->src = msg->src;
 	newmsg->rxtime = msg->rxtime;
 	/* Dup data if len>0 */
-	if ((msg->len >0) && (msg->data != NULL))
+	if ((msg->len > 0) && (msg->data != NULL)) {
 		memcpy(newmsg->data, msg->data, msg->len);
+	}
 
 	return newmsg;
 }
@@ -199,7 +207,9 @@ diag_dupsinglemsg(struct diag_msg *msg) {
 // Of course, not async safe.
 void
 diag_freemsg(struct diag_msg *msg) {
-	if (msg == NULL) return;
+	if (msg == NULL) {
+		return;
+	}
 
 	if (msg->next != NULL) {
 		diag_freemsg(msg->next);	//recurse
@@ -239,8 +249,12 @@ void
 diag_data_dump(FILE *out, const void *data, size_t len) {
 	const uint8_t *p = (const uint8_t *)data;
 	size_t i;
-	for (i=0; i<len; i++)
-		fprintf(out, "0x%02X ", p[i]);	//the formatter %#02X gives silly "0X6A" formatting. %#02x gives "0x6a", not perfect either...
+	for (i = 0; i < len; i++) {
+		fprintf(out, "0x%02X ", p[i]); // the formatter %#02X gives
+					       // silly "0X6A" formatting. %#02x
+					       // gives "0x6a", not perfect
+					       // either...
+	}
 }
 
 //smartcat() : make sure s1 is not too large, then strncat
@@ -291,9 +305,11 @@ const char *
 diag_errlookup(const int code) {
 	unsigned i;
 	static char ill_str[ERR_STR_LEN];
-	for (i = 0; i < ARRAY_SIZE(edesc); i++)
-		if (edesc[i].code == code)
+	for (i = 0; i < ARRAY_SIZE(edesc); i++) {
+		if (edesc[i].code == code) {
 			return edesc[i].desc;
+		}
+	}
 
 	snprintf(ill_str,ERR_STR_LEN,"Illegal error code: 0x%.2X\n",code);
 	return ill_str;
@@ -303,8 +319,9 @@ diag_errlookup(const int code) {
 void *
 diag_pflseterr(const char *name, const int line, const int code) {
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
-	if (latchedCode == 0)
+	if (latchedCode == 0) {
 		latchedCode = code;
+	}
 
 	return NULL;
 }
@@ -312,8 +329,9 @@ diag_pflseterr(const char *name, const int line, const int code) {
 int
 diag_iflseterr(const char *name, const int line, const int code) {
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
-	if (latchedCode == 0)
+	if (latchedCode == 0) {
 		latchedCode = code;
+	}
 
 	return code;
 }
@@ -389,10 +407,14 @@ char **strlist_add(char **list, const char *news, int elems) {
 
 /* Free argv-style list */
 void strlist_free(char **list, int elems) {
-	if (!list) return;
+	if (!list) {
+		return;
+	}
 
 	while (elems > 0) {
-		if (list[elems - 1]) free(list[elems - 1]);
+		if (list[elems - 1]) {
+			free(list[elems - 1]);
+		}
 		elems--;
 	}
 	free(list);
@@ -403,9 +425,10 @@ void strlist_free(char **list, int elems) {
  */
 void
 diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum) {
-	if (timestamp)
-		fprintf(fp, "%lu.%03lu: ",
-			msg->rxtime / 1000, msg->rxtime % 1000);
+	if (timestamp) {
+		fprintf(fp, "%lu.%03lu: ", msg->rxtime / 1000,
+			msg->rxtime % 1000);
+	}
 	fprintf(fp, "msg %02d src=0x%02X dest=0x%02X\n", msgnum, msg->src, msg->dest);
 	fprintf(fp, "msg %02d data: ", msgnum);
 }
@@ -418,10 +441,11 @@ diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp) {
 	LL_FOREACH(msg, tmsg) {
 		diag_printmsg_header(fp, tmsg, timestamp, i);
 		diag_data_dump(fp, tmsg->data, tmsg->len);
-		if (tmsg->fmt & DIAG_FMT_BADCS)
+		if (tmsg->fmt & DIAG_FMT_BADCS) {
 			fprintf(fp, " [BAD CKS]\n");
-		else
+		} else {
 			fprintf(fp, "\n");
+		}
 		i++;
 	}
 }

@@ -100,13 +100,33 @@ static void aif_monitor (UNUSED(void *data)) {
 				for (i = 0, ep = ecu_info ; i < ecu_count ; i++, ep++) {
 					if (DATA_VALID(p, ep->mode1_data) ||
 					DATA_VALID(p, ep->mode2_data)) {
-						if (DATA_VALID(p, ep->mode1_data))
-							p->cust_snprintf(buf, sizeof(buf), global_cfg.units, p, ep->mode1_data, 2);
+						if (DATA_VALID(
+							    p,
+							    ep->mode1_data)) {
+							p->cust_snprintf(
+								buf,
+								sizeof(buf),
+								global_cfg
+									.units,
+								p,
+								ep->mode1_data,
+								2);
+						}
 
 						printf("%-15.15s ", buf);
 
-						if (DATA_VALID(p, ep->mode2_data))
-							p->cust_snprintf(buf, sizeof(buf), global_cfg.units, p, ep->mode2_data, 3);
+						if (DATA_VALID(
+							    p,
+							    ep->mode2_data)) {
+							p->cust_snprintf(
+								buf,
+								sizeof(buf),
+								global_cfg
+									.units,
+								p,
+								ep->mode2_data,
+								3);
+						}
 
 						printf("%-15.15s\n", buf);
 					}
@@ -136,8 +156,10 @@ static void aif_monitor (UNUSED(void *data)) {
 					char buf[256];
 					uint8_t db[2];
 
-					if ((msg->data[j]==0) && (msg->data[j+1]==0))
-						continue ;
+					if ((msg->data[j] == 0) &&
+					    (msg->data[j + 1] == 0)) {
+						continue;
+					}
 
 					db[0] = msg->data[j];
 					db[1] = msg->data[j+1];
@@ -164,8 +186,9 @@ static void aif_set (void *data) {
 		case FREEDIAG_AIF_SET_UNITS : {
 			int units = ((unsigned char *) data)[1] ;
 
-			if (debugging)
-				fprintf(stderr, "Setting units to %d\n", units) ;
+			if (debugging) {
+				fprintf(stderr, "Setting units to %d\n", units);
+			}
 
 			switch (units) {
 				case FREEDIAG_AIF_SET_UNITS_US     : global_cfg.units = 1 ; break ;
@@ -177,8 +200,9 @@ static void aif_set (void *data) {
 		case FREEDIAG_AIF_SET_PORT : {
 			int port = ((unsigned char *) data)[1] ;
 
-			if (debugging)
-				fprintf(stderr, "Setting port to %d\n", port) ;
+			if (debugging) {
+				fprintf(stderr, "Setting port to %d\n", port);
+			}
 
 			if (port < 0 || port > 9) {
 				BadToApp() ;
@@ -189,8 +213,10 @@ static void aif_set (void *data) {
 			break ;
 		}
 		default :
-			if (debugging)
-				fprintf(stderr, "Illegal 'Set' command: %d\n", sub_command) ;
+			if (debugging) {
+				fprintf(stderr, "Illegal 'Set' command: %d\n",
+					sub_command);
+			}
 
 			BadToApp() ;
 			return ;
@@ -317,9 +343,10 @@ static void do_aif_command (void) {
 		command = & (aif_commands[i]) ;
 
 		if (command->code == cmd) {
-			if (debugging)
-			fprintf(stderr, "CMD: %d %s\n", cmd, command->name) ;
-
+			if (debugging) {
+				fprintf(stderr, "CMD: %d %s\n", cmd,
+					command->name);
+			}
 			break ;
 		}
 	}
@@ -331,10 +358,11 @@ static void do_aif_command (void) {
 		exit (1) ;
 	}
 
-	for (j = 0 ; j < command->length &&
-	j < FREEDIAG_AIF_INPUT_MAX &&
-	! feof (stdin) ; j++)
-		data_buffer[j] = getc(stdin) ;
+	for (j = 0;
+	     j < command->length && j < FREEDIAG_AIF_INPUT_MAX && !feof(stdin);
+	     j++) {
+		data_buffer[j] = getc(stdin);
+	}
 
 	command->func(data_buffer) ;
 
@@ -346,8 +374,9 @@ void enter_aif (const char *name) {
 	fprintf(stderr, "%s AIF: version %s\n", name, PACKAGE_VERSION) ;
 	set_init() ;
 
-	while (1)
-	do_aif_command () ;
+	while (1) {
+		do_aif_command();
+	}
 }
 
 

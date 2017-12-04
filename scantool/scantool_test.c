@@ -243,8 +243,9 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv)) {
 
 			for (i=0; i<12; i++) {
 				text = test_names[i];
-				if (text == NULL)
+				if (text == NULL) {
 					continue;
+				}
 				if (i<4) {
 					supported = (ep->mode1_data[1].data[3]>>i)&1;
 					value = (ep->mode1_data[1].data[3]>>(i+4))&1;
@@ -253,13 +254,15 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv)) {
 					supported = (ep->mode1_data[1].data[4]>>(i-4))&1;
 					value = (ep->mode1_data[1].data[5]>>(i-4))&1;
 				}
-				if (ecu_count > 1)
+				if (ecu_count > 1) {
 					printf("ECU %d: ", i);
+				}
 				printf("%s: ", text);
-				if (supported)
+				if (supported) {
 					printf("%sComplete\n", value?"":"NOT ");
-				else
+				} else {
 					printf("Not Supported\n");
+				}
 			}
 		}
 	}

@@ -28,13 +28,17 @@ void optarray_clear(struct cfgi *cfgp);
 
 //Optional func to refresh opt[] and numopts (for tty, J2534, etc), doesn't change *val
 void diag_cfg_refresh(struct cfgi *cfgp) {
-	if (cfgp->refresh) cfgp->refresh(cfgp);
+	if (cfgp->refresh) {
+		cfgp->refresh(cfgp);
+	}
 	return;
 }
 
 //Optional: func to reset *val to default; doesn't call refresh()
 void diag_cfg_reset(struct cfgi *cfgp) {
-	if (cfgp->reset) cfgp->reset(cfgp);
+	if (cfgp->reset) {
+		cfgp->reset(cfgp);
+	}
 	return;
 }
 
@@ -154,7 +158,9 @@ char *diag_cfg_getstr(struct cfgi *cfgp) {
 //free contents of *cfgp (prior to free'ing the struct itself, for instance)
 void diag_cfg_clear(struct cfgi *cfgp) {
 	/* For now, handles only CFGT_STR types */
-	if (cfgp->type != CFGT_STR) return;
+	if (cfgp->type != CFGT_STR) {
+		return;
+	}
 	if (cfgp->dyn_val && (cfgp->val.str != NULL)) {
 		free(cfgp->val.str);
 	}
@@ -194,8 +200,9 @@ void std_reset(struct cfgi *cfgp) {
 		cfgp->val.i = cfgp->dval.i;
 		break;
 	case CFGT_STR:
-		if (cfgp->dval.str == NULL)
+		if (cfgp->dval.str == NULL) {
 			return;
+		}
 		if (cfgp->dyn_val && (cfgp->val.str != NULL)) {
 			free(cfgp->val.str);
 			cfgp->val.str = NULL;

@@ -210,8 +210,9 @@ static double dyno_loss_a_inter(int i, int j) {
   dyno_loss_measure *measure1;
 
   /* avoid bad use */
-  if ((i < 0) || (i >= j) || (j > loss_measure_table.nbr))
-    return 0;
+  if ((i < 0) || (i >= j) || (j > loss_measure_table.nbr)) {
+	  return 0;
+  }
 
   /* select measures */
   measure0 = &loss_measure_table.meas.loss_measures[i];
@@ -229,12 +230,14 @@ static double dyno_loss_a_inter(int i, int j) {
 static double dyno_loss_a(int i) {
   double a;
 
-  if (i <= 0)
-    a = dyno_loss_a_inter(0, 1);
-  else if (i >= loss_measure_table.nbr - 1)
-    a = dyno_loss_a_inter(loss_measure_table.nbr - 2, loss_measure_table.nbr - 1);
-  else
-    a = (dyno_loss_a_inter(i-1, i) + dyno_loss_a_inter(i, i+1)) / 2;
+  if (i <= 0) {
+	  a = dyno_loss_a_inter(0, 1);
+  } else if (i >= loss_measure_table.nbr - 1) {
+	  a = dyno_loss_a_inter(loss_measure_table.nbr - 2,
+				loss_measure_table.nbr - 1);
+  } else {
+	  a = (dyno_loss_a_inter(i - 1, i) + dyno_loss_a_inter(i, i + 1)) / 2;
+  }
 
   return a;
 }
@@ -297,18 +300,20 @@ int dyno_loss_reset() {
 
 /* Get d value */
 double dyno_loss_get_d() {
-  if (dyno_loss_needs_calculation == 1)
-    dyno_loss_calculate();
+	if (dyno_loss_needs_calculation == 1) {
+		dyno_loss_calculate();
+	}
 
-  return dyno_loss_d;
+	return dyno_loss_d;
 }
 
 /* Get f value */
 double dyno_loss_get_f() {
-  if (dyno_loss_needs_calculation == 1)
-    dyno_loss_calculate();
+	if (dyno_loss_needs_calculation == 1) {
+		dyno_loss_calculate();
+	}
 
-  return dyno_loss_f;
+	return dyno_loss_f;
 }
 
 void dyno_loss_set_d(double d) {
@@ -323,8 +328,9 @@ void dyno_loss_set_f(double f) {
 static long dyno_loss_power(long speed) {
   double power;
 
-  if (dyno_loss_needs_calculation == 1)
-    dyno_loss_calculate();
+  if (dyno_loss_needs_calculation == 1) {
+	  dyno_loss_calculate();
+  }
 
   /* Pl = d * v^3 + f * v */
   power = dyno_loss_d * CUB(speed/1000.0) + dyno_loss_f * (speed/1000.0);
@@ -430,12 +436,13 @@ int dyno_get_nb_results() {
  */
 
 int dyno_get_results(dyno_result *results, UNUSED(int size)) {
-  if ((dyno_mass == 0) || (dyno_gear == 0))
-    return DYNO_USAGE;
+	if ((dyno_mass == 0) || (dyno_gear == 0)) {
+		return DYNO_USAGE;
+	}
 
-  dyno_calculate_results(results);
+	dyno_calculate_results(results);
 
-  return DYNO_OK;
+	return DYNO_OK;
 }
 
 /*

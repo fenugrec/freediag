@@ -147,8 +147,9 @@ basic_get_input(const char *prompt, FILE *instream) {
 	char *input;
 	bool do_prompt;
 
-	if (diag_malloc(&input, INPUT_MAX))
-			return NULL;
+	if (diag_malloc(&input, INPUT_MAX)) {
+		return NULL;
+	}
 
 	do_prompt = 1;
 	while (1) {
@@ -185,8 +186,9 @@ get_input(const char *prompt) {
 	strncpy(localprompt, prompt, sizeof(localprompt));
 
 	input = readline(localprompt);
-	if (input && *input)
+	if (input && *input) {
 		add_history(input);
+	}
 	return input;
 }
 
@@ -208,8 +210,10 @@ command_generator(const char *text, int state) {
 		if (strncmp(cmd_entry->command, text, length) == 0 && !(cmd_entry->flags & FLAG_HIDDEN)) {
 			char *ret_name;
 			//we must return a copy of the string; libreadline frees it for us
-			if (diag_malloc(&ret_name, strlen(cmd_entry->command)+1) != 0)
+			if (diag_malloc(&ret_name,
+					strlen(cmd_entry->command) + 1) != 0) {
 				return (char *)NULL;
+			}
 			strcpy(ret_name, cmd_entry->command);
 			return ret_name;
 		}
@@ -288,9 +292,10 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 	}
 
 	matches = rl_completion_matches(text, command_generator);
-	if (matches == NULL)
+	if (matches == NULL) {
 		//this will disable the default (filename and username) completion in case no command matches are found
 		rl_attempted_completion_over = 1;
+	}
 	return matches;
 }
 
@@ -410,12 +415,14 @@ static void
 log_command(int argc, char **argv) {
 	int i;
 
-	if (!global_logfp)
+	if (!global_logfp) {
 		return;
+	}
 
 	log_timestamp(">");
-	for (i = 0; i < argc; i++)
-			fprintf(global_logfp, " %s", argv[i]);
+	for (i = 0; i < argc; i++) {
+		fprintf(global_logfp, " %s", argv[i]);
+	}
 	fprintf(global_logfp, "\n");
 }
 
@@ -494,8 +501,9 @@ cmd_play(int argc, char **argv) {
 	//int linenr;
 
 	/* Turn on logging for monitor mode */
-	if (argc < 2)
+	if (argc < 2) {
 		return CMD_USAGE;
+	}
 
 	fp = fopen(argv[1], "r");
 
@@ -592,13 +600,15 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 
 		if (argc == 0) {
 			/* Get Input */
-			if (input)
+			if (input) {
 				free(input);
+			}
 			input = command_line_input(promptbuf, instream);
 			if (!input) {
-					if (instream == stdin)
-						printf("\n");
-					break;
+				if (instream == stdin) {
+					printf("\n");
+				}
+				break;
 			}
 
 			/* Parse it */
@@ -624,8 +634,9 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 		} else {
 			/* Use supplied argc */
 			cmd_argc = argc;
-			for (i=0; i<=argc; i++)
+			for (i = 0; i <= argc; i++) {
 				cmd_argv[i] = argv[i];
+			}
 		}
 
 		if (cmd_argc == 0) {
@@ -661,8 +672,10 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 			//went out of the sub-menu, so update the command level for command completion
 			current_cmd_level = cmd_tbl;
 #endif
-			if (rv==CMD_EXIT)	//allow exiting prog. from a submenu
-				done=1;
+			if (rv == CMD_EXIT) { // allow exiting prog. from a
+					      // submenu
+				done = 1;
+			}
 			snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
 		} else {
 			// Regular command
@@ -686,10 +699,12 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 		}
 	}	//while !done
 
-	if (input)
-			free(input);
-	if (rv == CMD_UP)
+	if (input) {
+		free(input);
+	}
+	if (rv == CMD_UP) {
 		return CMD_OK;
+	}
 	if (rv == CMD_EXIT) {
 		char *disco="disconnect";
 		if (global_logfp != NULL) {
@@ -699,8 +714,9 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 		do_cli(diag_cmd_table, "", instream, 1, &disco);	//XXX should be called recursively in case there are >1 active L3 conns...
 
 		rv=diag_end();
-		if (rv)
+		if (rv) {
 			fprintf(stderr, FLFMT "diag_end failed !?\n", FL);
+		}
 		rv = CMD_EXIT;
 	}
 	return rv;
@@ -836,7 +852,9 @@ enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *
 		i++;
 	}
 	diag_calloc(&ctp, i + ARRAY_SIZE(basic_cmd_table));
-	if (!ctp) return;
+	if (!ctp) {
+		return;
+	}
 	memcpy(ctp, extra_cmdtable, i * sizeof(struct cmd_tbl_entry));
 	memcpy(&ctp[i], basic_cmd_table, sizeof(basic_cmd_table));
 	root_cmd_table = ctp;
@@ -933,8 +951,9 @@ int htoi(char *buf) {
 		} else {
 			return 0;
 		}
-		if (val >= base)	/* Value too big for this base */
+		if (val >= base) { /* Value too big for this base */
 			return 0;
+		}
 		rv *= base;
 		rv += val;
 
@@ -950,8 +969,9 @@ void wait_enter(const char *message) {
 	printf("%s", message);
 	while (1) {
 		int ch = getc(stdin);
-		if (ch == '\n')
-		break;
+		if (ch == '\n') {
+			break;
+		}
 	}
 }
 

@@ -31,13 +31,13 @@ cmd_watch(int argc, char **argv) {
 	bool nol3 = 0;
 
 	if (argc > 1) {
-		if (strcasecmp(argv[1], "raw") == 0)
+		if (strcasecmp(argv[1], "raw") == 0) {
 			rawmode = 1;
-		else if (strcasecmp(argv[1], "nodecode") == 0)
+		} else if (strcasecmp(argv[1], "nodecode") == 0) {
 			nodecode = 1;
-		else if (strcasecmp(argv[1], "nol3") == 0)
+		} else if (strcasecmp(argv[1], "nol3") == 0) {
 			nol3 = 1;
-		else {
+		} else {
 			printf("Didn't understand \"%s\"\n", argv[1]);
 			return CMD_USAGE;
 		}
@@ -62,12 +62,13 @@ cmd_watch(int argc, char **argv) {
 	rv = diag_l2_open(dl0d, global_cfg.L1proto);
 	if (rv) {
 		printf("Failed to open hardware interface, ");
-		if (rv == DIAG_ERR_PROTO_NOTSUPP)
+		if (rv == DIAG_ERR_PROTO_NOTSUPP) {
 			printf("does not support requested L1 protocol\n");
-		else if (rv == DIAG_ERR_BADIFADAPTER)
+		} else if (rv == DIAG_ERR_BADIFADAPTER) {
 			printf("adapter probably not connected\n");
-		else
-			printf("%s\n",diag_errlookup(rv));
+		} else {
+			printf("%s\n", diag_errlookup(rv));
+		}
 		return CMD_FAILED;
 	}
 	if (rawmode) {
@@ -105,7 +106,9 @@ cmd_watch(int argc, char **argv) {
 
 		printf("Monitoring started. Press Enter to end.\n");
 		while (1) {
-			if (diag_os_ipending()) break;
+			if (diag_os_ipending()) {
+				break;
+			}
 
 			if (d_l3_conn != NULL) {
 				rv = diag_l3_recv(d_l3_conn, 10000,
@@ -115,10 +118,12 @@ cmd_watch(int argc, char **argv) {
 				rv = diag_l2_recv(d_l2_conn, 10000,
 					j1979_watch_rcv, NULL);
 			}
-			if (rv == 0)
+			if (rv == 0) {
 				continue;
-			if (rv == DIAG_ERR_TIMEOUT)
+			}
+			if (rv == DIAG_ERR_TIMEOUT) {
 				continue;
+			}
 		}
 	} else {
 		//rawmode
@@ -127,20 +132,25 @@ cmd_watch(int argc, char **argv) {
 		 */
 		printf("Monitoring started. Press Enter to end.\n");
 		while (1) {
-			if (diag_os_ipending()) break;
+			if (diag_os_ipending()) {
+				break;
+			}
 
 			rv = diag_l2_recv(d_l2_conn, 10000,
 				j1979_data_rcv, (void *)&_RQST_HANDLE_WATCH);
-			if (rv == 0)
+			if (rv == 0) {
 				continue;
-			if (rv == DIAG_ERR_TIMEOUT)
+			}
+			if (rv == DIAG_ERR_TIMEOUT) {
 				continue;
+			}
 			printf("recv returns %d\n", rv);
 			break;
 		}
 	}
-	if (d_l3_conn != NULL)
+	if (d_l3_conn != NULL) {
 		diag_l3_stop(d_l3_conn);
+	}
 
 	diag_l2_StopCommunications(d_l2_conn);
 	diag_l2_close(dl0d);
@@ -171,19 +181,21 @@ print_current_data(bool english) {
 				DATA_VALID(p, ep->mode2_data)) {
 				printf("%-30.30s ", p->desc);
 
-				if (DATA_VALID(p, ep->mode1_data))
+				if (DATA_VALID(p, ep->mode1_data)) {
 					p->cust_snprintf(buf, sizeof(buf), english, p,
 						ep->mode1_data, 2);
-				else
+				} else {
 					snprintf(buf, sizeof(buf), "-----");
+				}
 
 				printf("%-15.15s ", buf);
 
-				if (DATA_VALID(p, ep->mode2_data))
+				if (DATA_VALID(p, ep->mode2_data)) {
 					p->cust_snprintf(buf, sizeof(buf), english, p,
 						ep->mode2_data, 3);
-				else
+				} else {
 					snprintf(buf, sizeof(buf), "-----");
+				}
 
 				printf("%-15.15s\n", buf);
 			}
@@ -196,8 +208,9 @@ log_response(int ecu, response_t *r) {
 	assert(global_logfp != NULL);
 
 	/* Only print good records */
-	if (r->type != TYPE_GOOD)
+	if (r->type != TYPE_GOOD) {
 		return;
+	}
 
 	printf("%d: ", ecu);
 	diag_data_dump(global_logfp, r->data,r->len);
@@ -210,8 +223,9 @@ log_current_data(void) {
 	ecu_data_t *ep;
 	unsigned int i;
 
-	if (!global_logfp)
+	if (!global_logfp) {
 		return;
+	}
 
 	log_timestamp("D");
 	fprintf(global_logfp, "MODE 1 DATA\n");
@@ -248,12 +262,13 @@ cmd_monitor(int argc, char **argv) {
 
 	// If user states English or Metric, use that, else use config item
 	if (argc > 1) {
-		if (strcasecmp(argv[1], "english") == 0)
+		if (strcasecmp(argv[1], "english") == 0) {
 			english = 1;
-		else if (strcasecmp(argv[1], "metric") == 0)
+		} else if (strcasecmp(argv[1], "metric") == 0) {
 			english = 0;
-		else
+		} else {
 			return CMD_USAGE;
+		}
 	} else {
 		english = global_cfg.units;
 	}
@@ -289,8 +304,9 @@ cmd_monitor(int argc, char **argv) {
 static int
 cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
 	int rv=DIAG_ERR_GENERAL;
-	if (argc > 1)
+	if (argc > 1) {
 		return CMD_USAGE;
+	}
 
 	if (global_state == STATE_SCANDONE) {
 		printf("scan already done !\n");
@@ -351,14 +367,16 @@ cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 
 	input = basic_get_input("Are you sure you wish to clear the Diagnostic "
 			"Trouble Codes (y/n) ? ", stdin);
-	if (!input)
+	if (!input) {
 		return CMD_OK;
+	}
 
 	if ((strcasecmp(input, "yes") == 0) || (strcasecmp(input, "y")==0)) {
-		if (diag_cleardtc() == 0)
+		if (diag_cleardtc() == 0) {
 			printf("Done\n");
-		else
+		} else {
 			printf("Failed\n");
+		}
 	} else {
 		printf("Not done\n");
 	}
@@ -383,10 +401,11 @@ cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
 
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		printf("ECU %d: Address 0x%02X ", i, ep->ecu_addr & 0xff);
-		if (ep->supress)
+		if (ep->supress) {
 			printf("output supressed for monitor mode\n");
-		else
+		} else {
 			printf("\n");
+		}
 	}
 	return CMD_OK;
 }
@@ -445,10 +464,14 @@ print_pidinfo(int mode, uint8_t *pid_data) {
 
 	printf(" Mode %d:", mode);
 	for (i=0, j=0; i<=0x60; i++) {
-		if (j == 8) j=0;
+		if (j == 8) {
+			j = 0;
+		}
 
 		if (pid_data[i]) {
-			if (j == 0) printf("\n \t");	//once per line
+			if (j == 0) {
+				printf("\n \t"); // once per line
+			}
 			printf("0x%02X ", i);
 			j++;
 		}

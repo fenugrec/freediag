@@ -147,9 +147,10 @@ ttyp *diag_tty_open(const char *portname) {
 #endif // O_NONBLOCK
 
 	if (uti->fd >= 0) {
-		if (diag_l0_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr, FLFMT "Device %s opened, fd %d\n",
-				FL, uti->name, uti->fd);
+		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+			fprintf(stderr, FLFMT "Device %s opened, fd %d\n", FL,
+				uti->name, uti->fd);
+		}
 	} else {
 		fprintf(stderr,
 			FLFMT "Could not open \"%s\" : %s. "
@@ -248,7 +249,9 @@ ttyp *diag_tty_open(const char *portname) {
 void diag_tty_close(ttyp *tty_int) {
 	struct unix_tty_int *uti = tty_int;
 
-	if (!uti) return;
+	if (!uti) {
+		return;
+	}
 	if (uti->name) {
 		free(uti->name);
 	}
@@ -257,8 +260,9 @@ void diag_tty_close(ttyp *tty_int) {
 #endif
 	if (uti->fd != DL0D_INVALIDHANDLE) {
 #if defined(__linux__)
-		if (uti->tioc_works)
+		if (uti->tioc_works) {
 			(void)ioctl(uti->fd, TIOCSSERIAL, &uti->ss_orig);
+		}
 #endif
 #ifdef USE_TERMIOS2
 		(void)ioctl(uti->fd, TCSETS2, &uti->st2_orig);
@@ -333,22 +337,30 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 		st2.c_cflag |= BOTHER;
 		st2.c_ispeed = spd;
 		st2.c_ospeed = spd;
-		if ((rv=ioctl(fd, TCSETS2, &st2)) != 0) break;
+		if ((rv = ioctl(fd, TCSETS2, &st2)) != 0) {
+			break;
+		}
 		//re-read to get actual speed
-		if ((rv=ioctl(fd, TCGETS2, &uti->st2_cur)) != 0) break;
+		if ((rv = ioctl(fd, TCGETS2, &uti->st2_cur)) != 0) {
+			break;
+		}
 		spd_real = uti->st2_cur.c_ospeed;
 		spd_done = 1;
 		//Setting other flags without termios2 would "erase" speed,
 		//unless TCGETS returns a "safe" termios?
-		if ((rv=ioctl(fd, TCGETS, &uti->st_cur)) != 0) break;
+		if ((rv = ioctl(fd, TCGETS, &uti->st_cur)) != 0) {
+			break;
+		}
 
 		if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
 			fprintf(stderr, FLFMT "Speed set using TCSETS + BOTHER.\n", FL);
 		}
 		return spd_real;
 	}
-	if (rv != 0)
-		fprintf(stderr, FLFMT "setspeed(BOTHER) ioctl failed: %s.\n", FL, strerror(errno));
+	if (rv != 0) {
+		fprintf(stderr, FLFMT "setspeed(BOTHER) ioctl failed: %s.\n",
+			FL, strerror(errno));
+	}
 
 #endif // BOTHER flag trick
 
@@ -626,15 +638,17 @@ diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts) {
 	struct unix_tty_int *uti = tty_int;
 	int setflags = 0, clearflags = 0;
 
-	if (dtr)
+	if (dtr) {
 		setflags = TIOCM_DTR;
-	else
+	} else {
 		clearflags = TIOCM_DTR;
+	}
 
-	if (rts)
+	if (rts) {
 		setflags = TIOCM_RTS;
-	else
+	} else {
 		clearflags = TIOCM_RTS;
+	}
 
 	errno = 0;
 	if (ioctl(uti->fd, TIOCMGET, &flags) < 0) {
@@ -693,8 +707,9 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	n=0;
 
 	while (n < count) {
-		if (uti->pt_expired)
+		if (uti->pt_expired) {
 			break;
+		}
 
 		rv = write(uti->fd, &p[n], count-n);
 		if (rv < 0) {
@@ -728,7 +743,9 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	  to info tty_ioctl */
 	if (ioctl(uti->fd, TCSBRK, 1) != 0) {
 		static int tcsb_warned=0;
-		if (!tcsb_warned) fprintf(stderr, "TCSBRK doesn't work!\n");
+		if (!tcsb_warned) {
+			fprintf(stderr, "TCSBRK doesn't work!\n");
+		}
 		tcsb_warned=1;
 	}
 #else
@@ -859,10 +876,11 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 
 	//if anything has been read, then return the number of read bytes; return timeout error otherwise
 	if (rv >= 0) {
-		if (n > 0)
+		if (n > 0) {
 			return n;
-		else if (expired)
-			return DIAG_ERR_TIMEOUT;	//without diag_iseterr() !
+		} else if (expired) {
+			return DIAG_ERR_TIMEOUT; // without diag_iseterr() !
+		}
 	}
 
 	//errors other than EINTR
@@ -1185,8 +1203,9 @@ int diag_tty_fastbreak(ttyp *tty_int, const unsigned int ms) {
 	struct diag_serial_settings set;
 	unsigned int msremain;
 
-	if (ms<25)
+	if (ms < 25) {
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
+	}
 
 	/* Set baud rate etc to 360 baud, 8, N, 1 */
 	set.speed = 360;
@@ -1225,8 +1244,9 @@ int diag_tty_fastbreak(ttyp *tty_int, const unsigned int ms) {
 	tv2=diag_os_gethrt();
 	tvdiff = diag_os_hrtus(tv2 - tv1);	//us
 
-	if (tvdiff >= (ms*1000))
-		return 0;	//already finished
+	if (tvdiff >= (ms * 1000)) {
+		return 0; // already finished
+	}
 
 	msremain = ms - (tvdiff / 1000);
 
@@ -1250,7 +1270,9 @@ static bool test_ttyness(const char *pname) {
 
 	testfd = open(pname, O_RDWR | O_NOCTTY | O_NDELAY);
 	if (testfd != -1) {
-		if (isatty(testfd)) yes=1;
+		if (isatty(testfd)) {
+			yes = 1;
+		}
 		close(testfd);
 	}
 	return yes;
@@ -1279,7 +1301,9 @@ char **diag_tty_getportlist(int *numports) {
 	if (dp != NULL) {
 		while (1) {
 			fp = readdir (dp);	// get next file in directory
-			if (fp == NULL) break;
+			if (fp == NULL) {
+				break;
+			}
 			if ((!strncmp(fp->d_name,"ttyS",4)) ||
 					(!strncmp(fp->d_name,"ttyUSB",6)) ||
 					(!strncmp(fp->d_name,"ttyACM",6))) {
@@ -1287,7 +1311,9 @@ char **diag_tty_getportlist(int *numports) {
 				strcpy(ffn, devroot);
 				strncat(ffn, fp->d_name, ARRAY_SIZE(ffn) - strlen(devroot) - 1);
 
-				if ( !test_ttyness(ffn)) continue;
+				if (!test_ttyness(ffn)) {
+					continue;
+				}
 
 				char **templist = strlist_add(portlist, ffn, elems);
 				if (!templist) {
@@ -1306,13 +1332,17 @@ char **diag_tty_getportlist(int *numports) {
 	if (dp != NULL) {
 		while (1) {
 			fp = readdir (dp);	// get next file in directory
-			if (fp == NULL) break;
+			if (fp == NULL) {
+				break;
+			}
 			if (!strncmp(fp->d_name,"ttyUSB",6)) {
 				// CONSTRUCT FULL FILENAME:
 				strcpy(ffn, devusbroot);
 				strncat(ffn, fp->d_name, ARRAY_SIZE(ffn) - strlen(devusbroot) - 1);
 
-				if ( !test_ttyness(ffn)) continue;
+				if (!test_ttyness(ffn)) {
+					continue;
+				}
 
 				char **templist = strlist_add(portlist, ffn, elems);
 				if (!templist) {

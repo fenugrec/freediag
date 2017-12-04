@@ -165,8 +165,9 @@ static int cmd_set_custom(int argc, char **argv) {
 
 	if (!global_dl0d) {
 		// no L0 selected yet
-		if (strcmp(argv[0], "?") == 0)
+		if (strcmp(argv[0], "?") == 0) {
 			return CMD_OK;
+		}
 		printf("No such item !\nAdditional items may be available after setting the interface type.\nUse \"set interface NAME\" to set the interface type.\n");
 		return CMD_FAILED;
 	}
@@ -190,7 +191,9 @@ static int cmd_set_custom(int argc, char **argv) {
 
 	/* find the config item */
 	LL_FOREACH(diag_l0_getcfg(global_dl0d), cfgp) {
-		if (strcasecmp(cfgp->shortname, argv[0]) == 0) break;
+		if (strcasecmp(cfgp->shortname, argv[0]) == 0) {
+			break;
+		}
 	}
 
 	if (!cfgp) {
@@ -262,7 +265,9 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv)) {
 		printf("L0 options:\n");
 		LL_FOREACH(diag_l0_getcfg(global_dl0d), cfgp) {
 			char *cs = diag_cfg_getstr(cfgp);
-			if (cfgp->shortname == NULL || cs==NULL) continue;
+			if (cfgp->shortname == NULL || cs == NULL) {
+				continue;
+			}
 
 			printf("\t%s=%s\n",cfgp->shortname, cs);
 			free(cs);
@@ -301,13 +306,12 @@ static int cmd_set_interface(int argc, char **argv) {
 	for (i=0; l0dev_list[i]; i++) {
 		iter = l0dev_list[i];
 		//loop through l0 interface names, either printing or comparing to argv[1]
-		if (helping)
+		if (helping) {
 			printf("%s ", iter->shortname);
-		else
-			if (strcasecmp(argv[1], iter->shortname) == 0) {
-				global_cfg.l0name = iter->shortname;
-				found = 1;
-				break;	//no use in continuing
+		} else if (strcasecmp(argv[1], iter->shortname) == 0) {
+			global_cfg.l0name = iter->shortname;
+			found = 1;
+			break; // no use in continuing
 			}
 	}
 
@@ -332,7 +336,9 @@ static int cmd_set_interface(int argc, char **argv) {
 	}
 
 	global_dl0d = diag_l0_new(global_cfg.l0name);
-	if (!global_dl0d) printf("Error loading interface %s.\n", global_cfg.l0name);
+	if (!global_dl0d) {
+		printf("Error loading interface %s.\n", global_cfg.l0name);
+	}
 
 	return CMD_OK;
 }
@@ -340,12 +346,13 @@ static int cmd_set_interface(int argc, char **argv) {
 static int
 cmd_set_display(int argc, char **argv) {
 	if (argc > 1) {
-		if (strcasecmp(argv[1], "english") == 0)
+		if (strcasecmp(argv[1], "english") == 0) {
 			global_cfg.units = 1;
-		else if (strcasecmp(argv[1], "metric") == 0)
+		} else if (strcasecmp(argv[1], "metric") == 0) {
 			global_cfg.units = 0;
-		else
+		} else {
 			return CMD_USAGE;
+		}
 	} else {
 		printf("display: %s units\n", global_cfg.units?"english":"metric");
 	}
@@ -409,12 +416,13 @@ cmd_set_destaddr(int argc, char **argv) {
 static int
 cmd_set_addrtype(int argc, char **argv) {
 	if (argc > 1) {
-		if (strncmp(argv[1], "func", 4) == 0)
+		if (strncmp(argv[1], "func", 4) == 0) {
 			global_cfg.addrtype = 1;
-		else if (strncmp(argv[1], "phys", 4) == 0)
+		} else if (strncmp(argv[1], "phys", 4) == 0) {
 			global_cfg.addrtype = 0;
-		else
+		} else {
 			return CMD_USAGE;
+		}
 	} else {
 		printf("addrtype: %s addressing\n",
 			global_cfg.addrtype ? "functional" : "physical");
@@ -466,12 +474,11 @@ static int cmd_set_l1protocol(int argc, char **argv) {
 			printf("L1 protocol: valid names are ");
 		}
 		for (i=0; l1_names[i] != NULL; i++) {
-			if (helping && *l1_names[i])
+			if (helping && *l1_names[i]) {
 				printf("%s ", l1_names[i]);
-			else
-				if (strcasecmp(argv[1], l1_names[i]) == 0) {
-					global_cfg.L1proto = 1 << i;
-					found = 1;
+			} else if (strcasecmp(argv[1], l1_names[i]) == 0) {
+				global_cfg.L1proto = 1 << i;
+				found = 1;
 				}
 		}
 		if (helping) {
@@ -488,8 +495,9 @@ static int cmd_set_l1protocol(int argc, char **argv) {
 	int offset;
 
 	for (offset=0; offset < 8; offset++) {
-		if (global_cfg.L1proto == (1 << offset))
+		if (global_cfg.L1proto == (1 << offset)) {
 			break;
+		}
 	}
 	printf("l1protocol: Layer 1 (H/W) protocol to use %s\n",
 		l1_names[offset]);

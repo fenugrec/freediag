@@ -125,8 +125,9 @@ cmd_debug_common( const char *txt, int *val, int argc, char **argv) {
 	printf("%s debug is 0x%X: ", txt, *val);
 	for (i=0; debugflags[i].mask != NIL; i++) {
 		//check each flag and show what was enabled.
-		if (*val & debugflags[i].mask)
+		if (*val & debugflags[i].mask) {
 			printf("%s ", debugflags[i].shortdescr);
+		}
 	}
 	printf("\n");
 
@@ -229,8 +230,9 @@ static int cmd_debug_l0test(int argc, char **argv) {
 		printf("Wrong global L0, please set to DUMBT\n");
 		return CMD_FAILED;
 	}
-	if (diag_init())
+	if (diag_init()) {
 		return CMD_FAILED;
+	}
 
 	printf("Trying test %u...\n", testnum);
 

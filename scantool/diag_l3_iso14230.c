@@ -134,8 +134,11 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 		fprintf(stderr,FLFMT "_send %d bytes, l2 flags 0x%X\n",
 			FL, msg->len,  d_l3_conn->d_l3l2_flags);
 
-		if ((diag_l3_debug & DIAG_DEBUG_DATA) && (diag_l3_debug & DIAG_DEBUG_WRITE))
-			diag_data_dump(stderr, (void *) msg->data, (size_t)msg->len);
+		if ((diag_l3_debug & DIAG_DEBUG_DATA) &&
+		    (diag_l3_debug & DIAG_DEBUG_WRITE)) {
+			diag_data_dump(stderr, (void *)msg->data,
+				       (size_t)msg->len);
+		}
 	}
 
 	// L2 does framing, adds addressing and CRC, so do nothing special
@@ -169,8 +172,9 @@ diag_l3_14230_rxcallback(void *handle, struct diag_msg *msg) {
 
 	if (msg->fmt & DIAG_FMT_FRAMED) {
 		/* Send data upward if needed */
-		if (d_l3_conn->callback)
+		if (d_l3_conn->callback) {
 			d_l3_conn->callback(d_l3_conn->handle, msg);
+		}
 	} else {
 		fprintf(stderr, FLFMT "problem: got an unframed message!\n"
 								"Report this !\n", FL);
@@ -204,9 +208,9 @@ diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 		rv = diag_l2_recv(d_l3_conn->d_l3l2_conn, timeout,
 			diag_l3_14230_rxcallback, (void *)d_l3_conn);
 
-		if (diag_l3_debug & DIAG_DEBUG_READ)
-			fprintf(stderr,FLFMT "_recv returns %d\n",
-				FL, rv);
+		if (diag_l3_debug & DIAG_DEBUG_READ) {
+			fprintf(stderr, FLFMT "_recv returns %d\n", FL, rv);
+		}
 	} else {
 		//problem : the only time DIAG_L2_FLAG_FRAMED is not set is if
 		//L2 is raw. Who uses a raw L2 instead of 14230 L2 ???
@@ -225,10 +229,11 @@ diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 void
 diag_l3_iso14230_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
 struct diag_msg *msg, char *buf, size_t bufsize) {
-	if (msg->data[0] & 0x40)
+	if (msg->data[0] & 0x40) {
 		snprintf(buf, bufsize, "ISO14230 response ");
-	else
+	} else {
 		snprintf(buf, bufsize, "ISO14230 request ");
+	}
 
 	return;
 }
@@ -281,9 +286,11 @@ static const struct {
 
 static const char *l3_iso14230_sidlookup(const int id) {
 	unsigned i;
-	for (i = 0; i < ARRAY_SIZE(sids); i++)
-		if (sids[i].id == id)
+	for (i = 0; i < ARRAY_SIZE(sids); i++) {
+		if (sids[i].id == id) {
 			return sids[i].service;
+		}
+	}
 
 	return "Unknown SID";
 }
@@ -329,9 +336,11 @@ static const struct {
 
 static const char *l3_iso14230_neglookup(const int id) {
 	unsigned i;
-	for (i = 0; i < ARRAY_SIZE(negresps); i++)
-		if (negresps[i].id == id)
+	for (i = 0; i < ARRAY_SIZE(negresps); i++) {
+		if (negresps[i].id == id) {
 			return negresps[i].response;
+		}
+	}
 
 	return "Unknown Response code";
 }

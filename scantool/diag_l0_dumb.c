@@ -175,7 +175,9 @@ static void dumb_del(struct diag_l0_device *dl0d) {
 	assert(dl0d);
 
 	dev = dl0d->l0_int;
-	if (!dev) return;
+	if (!dev) {
+		return;
+	}
 
 	diag_cfg_clear(&dev->port);
 	diag_cfg_clear(&dev->dumbopts);
@@ -185,7 +187,9 @@ static void dumb_del(struct diag_l0_device *dl0d) {
 
 static struct cfgi *dumb_getcfg(struct diag_l0_device *dl0d) {
 	struct dumb_device *dev;
-	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+	if (dl0d == NULL) {
+		return diag_pseterr(DIAG_ERR_BADCFG);
+	}
 
 	dev = dl0d->l0_int;
 	return &dev->port;
@@ -242,13 +246,15 @@ static int dumb_open(struct diag_l0_device *dl0d, int iProtocol) {
 //dumb_close : close TTY handle.
 static void
 dumb_close(struct diag_l0_device *dl0d) {
-	if (!dl0d) return;
+	if (!dl0d) {
+		return;
+	}
 
 	struct dumb_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-		fprintf(stderr, FLFMT "l0 link %p closing\n",
-			FL, (void *)dl0d);
+	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
+		fprintf(stderr, FLFMT "l0 link %p closing\n", FL, (void *)dl0d);
+	}
 
 	diag_tty_close(dev->tty_int);
 	dev->tty_int = NULL;
@@ -270,9 +276,9 @@ dumb_fastinit(struct diag_l0_device *dl0d) {
 	int rv=0;
 	uint8_t cbuf[MAXRBUF];
 
-	if (diag_l0_debug & DIAG_DEBUG_INIT)
-		fprintf(stderr, FLFMT "dl0d=%p fastinit\n",
-			FL, (void *)dl0d);
+	if (diag_l0_debug & DIAG_DEBUG_INIT) {
+		fprintf(stderr, FLFMT "dl0d=%p fastinit\n", FL, (void *)dl0d);
+	}
 	//Tidle before break : W5 (>300ms) on poweron; P3 (>55ms) after a StopCommunication; or 0ms after a P3 timeout.
 	// We assume the caller took care of this.
 	/* Send 25/25 ms break as initialisation pattern (TiniL) */
@@ -303,7 +309,10 @@ dumb_fastinit(struct diag_l0_device *dl0d) {
 			tb1 = diag_os_gethrt() - tb0;
 			tb1 = diag_os_hrtus(tb1)/1000;	//elapsed ms so far within tWUP
 			tb1 = (50 - WUPFLUSH) - tb1;	//remaining time in WUP
-			if (tb1 > 25) return DIAG_ERR_GENERAL;	//should never happen !
+			if (tb1 > 25) {
+				return DIAG_ERR_GENERAL; // should never happen
+							 // !
+			}
 			diag_os_millisleep((unsigned int) tb1);
 		}	//if FAST_BREAK
 	} else {
@@ -319,7 +328,10 @@ dumb_fastinit(struct diag_l0_device *dl0d) {
 			tb1 = diag_os_gethrt() - tb0;
 			tb1 = diag_os_hrtus(tb1)/1000;	//elapsed ms so far within tWUP
 			tb1 = (50 - WUPFLUSH) - tb1;	//remaining time in WUP
-			if (tb1 > 25) return DIAG_ERR_GENERAL;	//should never happen !
+			if (tb1 > 25) {
+				return DIAG_ERR_GENERAL; // should never happen
+							 // !
+			}
 			diag_os_millisleep((unsigned int) tb1);
 		}
 	}	//if USE_LLINE
@@ -448,8 +460,11 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 				//to prevent spurious breaks if we have a sequence of 0's :
 				//this is an RLE of sorts...
 				for (; bitcounter <=7; bitcounter++) {
-					if (tempbyte & 1) //test bit 1; we just tested curbit before getting here.
+					if (tempbyte &
+					    1) { // test bit 1; we just tested
+						 // curbit before getting here.
 						break;
+					}
 					lowtime += BPS_PERIOD;
 					curbit = tempbyte & 1;
 					tempbyte = tempbyte >>1;
@@ -515,9 +530,10 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 			return DIAG_ERR_GENERAL;
 		}
 
-		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "\tgot address echo 0x%X\n",
-					FL, cbuf[0]);
+		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+			fprintf(stderr, FLFMT "\tgot address echo 0x%X\n", FL,
+				cbuf[0]);
+		}
 		if (diag_tty_setup(dev->tty_int, &dev->serial)) {
 			//reset original settings
 			fprintf(stderr, FLFMT "_slowinit: could not reset serial settings !\n", FL);
@@ -556,13 +572,16 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 
 	rv = diag_tty_read(dev->tty_int, cbuf, 1, tout);
 	if (rv <= 0) {
-		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "\tdid not get Sync byte !\n", FL);
+		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+			fprintf(stderr, FLFMT "\tdid not get Sync byte !\n",
+				FL);
+		}
 		return DIAG_ERR_TIMEOUT;
 	} else {
-		if (diag_l0_debug & DIAG_DEBUG_PROTO)
-			fprintf(stderr, FLFMT "\tgot sync byte 0x%X!\n",
-				FL, cbuf[0]);
+		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+			fprintf(stderr, FLFMT "\tgot sync byte 0x%X!\n", FL,
+				cbuf[0]);
+		}
 	}
 	//If all's well at this point, we just read the sync pattern byte. L2 will take care
 	//of reading + echoing the keybytes
@@ -583,13 +602,15 @@ dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	dev = (struct dumb_device *)dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n",
-			FL, (void *)dl0d, (void *)dev, in->type);
+	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+		fprintf(stderr,
+			FLFMT "device link %p info %p initbus type %d\n", FL,
+			(void *)dl0d, (void *)dev, in->type);
+	}
 
-	if (!dev)
+	if (!dev) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
-
+	}
 
 	(void)diag_tty_iflush(dev->tty_int);	/* Flush unread input */
 
@@ -643,14 +664,16 @@ const void *data, size_t len) {
 	int rv;
 	struct dumb_device *dev = dl0d->l0_int;
 
-	if (len <= 0)
+	if (len <= 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "l0_send dl0d=%p len=%ld; ",
 			FL, (void *)dl0d, (long)len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA)
+		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
+		}
 		fprintf(stderr, "\n");
 	}
 
@@ -675,17 +698,20 @@ void *data, size_t len, unsigned int timeout) {
 	int rv;
 	struct dumb_device *dev = dl0d->l0_int;
 
-	if (len <= 0)
+	if (len <= 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ)
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr,
-			FLFMT "_recv dl0d=%p req=%ld bytes timeout=%u\n",
-			FL, (void *)dl0d, (long)len, timeout);
+			FLFMT "_recv dl0d=%p req=%ld bytes timeout=%u\n", FL,
+			(void *)dl0d, (long)len, timeout);
+	}
 
 	if ((rv=diag_tty_read(dev->tty_int, data, len, timeout)) <= 0) {
-		if (rv == DIAG_ERR_TIMEOUT)
+		if (rv == DIAG_ERR_TIMEOUT) {
 			return DIAG_ERR_TIMEOUT;
+		}
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -721,8 +747,9 @@ dumb_getflags(struct diag_l0_device *dl0d) {
 
 	dev = (struct dumb_device *)dl0d->l0_int;
 
-	if (dev->blockduplex)
+	if (dev->blockduplex) {
 		flags |= DIAG_L1_BLOCKDUPLEX;
+	}
 
 	switch (dev->protocol) {
 	case DIAG_L1_ISO14230:

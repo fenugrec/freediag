@@ -72,14 +72,17 @@ enum {
  */
 static bool
 success_p(struct diag_msg *req, struct diag_msg *resp) {
-	if (resp->len < 1)
+	if (resp->len < 1) {
 		return false;
+	}
 
-	if (resp->data[0] != (req->data[0] ^ 0x40))
+	if (resp->data[0] != (req->data[0] ^ 0x40)) {
 		return false;
+	}
 
-	if (resp->len>2 && resp->data[1]!=req->data[1])
+	if (resp->len > 2 && resp->data[1] != req->data[1]) {
 		return false;
+	}
 
 	return true;
 }
@@ -98,8 +101,9 @@ diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn) {
 	msg.len = sizeof(req);
 
 	resp = diag_l2_request(d_l2_conn, &msg, &errval);
-	if (resp == NULL)
+	if (resp == NULL) {
 		return errval;
+	}
 
 	if (success_p(&msg, resp)) {
 		diag_freemsg(resp);
@@ -222,12 +226,14 @@ diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr
 		return DIAG_ERR_GENERAL;
 	}
 
-	if (rv != 0)
+	if (rv != 0) {
 		return rv;
+	}
 
 	resp = diag_l2_request(d_l2_conn, &req, &rv);
-	if (resp == NULL)
+	if (resp == NULL) {
 		return rv;
+	}
 
 	if (resp->len<2 || !success_p(&req, resp)) {
 		diag_freemsg(resp);
@@ -245,8 +251,10 @@ diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr
 	}
 
 	datalen = resp->len - 2;
-	if (datalen > 0)
-		memcpy(out, resp->data+2, (datalen>buflen)?buflen:datalen);
+	if (datalen > 0) {
+		memcpy(out, resp->data + 2,
+		       (datalen > buflen) ? buflen : datalen);
+	}
 	diag_freemsg(resp);
 	return datalen;
 }
@@ -266,8 +274,9 @@ diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) {
 	msg.len = sizeof(req);
 
 	resp = diag_l2_request(d_l2_conn, &msg, &errval);
-	if (resp == NULL)
+	if (resp == NULL) {
 		return errval;
+	}
 
 	if (resp->len<2 || !success_p(&msg, resp)) {
 		diag_freemsg(resp);
@@ -311,16 +320,19 @@ diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn) {
 	 * readDiagnosticTroubleCodes.
 	 */
 	rv = diag_l7_d2_dtclist(d_l2_conn, sizeof(buf), buf);
-	if (rv < 0)
+	if (rv < 0) {
 		return rv;
-	if (rv == 0)
+	}
+	if (rv == 0) {
 		return 0;
+	}
 
 	msg.data = req;
 	msg.len = sizeof(req);
 	resp = diag_l2_request(d_l2_conn, &msg, &rv);
-	if (resp == NULL)
+	if (resp == NULL) {
 		return rv;
+	}
 
 	if (resp->len==2 && success_p(&msg, resp)) {
 		diag_freemsg(resp);
@@ -348,8 +360,9 @@ diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps) 
 	msg.data = req;
 	msg.len = sizeof(req);
 	resp = diag_l2_request(d_l2_conn, &msg, &rv);
-	if (resp == NULL)
+	if (resp == NULL) {
 		return rv;
+	}
 
 	if (resp->len==2 && success_p(&msg, resp)) {
 		diag_freemsg(resp);

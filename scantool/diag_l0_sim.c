@@ -128,8 +128,9 @@ struct sim_ecu_response
 	struct sim_ecu_response *resp;
 	int rv;
 
-	if ((rv=diag_calloc(&resp, 1)))
+	if ((rv = diag_calloc(&resp, 1))) {
 		return diag_pseterr(rv);
+	}
 
 	resp->data = NULL;
 	resp->len = 0;
@@ -188,10 +189,12 @@ struct sim_ecu_response
 		next_resp = (*resp)->next;
 
 		//free this one.
-		if ((*resp)->data)
+		if ((*resp)->data) {
 			free((*resp)->data);
-		if ((*resp)->text)
+		}
+		if ((*resp)->text) {
 			free((*resp)->text);
+		}
 		free(*resp);
 		*resp = NULL;
 	}
@@ -206,16 +209,19 @@ void sim_free_ecu_responses(struct sim_ecu_response **resp_pp) {
 	struct sim_ecu_response **temp_resp_pp = resp_pp;
 	uint8_t count = 0;
 
-	if ((resp_pp==NULL) || (*resp_pp==NULL))
+	if ((resp_pp == NULL) || (*resp_pp == NULL)) {
 		return;
+	}
 
 	while (*temp_resp_pp != NULL) {
 		*temp_resp_pp = sim_free_ecu_response(temp_resp_pp);
 		count++;
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr, FLFMT " %d responses freed from queue.\n", FL, count);
+	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+		fprintf(stderr, FLFMT " %d responses freed from queue.\n", FL,
+			count);
+	}
 	return;
 }
 
@@ -265,28 +271,34 @@ void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, const uint8
 			break;
 		}
 		// ignore all lines except requests.
-		if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) != 0)
+		if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) != 0) {
 			continue;
+		}
 		// synthesize up to 11 byte values from DB request line.
 		unsigned int i, num;
 		char *p, *q;
 		p = line_buf + 3;
 		for (i=0; i < REQBYTES; i++) {
-			while (isspace(*p))
+			while (isspace(*p)) {
 				p++;
-			if (*p == '\0')
+			}
+			if (*p == '\0') {
 				break;
+			}
 			if (strncmp(p, VALUE_DONTCARE, strlen(VALUE_DONTCARE)) == 0) {
-				if (i < len)
+				if (i < len) {
 					synth_req[i] = data[i];
+				}
 				p += strlen(VALUE_DONTCARE);
 			} else {
 				synth_req[i] = (uint8_t)strtoul(p, &q, 16);
-				if (p == q)
+				if (p == q) {
 					break;
+				}
 				p = q;
-				if (!isspace(*p))
+				if (!isspace(*p)) {
 					break;
+				}
 			}
 		}
 		num = i;
@@ -333,8 +345,11 @@ void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, const uint8
 		}
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_DATA)
-		fprintf(stderr, FLFMT "%d responses queued for receive, %d new.\n", FL, resp_count+new_resp_count, new_resp_count);
+	if (diag_l0_debug & DIAG_DEBUG_DATA) {
+		fprintf(stderr,
+			FLFMT "%d responses queued for receive, %d new.\n", FL,
+			resp_count + new_resp_count, new_resp_count);
+	}
 }
 
 
@@ -371,8 +386,9 @@ uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[]) {
 	}
 
 	index--;
-	if (index<0 || index>254)
+	if (index < 0 || index > 254) {
 		bogus = 1;
+	}
 
 	if (bogus) {
 		fprintf(stderr, FLFMT "Invalid req* token in response\n", FL);
@@ -380,8 +396,9 @@ uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[]) {
 	}
 
 	value = req[index];
-	if (increment)
+	if (increment) {
 		value++;
+	}
 	return value;
 }
 
@@ -407,15 +424,16 @@ void sim_parse_response(struct sim_ecu_response *resp_p, uint8_t req[]) {
 			break;
 		}
 		// try replacing a token with a calculated value.
-		if (strcmp(cur_tok, TOKEN_SINE1) == 0)
+		if (strcmp(cur_tok, TOKEN_SINE1) == 0) {
 			synth_resp[pos] = sine1(synth_resp, pos);
-		else if (strcmp(cur_tok, TOKEN_SAWTOOTH1) == 0)
+		} else if (strcmp(cur_tok, TOKEN_SAWTOOTH1) == 0) {
 			synth_resp[pos] = sawtooth1(synth_resp, pos);
-		else if (strcmp(cur_tok, TOKEN_ISO9141CS) == 0)
+		} else if (strcmp(cur_tok, TOKEN_ISO9141CS) == 0) {
 			synth_resp[pos] = diag_cks1(synth_resp, pos);
-		else if (strncmp(cur_tok, TOKEN_REQUESTBYTE, strlen(TOKEN_REQUESTBYTE)) == 0)
+		} else if (strncmp(cur_tok, TOKEN_REQUESTBYTE,
+				   strlen(TOKEN_REQUESTBYTE)) == 0) {
 			synth_resp[pos] = requestbyten(synth_resp, cur_tok + strlen(TOKEN_REQUESTBYTE), req);
-		else {
+		} else {
 			// failed. try scanning element as an Hex byte.
 			unsigned int tempbyte;
 			ret = sscanf(cur_tok, "%X", &tempbyte);	//can't scan direct to uint8 !
@@ -470,8 +488,9 @@ void sim_read_cfg(struct sim_device *dev) {
 			break;
 		}
 		// ignore all lines except configs.
-		if (strncmp(line_buf, TAG_CFG, strlen(TAG_CFG)) != 0)
+		if (strncmp(line_buf, TAG_CFG, strlen(TAG_CFG)) != 0) {
 			continue;
+		}
 		// get the config values.
 		p = line_buf + strlen(TAG_CFG) + 1;
 
@@ -525,8 +544,9 @@ sim_new(struct diag_l0_device *dl0d) {
 	struct sim_device *dev;
 
 	// Create sim_device:
-	if ((rv=diag_calloc(&dev, 1)))
+	if ((rv = diag_calloc(&dev, 1))) {
 		return diag_iseterr(rv);
+	}
 
 	dl0d->l0_int = dev;
 
@@ -549,7 +569,9 @@ sim_del(struct diag_l0_device *dl0d) {
 
 	dev = (struct sim_device *)dl0d->l0_int;
 
-	if (!dev) return;
+	if (!dev) {
+		return;
+	}
 
 	diag_cfg_clear(&dev->simfile);
 	free(dev);
@@ -568,8 +590,10 @@ sim_open(struct diag_l0_device *dl0d, int iProtocol) {
 	dev = (struct sim_device *) dl0d->l0_int;
 	simfile = dev->simfile.val.str;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN)
-		fprintf(stderr, FLFMT "open simfile %s proto=%d\n", FL, simfile, iProtocol);
+	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+		fprintf(stderr, FLFMT "open simfile %s proto=%d\n", FL, simfile,
+			iProtocol);
+	}
 
 	dev->protocol = iProtocol;
 	dev->sim_last_ecu_responses = NULL;
@@ -608,9 +632,10 @@ sim_close(struct diag_l0_device *dl0d) {
 	assert(dev != NULL);
 
 	// If debugging, print to stderr.
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
+	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "dl0d=%p closing simfile\n", FL,
 			(void *)dl0d);
+	}
 
 	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
@@ -636,21 +661,27 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n", FL, (void *)dl0d, (void *)dev, in->type);
+	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+		fprintf(stderr,
+			FLFMT "device link %p info %p initbus type %d\n", FL,
+			(void *)dl0d, (void *)dev, in->type);
+	}
 
-	if (!dev)
+	if (!dev) {
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
+	}
 
-	if (dev->fullinit)
+	if (dev->fullinit) {
 		return 0;
+	}
 
 	switch (in->type) {
 	case DIAG_L1_INITBUS_FAST:
 		// Send break.
 		// We simulate a break with a single "0x00" char.
-		if (diag_l0_debug & DIAG_DEBUG_DATA)
+		if (diag_l0_debug & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "Sending: BREAK!\n", FL);
+		}
 		sim_send(dl0d, 0, &sim_break, 1);
 		break;
 	case DIAG_L1_INITBUS_5BAUD:
@@ -679,8 +710,9 @@ sim_send(struct diag_l0_device *dl0d,
 		 const void *data, const size_t len) {
 	struct sim_device *dev = dl0d->l0_int;
 
-	if (len <= 0)
+	if (len <= 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	if (len > 255) {
 		fprintf(stderr, FLFMT "Error : calling sim_send with len >255 bytes! (%u)\n", FL, (unsigned int) len);
@@ -707,8 +739,9 @@ sim_send(struct diag_l0_device *dl0d,
 	// Build the list of responses for this request.
 	sim_find_responses(&dev->sim_last_ecu_responses, dev->fp, data, (uint8_t) len);
 
-	if (diag_l0_debug & DIAG_DEBUG_DATA)
+	if (diag_l0_debug & DIAG_DEBUG_DATA) {
 		sim_dump_ecu_responses(dev->sim_last_ecu_responses);
+	}
 
 	return 0;
 }
@@ -725,12 +758,14 @@ sim_recv(struct diag_l0_device *dl0d,
 	struct sim_ecu_response *resp_p = NULL;
 	struct sim_device *dev = dl0d->l0_int;
 
-	if (!len)
+	if (!len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
-	if (diag_l0_debug & DIAG_DEBUG_READ)
+	}
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr,
-			FLFMT "link %p recv upto %ld bytes timeout %u\n",
-			FL, (void *)dl0d, (long)len, timeout);
+			FLFMT "link %p recv upto %ld bytes timeout %u\n", FL,
+			(void *)dl0d, (long)len, timeout);
+	}
 
 	// "Receive from the ECU" a response.
 	resp_p = dev->sim_last_ecu_responses;
@@ -778,17 +813,22 @@ sim_getflags(struct diag_l0_device *dl0d) {
 		DIAG_L1_NOTTY;
 
 	/* both "no checksum" and "dataonly" modes take care of checksums, and imply framing. */
-	if (dev->nocksum || dev->dataonly)
-		ret |= DIAG_L1_DOESL2CKSUM | DIAG_L1_STRIPSL2CKSUM | DIAG_L1_DOESL2FRAME;
+	if (dev->nocksum || dev->dataonly) {
+		ret |= DIAG_L1_DOESL2CKSUM | DIAG_L1_STRIPSL2CKSUM |
+		       DIAG_L1_DOESL2FRAME;
+	}
 
-	if (dev->dataonly)
-		ret |= 	DIAG_L1_NOHDRS | DIAG_L1_DATAONLY | DIAG_L1_DOESL2FRAME;
+	if (dev->dataonly) {
+		ret |= DIAG_L1_NOHDRS | DIAG_L1_DATAONLY | DIAG_L1_DOESL2FRAME;
+	}
 
-	if (dev->framed)
+	if (dev->framed) {
 		ret |= DIAG_L1_DOESL2FRAME;
+	}
 
-	if (dev->fullinit)
+	if (dev->fullinit) {
 		ret |= DIAG_L1_DOESFULLINIT;
+	}
 
 	return ret;
 }
@@ -797,7 +837,9 @@ sim_getflags(struct diag_l0_device *dl0d) {
 static struct cfgi
 *sim_getcfg(struct diag_l0_device *dl0d) {
 	struct sim_device *dev;
-	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+	if (dl0d == NULL) {
+		return diag_pseterr(DIAG_ERR_BADCFG);
+	}
 
 	dev = (struct sim_device *)dl0d->l0_int;
 	return &dev->simfile;

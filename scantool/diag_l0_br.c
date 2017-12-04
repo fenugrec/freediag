@@ -106,8 +106,9 @@ br_init(void) {
 	/* Global init flag */
 	static int br_initdone=0;
 
-	if (br_initdone)
+	if (br_initdone) {
 		return 0;
+	}
 
 	/* Do required scheduling tweeks */
 	diag_os_sched();
@@ -147,7 +148,9 @@ static void br_del(struct diag_l0_device *dl0d) {
 	assert(dl0d);
 
 	dev = dl0d->l0_int;
-	if (!dev) return;
+	if (!dev) {
+		return;
+	}
 
 	diag_cfg_clear(&dev->port);
 	free(dev);
@@ -156,7 +159,9 @@ static void br_del(struct diag_l0_device *dl0d) {
 
 static struct cfgi *br_getcfg(struct diag_l0_device *dl0d) {
 	struct br_device *dev;
-	if (dl0d==NULL) return diag_pseterr(DIAG_ERR_BADCFG);
+	if (dl0d == NULL) {
+		return diag_pseterr(DIAG_ERR_BADCFG);
+	}
 
 	dev = dl0d->l0_int;
 	return &dev->port;
@@ -164,12 +169,15 @@ static struct cfgi *br_getcfg(struct diag_l0_device *dl0d) {
 
 static void
 br_close(struct diag_l0_device *dl0d) {
-	if (!dl0d) return;
+	if (!dl0d) {
+		return;
+	}
 
 	struct br_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE)
+	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
+	}
 
 	diag_tty_close(dev->tty_int);
 	dev->tty_int = NULL;
@@ -182,8 +190,9 @@ static int
 br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 	struct br_device *dev = dl0d->l0_int;
 
-	if (txlen <=0)
+	if (txlen <= 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	if (diag_tty_write(dev->tty_int, dp, txlen) != (int) txlen) {
 		fprintf(stderr, FLFMT "br_write error\n", FL);
@@ -330,20 +339,23 @@ br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr) {
 		} else {
 			rv = br_write(dl0d, txbuf, 2);
 		}
-		if (rv)
+		if (rv) {
 			return diag_iseterr(rv);
+		}
 	} else {
 		timeout = 100;
 		rv = br_write(dl0d, txbuf, 2);
-		if (rv)
+		if (rv) {
 			return diag_iseterr(rv);
+		}
 	}
 
 	/*
 	 * And get back the fail/success message
 	 */
-	if ((rv = br_getmsg(dl0d, rxbuf, timeout)) < 0)
+	if ((rv = br_getmsg(dl0d, rxbuf, timeout)) < 0) {
 		return diag_iseterr(rv);
+	}
 
 	/*
 	 * Response length tells us whether this is an orginal style
@@ -391,16 +403,19 @@ br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	buf[1] = in->addr;
 
 	/* Send the initialisation message */
-	if (dev->dev_features & BR_FEATURE_SETADDR)
+	if (dev->dev_features & BR_FEATURE_SETADDR) {
 		rv = br_writemsg(dl0d, BR_WRTYPE_INIT, buf, 2);
-	else
+	} else {
 		rv = br_writemsg(dl0d, BR_WRTYPE_INIT, buf, 1);
-	if (rv < 0)
+	}
+	if (rv < 0) {
 		return rv;
+	}
 
 	/* And wait for response */
-	if ((rv = br_getmsg(dl0d, buf, 6000)) < 0)
+	if ((rv = br_getmsg(dl0d, buf, 6000)) < 0) {
 		return rv;
+	}
 
 	/*
 	 * Now set the keybytes from what weve sent
@@ -434,14 +449,17 @@ br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	dev = (struct br_device *)dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
+	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
 		fprintf(stderr,
-			FLFMT "device link %p info %p initbus type %d proto %d\n",
+			FLFMT
+			"device link %p info %p initbus type %d proto %d\n",
 			FL, (void *)dl0d, (void *)dev, in->type,
 			dev ? dev->protocol : -1);
+	}
 
-	if (!dev)
+	if (!dev) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	diag_tty_iflush(dev->tty_int); /* Flush unread input */
 
@@ -529,14 +547,17 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 	 * Top bit set means error, Bit 6 = VPW/PWM bus
 	 * congestion (i.e retry).
 	 */
-	if (firstbyte & 0x80)	/* Error indicator */
+	if (firstbyte & 0x80) { /* Error indicator */
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
+	}
 
-	if (firstbyte & 0x40)	/* VPW/PWM bus conflict, need to retry */
+	if (firstbyte & 0x40) { /* VPW/PWM bus conflict, need to retry */
 		return diag_iseterr(DIAG_ERR_BUSERROR);
+	}
 
-	if (readlen == 0)	/* Should never happen */
+	if (readlen == 0) { /* Should never happen */
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
+	}
 
 	return (int) readlen;
 }
@@ -581,8 +602,9 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 
 	/* Send the length byte */
 	rv = br_write(dl0d, &outb, 1);
-	if (rv < 0)
+	if (rv < 0) {
 		return diag_iseterr(rv);
+	}
 
 	/* And now the data */
 	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
@@ -594,8 +616,9 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 		fprintf(stderr, "\n");
 	}
 	rv = br_write(dl0d, dp, txlen);
-	if (rv < 0)
+	if (rv < 0) {
 		return diag_iseterr(rv);
+	}
 
 	/*
 	 * ISO mode is raw pass through. In J1850 we need to send
@@ -610,8 +633,9 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 				FL, (void *)dev, dev->dev_framenr & 0xff);
 		}
 		rv = br_write(dl0d, &dev->dev_framenr, 1);
-		if (rv < 0)
+		if (rv < 0) {
 			return diag_iseterr(rv);
+		}
 	}
 	return 0;
 }
@@ -635,8 +659,9 @@ const void *data, size_t len) {
 
 	dev = (struct br_device *)dl0d->l0_int;
 
-	if (len <= 0)
+	if (len <= 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr,
@@ -714,15 +739,19 @@ void *data, size_t len, unsigned int timeout) {
 	struct br_device *dev;
 	dev = (struct br_device *)dl0d->l0_int;
 
-	if (!len)
+	if (!len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ)
+	if (diag_l0_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr,
-			FLFMT "link %p recv upto %ld bytes timeout %u, rxlen %d offset %d framenr %d protocol %d state %d\n",
+			FLFMT
+			"link %p recv upto %ld bytes timeout %u, rxlen %d "
+			"offset %d framenr %d protocol %d state %d\n",
 			FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
 			dev->dev_rdoffset, dev->dev_framenr, dev->protocol,
 			dev->dev_state);
+	}
 
 	switch (dev->dev_state) {
 		case BR_STATE_KWP_FASTINIT:
@@ -775,8 +804,9 @@ void *data, size_t len, unsigned int timeout) {
 		 * modes the interface tells us if there is a timeout, and
 		 * we get out of sync if we dont wait for it.
 		 */
-		if (timeout < 500)
+		if (timeout < 500) {
 			timeout = 500;
+		}
 
 		if (dev->dev_rxlen == 0) {
 			/*
@@ -810,8 +840,9 @@ void *data, size_t len, unsigned int timeout) {
 				rv = br_writemsg(dl0d,
 					BR_WRTYPE_DATA, dev->dev_txbuf,
 					(size_t)dev->dev_txlen);
-				if (rv < 0)
+				if (rv < 0) {
 					return rv;
+				}
 				retrycnt++;
 			}
 		}
@@ -871,10 +902,10 @@ br_getflags(struct diag_l0_device *dl0d) {
 			break;
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO)
-		fprintf(stderr,
-			FLFMT "getflags link %p proto %d flags 0x%X\n",
+	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+		fprintf(stderr, FLFMT "getflags link %p proto %d flags 0x%X\n",
 			FL, (void *)dl0d, dev->protocol, flags);
+	}
 
 	return flags;
 }

@@ -126,7 +126,9 @@ diag_os_periodic(UNUSED(int unused)) {
 	* to occur during any other non-async-signal-safe function.
 	* See doc/sourcetree_notes.txt
 	*/
-	if (pthread_mutex_trylock(&periodic_lock)) return;
+	if (pthread_mutex_trylock(&periodic_lock)) {
+		return;
+	}
 	diag_l3_timer();	/* Call L3 Timers */
 	diag_l2_timer();	/* Call L2 timers */
 	pthread_mutex_unlock(&periodic_lock);
@@ -139,8 +141,9 @@ int
 diag_os_init(void) {
 	const long tmo = ALARM_TIMEOUT;
 
-	if (diag_os_init_done)
+	if (diag_os_init_done) {
 		return 0;
+	}
 
 	diag_os_discover();	//auto-select clockids or other capabilities
 	diag_os_calibrate();	//calibrate before starting periodic timer
@@ -259,8 +262,9 @@ diag_os_millisleep(unsigned int ms) {
 
 	t1=diag_os_gethrt();
 
-	if (ms==0 || !discover_done)
+	if (ms == 0 || !discover_done) {
 		return;
+	}
 
 //3 different compile-time implementations
 //TODO : select implem at runtime if possible? + internal feedback loop
@@ -371,8 +375,9 @@ diag_os_millisleep(unsigned int ms) {
 
 	t2 = diag_os_gethrt();
 	offsetus = ((long int) diag_os_hrtus(t2-t1)) - ms*1000;
-	if ((offsetus > 1500) || (offsetus < -1500))
+	if ((offsetus > 1500) || (offsetus < -1500)) {
 		printf("_millisleep off by %ld\n", offsetus);
+	}
 
 	return;
 
@@ -416,8 +421,9 @@ diag_os_sched(void) {
 	static int os_sched_done=0;
 	int rv=0;
 
-	if (os_sched_done)
+	if (os_sched_done) {
 		return 0;
+	}
 
 #if defined(_POSIX_PRIORITY_SCHEDULING) && (SEL_SCHED==S_POSIX || SEL_SCHED==S_LINUX || SEL_SCHED==S_AUTO)
 #include <sched.h>
@@ -541,13 +547,15 @@ static void diag_os_discover(void) {
 #endif // CLOCK_MONOTONIC
 #ifdef CLOCK_BOOTTIME
 	TESTCK(CLOCK_BOOTTIME)
-	if (clkid_gt == CLOCK_BOOTTIME)
+	if (clkid_gt == CLOCK_BOOTTIME) {
 		printf("CLOCK_BOOTTIME is unusual...\n");
+	}
 #endif // CLOCK_BOOTTIME
 #ifdef CLOCK_REALTIME
 	TESTCK(CLOCK_REALTIME)
-	if (clkid_gt == CLOCK_REALTIME)
+	if (clkid_gt == CLOCK_REALTIME) {
 		printf("CLOCK_REALTIME is suboptimal !\n");
+	}
 #endif
 // ***** 3) report possible problems
 	if (!gtdone) {
@@ -578,10 +586,12 @@ void diag_os_calibrate(void) {
 	unsigned long t1, t2;
 	unsigned long long tl1, tl2, resol, maxres;	//for _gethrt()
 
-	if (calibrate_done)
+	if (calibrate_done) {
 		return;
-	if (!discover_done)
+	}
+	if (!discover_done) {
 		diag_os_discover();
+	}
 
 	//test _gethrt(). clock_getres() would tell us the resolution, but measuring
 	//like this gives a better measure of "usable" res.
@@ -592,13 +602,17 @@ void diag_os_calibrate(void) {
 		tl1=diag_os_gethrt();
 		while ((tl2=diag_os_gethrt()) == tl1) {}
 		tr = (tl2-tl1);
-		if (tr > maxres) maxres = tr;
+		if (tr > maxres) {
+			maxres = tr;
+		}
 		resol += tr;
 	}
 	printf("diag_os_gethrt() resolution <= %lluus, avg ~%lluus\n",
 			diag_os_hrtus(maxres), diag_os_hrtus(resol / RESOL_ITERS));
-	if (diag_os_hrtus(maxres) >= 1200)
-		printf("WARNING : your system offers no clock >= 1kHz; this WILL be a problem!\n");
+	if (diag_os_hrtus(maxres) >= 1200) {
+		printf("WARNING : your system offers no clock >= 1kHz; this "
+		       "WILL be a problem!\n");
+	}
 
 	//test _getms()
 	resol=0;
@@ -608,7 +622,9 @@ void diag_os_calibrate(void) {
 		t1=diag_os_getms();
 		while ((t2=diag_os_getms()) == t1) {}
 		tr = (t2-t1);
-		if (tr > maxres) maxres = tr;
+		if (tr > maxres) {
+			maxres = tr;
+		}
 		resol += tr;
 	}
 	printf("diag_os_getms() resolution <= ~%llums, avg ~%llums\n", maxres, resol / RESOL_ITERS);
@@ -637,10 +653,12 @@ void diag_os_calibrate(void) {
 			timediff= (long long) diag_os_hrtus(tl2 - tl1);
 			tsum += timediff;
 			//update extreme records if required:
-			if (timediff < min)
+			if (timediff < min) {
 				min = timediff;
-			if (timediff > max)
+			}
+			if (timediff > max) {
 				max = timediff;
+			}
 		}
 		avgerr= (tsum/iters) - (testval*1000);	//average error in us
 		//a high spread (max-min) indicates initbus with dumb interfaces will be
@@ -650,9 +668,9 @@ void diag_os_calibrate(void) {
 			"; spread=%lld%%\n", testval, (avgerr*100/1000)/testval, avgerr, ((max-min)*100)/(testval*1000));
 		}
 
-
-		if (testval>=25)
+		if (testval >= 25) {
 			testval -= 7;
+		}
 	}	//for testvals
 
 	calibrate_done=1;
@@ -732,7 +750,9 @@ void diag_os_lock(diag_mtx *mtx) {
 
 bool diag_os_trylock(diag_mtx *mtx) {
 	pthread_mutex_t *pmt = (pthread_mutex_t *) mtx;
-	if (pthread_mutex_trylock(pmt)) return 0;
+	if (pthread_mutex_trylock(pmt)) {
+		return 0;
+	}
 	return 1;
 }
 

@@ -59,8 +59,9 @@ source_type source) {
 	/* Set the speed as shown */
 	rv=diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set);
 
-	if (rv)
+	if (rv) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	//set tgt and src address in d_l2_conn
 	d_l2_conn->diag_l2_destaddr=target;
@@ -85,10 +86,10 @@ int
 dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
-		fprintf(stderr,
-			FLFMT "diag_l2_send %p, msg %p len %d called\n",
-				FL, (void *)d_l2_conn, (void *)msg, msg->len);
+	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+		fprintf(stderr, FLFMT "diag_l2_send %p, msg %p len %d called\n",
+			FL, (void *)d_l2_conn, (void *)msg, msg->len);
+	}
 
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 		msg->data, msg->len, d_l2_conn->diag_l2_p4min);
@@ -111,8 +112,9 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		rxbuf, sizeof(rxbuf), timeout);
 
-	if (rv <= 0)		/* Failure, or 0 bytes (which cant happen) */
+	if (rv <= 0) { /* Failure, or 0 bytes (which cant happen) */
 		return rv;
+	}
 
 	msg.len = (uint8_t) rv;
 	msg.data = rxbuf;
@@ -129,9 +131,9 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	/*
 	 * Call user callback routine
 	 */
-	if (callback)
+	if (callback) {
 		callback(handle, &msg);
-
+	}
 
 	return 0;
 }
@@ -164,8 +166,9 @@ dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	 * Ok, alloc a message
 	 */
 	rmsg = diag_allocmsg((size_t)rv);
-	if (rmsg == NULL)
+	if (rmsg == NULL) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
+	}
 	memcpy(&rmsg->data, rxbuf, (size_t)rv);	/* Data */
 	rmsg->fmt = 0;
 	rmsg->rxtime = diag_os_getms();

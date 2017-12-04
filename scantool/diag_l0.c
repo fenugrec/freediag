@@ -43,8 +43,9 @@ struct diag_l0_device *diag_l0_new(const char *shortname) {
 	}
 
 	rv=diag_calloc(&dl0d, 1);
-	if (rv)
+	if (rv) {
 		return diag_pseterr(rv);
+	}
 
 	dl0d->dl0 = l0dev;
 	rv = l0dev->_new(dl0d);
@@ -58,7 +59,9 @@ struct diag_l0_device *diag_l0_new(const char *shortname) {
 
 
 void diag_l0_del(struct diag_l0_device *dl0d) {
-	if (!dl0d) return;
+	if (!dl0d) {
+		return;
+	}
 
 	assert(!dl0d->opened);
 
@@ -68,9 +71,13 @@ void diag_l0_del(struct diag_l0_device *dl0d) {
 }
 
 struct cfgi *diag_l0_getcfg(struct diag_l0_device *dl0d) {
-	if (!dl0d) return NULL;
+	if (!dl0d) {
+		return NULL;
+	}
 
-	if (dl0d->dl0->_getcfg) return dl0d->dl0->_getcfg(dl0d);
+	if (dl0d->dl0->_getcfg) {
+		return dl0d->dl0->_getcfg(dl0d);
+	}
 	return NULL;
 }
 

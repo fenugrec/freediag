@@ -80,8 +80,9 @@ diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn) {
 	msg.type = ack;
 
 	resp = diag_l2_request(d_l2_conn, &msg, &errval);
-	if (resp == NULL)
+	if (resp == NULL) {
 		return errval;
+	}
 
 	if (resp->type == ack) {
 		diag_freemsg(resp);
@@ -179,12 +180,14 @@ diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 		return DIAG_ERR_GENERAL;
 	}
 
-	if (rv != 0)
+	if (rv != 0) {
 		return rv;
+	}
 
 	resp = diag_l2_request(d_l2_conn, req, &rv);
-	if (resp == NULL)
+	if (resp == NULL) {
 		return rv;
+	}
 
 	if (resp->type!=wantresp) {
 		diag_freemsg(resp);
@@ -221,8 +224,9 @@ diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) 
 	msg.type = readDiagnosticTroubleCodes;
 
 	resp = diag_l2_request(d_l2_conn, &msg, &errval);
-	if (resp == NULL)
+	if (resp == NULL) {
 		return errval;
+	}
 
 	count = resp->len;
 
@@ -231,11 +235,13 @@ diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) 
 		return DIAG_ERR_ECUSAIDNO;
 	}
 
-	if (count==1 && resp->data[0]==0) /* No DTCs set */
+	if (count == 1 && resp->data[0] == 0) { /* No DTCs set */
 		count = 0;
+	}
 
-	if (count > 0)
-		memcpy(out, resp->data, (buflen<count)?buflen:count);
+	if (count > 0) {
+		memcpy(out, resp->data, (buflen < count) ? buflen : count);
+	}
 	diag_freemsg(resp);
 
 	if (resp->next != NULL) {
@@ -268,17 +274,20 @@ diag_l7_kwp71_cleardtc(struct diag_l2_conn *d_l2_conn) {
 	 * required in KWP71.
 	 */
 	rv = diag_l7_kwp71_dtclist(d_l2_conn, sizeof(buf), buf);
-	if (rv < 0)
+	if (rv < 0) {
 		return rv;
-	if (rv == 0)
+	}
+	if (rv == 0) {
 		return 0;
+	}
 
 	diag_os_millisleep(500);
 
 	msg.type = clearDiagnosticInformation;
 	resp = diag_l2_request(d_l2_conn, &msg, &rv);
-	if (resp == NULL)
+	if (resp == NULL) {
 		return rv;
+	}
 
 	if (resp->type == ack) {
 		diag_freemsg(resp);

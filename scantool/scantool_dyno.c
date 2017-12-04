@@ -102,13 +102,15 @@ const struct cmd_tbl_entry dyno_cmd_table[] = {
 static int cmd_dyno_mass(int argc, char **argv) {
 	int mass=0;
 
-	if (argc > 1)
-		mass=htoi(argv[1]);
+	if (argc > 1) {
+		mass = htoi(argv[1]);
+	}
 
-	if (mass > 0)
+	if (mass > 0) {
 		dyno_set_mass(mass);
-	else
+	} else {
 		printf("mass: %d kg\n", dyno_get_mass());
+	}
 
 	return 0;
 }
@@ -138,16 +140,18 @@ static int measure_data(uint8_t data_pid, ecu_data_t *ep) {
 	/* measure */
 	rv = l3_do_j1979_rqst(global_l3_conn, 0x1, data_pid, 0x00,
 	  0x00, 0x00, 0x00, 0x00, (void *)&_RQST_HANDLE_NORMAL);
-	if (rv < 0)
+	if (rv < 0) {
 		return rv;
+	}
 
 	/* data extraction */
-	if (data_pid == RPM_PID)
+	if (data_pid == RPM_PID) {
 		return (int)(RPM_DATA(ep->mode1_data) + .50);
-	else if (data_pid == SPEED_PID)
+	} else if (data_pid == SPEED_PID) {
 		return (int)(SPEED_DATA(ep->mode1_data) + .50);
-	else
+	} else {
 		return DYNDATA_1(data_pid, 2, ep->mode1_data);
+	}
 
 	return 0;
 }
@@ -351,8 +355,9 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv)) {
 			break;
 		} else if (speed_previous == speed) { /* measure added : update display */
 			/* erase previous measure */
-			for (i=0; i<length; i++)
-			printf("");
+			for (i = 0; i < length; i++) {
+				printf("");
+			}
 
 			/* Display new measure */
 			length = printf("%d (speed=%d km/h, d=%5.5f, f=%4.2f)\t ",
@@ -495,8 +500,9 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
 
 		/* Display number of measures */
 		nb++;
-		for (i=0; i<length; i++)
+		for (i = 0; i < length; i++) {
 			printf("");
+		}
 
 		length = printf("%d (%d RPM) ", nb, rpm);
 		fflush(stdout); /* force displaying now (may slow down dyno...) */
@@ -534,10 +540,12 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
 static void get_measures(dyno_measure **measures, int *nb_measures) {
 	/* allocate memory */
 	(*nb_measures) = dyno_get_nb_measures();
-	if ((*nb_measures)==0)
+	if ((*nb_measures) == 0) {
 		return;
-	if (diag_malloc(measures, (*nb_measures)))
+	}
+	if (diag_malloc(measures, (*nb_measures))) {
 		return;
+	}
 
 	/* get measures */
 	dyno_get_measures((*measures), (*nb_measures));
@@ -642,10 +650,12 @@ static void display_graphs(dyno_result *results, int nb) {
 	printf("Torque :\n");
 	for (row=DYNO_GRAPH_HEIGHT-1; row>=0; row--) {
 		for (col=0; col<nb; col+=step) {
-			if (results[col].torque*DYNO_GRAPH_HEIGHT > results[max_torque_i].torque*row)
+			if (results[col].torque * DYNO_GRAPH_HEIGHT >
+			    results[max_torque_i].torque * row) {
 				printf("*");
-			else
+			} else {
 				printf(" ");
+			}
 		}
 		printf("\n");
 	}
@@ -661,10 +671,12 @@ static void display_graphs(dyno_result *results, int nb) {
 	printf("Power :\n");
 	for (row=DYNO_GRAPH_HEIGHT-1; row>=0; row--) {
 		for (col=0; col<nb; col+=step) {
-			if (results[col].power*DYNO_GRAPH_HEIGHT > results[max_power_i].power*row)
+			if (results[col].power * DYNO_GRAPH_HEIGHT >
+			    results[max_power_i].power * row) {
 				printf("*");
-			else
+			} else {
 				printf(" ");
+			}
 		}
 		printf("\n");
 	}
@@ -676,10 +688,12 @@ static void get_results(void) {
 	/* allocating memory for the results table */
 	if (dyno_results == NULL) {
 		dyno_nb_results = dyno_get_nb_results();
-		if (dyno_nb_results == 0)
+		if (dyno_nb_results == 0) {
 			return;
-		if (diag_malloc(&dyno_results, dyno_nb_results))
+		}
+		if (diag_malloc(&dyno_results, dyno_nb_results)) {
 			return;
+		}
 	}
 
 	/* raw results */
@@ -691,8 +705,9 @@ static void get_results(void) {
 
 /* Reset results */
 void reset_results(void) {
-	if (dyno_results != NULL)
+	if (dyno_results != NULL) {
 		free(dyno_results);
+	}
 	dyno_results = NULL;
 	dyno_nb_results = 0;
 }
@@ -769,8 +784,9 @@ static int cmd_dyno_save(int argc, char **argv) {
 		}
 
 		printf("Enter filename: ");
-		if (fgets(filename, (int)nbytes, stdin) == 0)
+		if (fgets(filename, (int)nbytes, stdin) == 0) {
 			return CMD_OK;
+		}
 
 		/* Remove pending "\n" and "\r", if any */
 		while ((filename[strlen(filename)-1] == '\n') ||

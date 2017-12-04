@@ -56,7 +56,9 @@ with_parity(uint8_t c, enum diag_parity eo) {
 	int i;
 
 	p = 0;
-	if (eo == diag_par_o) p = 1;
+	if (eo == diag_par_o) {
+		p = 1;
+	}
 
 	for (i = 0; i < 7; i++) {
 		p ^= c; p <<= 1;
@@ -73,8 +75,9 @@ dl2p_d2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 
 	dp = (struct diag_l2_d2 *)d_l2_conn->diag_l2_proto_data;
 
-	if (msg->len < 1 || msg->len > 62)
+	if (msg->len < 1 || msg->len > 62) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	buf[0] = 0x80 + msg->len + 1;
 	buf[1] = msg->dest ? msg->dest : dp->dstaddr;
@@ -100,23 +103,27 @@ dl2p_d2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 
 	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, NULL, buf,
 		sizeof(buf), timeout + 100);
-	if (rv < 0)
+	if (rv < 0) {
 		return rv;
+	}
 
-	if (rv < 5)
+	if (rv < 5) {
 		return diag_iseterr(DIAG_ERR_INCDATA);
+	}
 
 	msg = diag_allocmsg((size_t)(rv - 4));
-	if (msg == NULL)
+	if (msg == NULL) {
 		return diag_iseterr(DIAG_ERR_NOMEM);
+	}
 	memcpy(msg->data, &buf[3], (size_t)(rv - 4));
 	msg->rxtime = diag_os_getms();
 	msg->src = buf[2];
 	msg->dest = buf[1];
 	msg->fmt = DIAG_FMT_FRAMED;
 
-	if (callback)
+	if (callback) {
 		callback(handle, msg);
+	}
 
 	diag_freemsg(msg);
 
@@ -148,8 +155,9 @@ dl2p_d2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		*errval = rv;
 		return NULL;
 	}
-	if (rmsg == NULL)
+	if (rmsg == NULL) {
 		*errval = DIAG_ERR_NOMEM;
+	}
 
 	return rmsg;
 }
@@ -169,8 +177,9 @@ dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 	}
 
-	if ((flags & DIAG_L2_TYPE_INITMASK) != DIAG_L2_TYPE_SLOWINIT)
+	if ((flags & DIAG_L2_TYPE_INITMASK) != DIAG_L2_TYPE_SLOWINIT) {
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
+	}
 
 	rv = diag_calloc(&dp, 1);
 	if (rv != 0) {
@@ -179,14 +188,19 @@ dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
 
-	if (source != 0x13)
-		fprintf(stderr, "Warning : Using tester address %02X. Some ECUs require tester address to be 13.\n", source);
+	if (source != 0x13) {
+		fprintf(stderr,
+			"Warning : Using tester address %02X. Some ECUs "
+			"require tester address to be 13.\n",
+			source);
+	}
 
 	dp->srcaddr = source;
 	dp->dstaddr = target;
 
-	if (bitrate == 0)
+	if (bitrate == 0) {
 		bitrate = 10400;
+	}
 	d_l2_conn->diag_l2_speed = bitrate;
 
 	set.speed = bitrate;
@@ -194,8 +208,10 @@ dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
 
-	if ((rv=diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, (void *) &set)))
+	if ((rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED,
+				(void *)&set))) {
 		goto err;
+	}
 
 	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 	diag_os_millisleep(300);
@@ -205,16 +221,18 @@ dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 	wm.data = wm_data;
 	wm.len = sizeof(wm_data);
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETWM, &wm);
-	if (rv < 0)
+	if (rv < 0) {
 		goto err;
+	}
 
 	in.type = DIAG_L1_INITBUS_5BAUD;
 	in.addr = with_parity(target, diag_par_o);
 	in.testerid = dp->srcaddr;
 	in.kb1 = 0; in.kb2 = 0;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
-	if (rv < 0)
+	if (rv < 0) {
 		goto err;
+	}
 
 	if (in.kb1 == 0 && in.kb2 == 0) {
 		d_l2_conn->diag_l2_kb1 = 0xd3;
@@ -258,8 +276,9 @@ dl2p_d2_stopcomms(struct diag_l2_conn *pX) {
 		diag_os_millisleep(5000);
 	}
 
-	if (rxmsg != NULL)
+	if (rxmsg != NULL) {
 		diag_freemsg(rxmsg);
+	}
 
 	if (pX->diag_l2_proto_data) {
 		free(pX->diag_l2_proto_data);
@@ -282,8 +301,9 @@ dl2p_d2_timeout(struct diag_l2_conn *d_l2_conn) {
 
 	rxmsg = dl2p_d2_request(d_l2_conn, &msg, &errval);
 
-	if (rxmsg != NULL)
+	if (rxmsg != NULL) {
 		diag_freemsg(rxmsg);
+	}
 }
 
 const struct diag_l2_proto diag_l2_proto_d2 = {

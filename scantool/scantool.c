@@ -168,10 +168,11 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 	int ihandle;
 	ecu_data_t	*ep;
 
-	if (handle !=NULL)
+	if (handle != NULL) {
 		ihandle= * (int *)handle;
-	else
-		ihandle= RQST_HANDLE_NORMAL;
+	} else {
+		ihandle = RQST_HANDLE_NORMAL;
+	}
 
 	const char *O2_strings[] = {
 		"Test 0",
@@ -253,8 +254,9 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 
 		/* Attach the fragment to the ecu_info */
 		rmsg = diag_dupsinglemsg(tmsg);
-		if (rmsg == NULL)
+		if (rmsg == NULL) {
 			return;
+		}
 		LL_CONCAT(ep->rxmsg, rmsg);
 
 		/*
@@ -306,10 +308,13 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 							fprintf(stderr, "Test 0x%X Component 0x%X ",
 								data[1], data[2] & 0x7f);
 
-							if (val > lim)
+							if (val > lim) {
 								fprintf(stderr, "FAILED ");
-							else
-								fprintf(stderr, "Passed ");
+							} else {
+								fprintf(stderr,
+									"Passed"
+									" ");
+							}
 
 							fprintf(stderr, "Max val %d Current Val %d\n",
 								lim, val);
@@ -326,10 +331,13 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 							/* Min value test */
 							fprintf(stderr, "Test 0x%X Component 0x%X ",
 								data[1], data[2] & 0x7f);
-							if (val < lim)
+							if (val < lim) {
 								fprintf(stderr, "FAILED ");
-							else
-								fprintf(stderr, "Passed ");
+							} else {
+								fprintf(stderr,
+									"Passed"
+									" ");
+							}
 
 							fprintf(stderr, "Min val %d Current Val %d\n",
 								lim, val);
@@ -338,8 +346,9 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 				}
 				return;
 			case RQST_HANDLE_O2S:
-				if (ecu_count>1)
+				if (ecu_count > 1) {
 					fprintf(stderr, "ECU %d ", ecu_idx);
+				}
 
 				/* O2 Sensor test results */
 				if (msg->data[0] != 0x45) {
@@ -355,10 +364,11 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 					int max = data[6];
 					int failed ;
 
-					if ((val < min) || (val > max))
+					if ((val < min) || (val > max)) {
 						failed = 1;
-					else
+					} else {
 						failed = 0;
+					}
 
 					switch (data[1]) {
 						case 1:	/* Constant values voltages */
@@ -449,15 +459,17 @@ l2_check_pid_bits(uint8_t *data, int pid) {
 	 * Bits 1-8 are in byte 1, 9-16 in byte 2 etc
 	 * Same code is for PID requests for 0x40 and 0x60
 	 */
-	while (pid > 0x20)
+	while (pid > 0x20) {
 		pid -= 0x20;
+	}
 	offset = pid/8;
 
 	bit = pid - (offset * 8);
 	bit = 7 - bit;
 
-	if (data[offset] & (1<<bit))
+	if (data[offset] & (1 << bit)) {
 		return 1;
+	}
 
 	return 0;
 }
@@ -476,10 +488,11 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	uint8_t *rxdata;
 	struct diag_msg *rxmsg;
 
-	if (handle !=NULL)
+	if (handle != NULL) {
 		ihandle= * (int *) handle;
-	else
-		ihandle= RQST_HANDLE_NORMAL;
+	} else {
+		ihandle = RQST_HANDLE_NORMAL;
+	}
 	/* Lengths of msg for each mode, 0 = this routine doesn't support */
 	// excludes headers and checksum.
 	uint8_t mode_lengths[] = { 0, 2, 3, 1, 1, 3, 2, 1, 7, 2 };
@@ -497,12 +510,14 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 
 	/* XXX add funcmode flags */
 
-	if (mode > J1979_MODE_MAX)
+	if (mode > J1979_MODE_MAX) {
 		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
+	}
 
 	msg.len = mode_lengths[mode];
-	if (msg.len == 0)
+	if (msg.len == 0) {
 		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
+	}
 
 	msg.data = data;
 	data[0] = mode;
@@ -512,15 +527,17 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	data[4] = p4;
 	data[5] = p5;
 	data[6] = p6;
-	if ((rv=diag_l3_send(d_conn, &msg)))
+	if ((rv = diag_l3_send(d_conn, &msg))) {
 		return diag_iseterr(rv);
+	}
 
 	/* And get response(s) within a short while */
 	rv = diag_l3_recv(d_conn, 300, j1979_data_rcv, handle);
 	if (rv < 0) {
 		fprintf(stderr, "Request failed, retrying...\n");
-		if ((rv=diag_l3_send(d_conn, &msg)))
+		if ((rv = diag_l3_send(d_conn, &msg))) {
 			return diag_iseterr(rv);
+		}
 		rv = diag_l3_recv(d_conn, 300, j1979_data_rcv, handle);
 		if (rv < 0) {
 			fprintf(stderr, "Retry failed, resynching...\n");
@@ -600,8 +617,9 @@ int
 l3_do_send(struct diag_l3_conn *d_conn, void *data, size_t len, void *handle) {
 	struct diag_msg msg = {0};
 	int rv;
-	if (len > 255)
+	if (len > 255) {
 		return DIAG_ERR_GENERAL;
+	}
 
 	/* Put in src/dest etc, L3 or L2 may override/ignore them */
 	msg.src = global_cfg.src;
@@ -623,8 +641,9 @@ int
 l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle) {
 	struct diag_msg msg = {0};
 	int rv;
-	if (len > 255)
+	if (len > 255) {
 		return DIAG_ERR_GENERAL;
+	}
 
 	/* Put in src/dest etc, L2 may override/ignore them */
 	msg.src = global_cfg.src;
@@ -639,8 +658,9 @@ l2_do_send(struct diag_l2_conn *d_conn, void *data, size_t len, void *handle) {
 	 * ID, etc) to be part of the data.
 	 */
 	if (d_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_VAG) {
-		if (len < 1)
+		if (len < 1) {
 			return DIAG_ERR_GENERAL;
+		}
 		msg.type = msg.data[0];
 		msg.len--;
 		msg.data++;
@@ -698,8 +718,9 @@ static struct diag_l2_conn *do_l2_common_start(int L1protocol, int L2protocol,
 	rv = diag_l2_open(dl0d, L1protocol);
 	if (rv) {
 		if ((rv != DIAG_ERR_BADIFADAPTER) &&
-			(rv != DIAG_ERR_PROTO_NOTSUPP))
+		    (rv != DIAG_ERR_PROTO_NOTSUPP)) {
 			fprintf(stderr, "Failed to open hardware interface\n");
+		}
 
 		return diag_pseterr(rv);
 	}
@@ -746,8 +767,9 @@ do_l2_9141_start(int destaddr) {
 		DIAG_L2_TYPE_SLOWINIT, global_cfg.speed, (uint8_t)destaddr,
 		global_cfg.src);
 
-	if (d_conn == NULL)
+	if (d_conn == NULL) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	/* Connected ! */
 	global_l2_conn = d_conn;
@@ -763,10 +785,11 @@ do_l2_14230_start(int init_type) {
 	struct diag_l2_conn *d_conn;
 	flag_type flags = 0;
 
-	if (global_cfg.addrtype)
+	if (global_cfg.addrtype) {
 		flags = DIAG_L2_TYPE_FUNCADDR;
-	else
+	} else {
 		flags = 0;
+	}
 
 	flags |= DIAG_L2_IDLE_J1978;	/* Use J1978 idle msgs */
 
@@ -775,8 +798,9 @@ do_l2_14230_start(int init_type) {
 	d_conn = do_l2_common_start(DIAG_L1_ISO14230, DIAG_L2_PROT_ISO14230,
 		flags, global_cfg.speed, global_cfg.tgt, global_cfg.src);
 
-	if (d_conn == NULL)
+	if (d_conn == NULL) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	/* Connected ! */
 	global_l2_conn = d_conn;
@@ -795,8 +819,9 @@ do_l2_j1850_start(int l1_type) {
 	d_conn = do_l2_common_start(l1_type, DIAG_L2_PROT_SAEJ1850,
 		flags, global_cfg.speed, 0x6a, global_cfg.src);
 
-	if (d_conn == NULL)
+	if (d_conn == NULL) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	/* Connected ! */
 	global_l2_conn = d_conn;
@@ -824,8 +849,9 @@ do_j1979_getdata(int interruptible) {
 	struct diag_msg *msg;
 
 	d_conn = global_l3_conn;
-	if (d_conn == NULL)
+	if (d_conn == NULL) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	diag_os_ipending();	//this is necessary on WIN32 to "purge" the last state of the enter key; we can't just poll stdin.
 
@@ -842,14 +868,18 @@ do_j1979_getdata(int interruptible) {
 					i, rv);
 			} else {
 				msg = find_ecu_msg(0, 0x41);
-				if (msg == NULL)
-					fprintf(stderr, "Mode 1 Pid 0x%02X request no-data (%d)\n",
-					i, rv);
+				if (msg == NULL) {
+					fprintf(stderr,
+						"Mode 1 Pid 0x%02X request "
+						"no-data (%d)\n",
+						i, rv);
+				}
 			}
 
 			if (interruptible) {
-				if (diag_os_ipending())
+				if (diag_os_ipending()) {
 					return 1;
+				}
 			}
 		}
 	}
@@ -891,8 +921,10 @@ do_j1979_getdata(int interruptible) {
 
 				}
 				if (interruptible) {
-					if (diag_os_ipending())	//was Enter pressed
+					if (diag_os_ipending()) { // was Enter
+								  // pressed
 						return 1;
+					}
 				}
 			}
 		}
@@ -1006,8 +1038,9 @@ print_dtcs(uint8_t *data, uint8_t len) {
 	int i, j;
 
 	for (i=0, j=1; (i<3) && ((j+1) < len); i++, j+=2) {
-		if ((data[j]==0) && (data[j+1]==0))
+		if ((data[j] == 0) && (data[j + 1] == 0)) {
 			continue;
+		}
 		print_single_dtc(data[j], data[j+1]);
 	}
 }
@@ -1143,10 +1176,12 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset) {
 
 		/* Process the results */
 		for (j=0, ep=ecu_info, not_done = 0; j<ecu_count; j++, ep++) {
-			if (ep->rxmsg == NULL)
+			if (ep->rxmsg == NULL) {
 				continue;
-			if (ep->rxmsg->data[0] != (mode + 0x40))
+			}
+			if (ep->rxmsg->data[0] != (mode + 0x40)) {
 				continue;
+			}
 
 			/* Valid response for this request */
 
@@ -1175,21 +1210,27 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset) {
 				break;
 			}
 
-			if (data == NULL)
+			if (data == NULL) {
 				break;
+			}
 
 			data[0] = 1;	/* Pid 0, 0x20, 0x40 always supported */
 			for (i=0 ; i<=0x20; i++) {
-				if (l2_check_pid_bits(&ep->rxmsg->data[response_offset], (int)i))
+				if (l2_check_pid_bits(
+					    &ep->rxmsg->data[response_offset],
+					    (int)i)) {
 					data[i + pid] = 1;
+				}
 			}
-			if (data[0x20 + pid] == 1)
+			if (data[0x20 + pid] == 1) {
 				not_done = 1;
+			}
 		}
 
 		/* Now, check if all ECUs said the next pid isnt supported */
-		if (not_done == 0)
+		if (not_done == 0) {
 			break;
+		}
 	}	//for
 	return;
 }
@@ -1247,8 +1288,9 @@ do_j1979_O2tests() {
 	}
 
 	for (i=0; i<=7; i++) {
-		if (global_O2_sensors & (1<<i))
+		if (global_O2_sensors & (1 << i)) {
 			do_j1979_getO2tests(i);
+		}
 	}
 	return;
 }
@@ -1320,24 +1362,28 @@ do_j1979_getdtcs() {
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		if ((ep->rxmsg) && (ep->rxmsg->data[0] == 0x41)) {
 			/* Go thru received msgs looking for DTC responses */
-			if ( (ep->mode1_data[1].data[3] & 0xf0) ||
-				ep->mode1_data[1].data[5] )
+			if ((ep->mode1_data[1].data[3] & 0xf0) ||
+			    ep->mode1_data[1].data[5]) {
 				readiness = 1;
+			}
 
-			if (ep->mode1_data[1].data[2] & 0x80)
+			if (ep->mode1_data[1].data[2] & 0x80) {
 				mil = 1;
+			}
 
 			num_dtcs += ep->mode1_data[1].data[2] & 0x7f;
 		}
 
 	}
-	if (readiness == 1)
+	if (readiness == 1) {
 		fprintf(stderr, "Not all readiness tests have completed\n");
+	}
 
-	if (mil == 1)
+	if (mil == 1) {
 		fprintf(stderr, "MIL light ON, ");
-	else
+	} else {
 		fprintf(stderr, "MIL light OFF, ");
+	}
 
 	fprintf(stderr, "%d stored DTC%c\n", num_dtcs, (num_dtcs==1)?' ':'s');
 
@@ -1399,8 +1445,9 @@ do_j1979_getO2sensors() {
 			global_O2_sensors |= ep->rxmsg->data[2];
 			/* And count additional sensors on this ECU */
 			for (j=0; j<=7; j++) {
-				if (ep->rxmsg->data[2] & (1<<j))
+				if (ep->rxmsg->data[2] & (1 << j)) {
 					num_sensors++;
+				}
 			}
 		}
 	}
@@ -1501,9 +1548,10 @@ ecu_connect(void) {
 		}
 	}
 
-	if (diag_cli_debug)
+	if (diag_cli_debug) {
 		fprintf(stderr, "debug: L2 connection ID %p, L3 ID %p\n",
 			(void *)global_l2_conn, (void *)global_l3_conn);
+	}
 
 	return rv? diag_iseterr(rv):0;
 }
@@ -1543,10 +1591,12 @@ static void format_o2(char *buf, int maxlen, UNUSED(int english),
 		double v = DATA_SCALED(p, DATA_1(p, n, data));
 		int t = DATA_1(p, n + 1, data);
 
-		if (t == 0xff)
-				snprintf(buf, maxlen, p->fmt1, v);
-		else
-				snprintf(buf, maxlen, p->fmt2, v, t * p->scale2 + p->offset2);
+		if (t == 0xff) {
+			snprintf(buf, maxlen, p->fmt1, v);
+		} else {
+			snprintf(buf, maxlen, p->fmt2, v,
+				 t * p->scale2 + p->offset2);
+		}
 }
 
 
@@ -1593,10 +1643,11 @@ format_data(char *buf, int maxlen, int english, const struct pid *p, response_t 
 		double v;
 
 		v = DATA_SCALED(p, DATA_RAW(p, n, data));
-		if (english && p->fmt2)
-				snprintf(buf, maxlen, p->fmt2, DATA_ENGLISH(p, v));
-		else
-				snprintf(buf, maxlen, p->fmt1, v);
+		if (english && p->fmt2) {
+			snprintf(buf, maxlen, p->fmt2, DATA_ENGLISH(p, v));
+		} else {
+			snprintf(buf, maxlen, p->fmt1, v);
+		}
 }
 
 
@@ -1685,8 +1736,9 @@ static const struct pid pids[] = {
 
 
 const struct pid *get_pid ( unsigned int i ) {
-	if ( i >= ARRAY_SIZE(pids) )
-		return NULL ;
+	if (i >= ARRAY_SIZE(pids)) {
+		return NULL;
+	}
 
 	return & pids[i] ;
 }

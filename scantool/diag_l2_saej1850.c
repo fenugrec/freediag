@@ -79,14 +79,15 @@ target_type target, source_type source) {
 	struct diag_l2_j1850 *dp;
 	int rv;
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN)
-		fprintf(stderr,
-			FLFMT "diag_l2_j1850_startcomms dl2conn %p\n",
-				FL, (void *)d_l2_conn);
+	if (diag_l2_debug & DIAG_DEBUG_OPEN) {
+		fprintf(stderr, FLFMT "diag_l2_j1850_startcomms dl2conn %p\n",
+			FL, (void *)d_l2_conn);
+	}
 
 	rv = diag_calloc(&dp, 1);
-	if (rv != 0)
+	if (rv != 0) {
 		return diag_iseterr(rv);
+	}
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
 
@@ -113,8 +114,9 @@ dl2p_j1850_stopcomms(struct diag_l2_conn *d_l2_conn) {
 
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
 
-	if (dp)
+	if (dp) {
 		free(dp);
+	}
 	d_l2_conn->diag_l2_proto_data=NULL;
 
 	/* Always OK for now */
@@ -132,15 +134,17 @@ dl2p_j1850_crc(uint8_t *msg_buf, int nbytes) {
 	for (i=0, byte_point=msg_buf; i<nbytes; ++i, ++byte_point) {
 		for (j=0, bit_point=0x80 ; j<8; ++j, bit_point>>=1) {
 			if (bit_point & *byte_point) {	// case for new bit = 1
-				if (crc_reg & 0x80)
+				if (crc_reg & 0x80) {
 					poly=1;	// define the polynomial
-				else
-					poly=0x1c;
+				} else {
+					poly = 0x1c;
+				}
 				crc_reg= ( (crc_reg << 1) | 1) ^ poly;
 			} else {		// case for new bit = 0
 				poly=0;
-				if (crc_reg & 0x80)
-					poly=0x1d;
+				if (crc_reg & 0x80) {
+					poly = 0x1d;
+				}
 				crc_reg= (crc_reg << 1) ^ poly;
 			}
 		}
@@ -162,10 +166,11 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	uint8_t buf[MAXRBUF];
 	int offset = 0;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
+	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr,
 			FLFMT "diag_l2_j1850_send %p msg %p len %d called\n",
-				FL, (void *)d_l2_conn, (void *)msg, msg->len);
+			FL, (void *)d_l2_conn, (void *)msg, msg->len);
+	}
 
 	if ((msg->len + 4) >= MAXRBUF) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -181,10 +186,11 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	} else {
 		// Add the J1850 header to the data
 
-		if (l1protocol == DIAG_L1_J1850_PWM)
+		if (l1protocol == DIAG_L1_J1850_PWM) {
 			buf[0] = 0x61;
-		else
+		} else {
 			buf[0] = 0x68;
+		}
 		buf[1] = dp->dstaddr;
 		buf[2] = dp->srcaddr;
 		offset += 3;
@@ -201,10 +207,11 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		buf[offset++] = dl2p_j1850_crc(buf, curoff);
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE)
+	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
 		fprintf(stderr,
-			FLFMT "diag_l2_j1850_send sending %d bytes to L1\n",
-				FL, offset);
+			FLFMT "diag_l2_j1850_send sending %d bytes to L1\n", FL,
+			offset);
+	}
 
 	// And send data to Layer 1
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
@@ -237,10 +244,12 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
 	diag_freemsg(d_l2_conn->diag_msg);
 
-	if (diag_l2_debug & DIAG_DEBUG_READ)
+	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr,
-			FLFMT "diag_l2_j1850_int_recv offset 0x%X, timeout=%u\n",
-				FL, dp->rxoffset, timeout);
+			FLFMT "diag_l2_j1850_int_recv offset 0x%X, "
+			      "timeout=%u\n",
+			FL, dp->rxoffset, timeout);
+	}
 
 	// No support for non framing L2 interfaces yet ...
 	if (!(l1flags & DIAG_L1_DOESL2FRAME)) {
@@ -269,7 +278,9 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 				sizeof(dp->rxbuf) - dp->rxoffset,
 				tout);
 
-		if (rv == DIAG_ERR_TIMEOUT) break;
+		if (rv == DIAG_ERR_TIMEOUT) {
+			break;
+		}
 
 		if (rv < 0) {
 			// Other errors are more serious.
@@ -280,19 +291,25 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 
 		//update elapsed time
 		t_done = diag_os_hrtus(diag_os_gethrt() - t0);
-		if (rv == 0) continue;	//no data ?
+		if (rv == 0) {
+			continue; // no data ?
+		}
 
 		datalen = dp->rxoffset;
 
 		// get data payload length
 		if (!(l1flags & DIAG_L1_NOHDRS)) {
 			//headers present
-			if (datalen <= 3) continue;
+			if (datalen <= 3) {
+				continue;
+			}
 			datalen -= 3;
 		}
 		if (!(l1flags & DIAG_L1_STRIPSL2CKSUM)) {
 			//CRC present
-			if (datalen <= 1) continue;
+			if (datalen <= 1) {
+				continue;
+			}
 			datalen -= 1;
 		}
 
@@ -369,14 +386,16 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	d_l2_conn->diag_msg = NULL;
 
 	/* Call used callback */
-	if (callback)
+	if (callback) {
 		callback(handle, tmsg);
+	}
 
 	/* message no longer needed */
 	diag_freemsg(tmsg);
 
-	if (diag_l2_debug & DIAG_DEBUG_READ)
+	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "rcv callback completed\n", FL);
+	}
 
 	return 0;
 }
