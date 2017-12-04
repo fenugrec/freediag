@@ -1543,9 +1543,8 @@ ecu_connect(void) {
 			fprintf(stderr, "%s Connected.\n", p->desc);
 			break;	//exit for loop
 
-		} else {
-			fprintf(stderr, "%s Failed!\n", p->desc);
 		}
+		fprintf(stderr, "%s Failed!\n", p->desc);
 	}
 
 	if (diag_cli_debug) {

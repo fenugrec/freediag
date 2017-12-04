@@ -319,9 +319,8 @@ void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, const uint8
 					if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) == 0) {
 						end_responses = 1;
  						break;
-					} else {
-						continue;
 					}
+					continue;
 				}
 				// add the new response (without the tag).
 				if (resp_count + new_resp_count == 0) {
@@ -497,10 +496,12 @@ void sim_read_cfg(struct sim_device *dev) {
 		if (strncmp(p, CFG_DATAONLY, strlen(CFG_DATAONLY)) == 0) {
 			dev->dataonly = 1;
 			continue;
-		} else if (strncmp(p, CFG_NOL2CKSUM, strlen(CFG_NOL2CKSUM)) == 0) {
+		}
+		if (strncmp(p, CFG_NOL2CKSUM, strlen(CFG_NOL2CKSUM)) == 0) {
 			dev->nocksum = 1;
 			continue;
-		} else if (strncmp(p, CFG_FRAMED, strlen(CFG_FRAMED)) == 0) {
+		}
+		if (strncmp(p, CFG_FRAMED, strlen(CFG_FRAMED)) == 0) {
 			dev->framed = 1;
 		} else if (strncmp(p, CFG_FULLINIT, strlen(CFG_FULLINIT)) == 0) {
 			dev->fullinit = 1;

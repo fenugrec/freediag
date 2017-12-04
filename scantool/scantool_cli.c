@@ -160,16 +160,14 @@ basic_get_input(const char *prompt, FILE *instream) {
 		do_prompt = 1;
 		if (fgets(input, INPUT_MAX, instream)) {
 			break;
-		} else {
-			if (feof(instream)) {
-				free(input);
-				return NULL;
-			} else {
-				/* Ignore error and try again, but don't prompt. */
-				clearerr(instream);
-				do_prompt = 0;
-			}
 		}
+		if (feof(instream)) {
+			free(input);
+			return NULL;
+		}
+		/* Ignore error and try again, but don't prompt. */
+		clearerr(instream);
+		do_prompt = 0;
 	}
 	input[strcspn(input, "\r\n")] = '\0'; /* Remove trailing CR/LF */
 	return input;
@@ -650,11 +648,9 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 				//was a single command : exit this level of do_cli()
 				done = 1;
 				break;
-			} else {
-				//else : continue getting input
-				continue;
 			}
-
+			//else : continue getting input
+			continue;
 		}
 
 		if (ctp->sub_cmd_tbl) {

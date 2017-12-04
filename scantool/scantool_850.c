@@ -226,9 +226,8 @@ ecu_addr_by_name(const char *name) {
 	ecu = ecu_info_by_name(name);
 	if (ecu == NULL) {
 		return -1;
-	} else {
-		return ecu->addr;
 	}
+	return ecu->addr;
 }
 
 /*
@@ -404,13 +403,14 @@ static enum connection_status
 get_connection_status(void) {
 	if (global_state < STATE_CONNECTED) {
 		return NOT_CONNECTED;
-	} else if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_D2) {
-		return CONNECTED_D2;
-	} else if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_VAG) {
-		return CONNECTED_KWP71;
-	} else {
-		return CONNECTED_OTHER;
 	}
+	if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_D2) {
+		return CONNECTED_D2;
+	}
+	if (global_l2_conn->l2proto->diag_l2_protocol == DIAG_L2_PROT_VAG) {
+		return CONNECTED_KWP71;
+	}
+	return CONNECTED_OTHER;
 }
 
 /*
@@ -863,25 +863,24 @@ parse_freeze_arg(char *arg, struct read_or_peek_item *item) {
 			return 1;
 		}
 		return 0;
-	} else {
-		item->start = strtoul(arg, &p, 0);
-		if (*p != '\0' || item->start > 0xff) {
-			printf("Invalid identifier '%s'\n", arg);
-			if (isdigit(arg[0]) && arg[0] != '0' && *p == '\0') {
-				printf("Did you mean %s-%s?\n",
-				       current_dtc_prefix(), arg);
-			}
-			return 1;
-		}
-		if (isdigit(arg[0]) && arg[0]!='0') {
-			if (item->start < 100) {
-				printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean 0x%s?\n", item->start, item->start, arg);
-			} else {
-				printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean %s-%s?\n", item->start, item->start, current_dtc_prefix(), arg);
-			}
-		}
-		return 0;
 	}
+	item->start = strtoul(arg, &p, 0);
+	if (*p != '\0' || item->start > 0xff) {
+		printf("Invalid identifier '%s'\n", arg);
+		if (isdigit(arg[0]) && arg[0] != '0' && *p == '\0') {
+			printf("Did you mean %s-%s?\n",
+			       current_dtc_prefix(), arg);
+		}
+		return 1;
+	}
+	if (isdigit(arg[0]) && arg[0]!='0') {
+		if (item->start < 100) {
+			printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean 0x%s?\n", item->start, item->start, arg);
+		} else {
+			printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean %s-%s?\n", item->start, item->start, current_dtc_prefix(), arg);
+		}
+	}
+	return 0;
 }
 
 /*
@@ -1150,9 +1149,8 @@ cmd_850_freeze(int argc, char **argv) {
 
 	if (argc==2 && strcasecmp(argv[1], "all")==0) {
 		return cmd_850_freeze_all();
-	} else {
-		return read_family(argc, argv, NS_FREEZE);
 	}
+	return read_family(argc, argv, NS_FREEZE);
 }
 
 /*
@@ -1282,10 +1280,8 @@ cmd_850_id(int argc, UNUSED(char **argv)) {
 
 	if (get_connection_status() == CONNECTED_D2) {
 		return cmd_850_id_d2();
-	} else {
-		return cmd_850_id_kwp71();
 	}
-
+	return cmd_850_id_kwp71();
 }
 
 /*

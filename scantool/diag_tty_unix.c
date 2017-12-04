@@ -878,7 +878,8 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 	if (rv >= 0) {
 		if (n > 0) {
 			return n;
-		} else if (expired) {
+		}
+		if (expired) {
 			return DIAG_ERR_TIMEOUT; // without diag_iseterr() !
 		}
 	}

@@ -577,12 +577,12 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 				FL);
 		}
 		return DIAG_ERR_TIMEOUT;
-	} else {
-		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr, FLFMT "\tgot sync byte 0x%X!\n", FL,
-				cbuf[0]);
-		}
 	}
+	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+		fprintf(stderr, FLFMT "\tgot sync byte 0x%X!\n", FL,
+			cbuf[0]);
+	}
+
 	//If all's well at this point, we just read the sync pattern byte. L2 will take care
 	//of reading + echoing the keybytes
 	return 0;

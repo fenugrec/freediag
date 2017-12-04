@@ -87,10 +87,10 @@ diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn) {
 	if (resp->type == ack) {
 		diag_freemsg(resp);
 		return 0;
-	} else {
-		diag_freemsg(resp);
-		return DIAG_ERR_ECUSAIDNO;
 	}
+
+	diag_freemsg(resp);
+	return DIAG_ERR_ECUSAIDNO;
 }
 
 /* The request message for reading memory */
@@ -197,7 +197,8 @@ diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 	if (ns==NS_ADC && resp->len!=2) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
-	} else if (ns!=NS_ADC && resp->len!=(unsigned int)buflen) {
+	}
+	if (ns != NS_ADC && resp->len != (unsigned int)buflen) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
@@ -292,8 +293,7 @@ diag_l7_kwp71_cleardtc(struct diag_l2_conn *d_l2_conn) {
 	if (resp->type == ack) {
 		diag_freemsg(resp);
 		return 1;
-	} else {
-		diag_freemsg(resp);
-		return DIAG_ERR_ECUSAIDNO;
 	}
+	diag_freemsg(resp);
+	return DIAG_ERR_ECUSAIDNO;
 }

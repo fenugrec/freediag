@@ -108,10 +108,10 @@ diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn) {
 	if (success_p(&msg, resp)) {
 		diag_freemsg(resp);
 		return 0;
-	} else {
-		diag_freemsg(resp);
-		return DIAG_ERR_ECUSAIDNO;
 	}
+
+	diag_freemsg(resp);
+	return DIAG_ERR_ECUSAIDNO;
 }
 
 /* The request message for reading memory */
@@ -337,10 +337,10 @@ diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn) {
 	if (resp->len==2 && success_p(&msg, resp)) {
 		diag_freemsg(resp);
 		return 1;
-	} else {
-		diag_freemsg(resp);
-		return DIAG_ERR_ECUSAIDNO;
 	}
+
+	diag_freemsg(resp);
+	return DIAG_ERR_ECUSAIDNO;
 }
 
 /*
@@ -367,14 +367,14 @@ diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps) 
 	if (resp->len==2 && success_p(&msg, resp)) {
 		diag_freemsg(resp);
 		return 0;
-	} else {
-		/*
-		 * ECU returns 7F B0 11 for invalid ID, or 7F B0 21 if a
-		 * previous inputOutputControlByLocalIdentifier is still in
-		 * progress. For now we return DIAG_ERR_ECUSAIDNO for any
-		 * error code.
-		 */
-		diag_freemsg(resp);
-		return DIAG_ERR_ECUSAIDNO;
 	}
+
+	/*
+	 * ECU returns 7F B0 11 for invalid ID, or 7F B0 21 if a
+	 * previous inputOutputControlByLocalIdentifier is still in
+	 * progress. For now we return DIAG_ERR_ECUSAIDNO for any
+	 * error code.
+	 */
+	diag_freemsg(resp);
+	return DIAG_ERR_ECUSAIDNO;
 }

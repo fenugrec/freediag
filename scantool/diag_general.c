@@ -221,7 +221,8 @@ diag_freemsg(struct diag_msg *msg) {
 			FL, (void *)msg);
 		free(msg);
 		return;
-	} else if (msg->idata != NULL) {
+	}
+	if (msg->idata != NULL) {
 		free(msg->idata);
 	}
 

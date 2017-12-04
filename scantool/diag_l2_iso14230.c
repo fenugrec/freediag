@@ -1082,9 +1082,8 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 				*errval = DIAG_ERR_TIMEOUT;
 				if (rv == DIAG_ERR_TIMEOUT) {
 					return NULL;
-				} else {
-					return diag_pseterr(rv);
 				}
+				return diag_pseterr(rv);
 			}
 		}
 

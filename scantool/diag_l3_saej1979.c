@@ -339,10 +339,9 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn) {
 			if (sae_msglen == DIAG_ERR_INCDATA) {
 				/* Not enough data in this frame, this isn't catastrophic */
 				return;
-			} else {
-				/* Duff data received, bad news ! */
-				badpacket = 1;
 			}
+			/* Duff data received, bad news ! */
+			badpacket = 1;
 		}
 
 		if (badpacket || (sae_msglen <= l3i->rxoffset )) {

@@ -248,10 +248,10 @@ diag_l2_open(struct diag_l0_device *dl0d, int L1protocol) {
 		if (dl2l->l1proto != L1protocol) {
 			fprintf(stderr, "Problem : L0 open with wrong L1 proto...\n");
 			return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
-		} else {
-			/* Device was already open, with correct protocol  */
-			return 0;
 		}
+
+		/* Device was already open, with correct protocol  */
+		return 0;
 	}
 
 	rv = diag_l1_open(dl0d, L1protocol);

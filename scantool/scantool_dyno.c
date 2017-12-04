@@ -147,13 +147,11 @@ static int measure_data(uint8_t data_pid, ecu_data_t *ep) {
 	/* data extraction */
 	if (data_pid == RPM_PID) {
 		return (int)(RPM_DATA(ep->mode1_data) + .50);
-	} else if (data_pid == SPEED_PID) {
-		return (int)(SPEED_DATA(ep->mode1_data) + .50);
-	} else {
-		return DYNDATA_1(data_pid, 2, ep->mode1_data);
 	}
-
-	return 0;
+	if (data_pid == SPEED_PID) {
+		return (int)(SPEED_DATA(ep->mode1_data) + .50);
+	}
+	return DYNDATA_1(data_pid, 2, ep->mode1_data);
 }
 
 
@@ -353,7 +351,8 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv)) {
 			/* ENTER pressed : stops */
 			printf("Number of measures : %d (min speed=%d km/h)\n", nb, SPEED_ISO_TO_KMH(speed));
 			break;
-		} else if (speed_previous == speed) { /* measure added : update display */
+		}
+		if (speed_previous == speed) { /* measure added: update display */
 			/* erase previous measure */
 			for (i = 0; i < length; i++) {
 				printf("");

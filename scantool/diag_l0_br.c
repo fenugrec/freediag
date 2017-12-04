@@ -853,11 +853,10 @@ void *data, size_t len, unsigned int timeout) {
 				memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], bufbytes);
 				dev->dev_rxlen = dev->dev_rdoffset = 0;
 				return (int) bufbytes;
-			} else {
-				memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], len);
-				dev->dev_rdoffset += len;
-				return (int) len;
 			}
+			memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], len);
+			dev->dev_rdoffset += len;
+			return (int) len;
 		}
 		xferd = 0;
 		break;
