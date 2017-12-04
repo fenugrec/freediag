@@ -87,7 +87,7 @@ static int dyno_check_allocated_table(struct dyno_measure_table *table) {
 
     /* free old memory */
     free(table->meas.measures);
-    table->meas.measures = (dyno_measure *)ptr;
+    table->meas.measures = ptr;
   }
   return 0;
 }

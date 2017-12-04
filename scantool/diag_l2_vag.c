@@ -741,7 +741,7 @@ dl2p_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "calling rcv callback, handle=%p\n", FL,
-			(void *)handle);
+			handle);
 	}
 
 	//Call user callback routine

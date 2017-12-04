@@ -188,8 +188,10 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 		};
 
 	if (diag_cli_debug & DIAG_DEBUG_DATA) {
-		fprintf(stderr, "scantool: Got handle %p; %d bytes of data, src=0x%X, dest=0x%X\n",
-			(void *)handle, msg->len, msg->src, msg->dest);
+		fprintf(stderr,
+			"scantool: Got handle %p; %d bytes of data, src=0x%X, "
+			"dest=0x%X\n",
+			handle, msg->len, msg->src, msg->dest);
 		diag_printmsg(stdout, msg, 0);
 	}
 
@@ -500,8 +502,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 
 	if (diag_cli_debug & DIAG_DEBUG_DATA) {
 		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %#02X\n",
-			(void *)handle, (void *)d_conn, mode);
-
+			handle, (void *)d_conn, mode);
 	}
 
 	/* Put in src/dest etc, L3 or L2 may override/ignore them */
@@ -1130,7 +1131,8 @@ do_j1979_ncms(int printall) {
 				0x00, 0x00, 0x00, 0x00,
 				(void *)(printall? &_RQST_HANDLE_NCMS:&_RQST_HANDLE_NCMS2));
 			if (rv < 0) {
-				fprintf(stderr, "Mode 6 Test ID 0x%02X failed\n", (unsigned int) i);
+				fprintf(stderr,
+					"Mode 6 Test ID 0x%02X failed\n", i);
 			}
 		}
 	}

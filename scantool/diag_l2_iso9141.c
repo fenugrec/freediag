@@ -628,8 +628,8 @@ dl2p_iso9141_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	if ((rv >= 0) && (d_l2_conn->diag_msg !=NULL)) {
 		if (diag_l2_debug & DIAG_DEBUG_READ) {
 			fprintf(stderr, FLFMT "_recv : handle=%p\n", FL,
-				(void *)handle); //%pcallback! we won't try to
-						 //printf the callback pointer.
+				handle); //%pcallback! we won't try to
+					 // printf the callback pointer.
 		}
 		/*
 		 * Call user callback routine

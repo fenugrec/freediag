@@ -1030,8 +1030,8 @@ dl2p_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 
 	if (diag_l2_debug & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "_int_recv : handle=%p timeout=%u\n", FL,
-			(void *)handle, timeout); //%pcallback! we won't try to
-						  //printf the callback pointer.
+			handle, timeout); //%pcallback! we won't try to
+					  // printf the callback pointer.
 	}
 
 	/*

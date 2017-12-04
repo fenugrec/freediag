@@ -378,8 +378,11 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	 * We now have data stored on the L2 descriptor
 	 */
 	if (diag_l2_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "calling rcv msg=%p callback, handle=%p\n",
-			FL, (void *)d_l2_conn->diag_msg, (void *)handle);	//%pcallback! we won't try to printf the callback pointer.
+		fprintf(stderr,
+			FLFMT "calling rcv msg=%p callback, handle=%p\n", FL,
+			(void *)d_l2_conn->diag_msg,
+			handle); //%pcallback! we won't try to printf the
+				 //callback pointer.
 	}
 
 	tmsg = d_l2_conn->diag_msg;
