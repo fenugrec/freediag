@@ -105,11 +105,6 @@ uint8_t	merged_mode5_info[0x100];
 int print_single_dtc(databyte_type d0, databyte_type d1) ;
 void do_j1979_getmodeinfo(uint8_t mode, int response_offset) ;
 
-struct diag_l2_conn *do_common_start(int L1protocol, int L2protocol,
-	uint32_t type, unsigned int bitrate, target_type target, source_type source );
-
-void initialse_ecu_data(void);
-
 //these are mostly dummy variables only used for some j1979 features.
 //see scantool.h
 const int _RQST_HANDLE_NORMAL = RQST_HANDLE_NORMAL; 	//Normal mode
