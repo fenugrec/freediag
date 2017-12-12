@@ -50,6 +50,11 @@ if (CMAKE_COMPILER_IS_GNUCC)
 	#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
 endif ()
 
+if (MINGW)
+	#by default mingw links against a non-C99 compliant printf.
+	add_definitions("-D__USE_MINGW_ANSI_STDIO=1")
+endif ()
+
 message(STATUS "Generating make/project files for: ${CMAKE_GENERATOR}")
 
 ###### Type checks

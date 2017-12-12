@@ -339,7 +339,7 @@ diag_tty_read(ttyp *ttyh, void *buf, size_t count, unsigned int timeout) {
 	if ((count <= 0) || (timeout <= 0)) return DIAG_ERR_BADLEN;
 
 	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "tty_read: ttyh=%p, fd=%p, len=%u, t=%u\n", FL,
+		fprintf(stderr, FLFMT "tty_read: ttyh=%p, fd=%p, len=%zu, t=%u\n", FL,
 					(void *)wti, (void *)wti->fd, count, timeout);
 	}
 

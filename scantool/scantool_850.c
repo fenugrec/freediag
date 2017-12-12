@@ -977,7 +977,7 @@ read_family(int argc, char **argv, enum namespace ns) {
 					printf("%02X: no data\n", addr);
 				} else if ((unsigned int)gotbytes > sizeof(buf)) {
 					print_hexdump_line(stdout, addr, 2, buf, sizeof(buf));
-					printf(" (%d bytes received, only first %d shown)\n", gotbytes, sizeof(buf));
+					printf(" (%d bytes received, only first %zu shown)\n", gotbytes, sizeof(buf));
 					interpret_block(items[i].ns, addr, sizeof(buf), buf);
 				} else {
 					print_hexdump_line(stdout, addr, 2, buf, gotbytes);
@@ -1168,7 +1168,7 @@ cmd_850_id_d2(void) {
 		return CMD_OK;
 	}
 	if (rv != sizeof(buf)) {
-		printf("Identification response was %d bytes, expected %d\n", rv, sizeof(buf));
+		printf("Identification response was %d bytes, expected %zu\n", rv, sizeof(buf));
 		return CMD_OK;
 	}
 	if (buf[0] != 0) {
