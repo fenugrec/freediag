@@ -889,7 +889,7 @@ parse_freeze_arg(char *arg, struct read_or_peek_item *item) {
 static int
 read_family(int argc, char **argv, enum namespace ns) {
 	int count;
-	int i;
+	int i, rv;
 	bool continuous;
 	struct read_or_peek_item *items;
 	uint8_t buf[20];
@@ -915,10 +915,11 @@ read_family(int argc, char **argv, enum namespace ns) {
 		}
 	}
 
-	items = calloc(sizeof(items[0]), count);
-	if (items == NULL) {
-		return diag_iseterr(DIAG_ERR_NOMEM);
+	rv = diag_calloc(&items, count);
+	if (rv) {
+		return diag_iseterr(rv);
 	}
+
 	for (i=0; i<count; i++) {
 		switch (ns) {
 		case NS_MEMORY:
@@ -1111,13 +1112,15 @@ cmd_850_freeze_all(void) {
 	}
 
 	count = rv;
-	argbuf = calloc(count, 5);
-	if (argbuf == NULL) {
-		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	rv = diag_calloc(&argbuf, 5);
+	if (rv) {
+		return diag_iseterr(rv);
 	}
-	argvout = calloc(count+1, sizeof(argvout[0]));
-	if (argvout == NULL) {
-		return diag_iseterr(DIAG_ERR_NOMEM);
+
+	rv = diag_calloc(&argvout, count+1);
+	if (rv) {
+		return diag_iseterr(rv);
 	}
 
 	p = argbuf;
