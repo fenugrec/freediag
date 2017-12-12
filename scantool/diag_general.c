@@ -393,14 +393,18 @@ char **strlist_add(char **list, const char *news, int elems) {
 	char *temp;
 
 	assert( news != NULL );
-	templist = realloc(list, (elems + 1)* sizeof(char *));
-	if (!templist) {
-		return diag_pseterr(DIAG_ERR_NOMEM);
-	}
+
 	temp = malloc((strlen(news) * sizeof(char)) + 1);
 	if (temp == NULL) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
 	}
+
+	templist = realloc(list, (elems + 1)* sizeof(char *));
+	if (!templist) {
+		free(temp);
+		return diag_pseterr(DIAG_ERR_NOMEM);
+	}
+
 	strcpy(temp, news);
 	templist[elems] = temp;
 	return templist;
