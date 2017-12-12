@@ -203,8 +203,9 @@ diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 		return DIAG_ERR_ECUSAIDNO;
 	}
 	memcpy(out, resp->data, (resp->len>(unsigned int)buflen)?(unsigned int)buflen:resp->len);
+	rv = (resp->len > (unsigned int)buflen) ? (unsigned int)buflen:resp->len;
 	diag_freemsg(resp);
-	return (resp->len>(unsigned int)buflen)?(unsigned int)buflen:resp->len;
+	return rv;
 }
 
 /*
