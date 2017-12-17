@@ -1499,7 +1499,6 @@ const struct protocol protocols[] = {
  */
 int
 ecu_connect(void) {
-	int connected=0;
 	int rv = DIAG_ERR_GENERAL;
 	const struct protocol *p;
 
@@ -1508,40 +1507,40 @@ ecu_connect(void) {
 		return DIAG_ERR_GENERAL;
 	}
 
+	for (p = protocols; p < &protocols[ARRAY_SIZE(protocols)]; p++) {
+		struct diag_l3_conn *d_l3_conn;
 
-	for (p = protocols; !connected && p < &protocols[ARRAY_SIZE(protocols)]; p++) {
-		fprintf(stderr,"\nTrying %s:\n", p->desc);
+		fprintf(stderr, "\nTrying %s:\n", p->desc);
 		rv = p->start(p->flags);
-		if (rv == 0) {
-			struct diag_l3_conn *d_l3_conn;
-
-			fprintf(stderr, "L2 connection OK; tring to add SAE J1979 layer...\n");
-	//At this point we have a valid L2 connection, but it is possible that
-	//no communication has been established with an ECU yet (see DIAG_L2_FLAG_CONNECTS_ALWAYS)
-	//To confirm we really have a connection we try to start the J1979 L3 layer and try
-	//sending a J1979 keep-alive request (service 1 pid 0).
-	//diag_l3_start() does exactly that.
-
-			d_l3_conn = diag_l3_start("SAEJ1979", global_l2_conn);
-			if (d_l3_conn == NULL) {
-				rv=DIAG_ERR_ECUSAIDNO;
-				fprintf(stderr, "Failed to enable SAEJ1979 mode\n");
-				//So we'll try another protocol. But close that L2 first:
-				diag_l2_StopCommunications(global_l2_conn);
-				diag_l2_close(global_dl0d);
-
-				global_l2_conn = NULL;
-				global_state = STATE_IDLE;
-				continue;
-			}
-			global_l3_conn = d_l3_conn;
-			global_state = STATE_L3ADDED;
-
-			fprintf(stderr, "%s Connected.\n", p->desc);
-			break;	//exit for loop
-
+		if (rv != 0) {
+			fprintf(stderr, "%s Failed!\n", p->desc);
+			continue;
 		}
-		fprintf(stderr, "%s Failed!\n", p->desc);
+
+		// At this point we have a valid L2 connection, but it is possible that
+		// no communication has been established with an ECU yet (see
+		// DIAG_L2_FLAG_CONNECTS_ALWAYS) To confirm we really have a connection we
+		// try to start the J1979 L3 layer and try sending a J1979 keep-alive
+		// request (service 1 pid 0). diag_l3_start() does exactly that.
+		fprintf(stderr, "L2 connection OK; trying to add SAE J1979 layer...\n");
+
+		d_l3_conn = diag_l3_start("SAEJ1979", global_l2_conn);
+		if (d_l3_conn == NULL) {
+			rv = DIAG_ERR_ECUSAIDNO;
+			fprintf(stderr, "Failed to enable SAEJ1979 mode\n");
+			// So we'll try another protocol. But close that L2 first:
+			diag_l2_StopCommunications(global_l2_conn);
+			diag_l2_close(global_dl0d);
+
+			global_l2_conn = NULL;
+			global_state = STATE_IDLE;
+			continue;
+		}
+		global_l3_conn = d_l3_conn;
+		global_state = STATE_L3ADDED;
+
+		fprintf(stderr, "%s Connected.\n", p->desc);
+		break;
 	}
 
 	if (diag_cli_debug) {
@@ -1549,8 +1548,9 @@ ecu_connect(void) {
 			(void *)global_l2_conn, (void *)global_l3_conn);
 	}
 
-	return rv? diag_iseterr(rv):0;
+	return rv ? diag_iseterr(rv) : 0;
 }
+
 
 /*
  * Initialise
