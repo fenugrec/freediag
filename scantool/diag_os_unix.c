@@ -24,10 +24,10 @@
  *
  * OS abstraction & wrappers for unix, linux & OSX as much as possible.
  *
- * We run the process in
- *	(1) Real time mode, as we need to do some very accurate sleeps
- *		in diag_l0_dumb ;
- *	(2) As root in order to establish (1)
+ * 
+ *	(1) The process needs to be in real time mode, as we need to do some
+ *	    very accurate sleeps in diag_l0_dumb ;
+ *	(2) Another process needs to be capable of establishing (1)
  *
  * Some notes on syscall interruption :
  * 	(3) The os specific and IO driver code allows "interruptible syscalls"
@@ -50,9 +50,6 @@
  *
  * more info on different OS high-resolution timers:
  *	http://nadeausoftware.com/articles/2012/04/c_c_tip_how_measure_elapsed_real_time_benchmarking
- *
- * TODO:
-		diag_os_sched non-root fallback ? (i.e. highest prio available to uid!=0)
  */
 
 
@@ -416,68 +413,12 @@ diag_os_ipending(void) {
 //this is called from most diag_l0_* devices; calling more than once
 //will harm nothing. There is no "opposite" function of this, to
 //reset normal priority.
+//
+//Removed, should be done from a separate process for security reasons.
 int
 diag_os_sched(void) {
-	static int os_sched_done=0;
-	int rv=0;
-
-	if (os_sched_done) {
-		return 0;
-	}
-
-#if defined(_POSIX_PRIORITY_SCHEDULING) && (SEL_SCHED==S_POSIX || SEL_SCHED==S_LINUX || SEL_SCHED==S_AUTO)
-#include <sched.h>
-	/*
-	 * Check privileges
-	 */
-	if (getuid() != 0) {
-		static int suser_warned;
-		if (suser_warned == 0) {
-			suser_warned = 1;
-			fprintf(stderr,
-				FLFMT "WARNING: Not running as superuser; "
-				"things may not work correctly\n", FL);
-		}
-	}
-#if defined(__linux__) && (SEL_SCHED==S_LINUX || SEL_SCHED==S_AUTO)
-	{
-		int r=0;
-		struct sched_param p;
-
-		/* Set real time UNIX scheduling */
-		p.sched_priority = 1;
-		if ( sched_setscheduler(getpid(), SCHED_FIFO, &p) < 0) {
-			fprintf(stderr, FLFMT "sched_setscheduler failed: %s.\n",
-				FL, strerror(errno));
-			r = -1;
-		}
-		rv=r;
-	}
-#else
-	/*
-	+* If we're not running on Linux, we're not sure if what is
-	+* being done is remotely applicable for our flavor of POSIX
-	+* priority scheduling.
-	+* For example, you set the scheduling priority to 1.  Ouch.
-	 */
-#warning Scheduling setup should be examined on your particular platform !
-#warning Please report this !
-
-	fprintf(stderr, FLFMT "Scheduling setup should be examined.\n", FL);
-	rv = 0;
-
-#endif // __linux__
-
-#else	//not POSIX_PRIO_SCHED
-#warning No special scheduling support in diag_os.c for your OS! Please report this !
-
-	fprintf(stderr,
-		FLFMT "diag_os_sched: No special scheduling support.\n", FL);
-	rv=0;
-#endif // _POSIX_PRIORITY_SCHEDULING
-	os_sched_done=1;
-	return rv;
-}	//of diag_os_sched
+	return 0;
+}
 
 
 //diag_os_geterr : get OS-specific error string.
