@@ -94,7 +94,7 @@ static void aif_monitor (UNUSED(void *data)) {
 
 			for (j = 0 ; get_pid(j) != NULL ; j++) {
 				const struct pid *p = get_pid(j) ;
-				ecu_data_t   *ep ;
+				ecu_data   *ep ;
 				char buf[24] ;
 
 				for (i = 0, ep = ecu_info ; i < ecu_count ; i++, ep++) {

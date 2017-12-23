@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-typedef struct cmd_tbl_entry {
+struct cmd_tbl_entry {
 	const char *command;		/* Command name */
 	const char *usage;		/* Usage info */
 	const char *help;		/* Help Text */
@@ -42,7 +42,7 @@ typedef struct cmd_tbl_entry {
 
 	const struct cmd_tbl_entry *sub_cmd_tbl;		/* Next layer */
 
-} cmd_tbl_entry_t ;
+};
 
 /* Return values from the commands */
 #define CMD_OK		0	/* OK */

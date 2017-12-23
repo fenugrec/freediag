@@ -92,7 +92,7 @@ uint8_t	global_O2_sensors;	/* O2 sensors bit mask */
 /*
  * Data received from each ecu
  */
-ecu_data_t	ecu_info[MAX_ECU];
+ecu_data	ecu_info[MAX_ECU];
 unsigned int ecu_count;		/* How many ecus are active */
 
 
@@ -118,7 +118,7 @@ const int _RQST_HANDLE_READINESS = RQST_HANDLE_READINESS; 	//Readiness tests
 
 struct diag_msg *
 find_ecu_msg(int byte, databyte_type val) {
-	ecu_data_t *ep;
+	ecu_data *ep;
 	struct diag_msg *rxmsg = NULL;
 	unsigned int i;
 
@@ -161,7 +161,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 	struct diag_msg *tmsg;
 	unsigned int i;
 	int ihandle;
-	ecu_data_t	*ep;
+	ecu_data	*ep;
 
 	if (handle != NULL) {
 		ihandle= * (int *)handle;
@@ -479,7 +479,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	uint8_t data[7];
 	int ihandle;
 	int rv;
-	ecu_data_t *ep;
+	ecu_data *ep;
 	unsigned int i;
 
 	uint8_t *rxdata;
@@ -841,7 +841,7 @@ do_j1979_getdata(int interruptible) {
 	unsigned int i,j;
 	int rv;
 	struct diag_l3_conn *d_conn;
-	ecu_data_t *ep;
+	ecu_data *ep;
 	struct diag_msg *msg;
 
 	d_conn = global_l3_conn;
@@ -934,7 +934,7 @@ do_j1979_getdata(int interruptible) {
  * This is the basic work horse routine
  */
 void do_j1979_basics() {
-	ecu_data_t *ep;
+	ecu_data *ep;
 	unsigned int i;
 	int o2monitoring = 0;
 
@@ -1089,7 +1089,7 @@ do_j1979_ncms(int printall) {
 	struct diag_l3_conn *d_conn;
 	unsigned int i, j;
 //	int supported=0;		//not used ?
-	ecu_data_t *ep;
+	ecu_data *ep;
 
 	uint8_t merged_mode6_info[0x100];
 
@@ -1146,7 +1146,7 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset) {
 	struct diag_l3_conn *d_conn;
 	int pid;
 	unsigned int i, j;
-	ecu_data_t *ep;
+	ecu_data *ep;
 	int not_done;
 	uint8_t *data;
 
@@ -1241,7 +1241,7 @@ do_j1979_getmodeinfo(uint8_t mode, int response_offset) {
  */
 void
 do_j1979_getpids() {
-	ecu_data_t *ep;
+	ecu_data *ep;
 	unsigned int i, j;
 
 	do_j1979_getmodeinfo(1, 2);
@@ -1333,7 +1333,7 @@ int
 do_j1979_getdtcs() {
 	int rv;
 	struct diag_l3_conn *d_conn;
-	ecu_data_t *ep;
+	ecu_data *ep;
 	unsigned int i;
 	int num_dtcs, readiness, mil;
 
@@ -1420,7 +1420,7 @@ do_j1979_getO2sensors() {
 	struct diag_l3_conn *d_conn;
 	unsigned int i, j;
 	int num_sensors;
-	ecu_data_t *ep;
+	ecu_data *ep;
 
 	d_conn = global_l3_conn;
 
@@ -1583,7 +1583,7 @@ static void do_usage (void) {
 
 
 static void format_o2(char *buf, int maxlen, UNUSED(int english),
-	const struct pid *p, response_t *data, int n) {
+	const struct pid *p, response *data, int n) {
 		double v = DATA_SCALED(p, DATA_1(p, n, data));
 		int t = DATA_1(p, n + 1, data);
 
@@ -1598,7 +1598,7 @@ static void format_o2(char *buf, int maxlen, UNUSED(int english),
 
 static void
 format_aux(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
-	response_t *data, int n) {
+	response *data, int n) {
 		snprintf(buf, maxlen, (DATA_RAW(p, n, data) & 1) ? "PTO Active" : "----");
 }
 
@@ -1606,7 +1606,7 @@ format_aux(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
 
 static void
 format_fuel(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
-	response_t *data, int n) {
+	response *data, int n) {
 		int s = DATA_1(p, n, data);
 
 		switch (s) {
@@ -1635,7 +1635,7 @@ format_fuel(char *buf, int maxlen, UNUSED(int english), const struct pid *p,
 
 
 static void
-format_data(char *buf, int maxlen, int english, const struct pid *p, response_t *data, int n) {
+format_data(char *buf, int maxlen, int english, const struct pid *p, response *data, int n) {
 		double v;
 
 		v = DATA_SCALED(p, DATA_RAW(p, n, data));

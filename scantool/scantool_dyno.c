@@ -130,7 +130,7 @@ static int cmd_dyno_mass(int argc, char **argv) {
 
 /* measure speed */
 // return <0 if error
-static int measure_data(uint8_t data_pid, ecu_data_t *ep) {
+static int measure_data(uint8_t data_pid, ecu_data *ep) {
 	int rv;
 
 	if (global_l3_conn == NULL) {
@@ -276,7 +276,7 @@ int dyno_loss_done;
  */
 
 static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv)) {
-	ecu_data_t *ep;
+	ecu_data *ep;
 
 	int speed;              /* measured speed */
 	int speed_previous = 0; /* previous speed */
@@ -422,7 +422,7 @@ static int cmd_dyno_setloss(int argc, char **argv) {
  */
 
 static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
-	ecu_data_t *ep;
+	ecu_data *ep;
 
 	int speed;						/* measured speed */
 	int rpm;							/* measured rpm */

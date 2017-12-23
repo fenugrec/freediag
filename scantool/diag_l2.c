@@ -49,14 +49,12 @@ int diag_l2_debug;
 
 
 /* struct to manage L2 stuff, used in here only */
-struct l2_internal_t {
-	diag_mtx *connlist_mtx;	//mutex for accessing dl2conn_list
-	struct diag_l2_conn	*dl2conn_list;	//linked-list of current diag_l2_conn's
-	struct diag_l2_link *dl2l_list;	//linked-list of current L2-L0 links
+static struct {
+	diag_mtx *connlist_mtx;            // mutex for accessing dl2conn_list
+	struct diag_l2_conn *dl2conn_list; // linked-list of current diag_l2_conn-s
+	struct diag_l2_link *dl2l_list;    // linked-list of current L2-L0 links
 	bool init_done;
-};
-
-static struct l2_internal_t l2internal = {0};
+} l2internal = {0};
 
 
 /** Find an existing L2 link using the specified L0 device.

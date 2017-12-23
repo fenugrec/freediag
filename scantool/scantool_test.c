@@ -124,7 +124,7 @@ cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv)) {
 
 	d_conn = global_l3_conn;
 
-	ecu_data_t *ep;
+	ecu_data *ep;
 	unsigned i;
 	bool merged_mode9_info[0x100];
 	#define MODE9_INFO_MAXLEN 0x100
@@ -200,7 +200,7 @@ static int
 cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv)) {
 	int rv;
 	struct diag_l3_conn *d_conn;
-	ecu_data_t *ep;
+	ecu_data *ep;
 	unsigned int i;
 	const char *text;
 

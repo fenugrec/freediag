@@ -166,7 +166,7 @@ cmd_watch(int argc, char **argv) {
 static void
 print_current_data(bool english) {
 	char buf[24];
-	ecu_data_t *ep;
+	ecu_data *ep;
 	unsigned int i;
 	unsigned int j;
 
@@ -204,7 +204,7 @@ print_current_data(bool english) {
 }
 
 static void
-log_response(int ecu, response_t *r) {
+log_response(int ecu, response *r) {
 	assert(global_logfp != NULL);
 
 	/* Only print good records */
@@ -219,8 +219,8 @@ log_response(int ecu, response_t *r) {
 
 static void
 log_current_data(void) {
-	response_t *r;
-	ecu_data_t *ep;
+	response *r;
+	ecu_data *ep;
 	unsigned int i;
 
 	if (!global_logfp) {
@@ -389,7 +389,7 @@ cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 
 static int
 cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
-	ecu_data_t *ep;
+	ecu_data *ep;
 	unsigned int i;
 
 	if (global_state < STATE_SCANDONE) {
@@ -411,7 +411,7 @@ cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
 }
 
 static void
-print_resp_info(UNUSED(int mode), response_t *data) {
+print_resp_info(UNUSED(int mode), response *data) {
 
 	int i;
 	for (i=0; i<256; i++) {
@@ -432,7 +432,7 @@ print_resp_info(UNUSED(int mode), response_t *data) {
 
 static int
 cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
-	ecu_data_t *ep;
+	ecu_data *ep;
 	int i;
 
 	printf("Current Data\n");
@@ -481,7 +481,7 @@ print_pidinfo(int mode, uint8_t *pid_data) {
 
 
 static int cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
-	ecu_data_t *ep;
+	ecu_data *ep;
 	int i;
 
 	if (global_state < STATE_SCANDONE) {

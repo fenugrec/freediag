@@ -41,12 +41,12 @@ extern "C" {
 
 
 /* Structure to hold responses */
-typedef struct response {
+typedef struct {
 	uint8_t	type;
 	uint8_t	len;
 	uint8_t	data[7];
 
-} response_t;
+} response;
 
 #define TYPE_UNTESTED	0	/* unchecked, prob because ECU doesn't support */
 #define TYPE_FAILED	1	/* Got failure response */
@@ -57,7 +57,7 @@ typedef struct response {
  * - one request can result in more than one ECU responding, and so
  * the data is stored in this
  */
-typedef struct ecu_data {
+typedef struct {
 	uint8_t 	valid;		/* Valid flag */
 	uint8_t	ecu_addr;	/* Address */
 
@@ -74,11 +74,11 @@ typedef struct ecu_data {
 
 	uint8_t	O2_sensors;	/* O2 sensors bit mask */
 
-	response_t	mode1_data[256]; /* Response data for all responses */
-	response_t	mode2_data[256]; /* Same, but for freeze frame */
+	response	mode1_data[256]; /* Response data for all responses */
+	response	mode2_data[256]; /* Same, but for freeze frame */
 
 	struct diag_msg	*rxmsg;		/* Received message */
-} ecu_data_t;
+} ecu_data;
 
 #define ECU_DATA_PIDS	0x01
 #define ECU_DATA_MODE2	0x02
@@ -88,7 +88,7 @@ typedef struct ecu_data {
 #define ECU_DATA_MODE9	0x20
 
 #define MAX_ECU 8			/* Max 8 Ecus responding */
-extern ecu_data_t	ecu_info[MAX_ECU];
+extern ecu_data	ecu_info[MAX_ECU];
 extern unsigned int ecu_count;
 
 struct diag_l2_conn;
@@ -159,7 +159,7 @@ void	l2raw_data_rcv(void *handle, struct diag_msg *msg);
 /** J1979 PID structures + utils **/
 struct pid ;
 /* format <numbytes> bytes of data into buf, up to <maxlen> chars. */
-typedef void (formatter)(char *buf, int maxlen, int units, const struct pid *, response_t *, int numbytes);
+typedef void (formatter)(char *buf, int maxlen, int units, const struct pid *, response *, int numbytes);
 
 struct pid {
 	int pidID ;
