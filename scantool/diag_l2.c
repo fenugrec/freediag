@@ -50,7 +50,7 @@ int diag_l2_debug;
 
 /* struct to manage L2 stuff, used in here only */
 static struct {
-	diag_mtx *connlist_mtx;            // mutex for accessing dl2conn_list
+	diag_mtx connlist_mtx;            // mutex for accessing dl2conn_list
 	struct diag_l2_conn *dl2conn_list; // linked-list of current diag_l2_conn-s
 	struct diag_l2_link *dl2l_list;    // linked-list of current L2-L0 links
 	bool init_done;
@@ -83,9 +83,9 @@ diag_l2_findlink(struct diag_l0_device *dl0d) {
 static int diag_l2_rmconn(struct diag_l2_conn *dl2c) {
 	assert(dl2c !=NULL);
 
-	diag_os_lock(l2internal.connlist_mtx);
+	diag_os_lock(&l2internal.connlist_mtx);
 	LL_DELETE(l2internal.dl2conn_list, dl2c);
-	diag_os_unlock(l2internal.connlist_mtx);
+	diag_os_unlock(&l2internal.connlist_mtx);
 
 	return 0;
 }
@@ -108,7 +108,7 @@ diag_l2_timer(void) {
 
 	unsigned long now;
 
-	if (!diag_os_trylock(l2internal.connlist_mtx)) {
+	if (!diag_os_trylock(&l2internal.connlist_mtx)) {
 		return;
 	}
 
@@ -138,7 +138,7 @@ diag_l2_timer(void) {
 			d_l2_conn->l2proto->diag_l2_proto_timeout(d_l2_conn);
 		}
 	}
-	diag_os_unlock(l2internal.connlist_mtx);
+	diag_os_unlock(&l2internal.connlist_mtx);
 	return;
 }
 
@@ -169,8 +169,7 @@ int diag_l2_init() {
 		fprintf(stderr, FLFMT "entered diag_l2_init\n", FL);
 	}
 
-	l2internal.connlist_mtx = diag_os_newmtx();
-	assert(l2internal.connlist_mtx != NULL);
+	diag_os_initmtx(&l2internal.connlist_mtx);
 
 	l2internal.dl2l_list = NULL;
 	l2internal.dl2conn_list = NULL;
@@ -181,7 +180,7 @@ int diag_l2_init() {
 
 //diag_l2_end : opposite of diag_l2_init !
 int diag_l2_end() {
-	diag_os_delmtx(l2internal.connlist_mtx);
+	diag_os_delmtx(&l2internal.connlist_mtx);
 	l2internal.init_done = 0;
 	return 0;
 }
@@ -300,14 +299,14 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 
 	assert(dl0d !=NULL);	//crash if it's null. We need to fix these problems.
 
-	diag_os_lock(l2internal.connlist_mtx);
+	diag_os_lock(&l2internal.connlist_mtx);
 
 	// Check if dl0d is still used by someone in l2internal.dl2conn_list
 	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		if (d_l2_conn->diag_link->l2_dl0d == dl0d) {
 			fprintf(stderr, FLFMT "Not closing dl0d: used by dl2conn %p!\n", FL,
 				(void *) d_l2_conn);
-			diag_os_unlock(l2internal.connlist_mtx);
+			diag_os_unlock(&l2internal.connlist_mtx);
 			return diag_iseterr(DIAG_ERR_GENERAL);	//there's still a dl2conn using it !
 		}
 	}
@@ -320,7 +319,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 		diag_l2_closelink(dl2l);	//closelink calls diag_l1_close() as required
 	}
 
-	diag_os_unlock(l2internal.connlist_mtx);
+	diag_os_unlock(&l2internal.connlist_mtx);
 	return 0;
 }
 
@@ -365,12 +364,12 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	 * is a bad idea.
 	 */
 
-	diag_os_lock(l2internal.connlist_mtx);
+	diag_os_lock(&l2internal.connlist_mtx);
 
 	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		if (d_l2_conn->diag_link == dl2l) {
 			fprintf(stderr, "Already an L2 connection with specified dl0-dl2l, cannot reuse !\n");
-			diag_os_unlock(l2internal.connlist_mtx);
+			diag_os_unlock(&l2internal.connlist_mtx);
 			return diag_pseterr(DIAG_ERR_GENERAL);
 		}
 	}
@@ -378,7 +377,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	/* Create new L2 connection */
 	rv = diag_calloc(&d_l2_conn, 1);
 	if (rv != 0) {
-		diag_os_unlock(l2internal.connlist_mtx);
+		diag_os_unlock(&l2internal.connlist_mtx);
 		return diag_pseterr(rv);
 	}
 	d_l2_conn->diag_link = dl2l;
@@ -399,7 +398,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 		fprintf(stderr,
 			FLFMT "Protocol %d not installed.\n", FL, L2protocol);
 		free(d_l2_conn);
-		diag_os_unlock(l2internal.connlist_mtx);
+		diag_os_unlock(&l2internal.connlist_mtx);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -441,7 +440,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 		}
 
 		free(d_l2_conn);
-		diag_os_unlock(l2internal.connlist_mtx);
+		diag_os_unlock(&l2internal.connlist_mtx);
 		return diag_pseterr(rv);
 	}
 
@@ -462,7 +461,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 			(void *)d_l2_conn);
 	}
 
-	diag_os_unlock(l2internal.connlist_mtx);
+	diag_os_unlock(&l2internal.connlist_mtx);
 	return d_l2_conn;
 }
 

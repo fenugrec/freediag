@@ -119,12 +119,18 @@ unsigned long long diag_os_hrtus(unsigned long long hrdelta);
  * the backends use pthread, C11, winAPI etc.
  * lowest-common-denominator stuff here; regular mutexes (not necessarily recursive etc)
  */
-typedef void diag_mtx;
+#if defined(_WIN32)
+typedef CRITICAL_SECTION diag_mtx;
+#elif defined(__unix__)
+typedef pthread_mutex_t diag_mtx;
+#else
+#	error Weird compilation environment, report this!
+#endif
 
-/** return a ptr to a new, initialized mutex.
+/** initialize mutex.
  * must be deleted with diag_os_delmtx() after use
  */
-diag_mtx *diag_os_newmtx(void);
+void diag_os_initmtx(diag_mtx *mtx);
 
 /** delete unused mutex
  */
