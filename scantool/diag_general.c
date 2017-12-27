@@ -40,20 +40,20 @@
 
 #include "utlist.h"
 
-#define ERR_STR_LEN 50	//length of "illegal error X" string
+#define ERR_STR_LEN 50 // length of "illegal error X" string
 
-static int diag_initialized=0;
+static int diag_initialized = 0;
 
-//diag_init : should be called once before doing anything.
-//and call diag_end before terminating.
-int diag_init(void) {	//returns 0 if normal exit
+// diag_init : should be called once before doing anything.
+// and call diag_end before terminating.
+int diag_init(void) { // returns 0 if normal exit
 	int rv;
 
 	if (diag_initialized) {
 		return 0;
 	}
 
-	//XXX This is interesting: the following functions only ever return 0...
+	// XXX This is interesting: the following functions only ever return 0...
 
 	if ((rv = diag_l1_init())) {
 		return diag_iseterr(rv);
@@ -71,29 +71,31 @@ int diag_init(void) {	//returns 0 if normal exit
 	return 0;
 }
 
-//must be called before exiting. Ret 0 if ok
-//this is the "opposite" of diag_init
-int diag_end(void) {
-	int rv=0;
+// must be called before exiting. Ret 0 if ok
+// this is the "opposite" of diag_init
+int
+diag_end(void) {
+	int rv = 0;
 	if (!diag_initialized) {
 		return 0;
 	}
 
+	if (diag_os_close()) {
+		fprintf(stderr, FLFMT "Could not close OS functions!\n", FL);
+		rv = -1;
+	}
 	if (diag_l2_end()) {
 		fprintf(stderr, FLFMT "Could not close L2 level\n", FL);
-		rv=-1;
+		rv = -1;
 	}
 	if (diag_l1_end()) {
 		fprintf(stderr, FLFMT "Could not close L1 level\n", FL);
-		rv=-1;
+		rv = -1;
 	}
-	if (diag_os_close()) {
-		fprintf(stderr, FLFMT "Could not close OS functions!\n", FL);
-		rv=-1;
-	}
-	//nothing to do for diag_dtc_init
 
-	diag_initialized=0;
+	// nothing to do for diag_dtc_init
+
+	diag_initialized = 0;
 	return rv;
 }
 
