@@ -405,6 +405,13 @@ diag_os_initmtx(diag_mtx *mtx) {
 }
 
 void
+diag_os_initstaticmtx(diag_mtx *mtx) {
+	// No static initialization of mutexes on Windows.
+	diag_os_initmtx(mtx);
+	return;
+}
+
+void
 diag_os_delmtx(diag_mtx *mtx) {
 	DeleteCriticalSection((CRITICAL_SECTION *)mtx);
 	return;
