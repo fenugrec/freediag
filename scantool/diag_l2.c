@@ -54,7 +54,7 @@ static struct {
 	struct diag_l2_conn *dl2conn_list; // linked-list of current diag_l2_conn-s
 	struct diag_l2_link *dl2l_list;    // linked-list of current L2-L0 links
 	bool init_done;
-} l2internal = {0};
+} l2internal = {LOCK_INITIALIZER, NULL, NULL, false};
 
 
 /** Find an existing L2 link using the specified L0 device.
@@ -169,7 +169,7 @@ int diag_l2_init() {
 		fprintf(stderr, FLFMT "entered diag_l2_init\n", FL);
 	}
 
-	diag_os_initmtx(&l2internal.connlist_mtx);
+	diag_os_initstaticmtx(&l2internal.connlist_mtx);
 
 	l2internal.dl2l_list = NULL;
 	l2internal.dl2conn_list = NULL;
