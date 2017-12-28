@@ -35,5 +35,5 @@ extern "C" {
 
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DIAG_L2_MB1_H_ */

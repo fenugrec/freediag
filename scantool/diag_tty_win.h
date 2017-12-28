@@ -12,5 +12,5 @@ extern "C" {
 
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DIAG_TTY_WIN_H_ */

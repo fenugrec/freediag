@@ -65,8 +65,8 @@ static struct ecu_info ecu_list[] = {
 	{0x10, "m43", "Motronic M4.3 engine management (DLC pin 3)", "EFI"}, /* 12700bps, KWP71 */
 #endif
 	{0x10, "m44old", "Motronic M4.4 engine management (old protocol)", "EFI"},
-	{0x11, "msa", "MSA 15.7 engine management (diesel vehicles)" ,"EFI"},
-	/* 0x13 - Volvo Scan Tool tester address */
+	{0x11, "msa", "MSA 15.7 engine management (diesel vehicles)", "EFI"},
+/* 0x13 - Volvo Scan Tool tester address */
 #if 0
 	{0x15, "m18", "Motronic M1.8 engine management (960)", "EFI"}, /* 4800bps, KWP71 */
 #endif
@@ -81,8 +81,7 @@ static struct ecu_info ecu_list[] = {
 	{0x58, "srs", "airbags", "SRS"},
 	{0x6e, "aw50", "AW50-42 transmission", "AT"},
 	{0x7a, "m44", "Motronic M4.4 engine management", "EFI"},
-	{0, NULL, NULL, NULL}
-};
+	{0, NULL, NULL, NULL}};
 
 struct dtc_table_entry {
 	uint8_t ecu_addr;
@@ -95,8 +94,7 @@ static struct dtc_table_entry dtc_table[] = {
 	{0x6e, 0x13, 332, "Torque converter lock-up solenoid open circuit"},
 	{0x10, 0x54, 445, "Pulsed secondary air injection system pump signal"},
 	{0x7a, 0x54, 445, "Pulsed secondary air injection system pump signal"},
-	{0, 0, 0, NULL}
-};
+	{0, 0, 0, NULL}};
 
 static bool have_read_dtcs = false;
 static struct diag_msg *ecu_id = NULL;
@@ -119,51 +117,42 @@ static int cmd_850_scan_all(int argc, UNUSED(char **argv));
 static int cmd_850_test(int argc, char **argv);
 
 const struct cmd_tbl_entry v850_cmd_table[] = {
-	{ "help", "help [command]", "Gives help for a command",
-		cmd_850_help, 0, NULL},
-	{ "?", "? [command]", "Gives help for a command",
-		cmd_850_help, 0, NULL},
+	{"help", "help [command]", "Gives help for a command", cmd_850_help, 0, NULL},
+	{"?", "? [command]", "Gives help for a command", cmd_850_help, 0, NULL},
 
-	{ "connect", "connect <ecuname>", "Connect to ECU. Use '850 connect ?' to show ECU names.",
-		cmd_850_connect, 0, NULL},
-	{ "disconnect", "disconnect", "Disconnect from ECU",
-		cmd_850_disconnect, 0, NULL},
-	{ "scan-all", "scan-all", "Try connecting to all possible ECUs, print identification and DTCs",
-		cmd_850_scan_all, 0, NULL},
-	{ "sendreq", "sendreq <byte0 [byte1 ...]>", "Send raw data to the ECU and print response",
-		cmd_850_sendreq, 0, NULL},
-	{ "ping", "ping", "Verify communication with the ECU", cmd_850_ping,
-		0, NULL},
-	{ "peek", "peek <addr1>[w|l][.addr2] [addr2 ...] [live]", "Display contents of RAM, once or continuously",
-		cmd_850_peek, 0, NULL},
-	{ "dumpram", "dumpram <filename> [fast]", "Dump entire RAM contents to file (Warning: takes 20+ minutes)",
-		cmd_850_dumpram, 0, NULL},
-	{ "read", "read <id1>|*<addr1> [id2 ...] [live]", "Display live data, once or continuously",
-		cmd_850_read, 0, NULL},
-	{ "adc", "adc id1 [id2 ...]", "Display ADC readings, once or continuously",
-		cmd_850_adc, 0, NULL},
-	{ "readnv", "readnv id1 [id2 ...]", "Display non-volatile data",
-		cmd_850_readnv, 0, NULL},
-	{ "id", "id", "Display ECU identification",
-		cmd_850_id, 0, NULL},
-	{ "dtc", "dtc", "Retrieve DTCs",
-		cmd_850_dtc, 0, NULL},
-	{ "cleardtc", "cleardtc", "Clear DTCs from ECU",
-		cmd_850_cleardtc, 0, NULL},
-	{ "freeze", "freeze dtc1|all [dtc2 ...]", "Display freeze frame(s)",
-		cmd_850_freeze, 0, NULL},
-	{ "test", "test <testname>", "Test vehicle components",
-		cmd_850_test, 0, NULL},
+	{"connect", "connect <ecuname>",
+	 "Connect to ECU. Use '850 connect ?' to show ECU names.", cmd_850_connect, 0,
+	 NULL},
+	{"disconnect", "disconnect", "Disconnect from ECU", cmd_850_disconnect, 0, NULL},
+	{"scan-all", "scan-all",
+	 "Try connecting to all possible ECUs, print identification and DTCs",
+	 cmd_850_scan_all, 0, NULL},
+	{"sendreq", "sendreq <byte0 [byte1 ...]>",
+	 "Send raw data to the ECU and print response", cmd_850_sendreq, 0, NULL},
+	{"ping", "ping", "Verify communication with the ECU", cmd_850_ping, 0, NULL},
+	{"peek", "peek <addr1>[w|l][.addr2] [addr2 ...] [live]",
+	 "Display contents of RAM, once or continuously", cmd_850_peek, 0, NULL},
+	{"dumpram", "dumpram <filename> [fast]",
+	 "Dump entire RAM contents to file (Warning: takes 20+ minutes)", cmd_850_dumpram,
+	 0, NULL},
+	{"read", "read <id1>|*<addr1> [id2 ...] [live]",
+	 "Display live data, once or continuously", cmd_850_read, 0, NULL},
+	{"adc", "adc id1 [id2 ...]", "Display ADC readings, once or continuously",
+	 cmd_850_adc, 0, NULL},
+	{"readnv", "readnv id1 [id2 ...]", "Display non-volatile data", cmd_850_readnv, 0,
+	 NULL},
+	{"id", "id", "Display ECU identification", cmd_850_id, 0, NULL},
+	{"dtc", "dtc", "Retrieve DTCs", cmd_850_dtc, 0, NULL},
+	{"cleardtc", "cleardtc", "Clear DTCs from ECU", cmd_850_cleardtc, 0, NULL},
+	{"freeze", "freeze dtc1|all [dtc2 ...]", "Display freeze frame(s)", cmd_850_freeze,
+	 0, NULL},
+	{"test", "test <testname>", "Test vehicle components", cmd_850_test, 0, NULL},
 
-	{ "up", "up", "Return to previous menu level",
-		cmd_up, 0, NULL},
-	{ "quit","quit", "Exit program",
-		cmd_exit, FLAG_HIDDEN, NULL},
-	{ "exit", "exit", "Exit program",
-		cmd_exit, 0, NULL},
+	{"up", "up", "Return to previous menu level", cmd_up, 0, NULL},
+	{"quit", "quit", "Exit program", cmd_exit, FLAG_HIDDEN, NULL},
+	{"exit", "exit", "Exit program", cmd_exit, 0, NULL},
 
-	{ NULL, NULL, NULL, NULL, 0, NULL}
-};
+	{NULL, NULL, NULL, NULL, 0, NULL}};
 
 static int
 cmd_850_help(int argc, char **argv) {
@@ -179,7 +168,7 @@ capitalize(const char *in) {
 	static char buf[80];
 
 	strncpy(buf, in, sizeof(buf));
-	buf[sizeof(buf)-1] = '\0';
+	buf[sizeof(buf) - 1] = '\0';
 
 	if (isalpha(buf[0]) && islower(buf[0])) {
 		buf[0] = toupper(buf[0]);
@@ -275,8 +264,8 @@ current_ecu_desc(void) {
  */
 static char *
 dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
-	static char printable[7+1];
-	static char *empty="";
+	static char printable[7 + 1];
+	static char *empty = "";
 	struct ecu_info *ecu_entry;
 	struct dtc_table_entry *dtc_entry;
 	char *prefix;
@@ -367,8 +356,7 @@ dtc_raw_by_printable(char *printable) {
 	/* find suffix */
 	ecu_addr = global_l2_conn->diag_l2_destaddr;
 	for (dtc_entry = dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
-		if (dtc_entry->ecu_addr == ecu_addr &&
-		    dtc_entry->dtc_suffix == suffix) {
+		if (dtc_entry->ecu_addr == ecu_addr && dtc_entry->dtc_suffix == suffix) {
 			return dtc_entry->raw_value;
 		}
 	}
@@ -389,11 +377,11 @@ print_ecu_list(void) {
 }
 
 enum connection_status {
-	NOT_CONNECTED,		/* Not connected */
-	CONNECTED_D2,		/* Connected with D2 over K-line */
-	CONNECTED_KWP71,	/* Connected with KWP71 */
-	CONNECTED_EITHER,	/* Connected with either D2 or KWP71 */
-	CONNECTED_OTHER		/* Connected with non-Volvo protocol */
+	NOT_CONNECTED,    /* Not connected */
+	CONNECTED_D2,     /* Connected with D2 over K-line */
+	CONNECTED_KWP71,  /* Connected with KWP71 */
+	CONNECTED_EITHER, /* Connected with either D2 or KWP71 */
+	CONNECTED_OTHER   /* Connected with non-Volvo protocol */
 };
 
 /*
@@ -420,8 +408,8 @@ get_connection_status(void) {
 static bool
 valid_arg_count(int min, int argc, int max) {
 	if (argc < min) {
-                printf("Too few arguments\n");
-                return false;
+		printf("Too few arguments\n");
+		return false;
 	}
 
 	if (argc > max) {
@@ -453,7 +441,8 @@ valid_connection_status(unsigned int want) {
 		return false;
 	case CONNECTED_OTHER:
 		if (want == NOT_CONNECTED) {
-			printf("Already connected with non-Volvo protocol. Please use 'diag disconnect'.\n");
+			printf("Already connected with non-Volvo protocol. Please use "
+			       "'diag disconnect'.\n");
 		} else {
 			printf("Connected with non-Volvo protocol.\n");
 		}
@@ -461,7 +450,8 @@ valid_connection_status(unsigned int want) {
 	case CONNECTED_D2:
 	case CONNECTED_KWP71:
 		if (want == NOT_CONNECTED) {
-			printf("Already connected to %s. Please disconnect first.\n", current_ecu_desc());
+			printf("Already connected to %s. Please disconnect first.\n",
+			       current_ecu_desc());
 		} else {
 			printf("This function is not available with this protocol.\n");
 		}
@@ -480,7 +470,7 @@ static void
 adaptive_timing_workaround(void) {
 	int i;
 
-	for (i=0;i<3;i++) {
+	for (i = 0; i < 3; i++) {
 		(void)diag_l7_d2_ping(global_l2_conn);
 		diag_os_millisleep(200);
 	}
@@ -561,9 +551,9 @@ cmd_850_connect(int argc, char **argv) {
 		return diag_iseterr(rv);
 	}
 
-	global_l2_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
-		global_cfg.initmode & DIAG_L2_TYPE_INITMASK, global_cfg.speed,
-		global_cfg.tgt, global_cfg.src);
+	global_l2_conn = diag_l2_StartCommunications(
+		dl0d, global_cfg.L2proto, global_cfg.initmode & DIAG_L2_TYPE_INITMASK,
+		global_cfg.speed, global_cfg.tgt, global_cfg.src);
 	if (global_l2_conn == NULL) {
 		rv = diag_geterr();
 		diag_l2_close(dl0d);
@@ -571,9 +561,13 @@ cmd_850_connect(int argc, char **argv) {
 	}
 
 	if (global_cfg.L2proto == DIAG_L2_PROT_VAG) {
-		(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_GET_L2_DATA, (void *)&l2data);
-		if (l2data.kb1!=0xab || l2data.kb2!=0x02) {
-			fprintf(stderr, FLFMT "_connect : wrong keybytes %02X%02X, expecting AB02\n", FL, l2data.kb1, l2data.kb2);
+		(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_GET_L2_DATA,
+				    (void *)&l2data);
+		if (l2data.kb1 != 0xab || l2data.kb2 != 0x02) {
+			fprintf(stderr,
+				FLFMT
+				"_connect : wrong keybytes %02X%02X, expecting AB02\n",
+				FL, l2data.kb1, l2data.kb2);
 			diag_l2_StopCommunications(global_l2_conn);
 			diag_l2_close(dl0d);
 			global_l2_conn = NULL;
@@ -658,11 +652,10 @@ cmd_850_sendreq(int argc, char **argv) {
 
 	len = argc - 1;
 	for (i = 0; i < len; i++) {
-		data[i] = (uint8_t) htoi(argv[i+1]);
+		data[i] = (uint8_t)htoi(argv[i + 1]);
 	}
 
-	rv = l2_do_send( global_l2_conn, data, len,
-		(void *)&_RQST_HANDLE_DECODE);
+	rv = l2_do_send(global_l2_conn, data, len, (void *)&_RQST_HANDLE_DECODE);
 
 	if (rv == DIAG_ERR_TIMEOUT) {
 		printf("No data received\n");
@@ -709,16 +702,21 @@ cmd_850_ping(int argc, UNUSED(char **argv)) {
  */
 static void
 interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf) {
-	if (ns==NS_LIVEDATA && addr==0x0200) {
-		printf("Engine Coolant Temperature: %dC (%dF)\n", buf[1]-80, (buf[1]-80)*9/5+32);
-	} else if (ns==NS_LIVEDATA && addr==0x0300) {
+	if (ns == NS_LIVEDATA && addr == 0x0200) {
+		printf("Engine Coolant Temperature: %dC (%dF)\n", buf[1] - 80,
+		       (buf[1] - 80) * 9 / 5 + 32);
+	} else if (ns == NS_LIVEDATA && addr == 0x0300) {
 		/*ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref*/
-		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
-	} else if (ns==NS_MEMORY && addr==0x36 && global_l2_conn->diag_l2_destaddr==0x10) {
-		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
-	} else if (ns==NS_LIVEDATA && addr==0x1000) {
+		printf("Battery voltage: %.1f V\n",
+		       (float)buf[0] * 29750 / 8250 * 5 / 256);
+	} else if (ns == NS_MEMORY && addr == 0x36 &&
+		   global_l2_conn->diag_l2_destaddr == 0x10) {
+		printf("Battery voltage: %.1f V\n",
+		       (float)buf[0] * 29750 / 8250 * 5 / 256);
+	} else if (ns == NS_LIVEDATA && addr == 0x1000) {
 		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
-		printf("MAF sensor signal: %.2f V\n", (float)buf[0]*9460/8250*5/256);
+		printf("MAF sensor signal: %.2f V\n",
+		       (float)buf[0] * 9460 / 8250 * 5 / 256);
 	}
 }
 
@@ -733,8 +731,8 @@ interpret_block(enum namespace ns, uint16_t addr, int len, uint8_t *buf) {
 		addr <<= 8;
 	}
 
-	for (i=0; i<len; i++) {
-		interpret_value(ns, addr+i, len-i, buf+i);
+	for (i = 0; i < len; i++) {
+		interpret_value(ns, addr + i, len - i, buf + i);
 	}
 }
 
@@ -759,8 +757,8 @@ print_hexdump_line(FILE *f, uint16_t addr, int addr_chars, uint8_t *buf, uint16_
 }
 
 struct read_or_peek_item {
-	uint16_t start;		/* starting address or identifier */
-	uint16_t end;		/* ending address - for peeks only */
+	uint16_t start; /* starting address or identifier */
+	uint16_t end;   /* ending address - for peeks only */
 	enum namespace ns;
 };
 
@@ -780,7 +778,7 @@ parse_peek_arg(char *arg, struct read_or_peek_item *item) {
 	} else if ((p[0] == 'l' || p[0] == 'L') && p[1] == '\0') {
 		item->end = item->start + 3;
 	} else if ((p[0] == '.' || p[0] == '-') && p[1] != '\0') {
-		item->end = strtoul(p+1, &q, 0);
+		item->end = strtoul(p + 1, &q, 0);
 		if (*q != '\0' || item->end < item->start) {
 			printf("Invalid address range '%s'\n", arg);
 			return 1;
@@ -804,7 +802,7 @@ parse_read_arg(char *arg, struct read_or_peek_item *item) {
 			printf("Invalid identifier '%s'\n", arg);
 			return 1;
 		}
-		return parse_peek_arg(arg+1, item);
+		return parse_peek_arg(arg + 1, item);
 	}
 
 	item->ns = NS_LIVEDATA;
@@ -868,16 +866,19 @@ parse_freeze_arg(char *arg, struct read_or_peek_item *item) {
 	if (*p != '\0' || item->start > 0xff) {
 		printf("Invalid identifier '%s'\n", arg);
 		if (isdigit(arg[0]) && arg[0] != '0' && *p == '\0') {
-			printf("Did you mean %s-%s?\n",
-			       current_dtc_prefix(), arg);
+			printf("Did you mean %s-%s?\n", current_dtc_prefix(), arg);
 		}
 		return 1;
 	}
-	if (isdigit(arg[0]) && arg[0]!='0') {
+	if (isdigit(arg[0]) && arg[0] != '0') {
 		if (item->start < 100) {
-			printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean 0x%s?\n", item->start, item->start, arg);
+			printf("Warning: retrieving freeze frame by raw identifier %d "
+			       "(=%02X).\nDid you mean 0x%s?\n",
+			       item->start, item->start, arg);
 		} else {
-			printf("Warning: retrieving freeze frame by raw identifier %d (=%02X).\nDid you mean %s-%s?\n", item->start, item->start, current_dtc_prefix(), arg);
+			printf("Warning: retrieving freeze frame by raw identifier %d "
+			       "(=%02X).\nDid you mean %s-%s?\n",
+			       item->start, item->start, current_dtc_prefix(), arg);
 		}
 	}
 	return 0;
@@ -907,7 +908,7 @@ read_family(int argc, char **argv, enum namespace ns) {
 	continuous = false;
 	count = argc - 1;
 
-	if (ns!=NS_NV && ns!=NS_FREEZE && strcasecmp(argv[argc-1], "live")==0) {
+	if (ns != NS_NV && ns != NS_FREEZE && strcasecmp(argv[argc - 1], "live") == 0) {
 		continuous = true;
 		count--;
 		if (count < 1) {
@@ -920,7 +921,7 @@ read_family(int argc, char **argv, enum namespace ns) {
 		return diag_iseterr(rv);
 	}
 
-	for (i=0; i<count; i++) {
+	for (i = 0; i < count; i++) {
 		switch (ns) {
 		case NS_MEMORY:
 			if (parse_peek_arg(argv[i + 1], &(items[i])) != 0) {
@@ -955,13 +956,17 @@ read_family(int argc, char **argv, enum namespace ns) {
 
 	diag_os_ipending();
 	while (1) {
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			if (items[i].ns != NS_MEMORY) {
 				addr = items[i].start;
 				if (get_connection_status() == CONNECTED_D2) {
-					gotbytes = diag_l7_d2_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
+					gotbytes = diag_l7_d2_read(global_l2_conn,
+								   items[i].ns, addr,
+								   sizeof(buf), buf);
 				} else {
-					gotbytes = diag_l7_kwp71_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
+					gotbytes = diag_l7_kwp71_read(global_l2_conn,
+								      items[i].ns, addr,
+								      sizeof(buf), buf);
 				}
 				if (gotbytes < 0) {
 					printf("Error reading %02X\n", addr);
@@ -970,16 +975,19 @@ read_family(int argc, char **argv, enum namespace ns) {
 				if (items[i].ns == NS_FREEZE) {
 					printf("%s  ",
 					       dtc_printable_by_raw(
-						       global_l2_conn
-							       ->diag_l2_destaddr,
+						       global_l2_conn->diag_l2_destaddr,
 						       addr, NULL));
 				}
 				if (gotbytes == 0) {
 					printf("%02X: no data\n", addr);
 				} else if ((unsigned int)gotbytes > sizeof(buf)) {
-					print_hexdump_line(stdout, addr, 2, buf, sizeof(buf));
-					printf(" (%d bytes received, only first %zu shown)\n", gotbytes, sizeof(buf));
-					interpret_block(items[i].ns, addr, sizeof(buf), buf);
+					print_hexdump_line(stdout, addr, 2, buf,
+							   sizeof(buf));
+					printf(" (%d bytes received, only first %zu "
+					       "shown)\n",
+					       gotbytes, sizeof(buf));
+					interpret_block(items[i].ns, addr, sizeof(buf),
+							buf);
 				} else {
 					print_hexdump_line(stdout, addr, 2, buf, gotbytes);
 					interpret_block(items[i].ns, addr, gotbytes, buf);
@@ -989,18 +997,26 @@ read_family(int argc, char **argv, enum namespace ns) {
 				len = (items[i].end - items[i].start) + 1;
 				while (len > 0) {
 					if (get_connection_status() == CONNECTED_D2) {
-						gotbytes = diag_l7_d2_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
+						gotbytes = diag_l7_d2_read(
+							global_l2_conn, NS_MEMORY, addr,
+							(len < 8) ? len : 8, buf);
 					} else {
-						gotbytes = diag_l7_kwp71_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
+						gotbytes = diag_l7_kwp71_read(
+							global_l2_conn, NS_MEMORY, addr,
+							(len < 8) ? len : 8, buf);
 					}
-					if (gotbytes == ((len<8)?len:8)) {
-						print_hexdump_line(stdout, addr, 4, buf, (len<8)?len:8);
-						interpret_block(NS_MEMORY, addr, (len<8)?len:8, buf);
+					if (gotbytes == ((len < 8) ? len : 8)) {
+						print_hexdump_line(stdout, addr, 4, buf,
+								   (len < 8) ? len : 8);
+						interpret_block(NS_MEMORY, addr,
+								(len < 8) ? len : 8, buf);
 					} else {
-						printf("Error reading %s%04X\n", (ns==NS_LIVEDATA)?"*":"", addr);
+						printf("Error reading %s%04X\n",
+						       (ns == NS_LIVEDATA) ? "*" : "",
+						       addr);
 						goto done;
 					}
-					len -= (len<8)?len:8;
+					len -= (len < 8) ? len : 8;
 					addr += 8;
 				}
 			}
@@ -1068,7 +1084,6 @@ cmd_850_adc(int argc, char **argv) {
 	return read_family(argc, argv, NS_ADC);
 }
 
-
 /*
  * Read and display one or more non-volatile parameters.
  *
@@ -1118,19 +1133,19 @@ cmd_850_freeze_all(void) {
 		return diag_iseterr(rv);
 	}
 
-	rv = diag_calloc(&argvout, count+1);
+	rv = diag_calloc(&argvout, count + 1);
 	if (rv) {
 		return diag_iseterr(rv);
 	}
 
 	p = argbuf;
-	for (i=0; i<count; i++) {
+	for (i = 0; i < count; i++) {
 		sprintf(p, "0x%x", dtcs[i]);
-		argvout[i+1] = p;
+		argvout[i + 1] = p;
 		p += 5;
 	}
 
-	rv = read_family(count+1, argvout, NS_FREEZE);
+	rv = read_family(count + 1, argvout, NS_FREEZE);
 
 	free(argvout);
 	free(argbuf);
@@ -1150,7 +1165,7 @@ cmd_850_freeze(int argc, char **argv) {
 		return CMD_OK;
 	}
 
-	if (argc==2 && strcasecmp(argv[1], "all")==0) {
+	if (argc == 2 && strcasecmp(argv[1], "all") == 0) {
 		return cmd_850_freeze_all();
 	}
 	return read_family(argc, argv, NS_FREEZE);
@@ -1171,11 +1186,13 @@ cmd_850_id_d2(void) {
 		return CMD_OK;
 	}
 	if (rv != sizeof(buf)) {
-		printf("Identification response was %d bytes, expected %zu\n", rv, sizeof(buf));
+		printf("Identification response was %d bytes, expected %zu\n", rv,
+		       sizeof(buf));
 		return CMD_OK;
 	}
 	if (buf[0] != 0) {
-		printf("First identification response byte was %02X, expected 0\n", buf[0]);
+		printf("First identification response byte was %02X, expected 0\n",
+		       buf[0]);
 		return CMD_OK;
 	}
 	if (!isprint(buf[5]) || !isprint(buf[6]) || !isprint(buf[7]) ||
@@ -1184,8 +1201,10 @@ cmd_850_id_d2(void) {
 		return CMD_OK;
 	}
 
-	printf("Hardware ID: P%02X%02X%02X%02X revision %.3s\n", buf[1], buf[2], buf[3], buf[4], buf+5);
-	printf("Software ID:  %02X%02X%02X%02X revision %.3s\n", buf[8], buf[9], buf[10], buf[11], buf+12);
+	printf("Hardware ID: P%02X%02X%02X%02X revision %.3s\n", buf[1], buf[2], buf[3],
+	       buf[4], buf + 5);
+	printf("Software ID:  %02X%02X%02X%02X revision %.3s\n", buf[8], buf[9], buf[10],
+	       buf[11], buf + 12);
 
 	if (global_l2_conn->diag_l2_destaddr == 0x7a) {
 		rv = diag_l7_d2_read(global_l2_conn, NS_NV, 1, sizeof(buf), buf);
@@ -1193,16 +1212,18 @@ cmd_850_id_d2(void) {
 			return CMD_OK;
 		}
 		if (rv != 10) {
-			printf("Identification response was %d bytes, expected %d\n", rv, 10);
+			printf("Identification response was %d bytes, expected %d\n", rv,
+			       10);
 			return CMD_OK;
 		}
-		for (i=0; i<10; i++) {
+		for (i = 0; i < 10; i++) {
 			if (!isdigit(buf[i])) {
 				printf("Unexpected characters in identification block\n");
 				return CMD_OK;
 			}
 		}
-		printf("Order number: %c %.3s %.3s %.3s\n",buf[0], buf+1, buf+4, buf+7);
+		printf("Order number: %c %.3s %.3s %.3s\n", buf[0], buf + 1, buf + 4,
+		       buf + 7);
 	}
 
 	return CMD_OK;
@@ -1228,20 +1249,21 @@ cmd_850_id_kwp71(void) {
 		return CMD_OK;
 	}
 
-	for (i=0; i<10; i++) {
+	for (i = 0; i < 10; i++) {
 		if (!isdigit(msg->data[i])) {
 			printf("Unexpected characters in identification block\n");
 			return CMD_OK;
 		}
 	}
 
-	printf("Order number: %c %.3s %.3s %.3s\n",msg->data[0], msg->data+1, msg->data+4, msg->data+7);
+	printf("Order number: %c %.3s %.3s %.3s\n", msg->data[0], msg->data + 1,
+	       msg->data + 4, msg->data + 7);
 
 	msg = msg->next;
 	if (msg == NULL) {
 		return CMD_OK;
 	}
-		/* Second block seems to be meaningless, don't print it. */
+	/* Second block seems to be meaningless, don't print it. */
 #if 0
 	print_hexdump_line(stdout, msg->type, 2, msg->data, msg->len);
 #endif
@@ -1255,7 +1277,7 @@ cmd_850_id_kwp71(void) {
 		return CMD_OK;
 	}
 
-	for (i=0; i<7; i++) {
+	for (i = 0; i < 7; i++) {
 		if (!isdigit(msg->data[i])) {
 			printf("Unexpected characters in identification block\n");
 			return CMD_OK;
@@ -1343,8 +1365,8 @@ cmd_850_dumpram(int argc, char **argv) {
 		} else {
 			happy = 0;
 		}
-		if ((addr&0x1f) == 0) {
-			printf("\r%04X %s", addr, happy?":)":":/");
+		if ((addr & 0x1f) == 0) {
+			printf("\r%04X %s", addr, happy ? ":)" : ":/");
 			fflush(stdout);
 		}
 		if (addr == 0xfff8) {
@@ -1406,8 +1428,9 @@ cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	}
 
 	printf("Stored DTCs:\n");
-	for (i=0; i<rv; i+=span) {
-		code = dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, buf[i], &desc);
+	for (i = 0; i < rv; i += span) {
+		code = dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, buf[i],
+					    &desc);
 		printf("%s (%02X) %s\n", code, buf[i], desc);
 	}
 
@@ -1430,23 +1453,28 @@ cmd_850_cleardtc(int argc, UNUSED(char **argv)) {
 		return CMD_OK;
 	}
 
-	input = basic_get_input("Are you sure you wish to clear the Diagnostic Trouble Codes (y/n) ? ", stdin);
+	input = basic_get_input(
+		"Are you sure you wish to clear the Diagnostic Trouble Codes (y/n) ? ",
+		stdin);
 	if (!input) {
 		return CMD_OK;
 	}
 
-	if ((strcasecmp(input, "yes") != 0) && (strcasecmp(input, "y")!=0)) {
+	if ((strcasecmp(input, "yes") != 0) && (strcasecmp(input, "y") != 0)) {
 		printf("Not done\n");
 		goto done;
 	}
 
 	if (!have_read_dtcs) {
 		free(input);
-		input = basic_get_input("You haven't read the DTCs yet. Are you sure you wish to clear them (y/n) ? ", stdin);
+		input = basic_get_input(
+			"You haven't read the DTCs yet. Are you sure you wish to clear "
+			"them (y/n) ? ",
+			stdin);
 		if (!input) {
 			return CMD_OK;
 		}
-		if ((strcasecmp(input, "yes") != 0) && (strcasecmp(input, "y")!=0)) {
+		if ((strcasecmp(input, "yes") != 0) && (strcasecmp(input, "y") != 0)) {
 			printf("Not done\n");
 			goto done;
 		}
@@ -1524,13 +1552,15 @@ cmd_850_test(int argc, char **argv) {
 		return CMD_OK;
 	}
 
-	if (argc==2 && strcasecmp(argv[1], "fan1")==0 && global_l2_conn->diag_l2_destaddr==0x7a) {
+	if (argc == 2 && strcasecmp(argv[1], "fan1") == 0 &&
+	    global_l2_conn->diag_l2_destaddr == 0x7a) {
 		if (diag_l7_d2_io_control(global_l2_conn, 0x0e, 3) == 0) {
 			printf("Activating engine cooling fan.\n");
 		} else {
 			printf("Unable to activate fan.\n");
 		}
-	} else if (argc==2 && strcasecmp(argv[1], "fan2")==0 && global_l2_conn->diag_l2_destaddr==0x7a) {
+	} else if (argc == 2 && strcasecmp(argv[1], "fan2") == 0 &&
+		   global_l2_conn->diag_l2_destaddr == 0x7a) {
 		if (diag_l7_d2_io_control(global_l2_conn, 0x1f, 3) == 0) {
 			printf("Activating engine cooling fan.\n");
 		} else {
@@ -1540,8 +1570,10 @@ cmd_850_test(int argc, char **argv) {
 		printf("Usage: test <testname>\n");
 		if (global_l2_conn->diag_l2_destaddr == 0x7a) {
 			printf("Available tests:\n");
-			printf("fan1 - Activate engine cooling fan, half speed (please keep fingers clear)\n");
-			printf("fan2 - Activate engine cooling fan, full speed (please keep fingers clear)\n");
+			printf("fan1 - Activate engine cooling fan, half speed (please "
+			       "keep fingers clear)\n");
+			printf("fan2 - Activate engine cooling fan, full speed (please "
+			       "keep fingers clear)\n");
 		} else {
 			printf("No available tests for this ECU.\n");
 		}

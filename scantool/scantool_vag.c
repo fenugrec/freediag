@@ -34,25 +34,16 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
-
 static int cmd_vag_help(int argc, char **argv);
 const struct cmd_tbl_entry vag_cmd_table[] = {
-	{ "help", "help [command]", "Gives help for a command",
-		cmd_vag_help, 0, NULL},
-	{ "?", "? [command]", "Gives help for a command",
-		cmd_vag_help, 0, NULL},
+	{"help", "help [command]", "Gives help for a command", cmd_vag_help, 0, NULL},
+	{"?", "? [command]", "Gives help for a command", cmd_vag_help, 0, NULL},
 
+	{"up", "up", "Return to previous menu level", cmd_up, 0, NULL},
+	{"quit", "quit", "Exit program", cmd_exit, FLAG_HIDDEN, NULL},
+	{"exit", "exit", "Exit program", cmd_exit, 0, NULL},
 
-	{ "up", "up", "Return to previous menu level",
-		cmd_up, 0, NULL},
-	{ "quit","quit", "Exit program",
-		cmd_exit, FLAG_HIDDEN, NULL},
-	{ "exit", "exit", "Exit program",
-		cmd_exit, 0, NULL},
-
-	{ NULL, NULL, NULL, NULL, 0, NULL}
-};
-
+	{NULL, NULL, NULL, NULL, 0, NULL}};
 
 /*
  * Table of english descriptions of the VW ECU addresses
@@ -60,15 +51,12 @@ const struct cmd_tbl_entry vag_cmd_table[] = {
 struct vw_id_info {
 	const int id;
 	const char *command;
-} ;
+};
 
 const struct vw_id_info vw_ids[] = {
-	{DIAG_VAG_ECU_ENGINE, "Engine" },
-	{DIAG_VAG_ECU_GEARBOX, "Gearbox" },
-	{DIAG_VAG_ECU_ABS, "ABS" },
-	{DIAG_VAG_ECU_AIRBAGS, "Airbag" },
-	{DIAG_VAG_ECU_LOCKS, "Locking" },
-	{0, NULL},
+	{DIAG_VAG_ECU_ENGINE, "Engine"}, {DIAG_VAG_ECU_GEARBOX, "Gearbox"},
+	{DIAG_VAG_ECU_ABS, "ABS"},       {DIAG_VAG_ECU_AIRBAGS, "Airbag"},
+	{DIAG_VAG_ECU_LOCKS, "Locking"}, {0, NULL},
 };
 
 static int

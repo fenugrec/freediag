@@ -7,21 +7,22 @@
  * support arbitrary speeds for some L0 links.
  */
 
-
 #include "diag.h"
-#include "diag_l0.h"	//needed for diag_l0_debug
+#include "diag_l0.h" //needed for diag_l0_debug
 
-#define IFLUSH_TIMEOUT 30	//timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX buffer.
-		//must not be too long or diag_l0_dumb:slowinit() will not work
-#define MAXTIMEOUT	10000	//ms; for diag_tty_read()
+#define IFLUSH_TIMEOUT                                                                    \
+	30 // timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX
+	   // buffer.
+// must not be too long or diag_l0_dumb:slowinit() will not work
+#define MAXTIMEOUT 10000 // ms; for diag_tty_read()
 
 /*
  * Parity settings
  */
 enum diag_parity {
-	diag_par_e = 1,	/* Even parity */
-	diag_par_o = 2,	/* Odd parity */
-	diag_par_n = 3	/* No parity */
+	diag_par_e = 1, /* Even parity */
+	diag_par_o = 2, /* Odd parity */
+	diag_par_n = 3  /* No parity */
 };
 
 enum diag_databits {
@@ -31,21 +32,17 @@ enum diag_databits {
 	diag_databits_5 = 5
 };
 
-enum diag_stopbits {
-	diag_stopbits_1 = 1,
-	diag_stopbits_2 = 2
-};
+enum diag_stopbits { diag_stopbits_1 = 1, diag_stopbits_2 = 2 };
 
 struct diag_serial_settings {
-	unsigned int speed;	//in bps of course
+	unsigned int speed; // in bps of course
 	enum diag_databits databits;
 	enum diag_stopbits stopbits;
 	enum diag_parity parflag;
 };
 
-
 /*** Public functions ***/
-typedef void ttyp;	//used as "(tty_internal_struct *) ttyp" in tty code
+typedef void ttyp; // used as "(tty_internal_struct *) ttyp" in tty code
 
 /** Get available serial ports
  *
@@ -72,8 +69,7 @@ void diag_tty_close(ttyp *tty_int);
  *
  * @return 0 if ok.
  */
-int diag_tty_setup(ttyp *tty_int,
-	const struct diag_serial_settings *pss);
+int diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pss);
 
 /** Set DTR and RTS lines.
  *
@@ -82,7 +78,6 @@ int diag_tty_setup(ttyp *tty_int,
  * @return 0 if ok
  */
 int diag_tty_control(ttyp *tty_int, unsigned int dtr, unsigned int rts);
-
 
 /** Flush pending input.
  *
@@ -98,21 +93,19 @@ int diag_tty_iflush(ttyp *tty_int);
 //	c) if there was a real error, return diag_iseterr(x)
 //	d) never return 0
 //	TODO : clarify if calling with timeout==0 is useful (probably not, nobody does).
-ssize_t diag_tty_read(ttyp *tty_int,
-	void *buf, size_t count, unsigned int timeout);
+ssize_t diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout);
 
 /** Write bytes to tty (blocking).
  *
- *	@param count: Attempt to write [count] bytes, block (== do not return) until write has completed.
+ *	@param count: Attempt to write [count] bytes, block (== do not return) until write
+ *has completed.
  *  @return # of bytes written; \<0 if error.
  * @note It is unclear whether the different OS mechanisms to flush write buffers actually
  * guarantee that serial data has physically sent,
  * or only that the data was flushed as far "downstream" as possible, for example
  * to a UART / device driver buffer.
  */
-ssize_t diag_tty_write(ttyp *tty_int,
-	const void *buf, const size_t count);
-
+ssize_t diag_tty_write(ttyp *tty_int, const void *buf, const size_t count);
 
 /** Send a break on TXD.
  * @param ms: duration (milliseconds)
@@ -128,6 +121,5 @@ int diag_tty_break(ttyp *tty_int, const unsigned int ms);
  * @return 0 if ok; returns [ms] after starting the break.
  */
 int diag_tty_fastbreak(ttyp *tty_int, const unsigned int ms);
-
 
 #endif /* _DIAG_TTY_H_ */

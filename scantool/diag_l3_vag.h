@@ -29,5 +29,5 @@ extern "C" {
 
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DIAG_L3_VAG_H_ */

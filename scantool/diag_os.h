@@ -35,19 +35,19 @@ extern "C" {
 #include <stdbool.h>
 
 #ifdef WIN32
-	#include <windows.h>
-	typedef DWORD OS_ERRTYPE;
+#	include <windows.h>
+typedef DWORD OS_ERRTYPE;
 #else
-	typedef int OS_ERRTYPE;
+typedef int OS_ERRTYPE;
 #endif
 
-#define ALARM_TIMEOUT 300	// ms interval timeout for timer callbacks (keepalive etc)
+#define ALARM_TIMEOUT 300 // ms interval timeout for timer callbacks (keepalive etc)
 
 /* Common prototypes but note that the source
  * is different and defined in OS specific
  * c files.
  */
-//init, close : ret 0 if ok
+// init, close : ret 0 if ok
 int diag_os_init(void);
 int diag_os_close(void);
 
@@ -63,9 +63,9 @@ void diag_os_millisleep(unsigned int ms);
  *
  * @return 0 if no key was pressed
  *
- * Currently, it is only used in a few places to break long loops, with "press any key to stop" semantics.
- * This returns immediately, to allow polling within a loop.
- * The linux/unix implementation needs an "Enter" keypress since stdin is buffered !
+ * Currently, it is only used in a few places to break long loops, with "press any key to
+ * stop" semantics. This returns immediately, to allow polling within a loop. The
+ * linux/unix implementation needs an "Enter" keypress since stdin is buffered !
  */
 int diag_os_ipending(void);
 
@@ -155,8 +155,7 @@ bool diag_os_trylock(diag_mtx *mtx);
 /** unlock mutex */
 void diag_os_unlock(diag_mtx *mtx);
 
-
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /*_DIAG_OS_H_ */

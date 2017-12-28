@@ -32,8 +32,7 @@
 extern "C" {
 #endif
 
-
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DIAG_L2_SAEJ1850_H_ */

@@ -37,11 +37,12 @@ extern "C" {
 #include "diag_l7.h"
 
 int diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn);
-int diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out);
+int diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr,
+		       int buflen, uint8_t *out);
 int diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out);
 int diag_l7_kwp71_cleardtc(struct diag_l2_conn *d_l2_conn);
 
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DIAG_L7_KWP71_H_ */
