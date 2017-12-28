@@ -108,11 +108,11 @@ diag_l2_timer(void) {
 
 	unsigned long now;
 
+	now = diag_os_getms(); /* XXX probably Not async safe */
+
 	if (!diag_os_trylock(&l2internal.connlist_mtx)) {
 		return;
 	}
-
-	now=diag_os_getms();	/* XXX probably Not async safe */
 
 	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		int expired = 0;

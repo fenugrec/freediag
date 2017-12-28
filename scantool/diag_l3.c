@@ -40,8 +40,32 @@
 
 int diag_l3_debug;
 
-static struct diag_l3_conn	*diag_l3_list;
+static diag_mtx connlist_mtx = LOCK_INITIALIZER;
+static struct diag_l3_conn *diag_l3_list;
+static bool init_done;
 
+void
+diag_l3_init(void) {
+	if (init_done) {
+		return;
+	}
+
+	if (diag_l3_debug & DIAG_DEBUG_INIT) {
+		fprintf(stderr, FLFMT "entered diag_l3_init\n", FL);
+	}
+
+	diag_os_initstaticmtx(&connlist_mtx);
+
+	init_done = true;
+	return;
+}
+
+void
+diag_l3_end(void) {
+	diag_os_delmtx(&connlist_mtx);
+	init_done = false;
+	return;
+}
 
 struct diag_l3_conn *
 diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
@@ -106,8 +130,9 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 		/*
 		 * And add to list
 		 */
+		diag_os_lock(&connlist_mtx);
 		LL_PREPEND(diag_l3_list, d_l3_conn);
-
+		diag_os_unlock(&connlist_mtx);
 	}
 
 	if (diag_l3_debug & DIAG_DEBUG_OPEN) {
@@ -226,7 +251,6 @@ diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) 
  * (see diag_os.c)
  * XXX This calls non async-signal-safe functions!
  */
-
 void diag_l3_timer(void) {
 	/*
 	 * Regular timer routine
@@ -234,6 +258,10 @@ void diag_l3_timer(void) {
 	 */
 	struct diag_l3_conn *conn;
 	unsigned long now=diag_os_getms();
+
+	if (!diag_os_trylock(&connlist_mtx)) {
+		return;
+	}
 
 	LL_FOREACH(diag_l3_list, conn) {
 		/* Call L3 timer routine for this connection */
@@ -252,6 +280,7 @@ void diag_l3_timer(void) {
 			(void) dp->diag_l3_proto_timer(conn, diffms);
 		}
 	}
+	diag_os_unlock(&connlist_mtx);
 }
 
 
