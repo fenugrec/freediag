@@ -37,6 +37,7 @@
 #include "diag_dtc.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
+#include "diag_l3.h"
 
 #include "utlist.h"
 
@@ -61,6 +62,7 @@ int diag_init(void) { // returns 0 if normal exit
 	if ((rv = diag_l2_init())) {
 		return diag_iseterr(rv);
 	}
+	diag_l3_init();
 	if ((rv = diag_os_init())) {
 		return diag_iseterr(rv);
 	}
@@ -84,6 +86,7 @@ diag_end(void) {
 		fprintf(stderr, FLFMT "Could not close OS functions!\n", FL);
 		rv = -1;
 	}
+	diag_l3_end();
 	if (diag_l2_end()) {
 		fprintf(stderr, FLFMT "Could not close L2 level\n", FL);
 		rv = -1;
