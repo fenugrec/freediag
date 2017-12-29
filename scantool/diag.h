@@ -33,6 +33,8 @@ extern "C" {
 
 #include "cconf.h"
 
+#include "diag_os.h" // For mutexes.
+
 #ifdef WIN32
 #	ifndef _WIN32_WINNT
 #		define _WIN32_WINNT 0x0500 // use > winXP features...
@@ -333,6 +335,31 @@ char **strlist_add(char **list, const char *news, int elems);
  * @param elems: number of strings in list
  */
 void strlist_free(char **slist, int elems);
+
+// Atomics
+
+// Atomically accessed types
+typedef struct {
+	diag_mtx mtx;
+	bool v;
+} diag_atomic_bool;
+typedef struct {
+	diag_mtx mtx;
+	int v;
+} diag_atomic_int;
+
+#define DIAG_ATOMIC_STATICALLY_DECL_INIT(V) V = {LOCK_INITIALIZER, 0};
+#define DIAG_ATOMIC_INITSTATIC(V) diag_os_initstaticmtx(&((V)->mtx))
+#define DIAG_ATOMIC_DEL(V) diag_os_delmtx(&((V)->mtx))
+
+void diag_atomic_store_bool(diag_atomic_bool *a, bool d);
+void diag_atomic_store_int(diag_atomic_int *a, int d);
+bool diag_atomic_load_bool(diag_atomic_bool *a);
+int diag_atomic_load_int(diag_atomic_int *a);
+
+// Returns true if the periodic timer is no longer necessary, ie. if the diag_end has been
+// run. Returns false otherwise.
+bool periodic_done(void);
 
 #if defined(__cplusplus)
 }
