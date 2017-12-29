@@ -259,7 +259,7 @@ void diag_l3_timer(void) {
 	struct diag_l3_conn *conn;
 	unsigned long now=diag_os_getms();
 
-	if (!diag_os_trylock(&connlist_mtx)) {
+	if (periodic_done() || !diag_os_trylock(&connlist_mtx)) {
 		return;
 	}
 

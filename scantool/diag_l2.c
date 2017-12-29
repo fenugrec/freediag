@@ -110,7 +110,7 @@ diag_l2_timer(void) {
 
 	now = diag_os_getms(); /* XXX probably Not async safe */
 
-	if (!diag_os_trylock(&l2internal.connlist_mtx)) {
+	if (periodic_done() || !diag_os_trylock(&l2internal.connlist_mtx)) {
 		return;
 	}
 

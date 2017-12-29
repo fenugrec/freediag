@@ -120,15 +120,17 @@ diag_os_periodic(UNUSED(union sigval sv)) {
 diag_os_periodic(UNUSED(int unused)) {
 #endif
 	/* Warning: these indirectly use non-async-signal-safe functions
-	* Their behavior is undefined if they happen
-	* to occur during any other non-async-signal-safe function.
-	* See doc/sourcetree_notes.txt
-	*/
-	if (pthread_mutex_trylock(&periodic_lock)) {
+	 * Their behavior is undefined if they happen
+	 * to occur during any other non-async-signal-safe function.
+	 * See doc/sourcetree_notes.txt
+	 */
+
+	if (periodic_done() || pthread_mutex_trylock(&periodic_lock)) {
 		return;
 	}
-	diag_l3_timer();	/* Call L3 Timers */
-	diag_l2_timer();	/* Call L2 timers */
+
+	diag_l3_timer(); /* Call L3 Timers */
+	diag_l2_timer(); /* Call L2 timers */
 	pthread_mutex_unlock(&periodic_lock);
 }
 

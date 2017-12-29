@@ -43,6 +43,18 @@
 
 #define ERR_STR_LEN 50 // length of "illegal error X" string
 
+DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_bool periodic_done_wrapper)
+
+static void
+set_periodic_done(void) {
+	diag_atomic_store_bool(&periodic_done_wrapper, true);
+}
+
+bool
+periodic_done(void) {
+	return diag_atomic_load_bool(&periodic_done_wrapper);
+}
+
 static int diag_initialized = 0;
 
 // diag_init : should be called once before doing anything.
@@ -63,6 +75,7 @@ int diag_init(void) { // returns 0 if normal exit
 		return diag_iseterr(rv);
 	}
 	diag_l3_init();
+	DIAG_ATOMIC_INITSTATIC(&periodic_done_wrapper);
 	if ((rv = diag_os_init())) {
 		return diag_iseterr(rv);
 	}
@@ -81,6 +94,7 @@ int diag_end(void) {
 		return 0;
 	}
 
+	set_periodic_done();
 	if (diag_os_close()) {
 		fprintf(stderr, FLFMT "Could not close OS functions!\n", FL);
 		rv = -1;
@@ -94,6 +108,10 @@ int diag_end(void) {
 		fprintf(stderr, FLFMT "Could not close L1 level\n", FL);
 		rv = -1;
 	}
+
+	// There would be a race with the periodic timer, trying to take the lock, if we
+	// deleted the mutex.
+	// DIAG_ATOMIC_DEL(&periodic_done_wrapper)
 
 	// nothing to do for diag_dtc_init
 
@@ -457,4 +475,38 @@ diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp) {
 		}
 		i++;
 	}
+}
+
+// Atomic access functions.
+
+void
+diag_atomic_store_bool(diag_atomic_bool *a, bool d) {
+	diag_os_lock(&a->mtx);
+	a->v = d;
+	diag_os_unlock(&a->mtx);
+}
+
+void
+diag_atomic_store_int(diag_atomic_int *a, int d) {
+	diag_os_lock(&a->mtx);
+	a->v = d;
+	diag_os_unlock(&a->mtx);
+}
+
+bool
+diag_atomic_load_bool(diag_atomic_bool *a) {
+	bool r;
+	diag_os_lock(&a->mtx);
+	r = a->v;
+	diag_os_unlock(&a->mtx);
+	return r;
+}
+
+int
+diag_atomic_load_int(diag_atomic_int *a) {
+	int r;
+	diag_os_lock(&a->mtx);
+	r = a->v;
+	diag_os_unlock(&a->mtx);
+	return r;
 }
