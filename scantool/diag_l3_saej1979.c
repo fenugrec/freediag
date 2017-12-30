@@ -768,10 +768,10 @@ diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 }
 
 //_start : send service 1 pid 0 request (J1979 keepalive); according to SAE J1979 (p.7) :
-// " IMPORTANT — All emissions-related OBD ECUs which at least support one of the services
+// " IMPORTANT ? All emissions-related OBD ECUs which at least support one of the services
 // defined in this
 //	document shall support service $01 and PID $00. Service $01 with PID $00 is defined
-// as the universal 	“initialisation/keep alive/ping” message for all emissions-related
+// as the universal 	?initialisation/keep alive/ping? message for all emissions-related
 // OBD ECUs. " That sounds like a sure-fire way to make sure we have a succesful connection
 // to a
 // J1979-compliant ECU.
@@ -821,9 +821,6 @@ dl3_j1979_stop(struct diag_l3_conn *d_l3_conn) {
 static int
 diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms) {
 	int rv;
-	int debug_l2_orig = diag_l2_debug; // save debug flags; disable them for this
-					   // procedure
-	int debug_l1_orig = diag_l1_debug;
 
 	/* J1979 needs keepalive at least every 5 seconds (P3), we use 3.5s */
 
@@ -844,8 +841,6 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms) {
 		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %lu ms\n", FL,
 			(void *)d_l3_conn, ms);
 	}
-	diag_l2_debug = 0; // disable
-	diag_l1_debug = 0;
 
 	rv = diag_l3_j1979_keepalive(d_l3_conn);
 
@@ -856,9 +851,6 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms) {
 			"reconnect.\n",
 			FL);
 	}
-
-	diag_l2_debug = debug_l2_orig; // restore debug flags
-	diag_l1_debug = debug_l1_orig;
 
 	return rv;
 }

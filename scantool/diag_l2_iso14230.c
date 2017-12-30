@@ -1150,10 +1150,6 @@ dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn) {
 	struct diag_msg msg = {0};
 	uint8_t data[256];
 	unsigned int timeout;
-	int debug_l2_orig = diag_l2_debug; // save debug flags; disable them for this
-					   // procedure
-	int debug_l1_orig = diag_l1_debug;
-	int debug_l0_orig = diag_l0_debug;
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 
@@ -1162,10 +1158,6 @@ dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn) {
 		fprintf(stderr, FLFMT "\ntimeout impending for dl2c=%pd\n", FL,
 			(void *)d_l2_conn);
 	}
-
-	diag_l2_debug = 0; // disable
-	diag_l1_debug = 0;
-	diag_l0_debug = 0;
 
 	msg.data = data;
 
@@ -1204,9 +1196,6 @@ dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn) {
 		}
 	}
 	(void)diag_l2_recv(d_l2_conn, timeout, NULL, NULL);
-	diag_l2_debug = debug_l2_orig; // restore debug flags
-	diag_l1_debug = debug_l1_orig;
-	diag_l0_debug = debug_l0_orig;
 }
 const struct diag_l2_proto diag_l2_proto_iso14230 = {
 	DIAG_L2_PROT_ISO14230,
