@@ -33,6 +33,19 @@
 #include "diag_err.h"
 #include "diag_os.h"
 
+struct test_item {
+	const char *name;
+	bool (*testfunc)(void);
+};
+
+bool test_dupmsg(void);
+bool test_periodic(void);
+
+static struct test_item test_list[] = {
+	{"msg duplication", test_dupmsg},
+	{"periodic timers", test_periodic}
+};
+
 bool test_dupmsg(void) {
 	struct diag_msg *msg0, *msg1, *msg2;
 	struct diag_msg *newchain;
@@ -64,14 +77,25 @@ bool test_dupmsg(void) {
 	return 1;
 }
 
+bool test_periodic(void) {
+	return 1;
+}
+
 /** ret 1 if success */
 static bool run_tests(void) {
 	bool rv = 1;
+	unsigned i;
 
-	if (!test_dupmsg()) {
-		rv = 0;
-		printf("test_dupmsg failed\n");
+	for (i=0; i < ARRAY_SIZE(test_list); i++) {
+		printf("Testing %s:\t", test_list[i].name);
+		if (!test_list[i].testfunc) {
+			rv = 0;
+			printf("failed\n");
+		} else {
+			printf("ok\n");
+		}
 	}
+
 	return rv;
 }
 
