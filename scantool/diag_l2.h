@@ -179,7 +179,8 @@ struct diag_l2_conn {
 #define DIAG_L2_PROT_MB1	7	/* MB protocol 1 */
 #define DIAG_L2_PROT_MB2	8	/* MB protocol 2 */
 #define DIAG_L2_PROT_D2		9	/* Volvo D2 over K-line (kw D3 B0) */
-#define DIAG_L2_PROT_MAX	10	/* Maximum number of protocols */
+#define DIAG_L2_PROT_TEST	10 /* Dummy L2 test driver */
+#define DIAG_L2_PROT_MAX	11	/* Maximum number of protocols */
 
 /*
  * l2proto_list : static-allocated list of supported L2 protocols.

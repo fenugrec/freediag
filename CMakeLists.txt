@@ -105,7 +105,7 @@ endif()
 ###### Build Options
 
 option(BUILDGUI "Enable scangui (default=no)" OFF)
-option(BUILD_DIAGTEST "Build old \"diag_test\" binary (out-of-date; default=no)" OFF)
+option(BUILD_DIAGTEST "Build additional \"diag_test\" test suite (default=no)" OFF)
 option(USE_RCFILE "At startup, search $home/ for an rc file to load initial commands. (default=disabled)" OFF)
 option(USE_INIFILE "At startup, search the current directory for an ini file to load initial commands. (default=enabled)" ON)
 
@@ -124,6 +124,10 @@ else()
 		set(L2LIST "iso9141" "can" "iso14230" "mb1" "raw" "saej1850" "vag" "d2")
 endif()
 
+# Append special L2 driver if required
+if(BUILD_DIAGTEST)
+	set(L2LIST ${L2LIST} test)
+endif()
 
 foreach (L0NAME IN LISTS L0LIST)
 	option(USE_L0_${L0NAME} "Enable \"${L0NAME}\" L0 driver (default=enabled)" ON)
@@ -132,7 +136,6 @@ endforeach()
 foreach (L2NAME IN LISTS L2LIST)
 	option(USE_L2_${L2NAME} "Enable \"${L2NAME}\" L2 driver (default=enabled)" ON)
 endforeach()
-
 
 ###### Includes
 #proj_bin_dir = needed to find cconf.h (not in src_dir)
