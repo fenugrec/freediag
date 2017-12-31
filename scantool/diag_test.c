@@ -32,6 +32,9 @@
 #include "diag.h"
 #include "diag_err.h"
 #include "diag_os.h"
+#include "diag_l0.h"
+#include "diag_l1.h"
+#include "diag_l2.h"
 
 struct test_item {
 	const char *name;
@@ -77,7 +80,101 @@ bool test_dupmsg(void) {
 	return 1;
 }
 
+/********** construct a dummy L0 driver */
+int d0_init(void) {
+	return 0;
+}
+int d0_new(struct diag_l0_device *dl0d) {
+	(void) dl0d;
+	return 0;
+}
+struct cfgi *d0_getcfg(struct diag_l0_device *dl0d) {
+	(void) dl0d;
+	return NULL;
+}
+void d0_del(struct diag_l0_device *dl0d) {
+	(void) dl0d;
+}
+int d0_open(struct diag_l0_device *dl0d, int l1_proto) {
+	(void) dl0d;
+	(void) l1_proto;
+	return 0;
+}
+void d0_close(struct diag_l0_device *dl0d) {
+	(void) dl0d;
+}
+uint32_t	d0_getflags(struct diag_l0_device *dl0d) {
+	(void) dl0d;
+	return 0;
+}
+int	d0_recv(struct diag_l0_device *dl0d,
+	const char *subinterface, void *data, size_t len, unsigned int timeout) {
+	(void) dl0d;
+	(void) subinterface;
+	(void) data;
+	(void) len;
+	(void) timeout;
+	return 0;
+}
+int	d0_send(struct diag_l0_device *dl0d,
+	const char *subinterface, const void *data, size_t len) {
+	(void) dl0d;
+	(void) subinterface;
+	(void) data;
+	(void) len;
+	return 0;
+}
+int d0_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+	(void) dl0d;
+	(void) cmd;
+	(void) data;
+	return 0;
+}
+
+static struct diag_l0 dummy_dl0 = {
+	.longname = "dummy L0",
+	.shortname = "dummy L0",
+	.l1proto_mask = -1,	//support everything
+	.init = d0_init,
+	._new = d0_new,
+	._getcfg = d0_getcfg,
+	._del = d0_del,
+	._open = d0_open,
+	._close = d0_close,
+	._getflags = d0_getflags,
+	._recv = d0_recv,
+	._send = d0_send,
+	._ioctl = d0_ioctl
+};
+
+#define TEST_PERIODIC_DURATION	800	//in ms
+/** periodic callback test
+ * Start an L2, let the periodic timer run a few times, then stop
+ */
 bool test_periodic(void) {
+	struct diag_l0_device dl0d = {
+		.dl0 = &dummy_dl0
+	};
+	struct diag_l2_conn *dl2c;
+	unsigned long ts;
+
+	if (diag_l2_open(&dl0d, DIAG_L1_RAW)) {
+		printf("dl2open err\n");
+		return 0;
+	}
+
+	ts = diag_os_getms() + TEST_PERIODIC_DURATION;	//anticipated endtime
+
+	dl2c = diag_l2_StartCommunications(&dl0d, DIAG_L2_PROT_TEST, 0, 0, 0, 0);
+	if (dl2c == NULL) {
+		printf("startcomm err\n");
+		diag_l2_close(&dl0d);
+		return 0;
+	}
+	dl2c->tinterval = 0;	//force timer expiry on every timer callback
+	while (diag_os_getms() < ts) {}
+
+	diag_l2_StopCommunications(dl2c);
 	return 1;
 }
 
@@ -88,7 +185,7 @@ static bool run_tests(void) {
 
 	for (i=0; i < ARRAY_SIZE(test_list); i++) {
 		printf("Testing %s:\t", test_list[i].name);
-		if (!test_list[i].testfunc) {
+		if (!test_list[i].testfunc()) {
 			rv = 0;
 			printf("failed\n");
 		} else {
