@@ -175,6 +175,7 @@ bool test_periodic(void) {
 	while (diag_os_getms() < ts) {}
 
 	diag_l2_StopCommunications(dl2c);
+	diag_l2_close(&dl0d);
 	return 1;
 }
 
