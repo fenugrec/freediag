@@ -73,6 +73,12 @@ struct diag_l0 {
 
 /***** Public funcs *****/
 
+// Call before anything else.
+void diag_l0_init(void);
+
+// Call after everything is done.
+void diag_l0_end(void);
+
 /** Alloc new dl0d and call L0's "_new";
  * (no open, default params, etc)
  * @return 0 if ok */

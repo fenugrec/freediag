@@ -174,7 +174,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 				    "Maximum sensor voltage for test cycle",
 				    "Time between sensor transitions"};
 
-	if (diag_cli_debug & DIAG_DEBUG_DATA) {
+	if (diag_cli_debug_load() & DIAG_DEBUG_DATA) {
 		fprintf(stderr,
 			"scantool: Got handle %p; %d bytes of data, src=0x%X, "
 			"dest=0x%X\n",
@@ -187,7 +187,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 		/* There is no difference between watch and decode ... */
 	case RQST_HANDLE_WATCH:
 	case RQST_HANDLE_DECODE:
-		if (!(diag_cli_debug & DIAG_DEBUG_DATA)) {
+		if (!(diag_cli_debug_load() & DIAG_DEBUG_DATA)) {
 			/* Print data (unless done already) */
 			diag_printmsg(stdout, msg, 0);
 		}
@@ -498,7 +498,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	uint8_t mode_lengths[] = {0, 2, 3, 1, 1, 3, 2, 1, 7, 2};
 #define J1979_MODE_MAX 9
 
-	if (diag_cli_debug & DIAG_DEBUG_DATA) {
+	if (diag_cli_debug_load() & DIAG_DEBUG_DATA) {
 		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %#02X\n", handle,
 			(void *)d_conn, mode);
 	}
@@ -1552,7 +1552,7 @@ ecu_connect(void) {
 		break;
 	}
 
-	if (diag_cli_debug) {
+	if (diag_cli_debug_load()) {
 		fprintf(stderr, "debug: L2 connection ID %p, L3 ID %p\n",
 			(void *)global_l2_conn, (void *)global_l3_conn);
 	}

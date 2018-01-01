@@ -24,6 +24,16 @@ diag_l0_debug_load(void) {
 	return diag_atomic_load_int(&diag_l0_debug);
 }
 
+void
+diag_l0_init(void) {
+	DIAG_ATOMIC_INITSTATIC(&diag_l0_debug);
+}
+
+void
+diag_l0_end(void) {
+	DIAG_ATOMIC_DEL(&diag_l0_debug);
+}
+
 int
 diag_l0_open(struct diag_l0_device *dl0d, int l1proto) {
 	return dl0d->dl0->_open(dl0d, l1proto);

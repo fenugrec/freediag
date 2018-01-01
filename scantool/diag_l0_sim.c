@@ -211,7 +211,7 @@ sim_free_ecu_responses(struct sim_ecu_response **resp_pp) {
 		count++;
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT " %d responses freed from queue.\n", FL, count);
 	}
 	return;
@@ -354,7 +354,7 @@ sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, const uint8_t *d
 		}
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_DATA) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_DATA) {
 		fprintf(stderr, FLFMT "%d responses queued for receive, %d new.\n", FL,
 			resp_count + new_resp_count, new_resp_count);
 	}
@@ -608,7 +608,7 @@ sim_open(struct diag_l0_device *dl0d, int iProtocol) {
 	dev = (struct sim_device *)dl0d->l0_int;
 	simfile = dev->simfile.val.str;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open simfile %s proto=%d\n", FL, simfile,
 			iProtocol);
 	}
@@ -649,7 +649,7 @@ sim_close(struct diag_l0_device *dl0d) {
 	assert(dev != NULL);
 
 	// If debugging, print to stderr.
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "dl0d=%p closing simfile\n", FL, (void *)dl0d);
 	}
 
@@ -675,7 +675,7 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_IOCTL) {
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n", FL,
 			(void *)dl0d, (void *)dev, in->type);
 	}
@@ -692,7 +692,7 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	case DIAG_L1_INITBUS_FAST:
 		// Send break.
 		// We simulate a break with a single "0x00" char.
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "Sending: BREAK!\n", FL);
 		}
 		sim_send(dl0d, 0, &sim_break, 1);
@@ -741,10 +741,10 @@ sim_send(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), const vo
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "dl0d=%p sending %u bytes\n", FL, (void *)dl0d,
 			(unsigned int)len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_DATA) {
 			fprintf(stderr, FLFMT "L0 sim sending: ", FL);
 			diag_data_dump(stderr, data, len);
 			fprintf(stderr, "\n");
@@ -757,7 +757,7 @@ sim_send(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), const vo
 	// Build the list of responses for this request.
 	sim_find_responses(&dev->sim_last_ecu_responses, dev->fp, data, (uint8_t)len);
 
-	if (diag_l0_debug & DIAG_DEBUG_DATA) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_DATA) {
 		sim_dump_ecu_responses(dev->sim_last_ecu_responses);
 	}
 
@@ -777,7 +777,7 @@ sim_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void *da
 	if (!len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "link %p recv upto %ld bytes timeout %u\n", FL,
 			(void *)dl0d, (long)len, timeout);
 	}
@@ -799,10 +799,10 @@ sim_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void *da
 		memset(data, 0, len);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "dl0d=%p recv %d byte;\n", FL, (void *)dl0d,
 			(int)len);
-		if ((diag_l0_debug & DIAG_DEBUG_DATA) && (xferd > 0)) {
+		if ((diag_l0_debug_load() & DIAG_DEBUG_DATA) && (xferd > 0)) {
 			fprintf(stderr, FLFMT "L0 sim receiving: ", FL);
 			diag_data_dump(stderr, data, xferd);
 			fprintf(stderr, "\n");

@@ -128,12 +128,12 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 	/* Get l2 connection info */
 	d_conn = d_l3_conn->d_l3l2_conn;
 
-	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "_send %d bytes, l2 flags 0x%X\n", FL, msg->len,
 			d_l3_conn->d_l3l2_flags);
 
-		if ((diag_l3_debug & DIAG_DEBUG_DATA) &&
-		    (diag_l3_debug & DIAG_DEBUG_WRITE)) {
+		if ((diag_l3_debug_load() & DIAG_DEBUG_DATA) &&
+		    (diag_l3_debug_load() & DIAG_DEBUG_WRITE)) {
 			diag_data_dump(stderr, (void *)msg->data, (size_t)msg->len);
 		}
 	}
@@ -157,7 +157,7 @@ diag_l3_14230_rxcallback(void *handle, struct diag_msg *msg) {
 	struct diag_l3_conn *d_l3_conn = (struct diag_l3_conn *)handle;
 	char buffer[200];
 
-	if (diag_l3_debug & DIAG_DEBUG_READ) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "rcv_callback for %d bytes fmt 0x%X conn\n", FL,
 			msg->len, msg->fmt);
 	}
@@ -207,7 +207,7 @@ diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 		rv = diag_l2_recv(d_l3_conn->d_l3l2_conn, timeout,
 				  diag_l3_14230_rxcallback, (void *)d_l3_conn);
 
-		if (diag_l3_debug & DIAG_DEBUG_READ) {
+		if (diag_l3_debug_load() & DIAG_DEBUG_READ) {
 			fprintf(stderr, FLFMT "_recv returns %d\n", FL, rv);
 		}
 	} else {

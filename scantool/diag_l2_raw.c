@@ -79,7 +79,7 @@ int
 dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "diag_l2_send %p, msg %p len %d called\n", FL,
 			(void *)d_l2_conn, (void *)msg, msg->len);
 	}
@@ -116,7 +116,7 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	msg.idata = NULL;
 	msg.rxtime = diag_os_getms();
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "l2_proto_raw_recv: handle=%p\n", FL,
 			handle); //%pcallback! we won't try to printf the
 				 // callback pointer.

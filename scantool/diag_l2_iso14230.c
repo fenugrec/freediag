@@ -55,7 +55,7 @@ dl2p_14230_decode(uint8_t *data, int len, uint8_t *hdrlen, int *datalen, uint8_t
 		  uint8_t *dest, int first_frame) {
 	uint8_t dl;
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "decode len %d, ", FL, len);
 		diag_data_dump(stderr, data, (size_t)len);
 		fprintf(stderr, "\n");
@@ -69,7 +69,7 @@ dl2p_14230_decode(uint8_t *data, int len, uint8_t *hdrlen, int *datalen, uint8_t
 		case 0xC0:
 			/* Addresses supplied, additional len byte */
 			if (len < 4) {
-				if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+				if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 					fprintf(stderr, FLFMT "decode len short \n", FL);
 				}
 				return diag_iseterr(DIAG_ERR_INCDATA);
@@ -153,7 +153,7 @@ dl2p_14230_decode(uint8_t *data, int len, uint8_t *hdrlen, int *datalen, uint8_t
 		return diag_iseterr(DIAG_ERR_BADDATA);
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "decode hdrlen=%d, datalen=%d, cksum=1\n", FL,
 			*hdrlen, *datalen);
 	}
@@ -216,7 +216,7 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "_int_recv dl2conn=%p offset=0x%X, tout=%u\n", FL,
 			(void *)d_l2_conn, dp->rxoffset, timeout);
 	}
@@ -268,7 +268,7 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 
 		/* Receive data into the buffer */
 
-		if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr,
 				FLFMT
 				"before recv, state=%d timeout=%u, rxoffset "
@@ -288,7 +288,7 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 					  sizeof(dp->rxbuf) - dp->rxoffset, tout);
 		}
 
-		if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr, FLFMT "after recv, rv=%d rxoffset=%d\n", FL, rv,
 				dp->rxoffset);
 		}
@@ -328,8 +328,8 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 				diag_l2_addmsg(d_l2_conn, tmsg);
 				if (d_l2_conn->diag_msg == tmsg) {
 
-					if ((diag_l2_debug & DIAG_DEBUG_DATA) &&
-					    (diag_l2_debug & DIAG_DEBUG_PROTO)) {
+					if ((diag_l2_debug_load() & DIAG_DEBUG_DATA) &&
+					    (diag_l2_debug_load() & DIAG_DEBUG_PROTO)) {
 						fprintf(stderr,
 							FLFMT "Copying %u bytes to data: ",
 							FL, tmsg->len);
@@ -455,7 +455,7 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 			tmsg = amsg; /* Finish processing this one */
 		}
 
-		if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr,
 				FLFMT
 				"msg %p decode/rejig done rv=%d hdrlen=%u "
@@ -546,7 +546,7 @@ dl2p_14230_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 	dp->first_frame = 0;
 	dp->monitor_mode = 0;
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "_startcomms flags=0x%X tgt=0x%X src=0x%X\n", FL,
 			flags, target, source);
 	}
@@ -652,7 +652,7 @@ dl2p_14230_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 			d_l2_conn->diag_l2_kb2 = d_l2_conn->diag_msg->data[2];
 			d_l2_conn->diag_l2_physaddr = d_l2_conn->diag_msg->src;
 
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+			if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 				fprintf(stderr,
 					FLFMT
 					"_StartComms Physaddr=0x%X KB1=%02X, KB2=%02X\n",
@@ -663,14 +663,14 @@ dl2p_14230_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 			dp->state = STATE_ESTABLISHED;
 			break;
 		case DIAG_KW2K_RC_NR:
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+			if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 				fprintf(stderr, FLFMT "_StartComms got neg response\n",
 					FL);
 			}
 			rv = DIAG_ERR_ECUSAIDNO;
 			break;
 		default:
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+			if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 				fprintf(stderr,
 					FLFMT "_StartComms got unexpected response 0x%X\n",
 					FL, d_l2_conn->diag_msg->data[0]);
@@ -741,7 +741,7 @@ dl2p_14230_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 				break;
 			}
 
-			if (diag_l2_debug & DIAG_DEBUG_INIT) {
+			if (diag_l2_debug_load() & DIAG_DEBUG_INIT) {
 				fprintf(stderr, FLFMT "ISO14230 KB1=%02X KB2=%02X\n", FL,
 					d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
 			}
@@ -773,7 +773,7 @@ dl2p_14230_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 			 ((d_l2_conn->diag_l2_kb1 & 2) ? ISO14230_LENBYTE : 0) |
 			 ((d_l2_conn->diag_l2_kb1 & 4) ? ISO14230_SHORTHDR : 0) |
 			 ((d_l2_conn->diag_l2_kb1 & 8) ? ISO14230_LONGHDR : 0);
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "new modeflags=0x%04X\n", FL, dp->modeflags);
 	}
 	// For now, we won't bother with Normal / Extended timings. We don't
@@ -853,7 +853,7 @@ dl2p_14230_stopcomms(struct diag_l2_conn *pX) {
 			"(err=";
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_CLOSE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "_stopcomms: %s0x%02X).\n", FL, debugstr, errval);
 	}
 
@@ -889,7 +889,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "_send: dl2conn=%p msg=%p len=%d\n", FL,
 			(void *)d_l2_conn, (void *)msg, msg->len);
 	}
@@ -967,7 +967,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		len++; /* + checksum */
 	}
 
-	if ((diag_l2_debug & DIAG_DEBUG_WRITE) && (diag_l2_debug & DIAG_DEBUG_DATA)) {
+	if (diag_l2_debug_load() & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "_send: ", FL);
 		diag_data_dump(stderr, buf, len);
 		fprintf(stderr, "\n");
@@ -1009,7 +1009,7 @@ dl2p_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 		return rv;
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "_int_recv : handle=%p timeout=%u\n", FL, handle,
 			timeout); //%pcallback! we won't try to
 				  // printf the callback pointer.
@@ -1026,7 +1026,7 @@ dl2p_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	diag_freemsg(d_l2_conn->diag_msg);
 	d_l2_conn->diag_msg = NULL;
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "_recv callback completed\n", FL);
 	}
 
@@ -1107,7 +1107,7 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *er
 				*errval = rv;
 				return diag_pseterr(rv);
 			}
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+			if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 				fprintf(stderr,
 					FLFMT "got BusyRepeatRequest: retrying...\n", FL);
 			}
@@ -1120,7 +1120,7 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *er
 			 * Msg is a requestCorrectlyRcvd-RspPending
 			 * so do read again
 			 */
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
+			if (diag_l2_debug_load() & DIAG_DEBUG_PROTO) {
 				fprintf(stderr, FLFMT "got RspPending: retrying...\n", FL);
 			}
 
@@ -1154,7 +1154,7 @@ dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn) {
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 
 	/* XXX fprintf not async-signal-safe */
-	if (diag_l2_debug & DIAG_DEBUG_TIMER) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "\ntimeout impending for dl2c=%pd\n", FL,
 			(void *)d_l2_conn);
 	}

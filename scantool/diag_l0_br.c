@@ -176,7 +176,7 @@ br_close(struct diag_l0_device *dl0d) {
 
 	struct br_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
 	}
 
@@ -229,7 +229,7 @@ br_open(struct diag_l0_device *dl0d, int iProtocol) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "features 0x%X\n", FL, dev->dev_features);
 	}
 
@@ -253,7 +253,7 @@ br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	 */
 	buf[0] = 0x20;
 	if (br_write(dl0d, buf, 1)) {
-		if ((diag_l0_debug & DIAG_DEBUG_OPEN)) {
+		if ((diag_l0_debug_load() & DIAG_DEBUG_OPEN)) {
 			fprintf(stderr, FLFMT "CHIP CONNECT write failed link %p\n", FL,
 				(void *)dl0d);
 		}
@@ -262,7 +262,7 @@ br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	}
 	/* And expect 0xff as a response */
 	if (diag_tty_read(dev->tty_int, buf, 1, 100) != 1) {
-		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "CHIP CONNECT read failed link %p\n", FL,
 				(void *)dl0d);
 		}
@@ -271,7 +271,7 @@ br_open(struct diag_l0_device *dl0d, int iProtocol) {
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	if (buf[0] != 0xff) {
-		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "CHIP CONNECT rcvd 0x%X != 0xff, link %p\n",
 				FL, buf[0], (void *)dl0d);
 		}
@@ -299,7 +299,7 @@ br_open(struct diag_l0_device *dl0d, int iProtocol) {
 		return diag_iseterr(rv);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open succeeded link %p features 0x%X\n", FL,
 			(void *)dl0d, dev->dev_features);
 	}
@@ -447,7 +447,7 @@ br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	dev = (struct br_device *)dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_IOCTL) {
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d proto %d\n",
 			FL, (void *)dl0d, (void *)dev, in->type, dev ? dev->protocol : -1);
 	}
@@ -494,7 +494,7 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 	int rv;
 	struct br_device *dev = dl0d->l0_int;
 
-	if ((diag_l0_debug & (DIAG_DEBUG_READ | DIAG_DEBUG_DATA)) ==
+	if ((diag_l0_debug_load() & (DIAG_DEBUG_READ | DIAG_DEBUG_DATA)) ==
 	    (DIAG_DEBUG_READ | DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "link %p getmsg timeout %u\n", FL, (void *)dl0d,
 			timeout);
@@ -505,7 +505,7 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 	 */
 	rv = diag_tty_read(dev->tty_int, &firstbyte, 1, timeout);
 	if (rv != 1) {
-		if ((diag_l0_debug & (DIAG_DEBUG_READ | DIAG_DEBUG_DATA)) ==
+		if ((diag_l0_debug_load() & (DIAG_DEBUG_READ | DIAG_DEBUG_DATA)) ==
 		    (DIAG_DEBUG_READ | DIAG_DEBUG_DATA)) {
 			fprintf(stderr, FLFMT "link %p getmsg 1st byte timed out\n", FL,
 				(void *)dl0d);
@@ -529,7 +529,7 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if ((diag_l0_debug & (DIAG_DEBUG_READ | DIAG_DEBUG_DATA)) ==
+	if ((diag_l0_debug_load() & (DIAG_DEBUG_READ | DIAG_DEBUG_DATA)) ==
 	    (DIAG_DEBUG_READ | DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "link %p getmsg read ctl 0x%X data:", FL,
 			(void *)dl0d, firstbyte & 0xff);
@@ -571,7 +571,7 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type, const void *dp, size_t tx
 	int rv, j1850mode;
 	uint8_t outb;
 
-	if ((diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
+	if ((diag_l0_debug_load() & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
 	    (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "device %p link %p sending to BR1\n", FL,
 			(void *)dev, (void *)dl0d);
@@ -598,7 +598,7 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type, const void *dp, size_t tx
 	}
 
 	/* And now the data */
-	if ((diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
+	if ((diag_l0_debug_load() & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
 	    (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "device %p writing data: ", FL, (void *)dev);
 		fprintf(stderr, "0x%X ", (int)outb); /* Length byte */
@@ -616,7 +616,7 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type, const void *dp, size_t tx
 	 * in order to receive multiple frames.
 	 */
 	if (j1850mode) {
-		if ((diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
+		if ((diag_l0_debug_load() & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
 		    (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) {
 			fprintf(stderr, FLFMT "device %p writing data: 0x%X\n", FL,
 				(void *)dev, dev->dev_framenr & 0xff);
@@ -650,11 +650,11 @@ br_send(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), const voi
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr,
 			FLFMT "device link %p send %ld bytes protocol %d state %d: ", FL,
 			(void *)dl0d, (long)len, dev->protocol, dev->dev_state);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 			fprintf(stderr, "\n");
 		} else {
@@ -727,7 +727,7 @@ br_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void *dat
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr,
 			FLFMT
 			"link %p recv upto %ld bytes timeout %u, rxlen %d "
@@ -848,7 +848,7 @@ br_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void *dat
 	}
 
 	/* OK, got whole message */
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "link %p received from BR1: ", FL, (void *)dl0d);
 		diag_data_dump(stderr, data, (size_t)xferd);
 		fprintf(stderr, "\n");
@@ -884,7 +884,7 @@ br_getflags(struct diag_l0_device *dl0d) {
 		break;
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "getflags link %p proto %d flags 0x%X\n", FL,
 			(void *)dl0d, dev->protocol, flags);
 	}

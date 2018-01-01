@@ -77,7 +77,7 @@ dl2p_j1850_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 	struct diag_l2_j1850 *dp;
 	int rv;
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "diag_l2_j1850_startcomms dl2conn %p\n", FL,
 			(void *)d_l2_conn);
 	}
@@ -163,7 +163,7 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	uint8_t buf[MAXRBUF];
 	int offset = 0;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "diag_l2_j1850_send %p msg %p len %d called\n", FL,
 			(void *)d_l2_conn, (void *)msg, msg->len);
 	}
@@ -203,7 +203,7 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		buf[offset++] = dl2p_j1850_crc(buf, curoff);
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "diag_l2_j1850_send sending %d bytes to L1\n", FL,
 			offset);
 	}
@@ -238,7 +238,7 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
 	diag_freemsg(d_l2_conn->diag_msg);
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr,
 			FLFMT
 			"diag_l2_j1850_int_recv offset 0x%X, "
@@ -372,7 +372,7 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	/*
 	 * We now have data stored on the L2 descriptor
 	 */
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "calling rcv msg=%p callback, handle=%p\n", FL,
 			(void *)d_l2_conn->diag_msg,
 			handle); //%pcallback! we won't try to printf the
@@ -390,7 +390,7 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	/* message no longer needed */
 	diag_freemsg(tmsg);
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "rcv callback completed\n", FL);
 	}
 

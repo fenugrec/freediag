@@ -860,6 +860,7 @@ enter_cli(const char *name, const char *initscript,
 	int i = 0;
 	const struct cmd_tbl_entry *ctp_iter;
 	struct cmd_tbl_entry *ctp;
+	DIAG_ATOMIC_INITSTATIC(&diag_cli_debug);
 	for (ctp_iter = extra_cmdtable; ctp_iter && ctp_iter->command; ctp_iter++) {
 		i++;
 	}
@@ -910,6 +911,7 @@ exit_cleanup:
 	free(ctp);
 	root_cmd_table = NULL;
 	set_close();
+	DIAG_ATOMIC_DEL(&diag_cli_debug);
 	return;
 }
 

@@ -58,7 +58,7 @@ diag_tty_open(const char *portname) {
 	// File hande is created as non-overlapped. This may change eventually.
 
 	if (wti->fd != INVALID_HANDLE_VALUE) {
-		if (diag_l0_debug & DIAG_DEBUG_OPEN)
+		if (diag_l0_debug_load() & DIAG_DEBUG_OPEN)
 			fprintf(stderr, FLFMT "Device %s opened, fd %p\n", FL, wti->name,
 				wti->fd);
 	} else {
@@ -123,7 +123,7 @@ diag_tty_close(ttyp *ttyh) {
 		PurgeComm(wti->fd,
 			  PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
 		CloseHandle(wti->fd);
-		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
+		if (diag_l0_debug_load() & DIAG_DEBUG_CLOSE)
 			fprintf(stderr, FLFMT "diag_tty_close : closing fd %p\n", FL,
 				wti->fd);
 	}
@@ -170,7 +170,7 @@ diag_tty_setup(ttyp *ttyh, const struct diag_serial_settings *pset) {
 			FLFMT "warning : device does not support custom baud rates !\n",
 			FL);
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_IOCTL) {
 		fprintf(stderr, FLFMT "dev %p; %dbps %d,%d,%d \n", FL, (void *)devhandle,
 			pset->speed, pset->databits, pset->stopbits, pset->parflag);
 	}
@@ -353,7 +353,7 @@ diag_tty_read(ttyp *ttyh, void *buf, size_t count, unsigned int timeout) {
 	if ((count <= 0) || (timeout <= 0))
 		return DIAG_ERR_BADLEN;
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "tty_read: ttyh=%p, fd=%p, len=%zu, t=%u\n", FL,
 			(void *)wti, (void *)wti->fd, count, timeout);
 	}
@@ -401,7 +401,7 @@ diag_tty_iflush(ttyp *ttyh) {
 
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(wti, buf, sizeof(buf), IFLUSH_TIMEOUT);
-	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
+	if ((rv > 0) && (diag_l0_debug_load() & DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n",
 			FL, rv, buf[0]);
 		// diag_data_dump(stderr, (void *) buf, (size_t) rv); //this could take a

@@ -58,7 +58,9 @@ diag_l3_init(void) {
 		return;
 	}
 
-	if (diag_l3_debug & DIAG_DEBUG_INIT) {
+	DIAG_ATOMIC_INITSTATIC(&diag_l3_debug);
+
+	if (diag_l3_debug_load() & DIAG_DEBUG_INIT) {
 		fprintf(stderr, FLFMT "entered diag_l3_init\n", FL);
 	}
 
@@ -71,6 +73,7 @@ diag_l3_init(void) {
 void
 diag_l3_end(void) {
 	diag_os_delmtx(&connlist_mtx);
+	DIAG_ATOMIC_DEL(&diag_l3_debug);
 	init_done = false;
 	return;
 }
@@ -84,7 +87,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 
 	assert(d_l2_conn != NULL);
 
-	if (diag_l3_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "start protocol %s l2 %p\n", FL, protocol,
 			(void *)d_l2_conn);
 	}
@@ -99,7 +102,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 	}
 
 	if (dp) {
-		if (diag_l3_debug & DIAG_DEBUG_OPEN) {
+		if (diag_l3_debug_load() & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "start protocol %s found\n", FL,
 				dp->proto_name);
 		}
@@ -141,7 +144,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 		diag_os_unlock(&connlist_mtx);
 	}
 
-	if (diag_l3_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "start returns %p\n", FL, (void *)d_l3_conn);
 	}
 
@@ -225,7 +228,7 @@ diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) 
 	struct diag_msg *rxmsg;
 	const struct diag_l3_proto *dl3p = dl3c->d_l3_proto;
 
-	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "_request dl3c=%p msg=%p called\n", FL, (void *)dl3c,
 			(void *)txmsg);
 	}
@@ -237,7 +240,7 @@ diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) 
 		rxmsg = NULL;
 	}
 
-	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "_request returns %p, err %d\n", FL, (void *)rxmsg,
 			*errval);
 	}

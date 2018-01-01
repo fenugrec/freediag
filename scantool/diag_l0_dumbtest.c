@@ -570,7 +570,7 @@ dt_open(struct diag_l0_device *dl0d, int testnum) {
 	assert(dl0d);
 	dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open port %s test # %d\n", FL, dev->port.val.str,
 			testnum);
 	}
@@ -705,10 +705,10 @@ dt_send(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), const voi
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "dt_send dl0d=%p , len=%ld. ", FL, (void *)dl0d,
 			(long)len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 		}
 		fprintf(stderr, "\n");
@@ -719,7 +719,7 @@ dt_send(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), const voi
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if ((diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
+	if ((diag_l0_debug_load() & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
 	    (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) {
 		fprintf(stderr, "\n");
 	}

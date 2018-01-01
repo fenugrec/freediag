@@ -126,7 +126,7 @@ diag_os_init(void) {
 	pf_conv = 1.0E6 / perfo_freq.QuadPart;
 	pfconv_valid = 1;
 
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_TIMER) {
 		fprintf(stderr, FLFMT "Performance counter frequency : %9" PRIu64 "Hz\n",
 			FL, perfo_freq.QuadPart);
 	}

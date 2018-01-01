@@ -536,7 +536,7 @@ muleng_open(struct diag_l0_device *dl0d, int iProtocol) {
 	assert(dl0d);
 	dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open port %s L1proto %d\n", FL, dev->port.val.str,
 			iProtocol);
 	}
@@ -641,7 +641,7 @@ muleng_close(struct diag_l0_device *dl0d) {
 	}
 	struct muleng_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
 	}
 
@@ -664,7 +664,7 @@ muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if ((diag_l0_debug & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
+	if ((diag_l0_debug_load() & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
 	    (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) {
 		fprintf(stderr, FLFMT "device link %p sending to ME device: ", FL,
 			(void *)dl0d);
@@ -750,7 +750,7 @@ muleng_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		}
 		baud = me_baud_table[rxbuf[0]];
 
-		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr, FLFMT "device link %p setting baud to %u\n", FL,
 				(void *)dl0d, baud);
 		}
@@ -833,7 +833,7 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_IOCTL) {
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d proto %d\n",
 			FL, (void *)dl0d, (void *)dev, in->type, dev->protocol);
 	}
@@ -879,10 +879,10 @@ muleng_send(struct diag_l0_device *dl0d, UNUSED(const char *subinterface),
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "device link %p send %ld bytes protocol %d ", FL,
 			(void *)dl0d, (long)len, dev->protocol);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 			fprintf(stderr, "\n");
 		}
@@ -975,7 +975,7 @@ muleng_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void 
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr,
 			FLFMT
 			"link %p recv upto %ld bytes timeout %u, rxlen %d "
@@ -1013,7 +1013,7 @@ muleng_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void 
 
 	case MULENG_STATE_RAW:
 		xferd = diag_tty_read(dev->tty_int, data, len, timeout);
-		if (diag_l0_debug & DIAG_DEBUG_READ) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 			fprintf(stderr, FLFMT "link %p read %ld bytes\n", FL, (void *)dl0d,
 				(long)xferd);
 		}
@@ -1072,7 +1072,7 @@ muleng_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void 
 	}
 
 	/* OK, got whole message */
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "link %p received from ME: ", FL, (void *)dl0d);
 		diag_data_dump(stderr, dev->dev_rxbuf, dev->dev_rxlen);
 		fprintf(stderr, "\n");
@@ -1100,7 +1100,7 @@ muleng_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void 
 		dev->dev_rxlen = 0;
 		dev->resp_len = 0;
 
-		if (diag_l0_debug & DIAG_DEBUG_READ) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 			fprintf(stderr,
 				FLFMT
 				"link %p ME returns err 0x%X : %s; s/w v 0x%X "
@@ -1118,7 +1118,7 @@ muleng_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void 
 			break;
 
 		default:
-			if (!(diag_l0_debug & DIAG_DEBUG_READ)) {
+			if (!(diag_l0_debug_load() & DIAG_DEBUG_READ)) {
 				// don't print the error twice
 				fprintf(stderr, FLFMT "ME : error 0x%0X, %s\n.", FL,
 					dev->dev_rxbuf[3], me_geterr(dev->dev_rxbuf[3]));
@@ -1177,7 +1177,7 @@ muleng_getflags(struct diag_l0_device *dl0d) {
 		break;
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "getflags link %p proto %d flags 0x%X\n", FL,
 			(void *)dl0d, dev->protocol, flags);
 	}

@@ -213,7 +213,7 @@ dumb_open(struct diag_l0_device *dl0d, int iProtocol) {
 	assert(dl0d);
 	dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "open port %s L1proto %d\n", FL, dev->port.val.str,
 			iProtocol);
 	}
@@ -262,7 +262,7 @@ dumb_close(struct diag_l0_device *dl0d) {
 
 	struct dumb_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "l0 link %p closing\n", FL, (void *)dl0d);
 	}
 
@@ -286,7 +286,7 @@ dumb_fastinit(struct diag_l0_device *dl0d) {
 	int rv = 0;
 	uint8_t cbuf[MAXRBUF];
 
-	if (diag_l0_debug & DIAG_DEBUG_INIT) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_INIT) {
 		fprintf(stderr, FLFMT "dl0d=%p fastinit\n", FL, (void *)dl0d);
 	}
 	// Tidle before break : W5 (>300ms) on poweron; P3 (>55ms) after a
@@ -450,7 +450,7 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 	unsigned int tout;
 	struct diag_serial_settings set;
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "slowinit dl0d=%p address 0x%X\n", FL, (void *)dl0d,
 			in->addr);
 	}
@@ -556,7 +556,7 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 			return DIAG_ERR_GENERAL;
 		}
 
-		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr, FLFMT "\tgot address echo 0x%X\n", FL, cbuf[0]);
 		}
 		if (diag_tty_setup(dev->tty_int, &dev->serial)) {
@@ -603,12 +603,12 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 
 	rv = diag_tty_read(dev->tty_int, cbuf, 1, tout);
 	if (rv <= 0) {
-		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr, FLFMT "\tdid not get Sync byte !\n", FL);
 		}
 		return DIAG_ERR_TIMEOUT;
 	}
-	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "\tgot sync byte 0x%X!\n", FL, cbuf[0]);
 	}
 
@@ -631,7 +631,7 @@ dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	dev = (struct dumb_device *)dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_IOCTL) {
 		fprintf(stderr, FLFMT "device link %p info %p initbus type %d\n", FL,
 			(void *)dl0d, (void *)dev, in->type);
 	}
@@ -693,10 +693,10 @@ dumb_send(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), const v
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "l0_send dl0d=%p len=%ld; ", FL, (void *)dl0d,
 			(long)len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 		}
 		fprintf(stderr, "\n");
@@ -726,7 +726,7 @@ dumb_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void *d
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "_recv dl0d=%p req=%ld bytes timeout=%u\n", FL,
 			(void *)dl0d, (long)len, timeout);
 	}
@@ -738,7 +738,7 @@ dumb_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void *d
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if ((diag_l0_debug & DIAG_DEBUG_DATA) && (diag_l0_debug & DIAG_DEBUG_READ)) {
+	if (diag_l0_debug_load() & (DIAG_DEBUG_DATA | DIAG_DEBUG_READ)) {
 		fprintf(stderr, FLFMT "Got ", FL);
 		diag_data_dump(stderr, data, (size_t)rv);
 		fprintf(stderr, "\n");

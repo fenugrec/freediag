@@ -173,7 +173,9 @@ diag_l2_init() {
 		return 0;
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_INIT) {
+	DIAG_ATOMIC_INITSTATIC(&diag_l2_debug);
+
+	if (diag_l2_debug_load() & DIAG_DEBUG_INIT) {
 		fprintf(stderr, FLFMT "entered diag_l2_init\n", FL);
 	}
 
@@ -190,6 +192,7 @@ diag_l2_init() {
 int
 diag_l2_end() {
 	diag_os_delmtx(&l2internal.connlist_mtx);
+	DIAG_ATOMIC_DEL(&diag_l2_debug);
 	l2internal.init_done = 0;
 	return 0;
 }
@@ -204,7 +207,7 @@ static int
 diag_l2_closelink(struct diag_l2_link *dl2l) {
 	assert(dl2l != NULL);
 
-	if (diag_l2_debug & DIAG_DEBUG_CLOSE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "l2_closelink %p called\n", FL, (void *)dl2l);
 	}
 
@@ -236,7 +239,7 @@ diag_l2_open(struct diag_l0_device *dl0d, int L1protocol) {
 	int rv;
 	struct diag_l2_link *dl2l;
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "l2_open %s on %p, L1proto=%d\n", FL,
 			dl0d->dl0->longname, (void *)dl0d, L1protocol);
 	}
@@ -245,7 +248,7 @@ diag_l2_open(struct diag_l0_device *dl0d, int L1protocol) {
 	dl2l = diag_l2_findlink(dl0d);
 
 	if (dl2l) {
-		if (diag_l2_debug & DIAG_DEBUG_OPEN) {
+		if (diag_l2_debug_load() & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, "\texisting L2 link \"%s\" found\n",
 				dl2l->l2_dl0d->dl0->shortname);
 		}
@@ -300,7 +303,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 	struct diag_l2_conn *d_l2_conn;
 	struct diag_l2_link *dl2l;
 
-	if (diag_l2_debug & DIAG_DEBUG_CLOSE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "Entered diag_l2_close for dl0d=%p;\n", FL,
 			(void *)dl0d);
 	}
@@ -323,7 +326,7 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 	while ((dl2l = diag_l2_findlink(dl0d)) != NULL) {
 		/* can't just "LL_FOREACH" since we're removing stuff from the list as we
 		 * go */
-		if (diag_l2_debug & DIAG_DEBUG_CLOSE) {
+		if (diag_l2_debug_load() & DIAG_DEBUG_CLOSE) {
 			fprintf(stderr, "\tclosing dl2link %p.\n", (void *)dl2l);
 		}
 		diag_l2_closelink(dl2l); // closelink calls diag_l1_close() as required
@@ -352,7 +355,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 	assert(dl0d != NULL);
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr,
 			FLFMT
 			"_startCommunications dl0d=%p L2proto %d flags=0x%X "
@@ -444,7 +447,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 	if (rv < 0) {
 		/* Something went wrong */
-		if (diag_l2_debug & DIAG_DEBUG_OPEN) {
+		if (diag_l2_debug_load() & DIAG_DEBUG_OPEN) {
 			fprintf(stderr, FLFMT "protocol startcomms returned %d\n", FL, rv);
 		}
 
@@ -465,7 +468,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	d_l2_conn->tlast = diag_os_getms();
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_OPEN;
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "diag_l2_StartComms returns %p\n", FL,
 			(void *)d_l2_conn);
 	}
@@ -520,7 +523,7 @@ int
 diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "diag_l2_send %p msg %p msglen %d called\n", FL,
 			(void *)d_l2_conn, (void *)msg, msg->len);
 	}
@@ -545,7 +548,7 @@ struct diag_msg *
 diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval) {
 	struct diag_msg *rxmsg;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "_request dl2c=%p msg=%p called\n", FL,
 			(void *)d_l2_conn, (void *)msg);
 	}
@@ -553,7 +556,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 	/* Call protocol specific send routine */
 	rxmsg = d_l2_conn->l2proto->diag_l2_proto_request(d_l2_conn, msg, errval);
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "_request returns %p, err %d\n", FL, (void *)rxmsg,
 			*errval);
 	}
@@ -581,7 +584,7 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	     void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
 	int rv;
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "diag_l2_recv %p timeout %u called\n", FL,
 			(void *)d_l2_conn, timeout);
 	}
@@ -592,7 +595,7 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	if (rv == 0) {
 		// update timers if success
 		d_l2_conn->tlast = diag_os_getms();
-	} else if (diag_l2_debug & DIAG_DEBUG_READ) {
+	} else if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "diag_l2_recv returns %d\n", FL, rv);
 	}
 
@@ -611,7 +614,7 @@ diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data) {
 	struct diag_l2_data *d;
 	struct diag_l2_link *dl2l;
 
-	if (diag_l2_debug & DIAG_DEBUG_IOCTL) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_IOCTL) {
 		fprintf(stderr, FLFMT "diag_l2_ioctl %p cmd 0x%X\n", FL, (void *)d_l2_conn,
 			cmd);
 	}

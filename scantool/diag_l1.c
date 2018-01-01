@@ -65,7 +65,9 @@ diag_l1_init(void) {
 		return 0;
 	}
 
-	if (diag_l1_debug & DIAG_DEBUG_INIT) {
+	DIAG_ATOMIC_INITSTATIC(&diag_l1_debug);
+
+	if (diag_l1_debug_load() & DIAG_DEBUG_INIT) {
 		fprintf(stderr, FLFMT "entered diag_l1_init\n", FL);
 	}
 
@@ -88,10 +90,13 @@ diag_l1_init(void) {
 	return 0;
 }
 
-// diag_l1_end : opposite of diag_l1_init . Non-critical for now
+// diag_l1_end : opposite of diag_l1_init .
 int
 diag_l1_end(void) {
 	diag_l1_initdone = 0;
+
+	DIAG_ATOMIC_DEL(&diag_l1_debug);
+
 	return 0;
 }
 
@@ -101,7 +106,7 @@ diag_l1_end(void) {
  */
 int
 diag_l1_open(struct diag_l0_device *dl0d, int l1protocol) {
-	if (diag_l1_debug & DIAG_DEBUG_OPEN) {
+	if (diag_l1_debug_load() & DIAG_DEBUG_OPEN) {
 		fprintf(stderr, FLFMT "diag_l1_open(0x%p, l1 proto=%d\n", FL, (void *)dl0d,
 			l1protocol);
 	}
@@ -119,7 +124,7 @@ diag_l1_open(struct diag_l0_device *dl0d, int l1protocol) {
 // specified diag_l0_device.
 void
 diag_l1_close(struct diag_l0_device *dl0d) {
-	if (diag_l1_debug & DIAG_DEBUG_CLOSE) {
+	if (diag_l1_debug_load() & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "entering diag_l1_close: dl0d=%p\n", FL,
 			(void *)dl0d);
 	}
@@ -160,10 +165,10 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 
 	l0flags = diag_l1_getflags(dl0d);
 
-	if (diag_l1_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l1_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "_send: len=%d P4=%u l0flags=0x%X; ", FL, (int)len,
 			p4, l0flags);
-		if (diag_l1_debug & DIAG_DEBUG_DATA) {
+		if (diag_l1_debug_load() & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 		}
 		fprintf(stderr, "\n");
@@ -267,7 +272,7 @@ diag_l1_recv(struct diag_l0_device *dl0d, const char *subinterface, void *data, 
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l1_debug & DIAG_DEBUG_READ) {
+	if (diag_l1_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "_recv request len=%d, timeout=%u;", FL, (int)len,
 			timeout);
 	}
@@ -287,12 +292,12 @@ diag_l1_recv(struct diag_l0_device *dl0d, const char *subinterface, void *data, 
 		return DIAG_ERR_TIMEOUT;
 	}
 
-	if ((rv > 0) && (diag_l1_debug & DIAG_DEBUG_DATA) &&
-	    (diag_l1_debug & DIAG_DEBUG_READ)) {
+	if ((rv > 0) && (diag_l1_debug_load() & DIAG_DEBUG_DATA) &&
+	    (diag_l1_debug_load() & DIAG_DEBUG_READ)) {
 		fprintf(stderr, "got %d bytes, ", rv);
 		diag_data_dump(stderr, data, (size_t)rv);
 	}
-	if (diag_l1_debug & DIAG_DEBUG_READ) {
+	if (diag_l1_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, "\n");
 	}
 

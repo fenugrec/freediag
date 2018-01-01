@@ -237,7 +237,7 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 	/* Get l2 connection info */
 	d_conn = d_l3_conn->d_l3l2_conn;
 
-	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_WRITE) {
 		fprintf(stderr, FLFMT "send %d bytes, l2 flags 0x%X\n", FL, msg->len,
 			d_l3_conn->d_l3l2_flags);
 	}
@@ -275,7 +275,7 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg) {
 	struct diag_l3_conn *d_l3_conn = (struct diag_l3_conn *)handle;
 	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
 
-	if (diag_l3_debug & DIAG_DEBUG_READ) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr,
 			FLFMT "rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n", FL,
 			msg->len, msg->fmt, l3i->rxoffset);
@@ -330,7 +330,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn) {
 								  // length based on SID +
 								  // TID
 
-		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr,
 				FLFMT "process_data rxoffset is %d sae_msglen is %ld\n",
 				FL, l3i->rxoffset, (long)sae_msglen);
@@ -467,7 +467,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 			break;
 		}
 
-		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr, FLFMT "recv state %d tout %u\n", FL, state, tout);
 		}
 
@@ -479,7 +479,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 		rv = diag_l2_recv(d_l3_conn->d_l3l2_conn, tout, diag_l3_rcv_callback,
 				  (void *)d_l3_conn);
 
-		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr, FLFMT "recv returns %d\n", FL, rv);
 		}
 
@@ -507,7 +507,7 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 			/* Process the data into messages */
 			diag_l3_j1979_process_data(d_l3_conn);
 
-			if (diag_l3_debug & DIAG_DEBUG_PROTO) {
+			if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
 				fprintf(stderr, FLFMT "recv process_data called, msg %p\n",
 					FL, (void *)d_l3_conn->msg);
 			}
@@ -752,7 +752,7 @@ diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
 	}
 
-	if (diag_l3_debug & DIAG_DEBUG_PROTO) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
 		fprintf(stderr, FLFMT "keepalive : got %u bytes, %02X ...\n", FL,
 			rxmsg->len, rxmsg->data[0]);
 	}
@@ -836,7 +836,7 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms) {
 
 	/* OK, do keep alive on this connection */
 
-	if (diag_l3_debug & DIAG_DEBUG_TIMER) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_TIMER) {
 		/* XXX Not async-signal-safe */
 		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %lu ms\n", FL,
 			(void *)d_l3_conn, ms);
