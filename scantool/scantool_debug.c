@@ -98,21 +98,31 @@ cmd_debug_help(int argc, char **argv) {
 	return help_common(argc, argv, debug_cmd_table);
 }
 
+typedef struct {
+	void (*store)(int);
+	int (*load)(void);
+} int_wrapper_object;
+static int_wrapper_object diag_l0_debug = {diag_l0_debug_store, diag_l0_debug_load};
+static int_wrapper_object diag_l1_debug = {diag_l1_debug_store, diag_l1_debug_load};
+static int_wrapper_object diag_l2_debug = {diag_l2_debug_store, diag_l2_debug_load};
+static int_wrapper_object diag_l3_debug = {diag_l3_debug_store, diag_l3_debug_load};
+static int_wrapper_object diag_cli_debug = {diag_cli_debug_store, diag_cli_debug_load};
+
 static int
-cmd_debug_common(const char *txt, int *val, int argc, char **argv) {
+cmd_debug_common(const char *txt, int_wrapper_object *val, int argc, char **argv) {
 	int r;
 	int i;
 
 	if ((argc == 2) && (argv[1][0] != '?')) {
 		// decode number unless it was ?
 		r = htoi(argv[1]);
-		*val = r;
+		val->store(r);
 	}
 
-	printf("%s debug is 0x%X: ", txt, *val);
+	printf("%s debug is 0x%X: ", txt, val->load());
 	for (i = 0; debugflags[i].mask != NIL; i++) {
 		// check each flag and show what was enabled.
-		if (*val & debugflags[i].mask) {
+		if (val->load() & debugflags[i].mask) {
 			printf("%s ", debugflags[i].shortdescr);
 		}
 	}
@@ -149,11 +159,11 @@ cmd_debug_all(int argc, char **argv) {
 
 	if (argc > 0) {
 		val = htoi(argv[1]);
-		diag_l0_debug = val;
-		diag_l1_debug = val;
-		diag_l2_debug = val;
-		diag_l3_debug = val;
-		diag_cli_debug = val;
+		diag_l0_debug_store(val);
+		diag_l1_debug_store(val);
+		diag_l2_debug_store(val);
+		diag_l3_debug_store(val);
+		diag_cli_debug_store(val);
 	}
 	return cmd_debug_show(1, NULL);
 
@@ -164,8 +174,9 @@ static int
 cmd_debug_show(UNUSED(int argc), UNUSED(char **argv)) {
 	/*	int layer, val; */
 
-	printf("Debug values: L0 0x%X, L1 0x%X, L2 0x%X L3 0x%X CLI 0x%X\n", diag_l0_debug,
-	       diag_l1_debug, diag_l2_debug, diag_l3_debug, diag_cli_debug);
+	printf("Debug values: L0 0x%X, L1 0x%X, L2 0x%X L3 0x%X CLI 0x%X\n",
+	       diag_l0_debug_load(), diag_l1_debug_load(), diag_l2_debug_load(),
+	       diag_l3_debug_load(), diag_cli_debug_load());
 	return CMD_OK;
 }
 
