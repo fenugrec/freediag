@@ -13,7 +13,16 @@
 #include "diag_err.h"
 #include "diag_l0.h"
 
-int diag_l0_debug; // debug flags for l0
+// debug flags for l0
+DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_int diag_l0_debug)
+void
+diag_l0_debug_store(int d) {
+	diag_atomic_store_int(&diag_l0_debug, d);
+}
+int
+diag_l0_debug_load(void) {
+	return diag_atomic_load_int(&diag_l0_debug);
+}
 
 int
 diag_l0_open(struct diag_l0_device *dl0d, int l1proto) {

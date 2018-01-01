@@ -54,7 +54,16 @@
 const char *progname;
 const char projname[] = PROJECT_NAME;
 
-int diag_cli_debug; // debug level
+// debug level
+DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_int diag_cli_debug)
+void
+diag_cli_debug_store(int d) {
+	diag_atomic_store_int(&diag_cli_debug, d);
+}
+int
+diag_cli_debug_load(void) {
+	return diag_atomic_load_int(&diag_cli_debug);
+}
 
 FILE *global_logfp;              /* Monitor log output file pointer */
 unsigned long global_log_tstart; /* timestamp datum (in ms) of beginning of log */

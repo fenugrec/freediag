@@ -184,7 +184,9 @@ struct diag_msg *
 diag_l3_base_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval);
 
 // diag_l3_debug : contains debugging message flags (see diag.h)
-extern int diag_l3_debug;
+void diag_l3_debug_store(int d);
+int diag_l3_debug_load(void);
+
 extern struct diag_l3_conn *global_l3_conn;
 
 /* List of supported L3 protocols; last element is NULL */

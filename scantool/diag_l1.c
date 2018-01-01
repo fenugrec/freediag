@@ -44,7 +44,16 @@
 #include "diag_l0.h"
 #include "diag_l1.h"
 
-int diag_l1_debug; // debug flags for l1
+// debug flags for l1
+DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_int diag_l1_debug)
+void
+diag_l1_debug_store(int d) {
+	diag_atomic_store_int(&diag_l1_debug, d);
+}
+int
+diag_l1_debug_load(void) {
+	return diag_atomic_load_int(&diag_l1_debug);
+}
 
 /* Global init flag */
 static int diag_l1_initdone = 0;

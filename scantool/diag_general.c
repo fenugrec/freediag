@@ -68,6 +68,7 @@ int diag_init(void) { // returns 0 if normal exit
 
 	// XXX This is interesting: the following functions only ever return 0...
 
+	diag_l0_init();
 	if ((rv = diag_l1_init())) {
 		return diag_iseterr(rv);
 	}
@@ -109,6 +110,7 @@ diag_end(void) {
 		fprintf(stderr, FLFMT "Could not close L1 level\n", FL);
 		rv = -1;
 	}
+	diag_l0_end();
 
 	// There would be a race with the periodic timer, trying to take the lock, if we
 	// deleted the mutex.

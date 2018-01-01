@@ -38,7 +38,15 @@
 
 #include "utlist.h"
 
-int diag_l3_debug;
+DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_int diag_l3_debug)
+void
+diag_l3_debug_store(int d) {
+	diag_atomic_store_int(&diag_l3_debug, d);
+}
+int
+diag_l3_debug_load(void) {
+	return diag_atomic_load_int(&diag_l3_debug);
+}
 
 static diag_mtx connlist_mtx = LOCK_INITIALIZER;
 static struct diag_l3_conn *diag_l3_list;

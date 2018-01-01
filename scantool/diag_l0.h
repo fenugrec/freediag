@@ -131,7 +131,9 @@ int diag_l0_ioctl(struct diag_l0_device *, unsigned cmd, void *data);
 
 /*** globals ***/
 
-extern int diag_l0_debug; // debug flags
+// debug flags
+void diag_l0_debug_store(int d);
+int diag_l0_debug_load(void);
 
 /*
  * l0dev_list : static-allocated list of supported L0 devices, since it can

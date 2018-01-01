@@ -234,7 +234,9 @@ int diag_l1_gettype(struct diag_l0_device *);
 
 /**********/
 
-extern int diag_l1_debug; // L1 debug flags (see diag.h)
+// L1 debug flags (see diag.h)
+void diag_l1_debug_store(int d);
+int diag_l1_debug_load(void);
 
 #if defined(__cplusplus)
 }

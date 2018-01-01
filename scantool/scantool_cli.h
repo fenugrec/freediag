@@ -88,7 +88,10 @@ int htoi(char *buf);
 int cmd_up(int argc, char **argv);
 int cmd_exit(int argc, char **argv);
 
-extern int diag_cli_debug; /* debug level */
+/* debug level */
+void diag_cli_debug_store(int d);
+int diag_cli_debug_load(void);
+
 extern FILE *global_logfp; /* Monitor log output file pointer */
 void log_timestamp(const char *prefix);
 

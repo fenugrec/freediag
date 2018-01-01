@@ -44,7 +44,15 @@
 #include "diag_l2.h"
 #include "utlist.h"
 
-int diag_l2_debug;
+DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_int diag_l2_debug)
+void
+diag_l2_debug_store(int d) {
+	diag_atomic_store_int(&diag_l2_debug, d);
+}
+int
+diag_l2_debug_load(void) {
+	return diag_atomic_load_int(&diag_l2_debug);
+}
 
 /* struct to manage L2 stuff, used in here only */
 static struct {

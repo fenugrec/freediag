@@ -380,7 +380,9 @@ int diag_l2_ioctl(struct diag_l2_conn *connection, unsigned int cmd, void *data)
 
 void diag_l2_timer(void); /* Regular timer routine */
 
-extern int diag_l2_debug;
+void diag_l2_debug_store(int d);
+int diag_l2_debug_load(void);
+
 extern struct diag_l2_conn *global_l2_conn; // TODO : move in globcfg struct
 
 /** L2 protocol descriptor
