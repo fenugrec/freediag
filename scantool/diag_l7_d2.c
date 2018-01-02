@@ -54,18 +54,16 @@
  * are unknown. Request and response message formats for these services are
  * NOT according to KWP2000.
  */
-enum {
-	stopDiagnosticSession = 0xA0,
-	testerPresent = 0xA1,
-	readDataByLocalIdentifier = 0xA5,
-	readDataByLongLocalIdentifier = 0xA6, /* CAN bus only? */
-	readMemoryByAddress = 0xA7,
-	readFreezeFrameByDTC = 0xAD,
-	readDiagnosticTroubleCodes = 0xAE,
-	clearDiagnosticInformation = 0xAF,
-	inputOutputControlByLocalIdentifier = 0xB0,
-	readNVByLocalIdentifier = 0xB9
-} service_id;
+enum { stopDiagnosticSession = 0xA0,
+       testerPresent = 0xA1,
+       readDataByLocalIdentifier = 0xA5,
+       readDataByLongLocalIdentifier = 0xA6, /* CAN bus only? */
+       readMemoryByAddress = 0xA7,
+       readFreezeFrameByDTC = 0xAD,
+       readDiagnosticTroubleCodes = 0xAE,
+       clearDiagnosticInformation = 0xAF,
+       inputOutputControlByLocalIdentifier = 0xB0,
+       readNVByLocalIdentifier = 0xB9 } service_id;
 
 /*
  * Indicates whether a response was a positive acknowledgement of the request.
@@ -92,7 +90,7 @@ success_p(struct diag_msg *req, struct diag_msg *resp) {
  */
 int
 diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn) {
-	uint8_t req[] = { testerPresent };
+	uint8_t req[] = {testerPresent};
 	int errval = 0;
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;
@@ -117,10 +115,10 @@ diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn) {
 /* The request message for reading memory */
 static int
 read_MEMORY_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, uint8_t count) {
-	static uint8_t req[] = { readMemoryByAddress, 0, 99, 99, 1, 99 };
+	static uint8_t req[] = {readMemoryByAddress, 0, 99, 99, 1, 99};
 
-	req[2] = (addr>>8)&0xff;
-	req[3] = addr&0xff;
+	req[2] = (addr >> 8) & 0xff;
+	req[3] = addr & 0xff;
 	req[5] = count;
 	*msgout = req;
 	*msglen = sizeof(req);
@@ -129,10 +127,11 @@ read_MEMORY_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, uint8_t c
 
 /* The request message for reading live data by 1-byte identifier */
 static int
-read_LIVEDATA_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count)) {
-	static uint8_t req[] = { readDataByLocalIdentifier, 99, 1 };
+read_LIVEDATA_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr,
+		  UNUSED(uint8_t count)) {
+	static uint8_t req[] = {readDataByLocalIdentifier, 99, 1};
 
-	req[1] = addr&0xff;
+	req[1] = addr & 0xff;
 	if (addr > 0xff) {
 		fprintf(stderr, FLFMT "read_LIVEDATA_req invalid address %x\n", FL, addr);
 		return DIAG_ERR_GENERAL;
@@ -145,10 +144,11 @@ read_LIVEDATA_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(
 
 /* The request message for reading live data by 2-byte ident (CAN bus only?) */
 static int
-read_LIVEDATA2_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count)) {
-	static uint8_t req[] = { readDataByLongLocalIdentifier, 99, 99, 1 };
-	req[1] = (addr>>8)&0xff;
-	req[2] = addr&0xff;
+read_LIVEDATA2_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr,
+		   UNUSED(uint8_t count)) {
+	static uint8_t req[] = {readDataByLongLocalIdentifier, 99, 99, 1};
+	req[1] = (addr >> 8) & 0xff;
+	req[2] = addr & 0xff;
 	*msgout = req;
 	*msglen = sizeof(req);
 	return 0;
@@ -157,9 +157,9 @@ read_LIVEDATA2_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED
 /* The request message for reading non-volatile data */
 static int
 read_NV_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count)) {
-	static uint8_t req[] = { readNVByLocalIdentifier, 99 };
+	static uint8_t req[] = {readNVByLocalIdentifier, 99};
 
-	req[1] = addr&0xff;
+	req[1] = addr & 0xff;
 	if (addr > 0xff) {
 		fprintf(stderr, FLFMT "read_NV_req invalid address %x\n", FL, addr);
 		return DIAG_ERR_GENERAL;
@@ -172,10 +172,11 @@ read_NV_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_
 
 /* The request message for reading freeze frames */
 static int
-read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(uint8_t count)) {
-	static uint8_t req[] = { readFreezeFrameByDTC, 99, 0 };
+read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr,
+		UNUSED(uint8_t count)) {
+	static uint8_t req[] = {readFreezeFrameByDTC, 99, 0};
 
-	req[1] = addr&0xff;
+	req[1] = addr & 0xff;
 	if (addr > 0xff) {
 		fprintf(stderr, FLFMT "read_FREEZE_req invalid address %x\n", FL, addr);
 		return DIAG_ERR_GENERAL;
@@ -199,7 +200,8 @@ read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(ui
  * be more or less than the number of bytes requested.
  */
 int
-diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out) {
+diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr,
+		int buflen, uint8_t *out) {
 	struct diag_msg req = {0};
 	struct diag_msg *resp = NULL;
 	int datalen;
@@ -235,25 +237,25 @@ diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr
 		return rv;
 	}
 
-	if (resp->len<2 || !success_p(&req, resp)) {
+	if (resp->len < 2 || !success_p(&req, resp)) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
 
-	if (ns==NS_MEMORY) {
-		if (resp->len!=(unsigned int)buflen+4 || memcmp(req.data+1, resp->data+1, 3)!=0) {
+	if (ns == NS_MEMORY) {
+		if (resp->len != (unsigned int)buflen + 4 ||
+		    memcmp(req.data + 1, resp->data + 1, 3) != 0) {
 			diag_freemsg(resp);
 			return DIAG_ERR_ECUSAIDNO;
 		}
-		memcpy(out, resp->data+4, buflen);
+		memcpy(out, resp->data + 4, buflen);
 		diag_freemsg(resp);
 		return buflen;
 	}
 
 	datalen = resp->len - 2;
 	if (datalen > 0) {
-		memcpy(out, resp->data + 2,
-		       (datalen > buflen) ? buflen : datalen);
+		memcpy(out, resp->data + 2, (datalen > buflen) ? buflen : datalen);
 	}
 	diag_freemsg(resp);
 	return datalen;
@@ -264,7 +266,7 @@ diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr
  */
 int
 diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) {
-	uint8_t req[] = { readDiagnosticTroubleCodes, 1 };
+	uint8_t req[] = {readDiagnosticTroubleCodes, 1};
 	int errval = 0;
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;
@@ -278,13 +280,13 @@ diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) {
 		return errval;
 	}
 
-	if (resp->len<2 || !success_p(&msg, resp)) {
+	if (resp->len < 2 || !success_p(&msg, resp)) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
 
 	count = resp->len - 2;
-	memcpy(out, resp->data+2, (buflen<count)?buflen:count);
+	memcpy(out, resp->data + 2, (buflen < count) ? buflen : count);
 
 	if (resp->len == 14) {
 		/*
@@ -309,7 +311,7 @@ diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) {
  */
 int
 diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn) {
-	uint8_t req[] = { clearDiagnosticInformation, 1 };
+	uint8_t req[] = {clearDiagnosticInformation, 1};
 	uint8_t buf[1];
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;
@@ -334,7 +336,7 @@ diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn) {
 		return rv;
 	}
 
-	if (resp->len==2 && success_p(&msg, resp)) {
+	if (resp->len == 2 && success_p(&msg, resp)) {
 		diag_freemsg(resp);
 		return 1;
 	}
@@ -352,7 +354,7 @@ diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn) {
  */
 int
 diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps) {
-	uint8_t req[] = { inputOutputControlByLocalIdentifier, id, 0x32, reps };
+	uint8_t req[] = {inputOutputControlByLocalIdentifier, id, 0x32, reps};
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;
 	int rv;
@@ -364,7 +366,7 @@ diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps) 
 		return rv;
 	}
 
-	if (resp->len==2 && success_p(&msg, resp)) {
+	if (resp->len == 2 && success_p(&msg, resp)) {
 		diag_freemsg(resp);
 		return 0;
 	}

@@ -30,17 +30,9 @@
 extern "C" {
 #endif
 
-enum namespace {
-	NS_MEMORY,
-	NS_ROM,
-	NS_ADC,
-	NS_LIVEDATA,
-	NS_LIVEDATA2,
-	NS_NV,
-	NS_FREEZE
-};
+enum namespace { NS_MEMORY, NS_ROM, NS_ADC, NS_LIVEDATA, NS_LIVEDATA2, NS_NV, NS_FREEZE };
 
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DIAG_L7_H_ */

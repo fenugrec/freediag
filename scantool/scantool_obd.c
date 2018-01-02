@@ -17,14 +17,12 @@
 #include "scantool_cli.h"
 #include "scantool_obd.h"
 
-
-
-//cmd_watch : this creates a diag_l3_conn
+// cmd_watch : this creates a diag_l3_conn
 static int
 cmd_watch(int argc, char **argv) {
 	int rv;
 	struct diag_l2_conn *d_l2_conn;
-	struct diag_l3_conn *d_l3_conn=NULL;
+	struct diag_l3_conn *d_l3_conn = NULL;
 	struct diag_l0_device *dl0d = global_dl0d;
 	bool rawmode = 0;
 	bool nodecode = 0;
@@ -72,13 +70,13 @@ cmd_watch(int argc, char **argv) {
 		return CMD_FAILED;
 	}
 	if (rawmode) {
-		d_l2_conn = diag_l2_StartCommunications(dl0d, DIAG_L2_PROT_RAW,
-			0, global_cfg.speed,
-			global_cfg.tgt,
-			global_cfg.src);
+		d_l2_conn = diag_l2_StartCommunications(dl0d, DIAG_L2_PROT_RAW, 0,
+							global_cfg.speed, global_cfg.tgt,
+							global_cfg.src);
 	} else {
-		d_l2_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
-			DIAG_L2_TYPE_MONINIT, global_cfg.speed, global_cfg.tgt, global_cfg.src);
+		d_l2_conn = diag_l2_StartCommunications(
+			dl0d, global_cfg.L2proto, DIAG_L2_TYPE_MONINIT, global_cfg.speed,
+			global_cfg.tgt, global_cfg.src);
 	}
 
 	if (d_l2_conn == NULL) {
@@ -86,8 +84,8 @@ cmd_watch(int argc, char **argv) {
 		diag_l2_close(dl0d);
 		return CMD_FAILED;
 	}
-	//here we have a valid d_l2_conn over dl0d.
-	(void) diag_os_ipending();
+	// here we have a valid d_l2_conn over dl0d.
+	(void)diag_os_ipending();
 
 	if (!rawmode) {
 		/* Put the SAE J1979 stack on top of the ISO device */
@@ -111,12 +109,10 @@ cmd_watch(int argc, char **argv) {
 			}
 
 			if (d_l3_conn != NULL) {
-				rv = diag_l3_recv(d_l3_conn, 10000,
-					j1979_watch_rcv,
-					(nodecode) ? NULL:(void *)d_l3_conn);
+				rv = diag_l3_recv(d_l3_conn, 10000, j1979_watch_rcv,
+						  (nodecode) ? NULL : (void *)d_l3_conn);
 			} else {
-				rv = diag_l2_recv(d_l2_conn, 10000,
-					j1979_watch_rcv, NULL);
+				rv = diag_l2_recv(d_l2_conn, 10000, j1979_watch_rcv, NULL);
 			}
 			if (rv == 0) {
 				continue;
@@ -126,7 +122,7 @@ cmd_watch(int argc, char **argv) {
 			}
 		}
 	} else {
-		//rawmode
+		// rawmode
 		/*
 		 * And just read stuff, callback routine will print out the data
 		 */
@@ -136,8 +132,8 @@ cmd_watch(int argc, char **argv) {
 				break;
 			}
 
-			rv = diag_l2_recv(d_l2_conn, 10000,
-				j1979_data_rcv, (void *)&_RQST_HANDLE_WATCH);
+			rv = diag_l2_recv(d_l2_conn, 10000, j1979_data_rcv,
+					  (void *)&_RQST_HANDLE_WATCH);
 			if (rv == 0) {
 				continue;
 			}
@@ -158,7 +154,6 @@ cmd_watch(int argc, char **argv) {
 	return CMD_OK;
 }
 
-
 /*
  * Print the monitorable data out, use SI units by default, or "english"
  * units
@@ -170,20 +165,19 @@ print_current_data(bool english) {
 	unsigned int i;
 	unsigned int j;
 
-	printf("%-30.30s %-15.15s FreezeFrame\n",
-		"Parameter", "Current");
+	printf("%-30.30s %-15.15s FreezeFrame\n", "Parameter", "Current");
 
-	for (j = 0 ; get_pid(j) != NULL ; j++) {
-		const struct pid *p = get_pid(j) ;
+	for (j = 0; get_pid(j) != NULL; j++) {
+		const struct pid *p = get_pid(j);
 
-		for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
+		for (i = 0, ep = ecu_info; i < ecu_count; i++, ep++) {
 			if (DATA_VALID(p, ep->mode1_data) ||
-				DATA_VALID(p, ep->mode2_data)) {
+			    DATA_VALID(p, ep->mode2_data)) {
 				printf("%-30.30s ", p->desc);
 
 				if (DATA_VALID(p, ep->mode1_data)) {
 					p->cust_snprintf(buf, sizeof(buf), english, p,
-						ep->mode1_data, 2);
+							 ep->mode1_data, 2);
 				} else {
 					snprintf(buf, sizeof(buf), "-----");
 				}
@@ -192,7 +186,7 @@ print_current_data(bool english) {
 
 				if (DATA_VALID(p, ep->mode2_data)) {
 					p->cust_snprintf(buf, sizeof(buf), english, p,
-						ep->mode2_data, 3);
+							 ep->mode2_data, 3);
 				} else {
 					snprintf(buf, sizeof(buf), "-----");
 				}
@@ -213,7 +207,7 @@ log_response(int ecu, response *r) {
 	}
 
 	printf("%d: ", ecu);
-	diag_data_dump(global_logfp, r->data,r->len);
+	diag_data_dump(global_logfp, r->data, r->len);
 	fprintf(global_logfp, "\n");
 }
 
@@ -229,18 +223,18 @@ log_current_data(void) {
 
 	log_timestamp("D");
 	fprintf(global_logfp, "MODE 1 DATA\n");
-	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
-		for (r = ep->mode1_data;
-			r < &ep->mode1_data[ARRAY_SIZE(ep->mode1_data)]; r++) {
-				log_response((int)i, r);
+	for (i = 0, ep = ecu_info; i < ecu_count; i++, ep++) {
+		for (r = ep->mode1_data; r < &ep->mode1_data[ARRAY_SIZE(ep->mode1_data)];
+		     r++) {
+			log_response((int)i, r);
 		}
 	}
 
 	log_timestamp("D");
 	fprintf(global_logfp, "MODE 2 DATA\n");
-	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
-		for (r = ep->mode2_data;
-			r < &ep->mode2_data[ARRAY_SIZE(ep->mode2_data)]; r++) {
+	for (i = 0, ep = ecu_info; i < ecu_count; i++, ep++) {
+		for (r = ep->mode2_data; r < &ep->mode2_data[ARRAY_SIZE(ep->mode2_data)];
+		     r++) {
 			log_response((int)i, r);
 		}
 	}
@@ -282,9 +276,9 @@ cmd_monitor(int argc, char **argv) {
 	while (1) {
 		rv = do_j1979_getdata(1);
 		/* Key pressed */
-		if (rv == 1 || rv<0) {
-			//enter was pressed to interrupt,
-			//or there was an error.
+		if (rv == 1 || rv < 0) {
+			// enter was pressed to interrupt,
+			// or there was an error.
 			break;
 		}
 		/* print the data */
@@ -299,11 +293,12 @@ cmd_monitor(int argc, char **argv) {
 	return CMD_OK;
 }
 
-// scan : use existing L3 J1979 connection, or establish a new one by trying all known protos.
+// scan : use existing L3 J1979 connection, or establish a new one by trying all known
+// protos.
 
 static int
 cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
-	int rv=DIAG_ERR_GENERAL;
+	int rv = DIAG_ERR_GENERAL;
 	if (argc > 1) {
 		return CMD_USAGE;
 	}
@@ -314,11 +309,13 @@ cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
 	}
 	if (global_state == STATE_L3ADDED) {
 		if (global_l3_conn != NULL) {
-			if (strcmp(global_l3_conn->d_l3_proto->proto_name, "SAEJ1979") ==0) {
+			if (strcmp(global_l3_conn->d_l3_proto->proto_name, "SAEJ1979") ==
+			    0) {
 				printf("Re-using active L3 connection.\n");
-				rv=0;
+				rv = 0;
 			} else {
-				printf("L3 connection must be SAEJ1979 ! Try disconnecting and running scan again.\n");
+				printf("L3 connection must be SAEJ1979 ! Try "
+				       "disconnecting and running scan again.\n");
 				return CMD_FAILED;
 			}
 		} else {
@@ -326,7 +323,8 @@ cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
 			return CMD_FAILED;
 		}
 	} else if (global_state >= STATE_CONNECTED) {
-		printf("Already connected, please disconnect first, or manually add SAEJ1979 L3 layer.\n");
+		printf("Already connected, please disconnect first, or manually add "
+		       "SAEJ1979 L3 layer.\n");
 		return CMD_FAILED;
 	} else {
 		rv = ecu_connect();
@@ -354,8 +352,6 @@ cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
-
-
 static int
 cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 	char *input;
@@ -365,13 +361,15 @@ cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 		return CMD_OK;
 	}
 
-	input = basic_get_input("Are you sure you wish to clear the Diagnostic "
-			"Trouble Codes (y/n) ? ", stdin);
+	input = basic_get_input(
+		"Are you sure you wish to clear the Diagnostic "
+		"Trouble Codes (y/n) ? ",
+		stdin);
 	if (!input) {
 		return CMD_OK;
 	}
 
-	if ((strcasecmp(input, "yes") == 0) || (strcasecmp(input, "y")==0)) {
+	if ((strcasecmp(input, "yes") == 0) || (strcasecmp(input, "y") == 0)) {
 		if (diag_cleardtc() == 0) {
 			printf("Done\n");
 		} else {
@@ -385,8 +383,6 @@ cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
-
-
 static int
 cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
@@ -399,7 +395,7 @@ cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
 
 	printf("%d ECUs found\n", ecu_count);
 
-	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
+	for (i = 0, ep = ecu_info; i < ecu_count; i++, ep++) {
 		printf("ECU %d: Address 0x%02X ", i, ep->ecu_addr & 0xff);
 		if (ep->supress) {
 			printf("output supressed for monitor mode\n");
@@ -414,21 +410,19 @@ static void
 print_resp_info(UNUSED(int mode), response *data) {
 
 	int i;
-	for (i=0; i<256; i++) {
+	for (i = 0; i < 256; i++) {
 		if (data->type != TYPE_UNTESTED) {
 			if (data->type == TYPE_GOOD) {
-				printf("0x%02X: ", i );
+				printf("0x%02X: ", i);
 				diag_data_dump(stdout, data->data, data->len);
 				printf("\n");
 			} else {
-				printf("0x%02X: Failed 0x%X\n",
-					i, data->data[1]);
+				printf("0x%02X: Failed 0x%X\n", i, data->data[1]);
 			}
 		}
 		data++;
 	}
 }
-
 
 static int
 cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
@@ -436,7 +430,7 @@ cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
 	int i;
 
 	printf("Current Data\n");
-	for (i=0, ep=ecu_info; i<MAX_ECU; i++,ep++) {
+	for (i = 0, ep = ecu_info; i < MAX_ECU; i++, ep++) {
 		if (ep->valid) {
 			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
 			print_resp_info(1, ep->mode1_data);
@@ -444,7 +438,7 @@ cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
 	}
 
 	printf("Freezeframe Data\n");
-	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++) {
+	for (i = 0, ep = ecu_info; i < MAX_ECU; i++, ep++) {
 		if (ep->valid) {
 			printf("ECU 0x%02X:\n", ep->ecu_addr & 0xff);
 			print_resp_info(2, ep->mode2_data);
@@ -454,16 +448,13 @@ cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
-
-
-
 /*print_pidinfo() : print supported PIDs (0 to 0x60) */
 static void
 print_pidinfo(int mode, uint8_t *pid_data) {
-	int i,j;	/* j : # pid per line */
+	int i, j; /* j : # pid per line */
 
 	printf(" Mode %d:", mode);
-	for (i=0, j=0; i<=0x60; i++) {
+	for (i = 0, j = 0; i <= 0x60; i++) {
 		if (j == 8) {
 			j = 0;
 		}
@@ -479,8 +470,8 @@ print_pidinfo(int mode, uint8_t *pid_data) {
 	printf("\n");
 }
 
-
-static int cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
+static int
+cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
 	int i;
 
@@ -489,10 +480,10 @@ static int cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
 		return CMD_OK;
 	}
 
-	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++) {
+	for (i = 0, ep = ecu_info; i < MAX_ECU; i++, ep++) {
 		if (ep->valid) {
-			printf("ECU %d address 0x%02X: Supported PIDs:\n",
-				i, ep->ecu_addr & 0xff);
+			printf("ECU %d address 0x%02X: Supported PIDs:\n", i,
+			       ep->ecu_addr & 0xff);
 			print_pidinfo(1, ep->mode1_info);
 			print_pidinfo(2, ep->mode2_info);
 			print_pidinfo(5, ep->mode5_info);
@@ -507,18 +498,14 @@ static int cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
 }
 
 const struct cmd_tbl_entry scantool_cmd_table[] = {
-	{ "scan", "scan", "Start SCAN process", cmd_scan, 0, NULL},
-	{ "monitor", "monitor [english/metric]", "Continuously monitor rpm etc",
-		cmd_monitor, 0, NULL},
-	{ "cleardtc", "cleardtc", "Clear DTCs from ECU", cmd_cleardtc, 0, NULL},
-	{ "ecus", "ecus", "Show ECU information", cmd_ecus, 0, NULL},
-	{ "watch", "watch [raw/nodecode/nol3]",
-		"Watch the diagnostic bus and, if not in raw/nol3 mode, decode data",
-		cmd_watch, 0, NULL},
-	{ "dumpdata", "dumpdata", "Show Mode1 Pid1/2 responses",
-		cmd_dumpdata, 0, NULL},
-	{ "pids", "pids", "Shows PIDs supported by ECU",
-		cmd_pids, 0, NULL},
-	{ NULL, NULL, NULL, NULL, 0, NULL}
-};
-
+	{"scan", "scan", "Start SCAN process", cmd_scan, 0, NULL},
+	{"monitor", "monitor [english/metric]", "Continuously monitor rpm etc",
+	 cmd_monitor, 0, NULL},
+	{"cleardtc", "cleardtc", "Clear DTCs from ECU", cmd_cleardtc, 0, NULL},
+	{"ecus", "ecus", "Show ECU information", cmd_ecus, 0, NULL},
+	{"watch", "watch [raw/nodecode/nol3]",
+	 "Watch the diagnostic bus and, if not in raw/nol3 mode, decode data", cmd_watch,
+	 0, NULL},
+	{"dumpdata", "dumpdata", "Show Mode1 Pid1/2 responses", cmd_dumpdata, 0, NULL},
+	{"pids", "pids", "Shows PIDs supported by ECU", cmd_pids, 0, NULL},
+	{NULL, NULL, NULL, NULL, 0, NULL}};

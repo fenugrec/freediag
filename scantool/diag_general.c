@@ -37,23 +37,36 @@
 #include "diag_dtc.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
+#include "diag_l3.h"
 
 #include "utlist.h"
 
-#define ERR_STR_LEN 50	//length of "illegal error X" string
+#define ERR_STR_LEN 50 // length of "illegal error X" string
 
-static int diag_initialized=0;
+DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_bool periodic_done_wrapper)
 
-//diag_init : should be called once before doing anything.
-//and call diag_end before terminating.
-int diag_init(void) {	//returns 0 if normal exit
+static void
+set_periodic_done(void) {
+	diag_atomic_store_bool(&periodic_done_wrapper, true);
+}
+
+bool
+periodic_done(void) {
+	return diag_atomic_load_bool(&periodic_done_wrapper);
+}
+
+static int diag_initialized = 0;
+
+// diag_init : should be called once before doing anything.
+// and call diag_end before terminating.
+int diag_init(void) { // returns 0 if normal exit
 	int rv;
 
 	if (diag_initialized) {
 		return 0;
 	}
 
-	//XXX This is interesting: the following functions only ever return 0...
+	// XXX This is interesting: the following functions only ever return 0...
 
 	if ((rv = diag_l1_init())) {
 		return diag_iseterr(rv);
@@ -61,6 +74,8 @@ int diag_init(void) {	//returns 0 if normal exit
 	if ((rv = diag_l2_init())) {
 		return diag_iseterr(rv);
 	}
+	diag_l3_init();
+	DIAG_ATOMIC_INITSTATIC(&periodic_done_wrapper);
 	if ((rv = diag_os_init())) {
 		return diag_iseterr(rv);
 	}
@@ -71,32 +86,39 @@ int diag_init(void) {	//returns 0 if normal exit
 	return 0;
 }
 
-//must be called before exiting. Ret 0 if ok
-//this is the "opposite" of diag_init
-int diag_end(void) {
-	int rv=0;
+// must be called before exiting. Ret 0 if ok
+// this is the "opposite" of diag_init
+int
+diag_end(void) {
+	int rv = 0;
 	if (!diag_initialized) {
 		return 0;
 	}
 
+	set_periodic_done();
+	if (diag_os_close()) {
+		fprintf(stderr, FLFMT "Could not close OS functions!\n", FL);
+		rv = -1;
+	}
+	diag_l3_end();
 	if (diag_l2_end()) {
 		fprintf(stderr, FLFMT "Could not close L2 level\n", FL);
-		rv=-1;
+		rv = -1;
 	}
 	if (diag_l1_end()) {
 		fprintf(stderr, FLFMT "Could not close L1 level\n", FL);
-		rv=-1;
+		rv = -1;
 	}
-	if (diag_os_close()) {
-		fprintf(stderr, FLFMT "Could not close OS functions!\n", FL);
-		rv=-1;
-	}
-	//nothing to do for diag_dtc_init
 
-	diag_initialized=0;
+	// There would be a race with the periodic timer, trying to take the lock, if we
+	// deleted the mutex.
+	// DIAG_ATOMIC_DEL(&periodic_done_wrapper)
+
+	// nothing to do for diag_dtc_init
+
+	diag_initialized = 0;
 	return rv;
 }
-
 
 /** Message handling **/
 
@@ -106,7 +128,8 @@ diag_allocmsg(size_t datalen) {
 	int rv;
 
 	if (datalen > DIAG_MAX_MSGLEN) {
-		fprintf(stderr, FLFMT "_allocmsg with >%d bytes !? report this !\n", FL, DIAG_MAX_MSGLEN);
+		fprintf(stderr, FLFMT "_allocmsg with >%d bytes !? report this !\n", FL,
+			DIAG_MAX_MSGLEN);
 		return diag_pseterr(DIAG_ERR_BADLEN);
 	}
 
@@ -127,9 +150,9 @@ diag_allocmsg(size_t datalen) {
 		newmsg->idata = NULL;
 	}
 
-	newmsg->len=datalen;
-	newmsg->next=NULL;
-	newmsg->data = newmsg->idata;	/* Keep tab as users change newmsg->data */
+	newmsg->len = datalen;
+	newmsg->next = NULL;
+	newmsg->data = newmsg->idata; /* Keep tab as users change newmsg->data */
 	// i.e. some functions do (diagmsg->data += skiplen) which would prevent us
 	// from doing free(diagmsg->data)  (the pointer was changed).
 	// so ->idata is the original alloc'ed pointer, that should never be modified
@@ -138,7 +161,8 @@ diag_allocmsg(size_t datalen) {
 	return newmsg;
 }
 
-/* Duplicate a message, and its contents including all chained messages. XXX nobody uses this !? */
+/* Duplicate a message, and its contents including all chained messages. XXX nobody uses
+ * this !? */
 struct diag_msg *
 diag_dupmsg(struct diag_msg *msg) {
 	struct diag_msg *newchain, *chain_last, *tmsg;
@@ -159,14 +183,15 @@ diag_dupmsg(struct diag_msg *msg) {
 	chain_last = newchain;
 
 	LL_FOREACH(msg->next, msg) {
-		tmsg = diag_dupsinglemsg(msg);	//copy
+		tmsg = diag_dupsinglemsg(msg); // copy
 		if (tmsg == NULL) {
-			diag_freemsg(newchain);	//undo what we have so far
+			diag_freemsg(newchain); // undo what we have so far
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
 
-		//append to end of chain.
-		//Not using LL_APPEND out of principle, to avoid walking the whole list every time !
+		// append to end of chain.
+		// Not using LL_APPEND out of principle, to avoid walking the whole list
+		// every time !
 		chain_last->next = tmsg;
 		chain_last = tmsg;
 	}
@@ -212,12 +237,14 @@ diag_freemsg(struct diag_msg *msg) {
 	}
 
 	if (msg->next != NULL) {
-		diag_freemsg(msg->next);	//recurse
+		diag_freemsg(msg->next); // recurse
 	}
 
-	if ( (msg->iflags & DIAG_MSG_IFLAG_MALLOC) == 0 ) {
+	if ((msg->iflags & DIAG_MSG_IFLAG_MALLOC) == 0) {
 		fprintf(stderr,
-			FLFMT "diag_freemsg free-ing a non diag_allocmsg()'d message %p!\n",
+			FLFMT
+			"diag_freemsg free-ing a non diag_allocmsg()'d message "
+			"%p!\n",
 			FL, (void *)msg);
 		free(msg);
 		return;
@@ -231,11 +258,11 @@ diag_freemsg(struct diag_msg *msg) {
 	return;
 }
 
-
 // diag_cks1: return simple 8-bit checksum of
 // [len] bytes at *data. Everybody needs this !
-uint8_t diag_cks1(const uint8_t *data, unsigned int len) {
-	uint8_t rv=0;
+uint8_t
+diag_cks1(const uint8_t *data, unsigned int len) {
+	uint8_t rv = 0;
 
 	while (len > 0) {
 		len--;
@@ -244,8 +271,8 @@ uint8_t diag_cks1(const uint8_t *data, unsigned int len) {
 	return rv;
 }
 
-//diag_data_dump : print (len) bytes of uint8_t *data
-//to the specified FILE (stderr, etc.)
+// diag_data_dump : print (len) bytes of uint8_t *data
+// to the specified FILE (stderr, etc.)
 void
 diag_data_dump(FILE *out, const void *data, size_t len) {
 	const uint8_t *p = (const uint8_t *)data;
@@ -258,10 +285,11 @@ diag_data_dump(FILE *out, const void *data, size_t len) {
 	}
 }
 
-//smartcat() : make sure s1 is not too large, then strncat
-//it does NOT verify if *p1 is large enough !
-void smartcat(char *p1, const size_t s1, const char *p2 ) {
-	assert ( s1 > strlen(p1) + strlen (p2) + 1 ) ;
+// smartcat() : make sure s1 is not too large, then strncat
+// it does NOT verify if *p1 is large enough !
+void
+smartcat(char *p1, const size_t s1, const char *p2) {
+	assert(s1 > strlen(p1) + strlen(p2) + 1);
 	strncat(p1, p2, s1);
 }
 
@@ -276,30 +304,30 @@ static const struct {
 	const int code;
 	const char *desc;
 } edesc[] = {
-	{ DIAG_ERR_GENERAL, "Unspecified Error" },
-	{ DIAG_ERR_BADFD, "Invalid FileDescriptor passed to routine" },
-	{ DIAG_ERR_NOMEM, "Malloc/Calloc/Strdup/etc failed - ran out of memory" },
+	{DIAG_ERR_GENERAL, "Unspecified Error"},
+	{DIAG_ERR_BADFD, "Invalid FileDescriptor passed to routine"},
+	{DIAG_ERR_NOMEM, "Malloc/Calloc/Strdup/etc failed - ran out of memory"},
 
-	{ DIAG_ERR_INIT_NOTSUPP, "Initbus type not supported by H/W" },
-	{ DIAG_ERR_PROTO_NOTSUPP, "Protocol not supported by H/W" },
-	{ DIAG_ERR_IOCTL_NOTSUPP, "Ioctl type not supported" },
-	{ DIAG_ERR_BADIFADAPTER, "L0 adapter comms failed" },
+	{DIAG_ERR_INIT_NOTSUPP, "Initbus type not supported by H/W"},
+	{DIAG_ERR_PROTO_NOTSUPP, "Protocol not supported by H/W"},
+	{DIAG_ERR_IOCTL_NOTSUPP, "Ioctl type not supported"},
+	{DIAG_ERR_BADIFADAPTER, "L0 adapter comms failed"},
 
-	{ DIAG_ERR_TIMEOUT, "Read/Write timeout" },
+	{DIAG_ERR_TIMEOUT, "Read/Write timeout"},
 
-	{ DIAG_ERR_BUSERROR, "We detected write error on diag bus" },
-	{ DIAG_ERR_BADLEN, "Bad length for this i/f" },
-	{ DIAG_ERR_BADDATA, "Cant decode msg (ever)" },
-	{ DIAG_ERR_BADCSUM, "Bad checksum in recvd message" },
-	{ DIAG_ERR_INCDATA, "Incomplete data, need to receive more" },
-	{ DIAG_ERR_WRONGKB, "Wrong KeyBytes received" },
-	{ DIAG_ERR_BADRATE, "Bit rate specified doesn't match ECU" },
+	{DIAG_ERR_BUSERROR, "We detected write error on diag bus"},
+	{DIAG_ERR_BADLEN, "Bad length for this i/f"},
+	{DIAG_ERR_BADDATA, "Cant decode msg (ever)"},
+	{DIAG_ERR_BADCSUM, "Bad checksum in recvd message"},
+	{DIAG_ERR_INCDATA, "Incomplete data, need to receive more"},
+	{DIAG_ERR_WRONGKB, "Wrong KeyBytes received"},
+	{DIAG_ERR_BADRATE, "Bit rate specified doesn't match ECU"},
 
-	{ DIAG_ERR_ECUSAIDNO, "Ecu returned negative" },
-	{ DIAG_ERR_RCFILE, "Trouble loading .rc or .ini file" },
-	{ DIAG_ERR_CMDFILE, "Trouble with sourcing commands" },
-	{ DIAG_ERR_BADVAL, "Invalid value passed to routine" },
-	{ DIAG_ERR_BADCFG, "Bad config/param" },
+	{DIAG_ERR_ECUSAIDNO, "Ecu returned negative"},
+	{DIAG_ERR_RCFILE, "Trouble loading .rc or .ini file"},
+	{DIAG_ERR_CMDFILE, "Trouble with sourcing commands"},
+	{DIAG_ERR_BADVAL, "Invalid value passed to routine"},
+	{DIAG_ERR_BADCFG, "Bad config/param"},
 };
 
 const char *
@@ -312,11 +340,11 @@ diag_errlookup(const int code) {
 		}
 	}
 
-	snprintf(ill_str,ERR_STR_LEN,"Illegal error code: 0x%.2X\n",code);
+	snprintf(ill_str, ERR_STR_LEN, "Illegal error code: 0x%.2X\n", code);
 	return ill_str;
 }
 
-//do not call diag_pflseterr; refer to diag.h for related macros
+// do not call diag_pflseterr; refer to diag.h for related macros
 void *
 diag_pflseterr(const char *name, const int line, const int code) {
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
@@ -352,8 +380,9 @@ diag_geterr(void) {
 // Stores pointer to a newly allocated buffer of n*s bytes to pp.
 // Also takes filename and line to report for debugging purposes.
 // Returns 0 in the absence of errors.
-int diag_fl_alloc(const char *fName, const int line,
-	void **pp, size_t n, size_t s, bool allocIsCalloc) {
+int
+diag_fl_alloc(const char *fName, const int line, void **pp, size_t n, size_t s,
+	      bool allocIsCalloc) {
 	char allocator;
 	char *errMsg = "%s:%d: %calloc(%ld, %ld) failed: %s\n";
 
@@ -368,8 +397,7 @@ int diag_fl_alloc(const char *fName, const int line,
 		if (pp != NULL) {
 			*pp = NULL;
 		}
-		fprintf(stderr, errMsg, fName, line, allocator,
-			n, s, "Invalid arguments");
+		fprintf(stderr, errMsg, fName, line, allocator, n, s, "Invalid arguments");
 		return diag_iseterr(DIAG_ERR_BADVAL);
 	}
 
@@ -379,27 +407,27 @@ int diag_fl_alloc(const char *fName, const int line,
 		*pp = malloc(n * s);
 	}
 	if (*pp == NULL) {
-		fprintf(stderr, errMsg, fName, line, allocator,
-			n, s, strerror(errno));
+		fprintf(stderr, errMsg, fName, line, allocator, n, s, strerror(errno));
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	}
 	return 0;
 }
 
 /* Add a string to array-of-strings (argv style)
-*/
-char **strlist_add(char **list, const char *news, int elems) {
+ */
+char **
+strlist_add(char **list, const char *news, int elems) {
 	char **templist;
 	char *temp;
 
-	assert( news != NULL );
+	assert(news != NULL);
 
 	temp = malloc((strlen(news) * sizeof(char)) + 1);
 	if (temp == NULL) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
 	}
 
-	templist = realloc(list, (elems + 1)* sizeof(char *));
+	templist = realloc(list, (elems + 1) * sizeof(char *));
 	if (!templist) {
 		free(temp);
 		return diag_pseterr(DIAG_ERR_NOMEM);
@@ -411,7 +439,8 @@ char **strlist_add(char **list, const char *news, int elems) {
 }
 
 /* Free argv-style list */
-void strlist_free(char **list, int elems) {
+void
+strlist_free(char **list, int elems) {
 	if (!list) {
 		return;
 	}
@@ -431,8 +460,7 @@ void strlist_free(char **list, int elems) {
 void
 diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum) {
 	if (timestamp) {
-		fprintf(fp, "%lu.%03lu: ", msg->rxtime / 1000,
-			msg->rxtime % 1000);
+		fprintf(fp, "%lu.%03lu: ", msg->rxtime / 1000, msg->rxtime % 1000);
 	}
 	fprintf(fp, "msg %02d src=0x%02X dest=0x%02X\n", msgnum, msg->src, msg->dest);
 	fprintf(fp, "msg %02d data: ", msgnum);
@@ -441,7 +469,7 @@ diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum)
 void
 diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp) {
 	struct diag_msg *tmsg;
-	int i=0;
+	int i = 0;
 
 	LL_FOREACH(msg, tmsg) {
 		diag_printmsg_header(fp, tmsg, timestamp, i);
@@ -453,4 +481,38 @@ diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp) {
 		}
 		i++;
 	}
+}
+
+// Atomic access functions.
+
+void
+diag_atomic_store_bool(diag_atomic_bool *a, bool d) {
+	diag_os_lock(&a->mtx);
+	a->v = d;
+	diag_os_unlock(&a->mtx);
+}
+
+void
+diag_atomic_store_int(diag_atomic_int *a, int d) {
+	diag_os_lock(&a->mtx);
+	a->v = d;
+	diag_os_unlock(&a->mtx);
+}
+
+bool
+diag_atomic_load_bool(diag_atomic_bool *a) {
+	bool r;
+	diag_os_lock(&a->mtx);
+	r = a->v;
+	diag_os_unlock(&a->mtx);
+	return r;
+}
+
+int
+diag_atomic_load_int(diag_atomic_int *a) {
+	int r;
+	diag_os_lock(&a->mtx);
+	r = a->v;
+	diag_os_unlock(&a->mtx);
+	return r;
 }

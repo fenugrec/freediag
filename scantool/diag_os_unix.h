@@ -30,8 +30,8 @@ extern "C" {
 #endif
 
 /****** OS-specific implementation selectors ******/
-/*	These are for testing/debugging only, to force compilation of certain implementations
-	for diag_tty* and diag_os* functions.
+/*	These are for testing/debugging only, to force compilation of certain
+   implementations for diag_tty* and diag_os* functions.
 
 	### Map of features with more than one implementation related to POSIX ###
 
@@ -57,38 +57,36 @@ extern "C" {
 	a specific implementation using the #defines below.
 	TODO: add compile tests to cmake?
 */
-#define S_AUTO	0
+#define S_AUTO 0
 /* First set, for obviously OS-dependant features: */
-#define	S_POSIX 1
-#define	S_LINUX 2
+#define S_POSIX 1
+#define S_LINUX 2
 #define S_OTHER 3
 /* Second set, not necessarily OS-dependant */
-#define S_ALT1	1
-#define S_ALT2	2
+#define S_ALT1 1
+#define S_ALT2 2
 /** Insert desired selectors here **/
-//example:
+// example:
 //#define	SEL_PERIODIC S_OTHER
 
 /* Default selectors: anything still undefined is set to S_AUTO which
 	means "force nothing", i.e. "use most appropriate implementation". */
 #ifndef SEL_PERIODIC
-#define SEL_PERIODIC	S_AUTO
+#	define SEL_PERIODIC S_AUTO
 #endif
 #ifndef SEL_SLEEP
-#define SEL_SLEEP	S_AUTO
+#	define SEL_SLEEP S_AUTO
 #endif
 #ifndef SEL_HRT
-#define SEL_HRT	S_AUTO
+#	define SEL_HRT S_AUTO
 #endif
 
 #ifndef SEL_SCHED
-#define SEL_SCHED	S_AUTO
+#	define SEL_SCHED S_AUTO
 #endif
 /****** ******/
 
-
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DIAG_OS_UNIX_H_ */
-

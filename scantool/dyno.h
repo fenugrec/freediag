@@ -32,29 +32,28 @@ extern "C" {
 #endif
 
 /* Return codes */
-#define DYNO_OK     0   /* OK */
-#define DYNO_USAGE  -1  /* Bad usage */
+#define DYNO_OK 0     /* OK */
+#define DYNO_USAGE -1 /* Bad usage */
 
 /* structure for loss measure tables */
 typedef struct dyno_loss_measure {
-  int millis; /* number of milliseconds */
-	int	speed;  /* m/s * 1000 */
+	int millis; /* number of milliseconds */
+	int speed;  /* m/s * 1000 */
 } dyno_loss_measure;
 
 /* structure for measure tables */
 typedef struct dyno_measure {
-  int millis; /* number of milliseconds */
-	int	rpm;    /* rpm */
+	int millis; /* number of milliseconds */
+	int rpm;    /* rpm */
 } dyno_measure;
 
 /* structure for dyno results */
 typedef struct dyno_result {
-  int rpm; /* rev per minute */
-  int power; /* power (W) */
-  int power_ch; /* power (ch DYN) */
-  int torque; /* torque (N.m) */
+	int rpm;      /* rev per minute */
+	int power;    /* power (W) */
+	int power_ch; /* power (ch DYN) */
+	int torque;   /* torque (N.m) */
 } dyno_result;
-
 
 /* Mass of the vehicle (kg) */
 int dyno_set_mass(int mass);
@@ -63,7 +62,6 @@ int dyno_get_mass(void);
 /* Set ratio between speed (m/s * 1000) and rpm */
 int dyno_set_gear(int speed, int rpm);
 int dyno_get_speed_from_rpm(int rpm);
-
 
 /*
  * Add loss measure
@@ -83,7 +81,6 @@ void dyno_loss_set_f(double f);
 /* Reset all dyno loss measures */
 int dyno_loss_reset(void);
 
-
 /*
  * Add a measure
  * - millis : time in milliseconds
@@ -94,13 +91,11 @@ int dyno_add_measure(int millis, int rpm);
 /* Reset all dyno data */
 int dyno_reset(void);
 
-
 /* Get number of measures */
 int dyno_get_nb_measures(void);
 
 /* Get all measures */
 int dyno_get_measures(dyno_measure *measures, int size);
-
 
 /* Get number of results */
 int dyno_get_nb_results(void);
@@ -111,11 +106,10 @@ int dyno_get_results(dyno_result *results, int size);
 /* smooth results */
 int dyno_smooth_results(dyno_result *results, int size);
 
-
 /* save measures and results to a file */
 void dyno_save(char *filename, dyno_result *results, int size);
 
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DYNO_H_ */
