@@ -57,9 +57,9 @@ diag_l3_vag_start(struct diag_l3_conn *d_l3_conn) {
 
 	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_GET_L2_DATA, (void *)&l2data);
 
-	if (diag_l2_debug & DIAG_DEBUG_INIT) {
-		fprintf(stderr, FLFMT "start L2 KB 0x%X 0x%X need 0x01 0x8A\n",
-			FL, l2data.kb1, l2data.kb2);
+	if (diag_l2_debug_load() & DIAG_DEBUG_INIT) {
+		fprintf(stderr, FLFMT "start L2 KB 0x%X 0x%X need 0x01 0x8A\n", FL,
+			l2data.kb1, l2data.kb2);
 	}
 
 	if (l2data.kb1 != 0x01) {
@@ -76,14 +76,13 @@ diag_l3_vag_start(struct diag_l3_conn *d_l3_conn) {
 	return 0;
 }
 
-
 /*
  * This is called without just the VW protocol data
  */
 
 void
-diag_l3_vag_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
-struct diag_msg *msg, char *buf, size_t bufsize) {
+diag_l3_vag_decode(UNUSED(struct diag_l3_conn *d_l3_conn), struct diag_msg *msg, char *buf,
+		   size_t bufsize) {
 	char buf2[128];
 	char buf3[16];
 	const char *s;
@@ -120,7 +119,7 @@ struct diag_msg *msg, char *buf, size_t bufsize) {
 	snprintf(buf2, sizeof(buf2), "Data : ");
 	smartcat(buf, bufsize, buf2);
 
-	for (int i=3; i < msg->data[0]; i++) {
+	for (int i = 3; i < msg->data[0]; i++) {
 		snprintf(buf2, sizeof(buf2), "0x%X ", msg->data[i]);
 		smartcat(buf, bufsize, buf2);
 	}
@@ -135,8 +134,8 @@ const struct diag_l3_proto diag_l3_vag = {
 	diag_l3_base_stop,
 	diag_l3_base_send,
 	diag_l3_base_recv,
-	NULL,	//ioctl
+	NULL, // ioctl
 	diag_l3_base_request,
 	diag_l3_vag_decode,
-	NULL	//timer
+	NULL // timer
 };

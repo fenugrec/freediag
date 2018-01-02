@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-#include "diag_cfg.h"	//for cfgi
+#include "diag_cfg.h" //for cfgi
 
 /* Cheats for structs defined elsewhere;
  * the alternate solution of including diag_l*.h gets messy fast
@@ -27,33 +27,31 @@ struct diag_l0;
  * L0 device structure
  * This is the structure to interface between the L1 code
  * and the interface-manufacturer dependent code (in diag_l0_<if>.c)
- * A "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for instance)
- * and a hardware resource (serial port, file, etc.)
+ * A "diag_l0_device" is a unique association between an l0 driver (diag_l0_dumb for
+ * instance) and a hardware resource (serial port, file, etc.)
  */
 struct diag_l0_device {
-	void *l0_int;					/** Handle for internal L0 data */
-	const struct diag_l0 *dl0;		/** The L0 driver's diag_l0 */
+	void *l0_int;              /** Handle for internal L0 data */
+	const struct diag_l0 *dl0; /** The L0 driver's diag_l0 */
 
-	bool opened;		/** L0 status */
+	bool opened; /** L0 status */
 };
-
 
 // diag_l0 : every diag_l0_???.c "driver" fills in one of these to describe itself.
 struct diag_l0 {
-	const char	*longname;	/* Useful textual name, unused at the moment */
-	const char	*shortname;	/* Short, unique text name for user interface */
+	const char *longname;  /* Useful textual name, unused at the moment */
+	const char *shortname; /* Short, unique text name for user interface */
 
-	int 	l1proto_mask;			/** supported L1protocols, defined in  diag_l1.h */
+	int l1proto_mask; /** supported L1protocols, defined in  diag_l1.h */
 
 	/** set up global/default state of driver, if applicable
 	 *
 	 * @return 0 if ok
 	 *
-	 * Note: the implementation must not do any dynamic mem operation (*alloc etc) or open handles.
-	 * That way we won't need to add an _end function.
+	 * Note: the implementation must not do any dynamic mem operation (*alloc etc) or
+	 * open handles. That way we won't need to add an _end function.
 	 */
 	int (*init)(void);
-
 
 	/*** Private funcs, do not call directly ! ***/
 	/* These are called from the "public funcs" listed below. */
@@ -63,30 +61,32 @@ struct diag_l0 {
 	void (*_del)(struct diag_l0_device *);
 	int (*_open)(struct diag_l0_device *, int l1_proto);
 	void (*_close)(struct diag_l0_device *);
-	uint32_t	(*_getflags)(struct diag_l0_device *);
+	uint32_t (*_getflags)(struct diag_l0_device *);
 
-	int	(*_recv)(struct diag_l0_device *,
-		const char *subinterface, void *data, size_t len, unsigned int timeout);
-	int	(*_send)(struct diag_l0_device *,
-		const char *subinterface, const void *data, size_t len);
+	int (*_recv)(struct diag_l0_device *, const char *subinterface, void *data,
+		     size_t len, unsigned int timeout);
+	int (*_send)(struct diag_l0_device *, const char *subinterface, const void *data,
+		     size_t len);
 
 	int (*_ioctl)(struct diag_l0_device *, unsigned cmd, void *data);
 };
 
-
-
 /***** Public funcs *****/
+
+// Call before anything else.
+void diag_l0_init(void);
+
+// Call after everything is done.
+void diag_l0_end(void);
 
 /** Alloc new dl0d and call L0's "_new";
  * (no open, default params, etc)
  * @return 0 if ok */
 struct diag_l0_device *diag_l0_new(const char *shortname);
 
-
 /** Get linked-list of config items.
  * @return NULL if no items exist */
 struct cfgi *diag_l0_getcfg(struct diag_l0_device *);
-
 
 /** Delete L0 driver instance.
  *
@@ -94,7 +94,6 @@ struct cfgi *diag_l0_getcfg(struct diag_l0_device *);
  * Opposite of diag_l0_new()
  */
 void diag_l0_del(struct diag_l0_device *);
-
 
 /** Open an L0 device with a given L1 proto
  *
@@ -104,34 +103,30 @@ void diag_l0_del(struct diag_l0_device *);
  */
 int diag_l0_open(struct diag_l0_device *, int l1protocol);
 
-
 /** Close diag_l0_device
  *
  * Does not free the struct itself, to allow reuse.
  */
 void diag_l0_close(struct diag_l0_device *);
 
-
 /** Get L0 device flags
  * @return bitmask of flags defined in diag_l1.h
  */
-uint32_t	diag_l0_getflags(struct diag_l0_device *);
-
+uint32_t diag_l0_getflags(struct diag_l0_device *);
 
 /** Receive bytes.
  * @param timeout: in ms
  * @return # of bytes read
  */
-int diag_l0_recv(struct diag_l0_device *,
-				const char *subinterface, void *data, size_t len, unsigned int timeout);
-
+int diag_l0_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len,
+		 unsigned int timeout);
 
 /** Send bytes.
  * @param subinterface: ignored
  * @return 0 on success
  */
-int	diag_l0_send(struct diag_l0_device *,
-					const char *subinterface, const void *data, size_t len);
+int diag_l0_send(struct diag_l0_device *, const char *subinterface, const void *data,
+		 size_t len);
 
 /** Send IOCTL to L0
  *	@param command : IOCTL #, defined in diag.h
@@ -140,20 +135,20 @@ int	diag_l0_send(struct diag_l0_device *,
  */
 int diag_l0_ioctl(struct diag_l0_device *, unsigned cmd, void *data);
 
-
 /*** globals ***/
 
-extern int diag_l0_debug;	// debug flags
-
+// debug flags
+void diag_l0_debug_store(int d);
+int diag_l0_debug_load(void);
 
 /*
  * l0dev_list : static-allocated list of supported L0 devices, since it can
  * be entirely determined at compile-time.
  * The last item is a NULL ptr to ease iterating.
  */
-extern const struct diag_l0 *l0dev_list[];	/* defined in diag_config.c */
+extern const struct diag_l0 *l0dev_list[]; /* defined in diag_config.c */
 
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif // _DIAG_L0_H_

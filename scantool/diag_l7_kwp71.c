@@ -95,15 +95,16 @@ diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn) {
 
 /* The request message for reading memory */
 static int
-read_MEMORY_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count) {
-	static struct diag_msg msg = { 0 };
+read_MEMORY_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr,
+		uint8_t count) {
+	static struct diag_msg msg = {0};
 	static uint8_t data[3];
 
 	msg.type = readMemoryByAddress;
 	msg.len = 3;
 	data[0] = count;
-	data[1] = (addr>>8)&0xff;
-	data[2] = addr&0xff;
+	data[1] = (addr >> 8) & 0xff;
+	data[2] = addr & 0xff;
 	msg.data = data;
 	*msgout = &msg;
 	*wantresp = readMemoryByAddress_resp;
@@ -113,14 +114,14 @@ read_MEMORY_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint
 /* The request message for reading ROM */
 static int
 read_ROM_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count) {
-	static struct diag_msg msg = { 0 };
+	static struct diag_msg msg = {0};
 	static uint8_t data[3];
 
 	msg.type = readROMByAddress;
 	msg.len = 3;
 	data[0] = count;
-	data[1] = (addr>>8)&0xff;
-	data[2] = addr&0xff;
+	data[1] = (addr >> 8) & 0xff;
+	data[2] = addr & 0xff;
 	msg.data = data;
 	*msgout = &msg;
 	*wantresp = readROMByAddress_resp;
@@ -130,7 +131,7 @@ read_ROM_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t
 /* The request message for taking ADC readings */
 static int
 read_ADC_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr) {
-	static struct diag_msg msg = { 0 };
+	static struct diag_msg msg = {0};
 	static uint8_t data[1];
 
 	if (addr > 0xff) {
@@ -159,7 +160,8 @@ read_ADC_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr) {
  * bytes requested. Returns the actual byte count received.
  */
 int
-diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out) {
+diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr,
+		   int buflen, uint8_t *out) {
 	struct diag_msg *req;
 	struct diag_msg *resp = NULL;
 	uint8_t wantresp;
@@ -189,12 +191,12 @@ diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 		return rv;
 	}
 
-	if (resp->type!=wantresp) {
+	if (resp->type != wantresp) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
 
-	if (ns==NS_ADC && resp->len!=2) {
+	if (ns == NS_ADC && resp->len != 2) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
@@ -202,8 +204,9 @@ diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
-	memcpy(out, resp->data, (resp->len>(unsigned int)buflen)?(unsigned int)buflen:resp->len);
-	rv = (resp->len > (unsigned int)buflen) ? (unsigned int)buflen:resp->len;
+	memcpy(out, resp->data,
+	       (resp->len > (unsigned int)buflen) ? (unsigned int)buflen : resp->len);
+	rv = (resp->len > (unsigned int)buflen) ? (unsigned int)buflen : resp->len;
 	diag_freemsg(resp);
 	return rv;
 }
@@ -232,7 +235,7 @@ diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) 
 
 	count = resp->len;
 
-	if (resp->type!=readDiagnosticTroubleCodes_resp) {
+	if (resp->type != readDiagnosticTroubleCodes_resp) {
 		diag_freemsg(resp);
 		return DIAG_ERR_ECUSAIDNO;
 	}
@@ -252,7 +255,7 @@ diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) 
 		 * responses. For now, we only look at the DTCs in the first
 		 * response.
 		 */
-		fprintf(stderr, "Warning: retrieving only first %d DTCs\n", count/5);
+		fprintf(stderr, "Warning: retrieving only first %d DTCs\n", count / 5);
 	}
 
 	return count;

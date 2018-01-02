@@ -33,5 +33,5 @@ extern "C" {
 
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DIAG_L2_CAN_H_ */

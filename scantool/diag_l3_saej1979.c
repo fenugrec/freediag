@@ -36,14 +36,13 @@
 #include "diag_l3_saej1979.h"
 #include "utlist.h"
 
-
 /* internal data used by each connection */
 struct l3_j1979_int {
-	uint8_t src;	//source address ("tester ID")
+	uint8_t src; // source address ("tester ID")
 
 	/* Received data buffer, and offset into it */
 	uint8_t rxbuf[MAXRBUF];
-	int	rxoffset;
+	int rxoffset;
 };
 
 /*
@@ -57,8 +56,9 @@ struct l3_j1979_int {
  * Get this wrong and all will fail, it's used to frame the incoming messages
  * properly
  */
-static int diag_l3_j1979_getlen(uint8_t *data, int len) {
-	static const int rqst_lengths[] = { -1, 2, 3, 1, 1, 2, 2, 1, 7, 2 };
+static int
+diag_l3_j1979_getlen(uint8_t *data, int len) {
+	static const int rqst_lengths[] = {-1, 2, 3, 1, 1, 2, 2, 1, 7, 2};
 	int rv;
 	uint8_t mode;
 
@@ -68,7 +68,8 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len) {
 
 	mode = data[0];
 
-	//J1979 specifies 9 modes (0x01 - 0x09) except with iso15765 (CAN) which has 0x0A modes.
+	// J1979 specifies 9 modes (0x01 - 0x09) except with iso15765 (CAN) which has 0x0A
+	// modes.
 
 	if (mode > 0x49) {
 		return diag_iseterr(DIAG_ERR_BADDATA);
@@ -83,28 +84,28 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len) {
 
 	rv = DIAG_ERR_BADDATA;
 
-	//Here, all modes < 0x0A are taken care of.
-	//Modes > 0x40 are responses and therefore need specific treatment
-	//data[1] contains the PID / TID number.
+	// Here, all modes < 0x0A are taken care of.
+	// Modes > 0x40 are responses and therefore need specific treatment
+	// data[1] contains the PID / TID number.
 	switch (mode) {
 	case 0x41:
-	case 0x42:		//almost identical modes except PIDS 1,2
+	case 0x42: // almost identical modes except PIDS 1,2
 		// Note : mode 2 responses will be +1 longer because of the frame_no byte.
 		if ((data[1] & 0x1f) == 0) {
 			/* return supported PIDs */
-			rv=6;	//6.1.2.2
+			rv = 6; // 6.1.2.2
 			break;
 		}
 
 		switch (data[1]) {
-		case 1:	//Status. Only with service 01 (mode 0x41)
+		case 1: // Status. Only with service 01 (mode 0x41)
 			if (mode == 0x42) {
-				rv=DIAG_ERR_BADDATA;
+				rv = DIAG_ERR_BADDATA;
 			} else {
 				rv = 6;
 			}
 			break;
-		case 2:	//request freeze DTC. Only with Service 02 (mode=0x42)
+		case 2: // request freeze DTC. Only with Service 02 (mode=0x42)
 			if (mode == 0x41) {
 				rv = DIAG_ERR_BADDATA;
 			} else {
@@ -116,7 +117,7 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len) {
 			break;
 		case 0x04:
 		case 0x05:
-			rv=3;
+			rv = 3;
 			break;
 		case 0x06:
 		case 0x07:
@@ -126,31 +127,32 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len) {
 		case 0x56:
 		case 0x57:
 		case 0x58:
-			//XXX For PIDs 0x06 thru 0x09 and 0x55-0x58, there may be an additional data byte based on PID 0x13 / 0x1D results
+			// XXX For PIDs 0x06 thru 0x09 and 0x55-0x58, there may be an
+			// additional data byte based on PID 0x13 / 0x1D results
 			// (presence of a bank3 O2 sensor. Not implemented...
-			rv=3;
-			break;
-		case 0x0A:
-		case 0x0B:	//IMAP
-			rv=3;
-			break;
-		case 0x0C:	//RPM
-			rv=4;
-			break;
-		case 0x0D:	//VSS
-		case 0x0E:
-		case 0x0F:	//IAT
-			rv=3;
-			break;
-		case 0x10:	//MAF
-			rv=4;
-			break;
-		case 0x11:	//TPS
-		case 0x12:
-		case 0x13:	//O2Sloc
 			rv = 3;
 			break;
-		case 0x14:	//0x14-0x1B:O2 stuff
+		case 0x0A:
+		case 0x0B: // IMAP
+			rv = 3;
+			break;
+		case 0x0C: // RPM
+			rv = 4;
+			break;
+		case 0x0D: // VSS
+		case 0x0E:
+		case 0x0F: // IAT
+			rv = 3;
+			break;
+		case 0x10: // MAF
+			rv = 4;
+			break;
+		case 0x11: // TPS
+		case 0x12:
+		case 0x13: // O2Sloc
+			rv = 3;
+			break;
+		case 0x14: // 0x14-0x1B:O2 stuff
 		case 0x15:
 		case 0x16:
 		case 0x17:
@@ -160,56 +162,58 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len) {
 		case 0x1B:
 			rv = 4;
 			break;
-		case 0x1C:	//OBD
-		case 0x1D:	//O2Sloc
+		case 0x1C: // OBD
+		case 0x1D: // O2Sloc
 		case 0x1E:
 			rv = 2;
 			break;
-		case 0x1F:	//RUNTM
+		case 0x1F: // RUNTM
 			rv = 4;
 			break;
-		//TODO : PIDS 0x21 etc
+		// TODO : PIDS 0x21 etc
 		default:
 			/* Sometime add J2190 support (PID>0x1F) */
 			rv = DIAG_ERR_BADDATA;
 			break;
-		}	//PIDs for modes 1 and 2
-		//For mode 2 responses, actual length is 1 byte longer than Mode 1 resps because of Frame No
+		} // PIDs for modes 1 and 2
+		// For mode 2 responses, actual length is 1 byte longer than Mode 1 resps
+		// because of Frame No
 		if (mode == 0x42 && rv) {
 			rv += 1;
 		}
 		break;
 	case 0x43:
-		rv=7;	//6.3.2.4
+		rv = 7; // 6.3.2.4
 		break;
 	case 0x44:
-		rv = 1;	//6.4.2.2
+		rv = 1; // 6.4.2.2
 		break;
 	case 0x45:
 		if ((data[1] & 0x1f) == 0) {
-			rv = 7;		// Read supported TIDs, 6.5.2.2
+			rv = 7; // Read supported TIDs, 6.5.2.2
 		} else if (data[1] <= 4) {
-			rv=4;			//J1979 sec 6.5.2.4 : conditional TIDs.
+			rv = 4; // J1979 sec 6.5.2.4 : conditional TIDs.
 		} else {
 			rv = 6; // Request TID result
 		}
 		break;
 	case 0x46:
-		//6.6.2.2 supported PIDs : len=7
-		//6.6.2.4 : 7 bytes; last 2 are "conditional" in meaning only, always present ??
-	case 0x47:	//6.7.2.2
-	case 0x48:	//6.8.2.1
+		// 6.6.2.2 supported PIDs : len=7
+		// 6.6.2.4 : 7 bytes; last 2 are "conditional" in meaning only, always
+		// present ??
+	case 0x47: // 6.7.2.2
+	case 0x48: // 6.8.2.1
 		rv = 7;
 		break;
-	case 0x49:	//6.9.1
-		if ((data[1] & 0x1f) ==0) {
-			rv=7;	//supported INFOTYPES
+	case 0x49: // 6.9.1
+		if ((data[1] & 0x1f) == 0) {
+			rv = 7; // supported INFOTYPES
 		} else if (data[1] & 1) {
-			//INFOTYPE is odd:
-			rv=7;
+			// INFOTYPE is odd:
+			rv = 7;
 		} else {
-			//even
-			rv=3;
+			// even
+			rv = 3;
 		}
 		break;
 	default:
@@ -217,7 +221,6 @@ static int diag_l3_j1979_getlen(uint8_t *data, int len) {
 	}
 	return rv;
 }
-
 
 /*
  * Send a J1979 packet - we know the length (from looking at the data)
@@ -229,17 +232,17 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 	int rv;
 	struct diag_l2_conn *d_conn;
 	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
-//	uint8_t buf[32];
+	//	uint8_t buf[32];
 
 	/* Get l2 connection info */
 	d_conn = d_l3_conn->d_l3l2_conn;
 
-	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "send %d bytes, l2 flags 0x%X\n", FL,
-			msg->len, d_l3_conn->d_l3l2_flags);
+	if (diag_l3_debug_load() & DIAG_DEBUG_WRITE) {
+		fprintf(stderr, FLFMT "send %d bytes, l2 flags 0x%X\n", FL, msg->len,
+			d_l3_conn->d_l3l2_flags);
 	}
 
-	//and make sure src address was set in msg:
+	// and make sure src address was set in msg:
 	if (!msg->src) {
 		msg->src = 0xF1;
 	}
@@ -249,10 +252,9 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 		l3i->src = msg->src;
 	}
 
-	//we can't set destination address because it's L2-defined.
+	// we can't set destination address because it's L2-defined.
 	// (iso14230 : dest = 0x33 phys;
 	// (iso9141 + J1850 : dest = 0x6A )
-
 
 	/* L2 does framing, adds addressing and CRC, so do nothing else*/
 	rv = diag_l2_send(d_conn, msg);
@@ -273,11 +275,10 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg) {
 	struct diag_l3_conn *d_l3_conn = (struct diag_l3_conn *)handle;
 	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
 
-	if (diag_l3_debug & DIAG_DEBUG_READ) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr,
-			FLFMT
-			"rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n",
-			FL, msg->len, msg->fmt, l3i->rxoffset);
+			FLFMT "rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n", FL,
+			msg->len, msg->fmt, l3i->rxoffset);
 	}
 
 	if (msg->fmt & DIAG_FMT_FRAMED) {
@@ -287,12 +288,12 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg) {
 		}
 	} else {
 		/* Add data to the receive buffer on the L3 connection */
-		memcpy(&l3i->rxbuf[l3i->rxoffset],
-			msg->data, msg->len);		//XXX possible buffer overflow !
+		memcpy(&l3i->rxbuf[l3i->rxoffset], msg->data, msg->len); // XXX possible
+									 // buffer overflow
+									 // !
 		l3i->rxoffset += msg->len;
 	}
 }
-
 
 /*
  * Process_data() - this is the routine that works out the framing
@@ -304,12 +305,13 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg) {
  * Look at the data and try and work out the length of the message based
  * on the J1979 protocol. Returns length (excluding headers & checksum !)
  * VVVVVVVV
- * Note: J1979 doesn't specify particular checksums beyond what 9141 and 14230 already provide,
- * i.e. a J1979 message is maximum 7 bytes long except on CANBUS.
- * headers, address and checksum are handled and stripped at the l2 level (9141, 14230, etc);
+ * Note: J1979 doesn't specify particular checksums beyond what 9141 and 14230 already
+ * provide, i.e. a J1979 message is maximum 7 bytes long except on CANBUS. headers, address
+ * and checksum are handled and stripped at the l2 level (9141, 14230, etc);
  *
- * Another validity check is comparing message length (expected vs real); not implemented XXX?
- * Upper levels can also verify that the responses correspond to the requests (i.e. Service ID 0x02 -> 0x42 )
+ * Another validity check is comparing message length (expected vs real); not implemented
+ * XXX? Upper levels can also verify that the responses correspond to the requests (i.e.
+ * Service ID 0x02 -> 0x42 )
  * XXX Broken for the moment because I'm moving the header stuff completely out of L3
  *
  */
@@ -321,30 +323,33 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn) {
 	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
 
 	while (l3i->rxoffset) {
-		int badpacket=0;
+		int badpacket = 0;
 
 		sae_msglen = diag_l3_j1979_getlen(l3i->rxbuf,
-					l3i->rxoffset);	//set expected packet length based on SID + TID
+						  l3i->rxoffset); // set expected packet
+								  // length based on SID +
+								  // TID
 
-		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr,FLFMT "process_data rxoffset is %d sae_msglen is %ld\n",
+		if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
+			fprintf(stderr,
+				FLFMT "process_data rxoffset is %d sae_msglen is %ld\n",
 				FL, l3i->rxoffset, (long)sae_msglen);
-			fprintf(stderr,FLFMT "process_data hex data is ",
-				FL);
-			diag_data_dump(stderr, l3i->rxbuf, l3i->rxoffset -1);
-			fprintf(stderr,"\n");
+			fprintf(stderr, FLFMT "process_data hex data is ", FL);
+			diag_data_dump(stderr, l3i->rxbuf, l3i->rxoffset - 1);
+			fprintf(stderr, "\n");
 		}
 
 		if (sae_msglen < 0 || sae_msglen > 255) {
 			if (sae_msglen == DIAG_ERR_INCDATA) {
-				/* Not enough data in this frame, this isn't catastrophic */
+				/* Not enough data in this frame, this isn't catastrophic
+				 */
 				return;
 			}
 			/* Duff data received, bad news ! */
 			badpacket = 1;
 		}
 
-		if (badpacket || (sae_msglen <= l3i->rxoffset )) {
+		if (badpacket || (sae_msglen <= l3i->rxoffset)) {
 
 			/* Bad packet, or full packet, need to tell user */
 			uint8_t *data = NULL;
@@ -368,20 +373,19 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn) {
 			} else {
 				msg->fmt = DIAG_FMT_ISO_FUNCADDR;
 				// XXX This won't do at all !
-				//msg->type = l3i->rxbuf[0];	//nobody checks this
+				// msg->type = l3i->rxbuf[0];	//nobody checks this
 				msg->dest = l3i->rxbuf[1];
 				msg->src = l3i->rxbuf[2];
 				/* Copy in J1979 part of message */
 				memcpy(data, &l3i->rxbuf[3], (size_t)(sae_msglen - 4));
 				/* remove whole message from rx buf */
-				memmove(l3i->rxbuf,
-					&l3i->rxbuf[sae_msglen],
+				memmove(l3i->rxbuf, &l3i->rxbuf[sae_msglen],
 					(size_t)sae_msglen);
 
 				l3i->rxoffset -= sae_msglen;
 
 				msg->data = data;
-				msg->len = (uint8_t) sae_msglen - 4;
+				msg->len = (uint8_t)sae_msglen - 4;
 			}
 
 			msg->rxtime = diag_os_getms();
@@ -389,7 +393,8 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn) {
 			/* Add it to the list */
 			LL_CONCAT(d_l3_conn->msg, msg);
 			free(data);
-			free(msg);	//we don't use diag_freemsg() since we alloc'ed it manually
+			free(msg); // we don't use diag_freemsg() since we alloc'ed it
+				   // manually
 			if (badpacket) {
 				/* No point in continuing */
 				break;
@@ -411,13 +416,13 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn) {
  */
 static int
 diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
-	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle) {
+		   void (*rcv_call_back)(void *handle, struct diag_msg *), void *handle) {
 	int rv;
 	struct diag_msg *msg;
 	unsigned int tout;
 	int state;
-//State machine:
-#define ST_STATE1 1	// timeout=0 to get data already in buffer
+// State machine:
+#define ST_STATE1 1 // timeout=0 to get data already in buffer
 #define ST_STATE2 2
 #define ST_STATE3 3
 #define ST_STATE4 4
@@ -446,25 +451,24 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	while (1) {
 		/* State machine for setting timeout values */
 		switch (state) {
-			case ST_STATE1:
-				tout = 0;
-				break;
-			case ST_STATE2:
-				tout = timeout;
-				break;
-			case ST_STATE3:
-				tout = 5; /* XXX should be p4max */
-				break;
-			case ST_STATE4:
-				tout = timeout;
-				break;
-			default:
-				break;
+		case ST_STATE1:
+			tout = 0;
+			break;
+		case ST_STATE2:
+			tout = timeout;
+			break;
+		case ST_STATE3:
+			tout = 5; /* XXX should be p4max */
+			break;
+		case ST_STATE4:
+			tout = timeout;
+			break;
+		default:
+			break;
 		}
 
-		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr, FLFMT "recv state %d tout %u\n", FL,
-				state, tout);
+		if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
+			fprintf(stderr, FLFMT "recv state %d tout %u\n", FL, state, tout);
 		}
 
 		/*
@@ -472,10 +476,10 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 		 * call the callback routine if needed, we use a timeout
 		 * of zero to see if data exists *now*,
 		 */
-		rv = diag_l2_recv(d_l3_conn->d_l3l2_conn, tout,
-			diag_l3_rcv_callback, (void *)d_l3_conn);
+		rv = diag_l2_recv(d_l3_conn->d_l3l2_conn, tout, diag_l3_rcv_callback,
+				  (void *)d_l3_conn);
 
-		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
+		if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
 			fprintf(stderr, FLFMT "recv returns %d\n", FL, rv);
 		}
 
@@ -484,11 +488,11 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 		}
 
 		if (rv == DIAG_ERR_TIMEOUT) {
-			if ( (state == ST_STATE3) || (state == ST_STATE4) ) {
+			if ((state == ST_STATE3) || (state == ST_STATE4)) {
 				/* Finished */
 				break;
 			}
-			if ( (state == ST_STATE1) && (d_l3_conn->msg == NULL) ) {
+			if ((state == ST_STATE1) && (d_l3_conn->msg == NULL)) {
 				/*
 				 * Try again, with real timeout
 				 * (and thus sleep)
@@ -503,10 +507,8 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 			/* Process the data into messages */
 			diag_l3_j1979_process_data(d_l3_conn);
 
-			if (diag_l3_debug & DIAG_DEBUG_PROTO) {
-				fprintf(stderr,
-					FLFMT
-					"recv process_data called, msg %p\n",
+			if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
+				fprintf(stderr, FLFMT "recv process_data called, msg %p\n",
 					FL, (void *)d_l3_conn->msg);
 			}
 
@@ -543,8 +545,6 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	return rv;
 }
 
-
-
 /*
  * This is called without the ADDR_ADDR_1 on it, ie it contains
  * just the SAEJ1979 data
@@ -553,13 +553,13 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
  */
 
 void
-diag_l3_j1979_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
-struct diag_msg *msg, char *buf, size_t bufsize) {
+diag_l3_j1979_decode(UNUSED(struct diag_l3_conn *d_l3_conn), struct diag_msg *msg,
+		     char *buf, size_t bufsize) {
 	unsigned i, j;
 
 	char buf2[80];
 
-	char area;	//for DTCs
+	char area; // for DTCs
 
 	if (msg->data[0] & 0x40) {
 		snprintf(buf, bufsize, "J1979 response ");
@@ -568,150 +568,157 @@ struct diag_msg *msg, char *buf, size_t bufsize) {
 	}
 
 	switch (msg->data[0]) {
-		case 0x01:
-			snprintf(buf2, sizeof(buf2), "Mode 1 PID 0x%02X", msg->data[1]);
+	case 0x01:
+		snprintf(buf2, sizeof(buf2), "Mode 1 PID 0x%02X", msg->data[1]);
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x41:
+		snprintf(buf2, sizeof(buf2), "Mode 1 Data: PID 0x%02X ", msg->data[1]);
+		smartcat(buf, bufsize, buf2);
+		for (i = 2; i < msg->len; i++) {
+			snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
 			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x41:
-			snprintf(buf2, sizeof(buf2),"Mode 1 Data: PID 0x%02X ", msg->data[1]);
+		}
+		break;
+	case 0x02:
+		snprintf(buf2, sizeof(buf2), "Mode 2 PID 0x%02X Frame 0x%02X",
+			 msg->data[1], msg->data[2]);
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x42:
+		snprintf(buf2, sizeof(buf2),
+			 "Mode 2 FreezeFrame Data: PID 0x%02X Frame 0x%02X ", msg->data[1],
+			 msg->data[2]);
+		smartcat(buf, bufsize, buf2);
+		for (i = 3; i < msg->len; i++) {
+			snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
 			smartcat(buf, bufsize, buf2);
-			for (i=2; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
-				smartcat(buf, bufsize, buf2);
+		}
+		break;
+	case 0x03:
+		snprintf(buf2, sizeof(buf2), "Mode 3 (Powertrain DTCs)");
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x07:
+		snprintf(buf2, sizeof(buf2),
+			 "Request Non-Continuous Monitor System Test Results");
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x47:
+		snprintf(buf2, sizeof(buf2), "Non-Continuous Monitor System ");
+		smartcat(buf, bufsize, buf2);
+		/* Fallthru */
+	case 0x43:
+		snprintf(buf2, sizeof(buf2), "DTCs: ");
+		smartcat(buf, bufsize, buf2);
+		for (i = 0, j = 1; i < 3; i++, j += 2) {
+			if ((msg->data[j] == 0) && (msg->data[j + 1] == 0)) {
+				continue;
 			}
-			break;
-		case 0x02:
-			snprintf(buf2, sizeof(buf2), "Mode 2 PID 0x%02X Frame 0x%02X", msg->data[1],
-				msg->data[2]);
-			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x42:
-			snprintf(buf2, sizeof(buf2),"Mode 2 FreezeFrame Data: PID 0x%02X Frame 0x%02X ",
-				msg->data[1], msg->data[2]);
-			smartcat(buf, bufsize, buf2);
-			for (i=3; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
-				smartcat(buf, bufsize, buf2);
-			}
-			break;
-		case 0x03:
-			snprintf(buf2, sizeof(buf2),"Mode 3 (Powertrain DTCs)");
-			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x07:
-			snprintf(buf2, sizeof(buf2),
-				"Request Non-Continuous Monitor System Test Results");
-			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x47:
-			snprintf(buf2, sizeof(buf2), "Non-Continuous Monitor System ");
-			smartcat(buf, bufsize, buf2);
-			/* Fallthru */
-		case 0x43:
-			snprintf(buf2, sizeof(buf2),"DTCs: ");
-			smartcat(buf, bufsize, buf2);
-			for (i=0, j=1; i<3; i++, j+=2) {
-				if ((msg->data[j] == 0) &&
-				    (msg->data[j + 1] == 0)) {
-					continue;
-				}
 
-				switch ((msg->data[j] >> 6) & 0x03) {
-					case 0:
-						area = 'P';
-						break;
-					case 1:
-						area = 'C';
-						break;
-					case 2:
-						area = 'B';
-						break;
-					case 3:
-						area = 'U';
-						break;
-					default:
-						fprintf(stderr, "Illegal msg->data[%d] value\n", j);
-						area = 'X';
-						break;
-				}
-				snprintf(buf2, sizeof(buf2), "%c%02X%02X  ", area, msg->data[j] & 0x3f,
-					msg->data[j+1]&0xff);
-				smartcat(buf, bufsize, buf2);
+			switch ((msg->data[j] >> 6) & 0x03) {
+			case 0:
+				area = 'P';
+				break;
+			case 1:
+				area = 'C';
+				break;
+			case 2:
+				area = 'B';
+				break;
+			case 3:
+				area = 'U';
+				break;
+			default:
+				fprintf(stderr, "Illegal msg->data[%d] value\n", j);
+				area = 'X';
+				break;
 			}
-			break;
-		case 0x04:
-			snprintf(buf2, sizeof(buf2), "Clear DTCs");
+			snprintf(buf2, sizeof(buf2), "%c%02X%02X  ", area,
+				 msg->data[j] & 0x3f, msg->data[j + 1] & 0xff);
 			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x44:
-			snprintf(buf2, sizeof(buf2), "DTCs cleared");
+		}
+		break;
+	case 0x04:
+		snprintf(buf2, sizeof(buf2), "Clear DTCs");
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x44:
+		snprintf(buf2, sizeof(buf2), "DTCs cleared");
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x05:
+		snprintf(buf2, sizeof(buf2), "Oxygen Sensor Test ID 0x%02X Sensor 0x%02X",
+			 msg->data[1], msg->data[2]);
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x45:
+		snprintf(buf2, sizeof(buf2), "Oxygen Sensor TID 0x%02X Sensor 0x%02X ",
+			 msg->data[1], msg->data[2]);
+		smartcat(buf, bufsize, buf);
+		for (i = 3; i < msg->len; i++) {
+			snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
 			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x05:
-			snprintf(buf2, sizeof(buf2), "Oxygen Sensor Test ID 0x%02X Sensor 0x%02X",
-					msg->data[1], msg->data[2]);
+		}
+		break;
+	case 0x06:
+		snprintf(buf2, sizeof(buf2), "Onboard monitoring test request TID 0x%02X",
+			 msg->data[1]);
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x46:
+		snprintf(buf2, sizeof(buf2), "Onboard monitoring test result TID 0x%02X ",
+			 msg->data[1]);
+		smartcat(buf, bufsize, buf2);
+		for (i = 2; i < msg->len; i++) {
+			snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
 			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x45:
-			snprintf(buf2, sizeof(buf2), "Oxygen Sensor TID 0x%02X Sensor 0x%02X ",
-				msg->data[1], msg->data[2]);
-			smartcat(buf, bufsize, buf);
-			for (i=3; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
-				smartcat(buf, bufsize, buf2);
-			}
-			break;
-		case 0x06:
-			snprintf(buf2, sizeof(buf2), "Onboard monitoring test request TID 0x%02X", msg->data[1]);
+		}
+		break;
+	case 0x08:
+		snprintf(buf2, sizeof(buf2),
+			 "Request control of onboard system TID 0x%02X", msg->data[1]);
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x48:
+		snprintf(buf2, sizeof(buf2),
+			 "Control of onboard system response TID 0x%02X ", msg->data[1]);
+		smartcat(buf, bufsize, buf2);
+		for (i = 2; i < msg->len; i++) {
+			snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
 			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x46:
-			snprintf(buf2, sizeof(buf2),"Onboard monitoring test result TID 0x%02X ", msg->data[1]);
+		}
+		break;
+	case 0x09:
+		snprintf(buf2, sizeof(buf2), "Request vehicle information infotype 0x%02X",
+			 msg->data[1]);
+		smartcat(buf, bufsize, buf2);
+		break;
+	case 0x49:
+		snprintf(buf2, sizeof(buf2), "Vehicle information infotype 0x%02X ",
+			 msg->data[1]);
+		smartcat(buf, bufsize, buf2);
+		for (i = 2; i < msg->len; i++) {
+			snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
 			smartcat(buf, bufsize, buf2);
-			for (i=2; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
-				smartcat(buf, bufsize, buf2);
-			}
-			break;
-		case 0x08:
-			snprintf(buf2, sizeof(buf2), "Request control of onboard system TID 0x%02X", msg->data[1]);
+		}
+		break;
+	default:
+		snprintf(buf2, sizeof(buf2),
+			 "UnknownType 0x%02X: Data Dump: ", msg->data[0]);
+		smartcat(buf, bufsize, buf2);
+		for (i = 0; i < msg->len; i++) {
+			snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
 			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x48:
-			snprintf(buf2, sizeof(buf2), "Control of onboard system response TID 0x%02X ", msg->data[1]);
-			smartcat(buf, bufsize, buf2);
-			for (i=2; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
-				smartcat(buf, bufsize, buf2);
-			}
-			break;
-		case 0x09:
-			snprintf(buf2, sizeof(buf2), "Request vehicle information infotype 0x%02X", msg->data[1]);
-			smartcat(buf, bufsize, buf2);
-			break;
-		case 0x49:
-			snprintf(buf2, sizeof(buf2), "Vehicle information infotype 0x%02X ", msg->data[1]);
-			smartcat(buf, bufsize, buf2);
-			for (i=2; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
-				smartcat(buf, bufsize, buf2);
-			}
-			break;
-		default:
-			snprintf(buf2, sizeof(buf2),"UnknownType 0x%02X: Data Dump: ", msg->data[0]);
-			smartcat(buf, bufsize, buf2);
-			for (i=0; i < msg->len; i++) {
-				snprintf(buf2, sizeof(buf2), "0x%02X ", msg->data[i]);
-				smartcat(buf, bufsize, buf2);
-			}
+		}
 	}
 	return;
 }
 
-
-//Send a service 1, pid 0 request and check for a valid reply.
-//ret 0 if ok
-static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
+// Send a service 1, pid 0 request and check for a valid reply.
+// ret 0 if ok
+static int
+diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 	struct diag_msg msg = {0};
 	struct diag_msg *rxmsg;
 	uint8_t data[6];
@@ -725,8 +732,8 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 
 	msg.data = data;
 	msg.len = 2;
-	data[0] = 1 ;		/* Mode 1 */
-	data[1] = 0; 		/* Pid 0 */
+	data[0] = 1; /* Mode 1 */
+	data[1] = 0; /* Pid 0 */
 
 	/*
 	 * And set the source address, if no sends have happened, then
@@ -739,15 +746,15 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 	}
 
 	/* Send it: using l3_request() makes sure the connection's timestamp is updated */
-	rxmsg=diag_l3_request(d_l3_conn, &msg, &errval);
+	rxmsg = diag_l3_request(d_l3_conn, &msg, &errval);
 
 	if (rxmsg == NULL) {
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
 	}
 
-	if (diag_l3_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "keepalive : got %u bytes, %02X ...\n",
-			FL, rxmsg->len, rxmsg->data[0]);
+	if (diag_l3_debug_load() & DIAG_DEBUG_PROTO) {
+		fprintf(stderr, FLFMT "keepalive : got %u bytes, %02X ...\n", FL,
+			rxmsg->len, rxmsg->data[0]);
 	}
 
 	/* Check if its a valid SID 1 PID 0 response */
@@ -758,15 +765,18 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 
 	diag_freemsg(rxmsg);
 	return 0;
-
 }
 
 //_start : send service 1 pid 0 request (J1979 keepalive); according to SAE J1979 (p.7) :
-// " IMPORTANT — All emissions-related OBD ECUs which at least support one of the services defined in this
-//	document shall support service $01 and PID $00. Service $01 with PID $00 is defined as the universal
-//	“initialisation/keep alive/ping” message for all emissions-related OBD ECUs. "
-//That sounds like a sure-fire way to make sure we have a succesful connection to a J1979-compliant ECU.
-int diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
+// " IMPORTANT ? All emissions-related OBD ECUs which at least support one of the services
+// defined in this
+//	document shall support service $01 and PID $00. Service $01 with PID $00 is defined
+// as the universal 	?initialisation/keep alive/ping? message for all emissions-related
+// OBD ECUs. " That sounds like a sure-fire way to make sure we have a succesful connection
+// to a
+// J1979-compliant ECU.
+int
+diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
 	int rv;
 	struct l3_j1979_int *l3i;
 
@@ -779,20 +789,25 @@ int diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
 
 	d_l3_conn->l3_int = l3i;
 
-	rv=diag_l3_j1979_keepalive(d_l3_conn);
+	rv = diag_l3_j1979_keepalive(d_l3_conn);
 
-	if (rv<0) {
-		fprintf(stderr, FLFMT "J1979 Keepalive failed ! Try to disconnect and reconnect.\n", FL);
+	if (rv < 0) {
+		fprintf(stderr,
+			FLFMT
+			"J1979 Keepalive failed ! Try to disconnect and "
+			"reconnect.\n",
+			FL);
 		free(l3i);
 		return diag_iseterr(rv);
 	}
 
-
 	return 0;
 }
 
-/* Stop communications : nothing defined, other than letting the link timeout (L2 defined). */
-int dl3_j1979_stop(struct diag_l3_conn *d_l3_conn) {
+/* Stop communications : nothing defined, other than letting the link timeout (L2 defined).
+ */
+int
+dl3_j1979_stop(struct diag_l3_conn *d_l3_conn) {
 	assert(d_l3_conn != NULL);
 	free(d_l3_conn->l3_int);
 	return 0;
@@ -806,8 +821,6 @@ int dl3_j1979_stop(struct diag_l3_conn *d_l3_conn) {
 static int
 diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms) {
 	int rv;
-	int debug_l2_orig=diag_l2_debug;	//save debug flags; disable them for this procedure
-	int debug_l1_orig=diag_l1_debug;
 
 	/* J1979 needs keepalive at least every 5 seconds (P3), we use 3.5s */
 
@@ -823,34 +836,31 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms) {
 
 	/* OK, do keep alive on this connection */
 
-	if (diag_l3_debug & DIAG_DEBUG_TIMER) {
+	if (diag_l3_debug_load() & DIAG_DEBUG_TIMER) {
 		/* XXX Not async-signal-safe */
-		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %lu ms\n",
-				FL, (void *)d_l3_conn, ms);
-	}
-	diag_l2_debug=0;	//disable
-	diag_l1_debug=0;
-
-	rv=diag_l3_j1979_keepalive(d_l3_conn);
-
-	if (rv<0) {
-		fprintf(stderr, FLFMT "J1979 Keepalive failed ! Try to disconnect and reconnect.\n", FL);
+		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %lu ms\n", FL,
+			(void *)d_l3_conn, ms);
 	}
 
-	diag_l2_debug=debug_l2_orig;	//restore debug flags
-	diag_l1_debug=debug_l1_orig;
+	rv = diag_l3_j1979_keepalive(d_l3_conn);
+
+	if (rv < 0) {
+		fprintf(stderr,
+			FLFMT
+			"J1979 Keepalive failed ! Try to disconnect and "
+			"reconnect.\n",
+			FL);
+	}
 
 	return rv;
 }
 
-const struct diag_l3_proto diag_l3_j1979 = {
-	"SAEJ1979",
-	diag_l3_j1979_start,
-	dl3_j1979_stop,
-	diag_l3_j1979_send,
-	diag_l3_j1979_recv,
-	NULL,	//ioctl
-	diag_l3_base_request,
-	diag_l3_j1979_decode,
-	diag_l3_j1979_timer
-};
+const struct diag_l3_proto diag_l3_j1979 = {"SAEJ1979",
+					    diag_l3_j1979_start,
+					    dl3_j1979_stop,
+					    diag_l3_j1979_send,
+					    diag_l3_j1979_recv,
+					    NULL, // ioctl
+					    diag_l3_base_request,
+					    diag_l3_j1979_decode,
+					    diag_l3_j1979_timer};

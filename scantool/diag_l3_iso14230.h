@@ -29,12 +29,12 @@ extern "C" {
 
 // XXX L2 uses a nifty "2/3 * P3max" formula in to calculate keepalive interval.
 // I'm not sure why we need this as well.
-#define ISO14230_KEEPALIVE 3500		//ms timeout before keepalive signal on OBD bus.
-//That keepalive corresponds to the P3 timing value; certain ECUs allow
+#define ISO14230_KEEPALIVE 3500 // ms timeout before keepalive signal on OBD bus.
+// That keepalive corresponds to the P3 timing value; certain ECUs allow
 // changes (SID 83, AccessTimingParameter) to modify P3. But by default they
 // should be configured to accept 55 ms < P3 < 5000 ms
 
 #if defined(__cplusplus)
 }
-#endif
+#	endif
 #endif /* _DIAG_L3_ISO14230_H_ */

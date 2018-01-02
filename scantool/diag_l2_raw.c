@@ -27,7 +27,6 @@
  *
  */
 
-
 #include <string.h>
 
 #include "diag.h"
@@ -39,15 +38,9 @@
 
 #include "diag_l2_raw.h" /* prototypes for this file */
 
-
-
-
 int
-dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn,
-UNUSED(flag_type flags),
-unsigned int bitrate,
-target_type target,
-source_type source) {
+dl2p_raw_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
+		    unsigned int bitrate, target_type target, source_type source) {
 	int rv;
 	struct diag_serial_settings set;
 
@@ -57,21 +50,21 @@ source_type source) {
 	set.parflag = diag_par_n;
 
 	/* Set the speed as shown */
-	rv=diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set);
+	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set);
 
 	if (rv) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	//set tgt and src address in d_l2_conn
-	d_l2_conn->diag_l2_destaddr=target;
-	d_l2_conn->diag_l2_srcaddr=source;
+	// set tgt and src address in d_l2_conn
+	d_l2_conn->diag_l2_destaddr = target;
+	d_l2_conn->diag_l2_srcaddr = source;
 
 	return 0;
 }
 
 /*
-*/
+ */
 
 int
 dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn *pX)) {
@@ -86,47 +79,47 @@ int
 dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "diag_l2_send %p, msg %p len %d called\n",
-			FL, (void *)d_l2_conn, (void *)msg, msg->len);
+	if (diag_l2_debug_load() & DIAG_DEBUG_WRITE) {
+		fprintf(stderr, FLFMT "diag_l2_send %p, msg %p len %d called\n", FL,
+			(void *)d_l2_conn, (void *)msg, msg->len);
 	}
 
-	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
-		msg->data, msg->len, d_l2_conn->diag_l2_p4min);
+	rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, 0, msg->data, msg->len,
+			  d_l2_conn->diag_l2_p4min);
 
-	return rv? diag_iseterr(rv):0 ;
+	return rv ? diag_iseterr(rv) : 0;
 }
 
 /*
-*/
+ */
 int
 dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
+	      void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
 	uint8_t rxbuf[MAXRBUF];
-	struct diag_msg msg = {0};	//local message structure that will disappear when we return
+	struct diag_msg msg = {0}; // local message structure that will disappear when we
+				   // return
 	int rv;
 
 	/*
- 	 * Read data from fd
+	 * Read data from fd
 	 */
-	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
-		rxbuf, sizeof(rxbuf), timeout);
+	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, rxbuf, sizeof(rxbuf), timeout);
 
 	if (rv <= 0) { /* Failure, or 0 bytes (which cant happen) */
 		return rv;
 	}
 
-	msg.len = (uint8_t) rv;
+	msg.len = (uint8_t)rv;
 	msg.data = rxbuf;
 	/* This is raw, unframed data; we don't set .fmt */
 	msg.next = NULL;
-	msg.idata=NULL;
+	msg.idata = NULL;
 	msg.rxtime = diag_os_getms();
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
+	if (diag_l2_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr, FLFMT "l2_proto_raw_recv: handle=%p\n", FL,
 			handle); //%pcallback! we won't try to printf the
-				 //callback pointer.
+				 // callback pointer.
 	}
 
 	/*
@@ -140,10 +133,9 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 }
 
 /*
-*/
+ */
 struct diag_msg *
-dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-		int *errval) {
+dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval) {
 	int rv;
 	struct diag_msg *rmsg = NULL;
 	uint8_t rxbuf[MAXRBUF];
@@ -155,8 +147,7 @@ dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	}
 
 	/* And wait for response */
-	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
-		0, rxbuf, sizeof(rxbuf), 1000);
+	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, rxbuf, sizeof(rxbuf), 1000);
 
 	if (rv <= 0) {
 		*errval = rv;
@@ -170,21 +161,19 @@ dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	if (rmsg == NULL) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
 	}
-	memcpy(&rmsg->data, rxbuf, (size_t)rv);	/* Data */
+	memcpy(&rmsg->data, rxbuf, (size_t)rv); /* Data */
 	rmsg->fmt = 0;
 	rmsg->rxtime = diag_os_getms();
 
 	return rmsg;
 }
 
-const struct diag_l2_proto diag_l2_proto_raw = {
-	DIAG_L2_PROT_RAW,
-	"RAW",
-	0,
-	dl2p_raw_startcomms,
-	dl2p_raw_stopcomms,
-	dl2p_raw_send,
-	dl2p_raw_recv,
-	dl2p_raw_request,
-	NULL
-};
+const struct diag_l2_proto diag_l2_proto_raw = {DIAG_L2_PROT_RAW,
+						"RAW",
+						0,
+						dl2p_raw_startcomms,
+						dl2p_raw_stopcomms,
+						dl2p_raw_send,
+						dl2p_raw_recv,
+						dl2p_raw_request,
+						NULL};

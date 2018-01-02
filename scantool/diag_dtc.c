@@ -29,11 +29,9 @@
 #include "diag.h"
 #include "diag_dtc.h"
 
-
-
-//do not use *allocs or open handles in diag_dtc_init !
-void diag_dtc_init(void) {
-}
+// do not use *allocs or open handles in diag_dtc_init !
+void
+diag_dtc_init(void) {}
 
 /** DTC decoding routine.
  *
@@ -48,10 +46,10 @@ void diag_dtc_init(void) {
  * @return pointer to *buf, which may be useful to printf or fprintf...
  */
 
-char *diag_dtc_decode(uint8_t *data, int len,
-	UNUSED(const char *vehicle), UNUSED(const char *ecu),
-	enum diag_dtc_protocol protocol,
-	char *buf, const size_t bufsize) {
+char *
+diag_dtc_decode(uint8_t *data, int len, UNUSED(const char *vehicle),
+		UNUSED(const char *ecu), enum diag_dtc_protocol protocol, char *buf,
+		const size_t bufsize) {
 	char area;
 
 	switch (protocol) {
@@ -61,7 +59,7 @@ char *diag_dtc_decode(uint8_t *data, int len,
 			return buf;
 		}
 
-		switch ((data[0] >> 6) & 0x03) {	/* Top 2 bits are area */
+		switch ((data[0] >> 6) & 0x03) { /* Top 2 bits are area */
 		case 0:
 			area = 'P';
 			break;
@@ -79,7 +77,8 @@ char *diag_dtc_decode(uint8_t *data, int len,
 			area = 'X';
 			break;
 		}
-		snprintf(buf, bufsize, "%c%02X%02X ", area, data[0] & 0x3f, data[1]&0xff);
+		snprintf(buf, bufsize, "%c%02X%02X ", area, data[0] & 0x3f,
+			 data[1] & 0xff);
 		break;
 
 	case dtc_proto_int8:

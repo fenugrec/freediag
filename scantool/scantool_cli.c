@@ -45,24 +45,31 @@
 #include "scantool_cli.h"
 
 #ifdef HAVE_LIBREADLINE
-#include <readline/readline.h>
-#include <readline/history.h>
+#	include <readline/readline.h>
+#	include <readline/history.h>
 #endif
 
-
-#define PROMPTBUFSIZE 80		//Length of prompt before the '>' character.
+#define PROMPTBUFSIZE 80 // Length of prompt before the '>' character.
 #define CLI_MAXARGS 300
 const char *progname;
-const char projname[]=PROJECT_NAME;
+const char projname[] = PROJECT_NAME;
 
-int diag_cli_debug;	//debug level
+// debug level
+DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_int diag_cli_debug)
+void
+diag_cli_debug_store(int d) {
+	diag_atomic_store_int(&diag_cli_debug, d);
+}
+int
+diag_cli_debug_load(void) {
+	return diag_atomic_load_int(&diag_cli_debug);
+}
 
-FILE		*global_logfp;		/* Monitor log output file pointer */
-unsigned long global_log_tstart;    /* timestamp datum (in ms) of beginning of log */
-#define LOG_FORMAT	"FREEDIAG log format 0.2"
+FILE *global_logfp;              /* Monitor log output file pointer */
+unsigned long global_log_tstart; /* timestamp datum (in ms) of beginning of log */
+#define LOG_FORMAT "FREEDIAG log format 0.2"
 
-
-//ugly, global data. Could be struct-ed together eventually
+// ugly, global data. Could be struct-ed together eventually
 struct diag_l2_conn *global_l2_conn;
 struct diag_l3_conn *global_l3_conn;
 enum globstate global_state = STATE_IDLE;
@@ -83,60 +90,57 @@ static int cmd_date(int argc, char **argv);
 static int cmd_rem(int argc, char **argv);
 static int cmd_source(int argc, char **argv);
 
-const struct cmd_tbl_entry *root_cmd_table;	/* point to current root table */
+const struct cmd_tbl_entry *root_cmd_table; /* point to current root table */
 
 /* this table is appended to the "extra" cmdtable to construct the whole root cmd table */
 static const struct cmd_tbl_entry basic_cmd_table[] = {
-	{ "log", "log <filename>", "Log monitor data to <filename>",
-		cmd_log, FLAG_FILE_ARG, NULL},
-	{ "stoplog", "stoplog", "Stop logging", cmd_stoplog, 0, NULL},
+	{"log", "log <filename>", "Log monitor data to <filename>", cmd_log, FLAG_FILE_ARG,
+	 NULL},
+	{"stoplog", "stoplog", "Stop logging", cmd_stoplog, 0, NULL},
 
-	{ "play", "play filename", "Play back data from <filename>",
-		cmd_play, FLAG_HIDDEN | FLAG_FILE_ARG, NULL},
+	{"play", "play filename", "Play back data from <filename>", cmd_play,
+	 FLAG_HIDDEN | FLAG_FILE_ARG, NULL},
 
-	{ "set", "set <parameter value>",
-		"Sets/displays parameters, \"set help\" for more info", NULL,
-		0, set_cmd_table},
+	{"set", "set <parameter value>",
+	 "Sets/displays parameters, \"set help\" for more info", NULL, 0, set_cmd_table},
 
-	{ "test", "test <command [params]>",
-		"Perform various tests, \"test help\" for more info", NULL,
-		0, test_cmd_table},
+	{"test", "test <command [params]>",
+	 "Perform various tests, \"test help\" for more info", NULL, 0, test_cmd_table},
 
-	{ "diag", "diag <command [params]>",
-		"Extended diagnostic functions, \"diag help\" for more info", NULL,
-		0, diag_cmd_table},
+	{"diag", "diag <command [params]>",
+	 "Extended diagnostic functions, \"diag help\" for more info", NULL, 0,
+	 diag_cmd_table},
 
-	{ "vw", "vw <command [params]",
-		"VW diagnostic protocol functions, \"vw help\" for more info", NULL,
-		0, vag_cmd_table},
+	{"vw", "vw <command [params]",
+	 "VW diagnostic protocol functions, \"vw help\" for more info", NULL, 0,
+	 vag_cmd_table},
 
-	{ "850", "850 <command [params]>",
-		"'96-'98 Volvo 850/S70/V70/etc functions, \"850 help\" for more info", NULL,
-		0, v850_cmd_table},
+	{"850", "850 <command [params]>",
+	 "'96-'98 Volvo 850/S70/V70/etc functions, \"850 help\" for more info", NULL, 0,
+	 v850_cmd_table},
 
-	{ "dyno", "dyno <command [params]",
-		"Dyno functions, \"dyno help\" for more info", NULL,
-		0, dyno_cmd_table},
+	{"dyno", "dyno <command [params]", "Dyno functions, \"dyno help\" for more info",
+	 NULL, 0, dyno_cmd_table},
 
-	{ "debug", "debug [parameter = debug]",
-		"Sets/displays debug data and flags, \"debug help\" for available commands", NULL,
-		0, debug_cmd_table},
+	{"debug", "debug [parameter = debug]",
+	 "Sets/displays debug data and flags, \"debug help\" for available commands", NULL,
+	 0, debug_cmd_table},
 
-	{ "date", "date", "Prints date & time", cmd_date, FLAG_HIDDEN, NULL},
-	{ "#", "#", "Does nothing", cmd_rem, FLAG_HIDDEN, NULL},
-	{ "source", "source <file>", "Read commands from a file", cmd_source, FLAG_FILE_ARG, NULL},
+	{"date", "date", "Prints date & time", cmd_date, FLAG_HIDDEN, NULL},
+	{"#", "#", "Does nothing", cmd_rem, FLAG_HIDDEN, NULL},
+	{"source", "source <file>", "Read commands from a file", cmd_source, FLAG_FILE_ARG,
+	 NULL},
 
-	{ "help", "help [command]", "Gives help for a command", cmd_help, 0, NULL },
-	{ "?", "? [command]", "Gives help for a command", cmd_help, FLAG_HIDDEN, NULL },
-	{ "exit", "exit", "Exits program", cmd_exit, 0, NULL},
-	{ "quit", "quit", "Exits program", cmd_exit, FLAG_HIDDEN, NULL},
-	{ NULL, NULL, NULL, NULL, 0, NULL}
-};
+	{"help", "help [command]", "Gives help for a command", cmd_help, 0, NULL},
+	{"?", "? [command]", "Gives help for a command", cmd_help, FLAG_HIDDEN, NULL},
+	{"exit", "exit", "Exits program", cmd_exit, 0, NULL},
+	{"quit", "quit", "Exits program", cmd_exit, FLAG_HIDDEN, NULL},
+	{NULL, NULL, NULL, NULL, 0, NULL}};
 
 #ifdef HAVE_LIBREADLINE
-//current global command level for command completion
+// current global command level for command completion
 static const struct cmd_tbl_entry *current_cmd_level;
-//command level in the command line, also needed for command completion
+// command level in the command line, also needed for command completion
 static const struct cmd_tbl_entry *completion_cmd_level;
 #endif
 
@@ -195,21 +199,21 @@ command_generator(const char *text, int state) {
 	static int list_index, length;
 	const struct cmd_tbl_entry *cmd_entry;
 
-	//a new word to complete
+	// a new word to complete
 	if (state == 0) {
 		list_index = 0;
 		length = strlen(text);
 	}
 
-	//find the command
+	// find the command
 	while (completion_cmd_level[list_index].command != NULL) {
 		cmd_entry = &completion_cmd_level[list_index];
 		list_index++;
-		if (strncmp(cmd_entry->command, text, length) == 0 && !(cmd_entry->flags & FLAG_HIDDEN)) {
+		if (strncmp(cmd_entry->command, text, length) == 0 &&
+		    !(cmd_entry->flags & FLAG_HIDDEN)) {
 			char *ret_name;
-			//we must return a copy of the string; libreadline frees it for us
-			if (diag_malloc(&ret_name,
-					strlen(cmd_entry->command) + 1) != 0) {
+			// we must return a copy of the string; libreadline frees it for us
+			if (diag_malloc(&ret_name, strlen(cmd_entry->command) + 1) != 0) {
 				return (char *)NULL;
 			}
 			strcpy(ret_name, cmd_entry->command);
@@ -223,75 +227,85 @@ char **
 scantool_completion(const char *text, int start, UNUSED(int end)) {
 	char **matches;
 
-	//start == 0 is when the command line is either empty or contains only whitespaces
+	// start == 0 is when the command line is either empty or contains only whitespaces
 	if (start == 0) {
-		//we are at the beginning of the command line, so the completion command level is equal to the current command level
+		// we are at the beginning of the command line, so the completion command
+		// level is equal to the current command level
 		completion_cmd_level = current_cmd_level;
 		rl_attempted_completion_over = 0;
 	}
 	//(start != end) means that we are trying to complete a command;
-	//(start > 0 and start == end) means that all commands are completed and we need to check for their sub-commands;
-	//we handle here both cases so that the completion_cmd_level is always up-to-date
+	//(start > 0 and start == end) means that all commands are completed and we need to
+	// check for their sub-commands; we handle here both cases so that the
+	// completion_cmd_level is always up-to-date
 	else {
-		//parse the command line so that we know on what command level we should do the completion
+		// parse the command line so that we know on what command level we should
+		// do the completion
 		struct cmd_tbl_entry const *parsed_level = current_cmd_level;
 
-		//we need to omit leading whitespaces
+		// we need to omit leading whitespaces
 		size_t begin_at = strspn(rl_line_buffer, " ");
 		const char *cmd = &rl_line_buffer[begin_at];
-		//now get the length of the first command
+		// now get the length of the first command
 		size_t cmd_length = strcspn(cmd, " ");
 
-		//check all completed commands
+		// check all completed commands
 		while (cmd_length > 0 && cmd[cmd_length] == ' ') {
-			//find out what it might be...
+			// find out what it might be...
 			bool found = 0;
 			for (int i = 0; parsed_level[i].command != NULL; i++) {
-				//if found the command on the current level
+				// if found the command on the current level
 				if (!(parsed_level[i].flags & FLAG_HIDDEN) &&
-				   strlen(parsed_level[i].command) == cmd_length &&
-				   strncmp(parsed_level[i].command, cmd, cmd_length) == 0) {
-					//does it have sub-commands?
+				    strlen(parsed_level[i].command) == cmd_length &&
+				    strncmp(parsed_level[i].command, cmd, cmd_length) ==
+					    0) {
+					// does it have sub-commands?
 					if (parsed_level[i].sub_cmd_tbl != NULL) {
-						//go deeper
+						// go deeper
 						parsed_level = parsed_level[i].sub_cmd_tbl;
 						rl_attempted_completion_over = 0;
 						found = 1;
 					} else if (parsed_level[i].flags & FLAG_FILE_ARG) {
-						//the command accepts a filename as an argument, so use the libreadline's filename completion
+						// the command accepts a filename as an
+						// argument, so use the libreadline's
+						// filename completion
 						rl_attempted_completion_over = 0;
 						return NULL;
 					} else {
-						//if no sub-commands, then no more completion
+						// if no sub-commands, then no more
+						// completion
 						rl_attempted_completion_over = 1;
 						return NULL;
 					}
-					//stop searching on this level and go to another command in the command line (if any)
+					// stop searching on this level and go to another
+					// command in the command line (if any)
 					break;
 				}
 			}
-			//went through all commands and didn't find anything? then it is an unknown command
+			// went through all commands and didn't find anything? then it is
+			// an unknown command
 			if (!found) {
 				rl_attempted_completion_over = 1;
 				return NULL;
 			}
 
-			//move past the just-parsed command
+			// move past the just-parsed command
 			cmd = &cmd[cmd_length];
-			//again, omit whitespaces
+			// again, omit whitespaces
 			begin_at = strspn(cmd, " ");
 			cmd = &cmd[begin_at];
-			//length of the next command
+			// length of the next command
 			cmd_length = strcspn(cmd, " ");
 		}
 
-		//update the completion command level for the command_generator() function
+		// update the completion command level for the command_generator() function
 		completion_cmd_level = parsed_level;
 	}
 
 	matches = rl_completion_matches(text, command_generator);
 	if (matches == NULL) {
-		//this will disable the default (filename and username) completion in case no command matches are found
+		// this will disable the default (filename and username) completion in case
+		// no command matches are found
 		rl_attempted_completion_over = 1;
 	}
 	return matches;
@@ -299,24 +313,25 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 
 static void
 readline_init(const struct cmd_tbl_entry *curtable) {
-	//preset levels for current table
+	// preset levels for current table
 	current_cmd_level = curtable;
 	completion_cmd_level = curtable;
 
-	//our custom completion function
+	// our custom completion function
 	rl_attempted_completion_function = scantool_completion;
 }
 
-#else	// so no libreadline
+#else // so no libreadline
 
 static char *
 get_input(const char *prompt) {
 	return basic_get_input(prompt, stdin);
 }
 
-static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {}
+static void
+readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {}
 
-#endif	//HAVE_LIBREADLINE
+#endif // HAVE_LIBREADLINE
 
 static char *
 command_line_input(const char *prompt, FILE *instream) {
@@ -330,7 +345,7 @@ command_line_input(const char *prompt, FILE *instream) {
 
 int
 help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
-/*	int i;*/
+	/*	int i;*/
 	const struct cmd_tbl_entry *ctp;
 
 	if (argc > 1) {
@@ -362,7 +377,7 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 		if (ctp->flags & FLAG_CUSTOM) {
 			/* list custom subcommands too */
 			printf("Custom commands for the current level:\n");
-			char cust_special[]="?";
+			char cust_special[] = "?";
 			char *pcs = cust_special;
 			char **temp_argv = &pcs;
 			ctp->routine(1, temp_argv);
@@ -371,7 +386,6 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 	}
 	printf("\nTry \"help <command>\" for further help\n");
 
-
 	return CMD_OK;
 }
 
@@ -379,7 +393,6 @@ static int
 cmd_help(int argc, char **argv) {
 	return help_common(argc, argv, root_cmd_table);
 }
-
 
 static int
 cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
@@ -393,12 +406,10 @@ cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
-
 static int
 cmd_rem(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
-
 
 void
 log_timestamp(const char *prefix) {
@@ -426,12 +437,12 @@ log_command(int argc, char **argv) {
 
 static int
 cmd_log(int argc, char **argv) {
-	char autofilename[20]="";
+	char autofilename[20] = "";
 	char *file;
 	time_t now;
 	int i;
 
-	file=autofilename;
+	file = autofilename;
 	if (global_logfp != NULL) {
 		printf("Already logging\n");
 		return CMD_FAILED;
@@ -439,26 +450,28 @@ cmd_log(int argc, char **argv) {
 
 	/* Turn on logging */
 	if (argc > 1) {
-			file = argv[1];	//if a file name was specified, use that
+		file = argv[1]; // if a file name was specified, use that
 	} else {
-		//else, generate an auto log file
+		// else, generate an auto log file
 		for (i = 0; i < 100; i++) {
 			FILE *testexist;
-			sprintf(autofilename,"log.%02d",i);
+			sprintf(autofilename, "log.%02d", i);
 			testexist = fopen(autofilename, "r");
 			if (testexist == NULL) {
-				//file name is free: use that
+				// file name is free: use that
 				break;
 			}
 			fclose(testexist);
 		}
 		if (i == 100) {
-			printf("Can't create log.%d; remember to clean old auto log files\n",i);
+			printf("Can't create log.%d; remember to clean old auto log "
+			       "files\n",
+			       i);
 			return CMD_FAILED;
 		}
 	}
 
-	global_logfp = fopen(file, "a");	//add to end of log or create file
+	global_logfp = fopen(file, "a"); // add to end of log or create file
 
 	if (global_logfp == NULL) {
 		printf("Failed to create log file %s\n", file);
@@ -466,18 +479,16 @@ cmd_log(int argc, char **argv) {
 	}
 
 	now = time(NULL);
-	//reset timestamp reference:
-    global_log_tstart=diag_os_getms();
+	// reset timestamp reference:
+	global_log_tstart = diag_os_getms();
 
 	fprintf(global_logfp, "%s\n", LOG_FORMAT);
 	log_timestamp("#");
-	fprintf(global_logfp, "logging started at %s",
-		asctime(localtime(&now)));
+	fprintf(global_logfp, "logging started at %s", asctime(localtime(&now)));
 
 	printf("Logging to file %s\n", file);
 	return CMD_OK;
 }
-
 
 static int
 cmd_stoplog(UNUSED(int argc), UNUSED(char **argv)) {
@@ -496,7 +507,7 @@ cmd_stoplog(UNUSED(int argc), UNUSED(char **argv)) {
 static int
 cmd_play(int argc, char **argv) {
 	FILE *fp;
-	//int linenr;
+	// int linenr;
 
 	/* Turn on logging for monitor mode */
 	if (argc < 2) {
@@ -510,7 +521,7 @@ cmd_play(int argc, char **argv) {
 		return CMD_FAILED;
 	}
 
-	//linenr = 0;	//not used yet ?
+	// linenr = 0;	//not used yet ?
 
 	/* Read data file in */
 	/* XXX logging */
@@ -522,29 +533,28 @@ cmd_play(int argc, char **argv) {
 		printf("DATE:\t+/- to step, S/E to goto start or end, Q to quit\n");
 		ch = getc(stdin);
 		switch (ch) {
-			case '-':
-			case '+':
-			case 'E':
-			case 'e':
-			case 'S':
-			case 's':
-			case 'Q':
-			case 'q':
-				break;
+		case '-':
+		case '+':
+		case 'E':
+		case 'e':
+		case 'S':
+		case 's':
+		case 'Q':
+		case 'q':
+			break;
 		}
-
 	}
 	fclose(fp);
 
 	return CMD_OK;
 }
 
-
 /* Find matching cmd_tbl_entry for command *cmd in table *cmdt.
  * Returns the command or the custom handler if
  * no match was found and the custom handler exists.
  */
-static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, const char *cmd) {
+static const struct cmd_tbl_entry *
+find_cmd(const struct cmd_tbl_entry *cmdt, const char *cmd) {
 	const struct cmd_tbl_entry *ctp;
 	const struct cmd_tbl_entry *custom_cmd;
 
@@ -573,21 +583,23 @@ static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, co
  * If argc is supplied, then this is one shot cli, ie run the command
  */
 static int
-do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv) {
+do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc,
+       char **argv) {
 	/* Build up argc/argv */
 	const struct cmd_tbl_entry *ctp;
 	int cmd_argc;
 	char *cmd_argv[CLI_MAXARGS];
 	char *input = NULL;
 	int rv;
-	bool done;	//when set, sub-command processing is ended and returns to upper level
+	bool done; // when set, sub-command processing is ended and returns to upper level
 	int i;
 
-	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
-	static char nullstr[2] = {0,0};
+	char promptbuf[PROMPTBUFSIZE]; /* Was 1024, who needs that long a prompt? (the part
+					  before user input up to '>') */
+	static char nullstr[2] = {0, 0};
 
 #ifdef HAVE_LIBREADLINE
-	//set the current command level for command completion
+	// set the current command level for command completion
 	current_cmd_level = cmd_tbl;
 #endif
 
@@ -611,19 +623,20 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 
 			/* Parse it */
 			inptr = input;
-			if (*inptr == '@') {	//printing comment
+			if (*inptr == '@') { // printing comment
 				printf("%s\n", inptr);
 				continue;
 			}
-			if (*inptr == '#') {		//non-printing comment
+			if (*inptr == '#') { // non-printing comment
 				continue;
 			}
 			cmd_argc = 0;
-			while ( (s = strtok(inptr, " \t")) != NULL ) {
+			while ((s = strtok(inptr, " \t")) != NULL) {
 				cmd_argv[cmd_argc] = s;
 				inptr = NULL;
-				if (cmd_argc == (ARRAY_SIZE(cmd_argv)-1)) {
-					fprintf(stderr, "Warning : excessive # of arguments\n");
+				if (cmd_argc == (ARRAY_SIZE(cmd_argv) - 1)) {
+					fprintf(stderr,
+						"Warning : excessive # of arguments\n");
 					break;
 				}
 				cmd_argc++;
@@ -645,27 +658,24 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 		if (ctp == NULL) {
 			printf("Unrecognized command. Try \"help\"\n");
 			if (argc) {
-				//was a single command : exit this level of do_cli()
+				// was a single command : exit this level of do_cli()
 				done = 1;
 				break;
 			}
-			//else : continue getting input
+			// else : continue getting input
 			continue;
 		}
 
 		if (ctp->sub_cmd_tbl) {
 			/* has sub-commands */
 			log_command(1, cmd_argv);
-			snprintf(promptbuf, PROMPTBUFSIZE,"%s/%s",
-				prompt, ctp->command);
+			snprintf(promptbuf, PROMPTBUFSIZE, "%s/%s", prompt, ctp->command);
 			/* Sub menu */
-			rv = do_cli(ctp->sub_cmd_tbl,
-				promptbuf,
-				instream,
-				cmd_argc-1,
-				&cmd_argv[1]);
+			rv = do_cli(ctp->sub_cmd_tbl, promptbuf, instream, cmd_argc - 1,
+				    &cmd_argv[1]);
 #ifdef HAVE_LIBREADLINE
-			//went out of the sub-menu, so update the command level for command completion
+			// went out of the sub-menu, so update the command level for
+			// command completion
 			current_cmd_level = cmd_tbl;
 #endif
 			if (rv == CMD_EXIT) { // allow exiting prog. from a
@@ -678,13 +688,13 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 			log_command(cmd_argc, cmd_argv);
 			rv = ctp->routine(cmd_argc, cmd_argv);
 			switch (rv) {
-				case CMD_USAGE:
-					printf("Usage: %s\n%s\n", ctp->usage, ctp->help);
-					break;
-				case CMD_EXIT:
-				case CMD_UP:
-					done = 1;
-					break;
+			case CMD_USAGE:
+				printf("Usage: %s\n%s\n", ctp->usage, ctp->help);
+				break;
+			case CMD_EXIT:
+			case CMD_UP:
+				done = 1;
+				break;
 			}
 		}
 
@@ -693,7 +703,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 			done = 1;
 			break;
 		}
-	}	//while !done
+	} // while !done
 
 	if (input) {
 		free(input);
@@ -702,14 +712,17 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 		return CMD_OK;
 	}
 	if (rv == CMD_EXIT) {
-		char *disco="disconnect";
+		char *disco = "disconnect";
 		if (global_logfp != NULL) {
 			cmd_stoplog(0, NULL);
 		}
 
-		do_cli(diag_cmd_table, "", instream, 1, &disco);	//XXX should be called recursively in case there are >1 active L3 conns...
+		do_cli(diag_cmd_table, "", instream, 1, &disco); // XXX should be called
+								 // recursively in case
+								 // there are >1 active L3
+								 // conns...
 
-		rv=diag_end();
+		rv = diag_end();
 		if (rv) {
 			fprintf(stderr, FLFMT "diag_end failed !?\n", FL);
 		}
@@ -727,10 +740,10 @@ command_file(const char *filename) {
 	int rv;
 	FILE *fstream;
 
-	if ( (fstream=fopen(filename, "r"))) {
-		rv=do_cli(root_cmd_table, progname, fstream, 0, NULL);
+	if ((fstream = fopen(filename, "r"))) {
+		rv = do_cli(root_cmd_table, progname, fstream, 0, NULL);
 		fclose(fstream);
-		return (rv==CMD_EXIT)? CMD_EXIT:CMD_OK;
+		return (rv == CMD_EXIT) ? CMD_EXIT : CMD_OK;
 	}
 	return CMD_FAILED;
 }
@@ -741,25 +754,25 @@ cmd_source(int argc, char **argv) {
 	int rv;
 
 	if (argc < 2) {
-			printf("No filename\n");
+		printf("No filename\n");
 		return CMD_USAGE;
 	}
 
 	file = argv[1];
-	rv=command_file(file);
+	rv = command_file(file);
 	if (rv == CMD_FAILED) {
-			printf("Couldn't read %s\n", file);
+		printf("Couldn't read %s\n", file);
 	}
 
 	return rv;
 }
 
-//rc_file : returns CMD_OK or CMD_EXIT only.
+// rc_file : returns CMD_OK or CMD_EXIT only.
 static int
 rc_file(void) {
 	int rv;
-	//this loads either a $home/.<progname>.rc or ./<progname>.ini (in order of preference)
-	//to load general settings.
+	// this loads either a $home/.<progname>.rc or ./<progname>.ini (in order of
+	// preference) to load general settings.
 
 	/*
 	 * "." files don't play that well on some systems.
@@ -782,33 +795,35 @@ rc_file(void) {
 		strcat(rchomeinit, projname);
 		strcat(rchomeinit, "rc");
 
-		rv=command_file(rchomeinit);
+		rv = command_file(rchomeinit);
 		if (rv == CMD_FAILED) {
-			fprintf(stderr, FLFMT "Could not load rc file %s; ", FL, rchomeinit);
-			newrcfile=fopen(rchomeinit,"a");
+			fprintf(stderr, FLFMT "Could not load rc file %s; ", FL,
+				rchomeinit);
+			newrcfile = fopen(rchomeinit, "a");
 			if (newrcfile) {
-				//create the file if it didn't exist
-				fprintf(newrcfile, "\n#empty rcfile auto created by %s\n",progname);
+				// create the file if it didn't exist
+				fprintf(newrcfile, "\n#empty rcfile auto created by %s\n",
+					progname);
 				fclose(newrcfile);
 				fprintf(stderr, "empty file created.\n");
 				free(rchomeinit);
 				return CMD_OK;
 			} else {
-				//could not create empty rcfile
-				fprintf(stderr, "could not create empty file %s.", rchomeinit);
+				// could not create empty rcfile
+				fprintf(stderr, "could not create empty file %s.",
+					rchomeinit);
 				free(rchomeinit);
 				return CMD_OK;
 			}
 		} else {
-			//command_file was at least partly successful (rc file exists)
-			printf("%s: Settings loaded from %s\n",progname,rchomeinit);
+			// command_file was at least partly successful (rc file exists)
+			printf("%s: Settings loaded from %s\n", progname, rchomeinit);
 			free(rchomeinit);
 			return CMD_OK;
 		}
 
-	}	//if (homedir)
+	} // if (homedir)
 #endif
-
 
 #ifdef USE_INIFILE
 	char *inihomeinit;
@@ -821,29 +836,31 @@ rc_file(void) {
 	strcpy(inihomeinit, progname);
 	strcat(inihomeinit, ".ini");
 
-	rv=command_file(inihomeinit);
+	rv = command_file(inihomeinit);
 	if (rv == CMD_FAILED) {
-		fprintf(stderr, FLFMT "Problem with %s, no configuration loaded\n", FL, inihomeinit);
+		fprintf(stderr, FLFMT "Problem with %s, no configuration loaded\n", FL,
+			inihomeinit);
 		free(inihomeinit);
 		return CMD_OK;
 	}
 	printf("%s: Settings loaded from %s\n", progname, inihomeinit);
 	free(inihomeinit);
 #endif
-	return rv;	//could be CMD_EXIT
-
+	return rv; // could be CMD_EXIT
 }
 
 /* start a cli with <name> as a prompt, and optionally run the <initscript> file */
 void
-enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable) {
-	int rc_rv=CMD_OK;
+enter_cli(const char *name, const char *initscript,
+	  const struct cmd_tbl_entry *extra_cmdtable) {
+	int rc_rv = CMD_OK;
 	global_logfp = NULL;
 	progname = name;
 	// alloc a new table combining extra table (if applicable) and basic table
 	int i = 0;
 	const struct cmd_tbl_entry *ctp_iter;
 	struct cmd_tbl_entry *ctp;
+	DIAG_ATOMIC_INITSTATIC(&diag_cli_debug);
 	for (ctp_iter = extra_cmdtable; ctp_iter && ctp_iter->command; ctp_iter++) {
 		i++;
 	}
@@ -855,30 +872,33 @@ enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *
 	memcpy(&ctp[i], basic_cmd_table, sizeof(basic_cmd_table));
 	root_cmd_table = ctp;
 
-
 	readline_init(ctp);
 	set_init();
 
 	if (initscript != NULL) {
-		int rv=command_file(initscript);
+		int rv = command_file(initscript);
 		switch (rv) {
-			case CMD_OK:
-				/* script was succesful, start a normal CLI afterwards */
-				break;
-			case CMD_FAILED:
-				printf("Problem with file %s\n", initscript);
-				// fallthrough, yes
-			default:
-			case CMD_EXIT:
-				goto exit_cleanup;
+		case CMD_OK:
+			/* script was succesful, start a normal CLI afterwards */
+			break;
+		case CMD_FAILED:
+			printf("Problem with file %s\n", initscript);
+			// fallthrough, yes
+		default:
+		case CMD_EXIT:
+			goto exit_cleanup;
 		}
 	} else {
 		/* print banner and load rc file, only if running without an initscript */
 		printf("%s: Type HELP for a list of commands\n", name);
 		printf("%s: Type SCAN to start ODBII Scan\n", name);
 		printf("%s: Then use MONITOR to monitor real-time data\n", name);
-		printf("%s: **** IMPORTANT : this is beta software ! Use at your own risk.\n", name);
-		printf("%s: **** Remember, \"debug all -1\" displays all debugging info.\n", name);
+		printf("%s: **** IMPORTANT : this is beta software ! Use at your own "
+		       "risk.\n",
+		       name);
+		printf("%s: **** Remember, \"debug all -1\" displays all debugging "
+		       "info.\n",
+		       name);
 		rc_rv = rc_file();
 	}
 
@@ -891,8 +911,8 @@ exit_cleanup:
 	free(ctp);
 	root_cmd_table = NULL;
 	set_close();
+	DIAG_ATOMIC_DEL(&diag_cli_debug);
 	return;
-
 }
 
 /*
@@ -910,15 +930,16 @@ exit_cleanup:
  * [-][0-9] : dec
  * Returns 0 if unable to decode.
  */
-int htoi(char *buf) {
+int
+htoi(char *buf) {
 	/* Hex text to int */
 	int rv = 0;
 	int base = 10;
-	int sign=0;	//1 = positive; 0 =neg
+	int sign = 0; // 1 = positive; 0 =neg
 
 	if (*buf != '-') {
-		//change sign
-		sign=1;
+		// change sign
+		sign = 1;
 	} else {
 		buf++;
 	}
@@ -955,13 +976,14 @@ int htoi(char *buf) {
 
 		buf++;
 	}
-	return sign? rv:-rv ;
+	return sign ? rv : -rv;
 }
 
 /*
  * Wait until ENTER is pressed
  */
-void wait_enter(const char *message) {
+void
+wait_enter(const char *message) {
 	printf("%s", message);
 	while (1) {
 		int ch = getc(stdin);
@@ -974,16 +996,15 @@ void wait_enter(const char *message) {
 /*
  * Determine whether ENTER has been pressed
  */
-int pressed_enter() {
+int
+pressed_enter() {
 	return diag_os_ipending();
 }
-
 
 int
 cmd_up(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_UP;
 }
-
 
 int
 cmd_exit(UNUSED(int argc), UNUSED(char **argv)) {

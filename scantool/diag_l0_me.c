@@ -36,12 +36,11 @@
 
 #include "diag.h"
 #include "diag_err.h"
-#include "diag_iso14230.h"	//for TesterPresent SID
+#include "diag_iso14230.h" //for TesterPresent SID
 #include "diag_os.h"
 #include "diag_tty.h"
 #include "diag_l0.h"
 #include "diag_l1.h"
-
 
 #define ME_DEFAULT_ADDRESS 0x38
 #define ME_ADDR_SN "meaddr"
@@ -54,93 +53,320 @@ extern const struct diag_l0 diag_l0_me;
  * baud rate. Note the single byte value is count in 2.5microseconds for
  * receiving a bit of the 0x55
  */
-static const unsigned int me_baud_table[] = { 0, 400000, 200000, 133333, 100000, 80000,
-			66666, 57142, 50000, 44444,
-	/* 10 */ 40000, 36363, 33333, 30769, 28571, 26666,
-			25000, 23529, 22222, 21052,
-	/* 20 */ 19200, 19200, 18181, 17391, 16666, 16000,
-			15384, 14814, 14285, 13793,
-	/* 30 */ 13333, 12903, 12500, 12121, 11764, 11428,
-			11111, 10400, 10400, 10400,
-	/* 40 */ 10400, 9600, 9600, 9600, 9600, 8888, 8695, 8510, 8333, 8163,
-	/* 50 */ 8000, 7843, 7692, 7547, 7407, 7272, 7142, 7017, 6896, 6779,
-	/* 60 */ 6666, 6557, 6451, 6349, 0, 6153, 6060, 5970, 5882, 5797,
-	/* 70 */ 5714, 5633, 5555, 5479, 5405, 5333, 5263, 5194, 5128, 5063,
-	/* 80 */ 5000, 4800, 4800, 4800, 4800, 4800, 4800, 4597, 4545, 4494,
-	/* 90 */ 4444, 4395, 4347, 4301, 4255, 4210, 4166, 4123, 4081, 4040,
-	/* 100 */ 4000, 3960, 3921, 3883, 3846, 3809, 3600, 3600, 3600, 3600,
-	/* 110 */ 3600, 3600, 3600, 3600, 3600, 3478, 3448, 3418, 3389, 3361,
-	/* 120 */ 3333, 3305, 3278, 3252, 3225, 3200, 3174, 3149, 3125, 3100,
-	/* 130 */ 3076, 3053, 3030, 3007, 2985, 2962, 2941, 2919, 2898, 2877,
-	/* 140 */ 2857, 2836, 2816, 2797, 2777, 2758, 2739, 2721, 2702, 2684,
-	/* 150 */ 2666, 2649, 2631, 2614, 2597, 2580, 2564, 2547, 2531, 2515,
-	/* 160 */ 2500, 2400, 2400, 2400, 2400, 2400, 2400, 2400, 2400, 2400,
-	/* 170 */ 2400, 2400, 2400, 2400, 2298, 2285, 2272, 2259, 2247, 2234,
-	/* 180 */ 2222, 2209, 2197, 2185, 2173, 2162, 2150, 2139, 2127, 2116,
-	/* 190 */ 2105, 2094, 2083, 2072, 2061, 2051, 2040, 2030, 2020, 2010,
-	/* 200 */ 2000, 1990, 1980, 1970, 1960, 1951, 1941, 1932, 1923, 1913,
-	/* 210 */ 1904, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
-	/* 220 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
-	/* 230 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
-	/* 240 */ 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800,
-	/* 250 */ 1600, 1593, 1587, 1581, 1574, 1568, } ;
+static const unsigned int me_baud_table[] = {
+	0,
+	400000,
+	200000,
+	133333,
+	100000,
+	80000,
+	66666,
+	57142,
+	50000,
+	44444,
+	/* 10 */ 40000,
+	36363,
+	33333,
+	30769,
+	28571,
+	26666,
+	25000,
+	23529,
+	22222,
+	21052,
+	/* 20 */ 19200,
+	19200,
+	18181,
+	17391,
+	16666,
+	16000,
+	15384,
+	14814,
+	14285,
+	13793,
+	/* 30 */ 13333,
+	12903,
+	12500,
+	12121,
+	11764,
+	11428,
+	11111,
+	10400,
+	10400,
+	10400,
+	/* 40 */ 10400,
+	9600,
+	9600,
+	9600,
+	9600,
+	8888,
+	8695,
+	8510,
+	8333,
+	8163,
+	/* 50 */ 8000,
+	7843,
+	7692,
+	7547,
+	7407,
+	7272,
+	7142,
+	7017,
+	6896,
+	6779,
+	/* 60 */ 6666,
+	6557,
+	6451,
+	6349,
+	0,
+	6153,
+	6060,
+	5970,
+	5882,
+	5797,
+	/* 70 */ 5714,
+	5633,
+	5555,
+	5479,
+	5405,
+	5333,
+	5263,
+	5194,
+	5128,
+	5063,
+	/* 80 */ 5000,
+	4800,
+	4800,
+	4800,
+	4800,
+	4800,
+	4800,
+	4597,
+	4545,
+	4494,
+	/* 90 */ 4444,
+	4395,
+	4347,
+	4301,
+	4255,
+	4210,
+	4166,
+	4123,
+	4081,
+	4040,
+	/* 100 */ 4000,
+	3960,
+	3921,
+	3883,
+	3846,
+	3809,
+	3600,
+	3600,
+	3600,
+	3600,
+	/* 110 */ 3600,
+	3600,
+	3600,
+	3600,
+	3600,
+	3478,
+	3448,
+	3418,
+	3389,
+	3361,
+	/* 120 */ 3333,
+	3305,
+	3278,
+	3252,
+	3225,
+	3200,
+	3174,
+	3149,
+	3125,
+	3100,
+	/* 130 */ 3076,
+	3053,
+	3030,
+	3007,
+	2985,
+	2962,
+	2941,
+	2919,
+	2898,
+	2877,
+	/* 140 */ 2857,
+	2836,
+	2816,
+	2797,
+	2777,
+	2758,
+	2739,
+	2721,
+	2702,
+	2684,
+	/* 150 */ 2666,
+	2649,
+	2631,
+	2614,
+	2597,
+	2580,
+	2564,
+	2547,
+	2531,
+	2515,
+	/* 160 */ 2500,
+	2400,
+	2400,
+	2400,
+	2400,
+	2400,
+	2400,
+	2400,
+	2400,
+	2400,
+	/* 170 */ 2400,
+	2400,
+	2400,
+	2400,
+	2298,
+	2285,
+	2272,
+	2259,
+	2247,
+	2234,
+	/* 180 */ 2222,
+	2209,
+	2197,
+	2185,
+	2173,
+	2162,
+	2150,
+	2139,
+	2127,
+	2116,
+	/* 190 */ 2105,
+	2094,
+	2083,
+	2072,
+	2061,
+	2051,
+	2040,
+	2030,
+	2020,
+	2010,
+	/* 200 */ 2000,
+	1990,
+	1980,
+	1970,
+	1960,
+	1951,
+	1941,
+	1932,
+	1923,
+	1913,
+	/* 210 */ 1904,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	/* 220 */ 1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	/* 230 */ 1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	/* 240 */ 1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	1800,
+	/* 250 */ 1600,
+	1593,
+	1587,
+	1581,
+	1574,
+	1568,
+};
 
 /* Response message types */
-#define ME_RESP_14230 0x01	// Message from ISO14230 (KWP)
-#define ME_RESP_ERROR 0x80	// Error occurred (See Error Response Message Below)
-#define ME_RESP_ISO 0x81 // Message from ISO-9141-2 or ISO-14230 (KWP)
-#define ME_RESP_VPW 0x82 // Message from J1850 VPW
-#define ME_RESP_PWM 0x84 // Message from J1850 PWM
-#define ME_RESP_CAN 0x88 // Message from CAN
+#define ME_RESP_14230 0x01 // Message from ISO14230 (KWP)
+#define ME_RESP_ERROR 0x80 // Error occurred (See Error Response Message Below)
+#define ME_RESP_ISO 0x81   // Message from ISO-9141-2 or ISO-14230 (KWP)
+#define ME_RESP_VPW 0x82   // Message from J1850 VPW
+#define ME_RESP_PWM 0x84   // Message from J1850 PWM
+#define ME_RESP_CAN 0x88   // Message from CAN
 
 /* interface error codes */
 static const struct {
 	int code;
 	const char *str;
-} me_errs[] = {
-	{0x00, "Request Message command not implemented in this interface."},
-	{0x01, "Request Message command is not used."},
-	{0x02, "Request Message sum check error."},
-	{0x03, "ISO or KWP - No sync or incorrect sync."},
-	{0x04, "Incorrect ISO inverted address received."},
-	{0x05, "No ISO response to the request message."},
-	{0x06, "J1850 message received was not a diagnostic message."},
-	{0x07, "No J1850 response to the request message."},
-	{0x08, "ISO checksum error detected in response message."},
-	{0x09, "J1850 CRC error detected in response message."},
-	{0x0A, "Unused"},
-	{0x0B, "KWP baud rate too slow"},
-	{0x0C, "No KWP response to the request message."},
-	{0x0D, "KWP incorrect inverted address returned by car"},
-	{0x0E, "PWM pulse width is too long"},
-	{0x0F, "Incorrect variable response counter"},
-	{0x10, "ISO not enabled"},
-	{0x11, "J1850 VPW not enabled"},
-	{0x12, "J1850 PWM not enabled"},
-	{0x13, "KWP not enabled"},
-	{0x14, "VW Pass-through mode not enabled"},
-	{0x15, "Repeated arbitration errors"},
-	{0x16, "CAN did not respond to request"},
-	{0x17, "CAN core command had a bad command count"},
-	{0x20, "CAN destination address byte error"},
-	{0x21, "CAN command byte error"},
-	{0x22, "CAN byte count byte error"},
-	{0x23, "CAN sum check byte error"},
-	{0x24, "CAN RS232 receive message - 100ms timeout error"},
-	{0x25, "CAN Configuration command address error"},
-	{0x26, "CAN stop bit error"},
-	{0x27, "CAN transmit message - 100ms timeout error"},
-	{0x28, "CAN transmit error"},
-	{0x29, "CAN transmit lost arbitration"},
-	{0x2A, "CAN receive message - 100ms timeout error"},
-	{0x2B, "CAN Mode Request - 100ms timeout error"},
-	{0x2C, "CAN invalid CAN byte count error"},
-	{0xF1, "Unimplemented USB command attempted"},
-	{0xF2, "Legacy (Non CAN) bus hardware did not respond to USB request"},
-	{0xF3, "CAN hardware did not respond to USB request"}
-};
+} me_errs[] = {{0x00, "Request Message command not implemented in this interface."},
+	       {0x01, "Request Message command is not used."},
+	       {0x02, "Request Message sum check error."},
+	       {0x03, "ISO or KWP - No sync or incorrect sync."},
+	       {0x04, "Incorrect ISO inverted address received."},
+	       {0x05, "No ISO response to the request message."},
+	       {0x06, "J1850 message received was not a diagnostic message."},
+	       {0x07, "No J1850 response to the request message."},
+	       {0x08, "ISO checksum error detected in response message."},
+	       {0x09, "J1850 CRC error detected in response message."},
+	       {0x0A, "Unused"},
+	       {0x0B, "KWP baud rate too slow"},
+	       {0x0C, "No KWP response to the request message."},
+	       {0x0D, "KWP incorrect inverted address returned by car"},
+	       {0x0E, "PWM pulse width is too long"},
+	       {0x0F, "Incorrect variable response counter"},
+	       {0x10, "ISO not enabled"},
+	       {0x11, "J1850 VPW not enabled"},
+	       {0x12, "J1850 PWM not enabled"},
+	       {0x13, "KWP not enabled"},
+	       {0x14, "VW Pass-through mode not enabled"},
+	       {0x15, "Repeated arbitration errors"},
+	       {0x16, "CAN did not respond to request"},
+	       {0x17, "CAN core command had a bad command count"},
+	       {0x20, "CAN destination address byte error"},
+	       {0x21, "CAN command byte error"},
+	       {0x22, "CAN byte count byte error"},
+	       {0x23, "CAN sum check byte error"},
+	       {0x24, "CAN RS232 receive message - 100ms timeout error"},
+	       {0x25, "CAN Configuration command address error"},
+	       {0x26, "CAN stop bit error"},
+	       {0x27, "CAN transmit message - 100ms timeout error"},
+	       {0x28, "CAN transmit error"},
+	       {0x29, "CAN transmit lost arbitration"},
+	       {0x2A, "CAN receive message - 100ms timeout error"},
+	       {0x2B, "CAN Mode Request - 100ms timeout error"},
+	       {0x2C, "CAN invalid CAN byte count error"},
+	       {0xF1, "Unimplemented USB command attempted"},
+	       {0xF2, "Legacy (Non CAN) bus hardware did not respond to USB request"},
+	       {0xF3, "CAN hardware did not respond to USB request"}};
 
-static const char *me_geterr(const int err) {
+static const char *
+me_geterr(const int err) {
 	unsigned i;
 	for (i = 0; i < ARRAY_SIZE(me_errs); i++) {
 		if (me_errs[i].code == err) {
@@ -153,32 +379,32 @@ static const char *me_geterr(const int err) {
 
 struct muleng_device {
 	int protocol;
-	int dev_wakeup;		/* Contains wakeup type for next packet */
-	int dev_state;		/* State for 5 baud startup stuff */
-	uint8_t dev_kb1;	/* KB1/KB2 for 5 baud startup stuff */
+	int dev_wakeup;  /* Contains wakeup type for next packet */
+	int dev_state;   /* State for 5 baud startup stuff */
+	uint8_t dev_kb1; /* KB1/KB2 for 5 baud startup stuff */
 	uint8_t dev_kb2;
 
-	uint8_t	dev_rxbuf[14];	/* Receive buffer */
-	unsigned	dev_rxlen;	/* Length of data in buffer (complete response from ME) */
-	unsigned	resp_len;	/* length of actual bus message, including its checksum (but not the ME response checksum) */
-	unsigned	dev_rdoffset;	/* Offset to read from to */
+	uint8_t dev_rxbuf[14]; /* Receive buffer */
+	unsigned dev_rxlen;    /* Length of data in buffer (complete response from ME) */
+	unsigned resp_len; /* length of actual bus message, including its checksum (but not
+			      the ME response checksum) */
+	unsigned dev_rdoffset; /* Offset to read from to */
 
-	struct	cfgi port;		/** serial port */
-	struct	cfgi dev_addr;	/** ME device address; default is 0x38. */
-	ttyp *tty_int;			/** handle for tty stuff */
+	struct cfgi port;     /** serial port */
+	struct cfgi dev_addr; /** ME device address; default is 0x38. */
+	ttyp *tty_int;        /** handle for tty stuff */
 };
 
-#define MULENG_STATE_CLOSED		0x00
+#define MULENG_STATE_CLOSED 0x00
 
 /* 5 baud init was successful, need to report keybytes on first recv() */
-#define MULENG_STATE_KWP_SENDKB1		0x01
-#define MULENG_STATE_KWP_SENDKB2		0x02
+#define MULENG_STATE_KWP_SENDKB1 0x01
+#define MULENG_STATE_KWP_SENDKB2 0x02
 
-#define MULENG_STATE_RAW		0x10	/* Open and working in Passthru mode */
+#define MULENG_STATE_RAW 0x10 /* Open and working in Passthru mode */
 
-#define MULENG_STATE_FASTSTART		0x18	/* 1st recv() after fast init */
-#define MULENG_STATE_OPEN		0x20	/* Open and working */
-
+#define MULENG_STATE_FASTSTART 0x18 /* 1st recv() after fast init */
+#define MULENG_STATE_OPEN 0x20      /* Open and working */
 
 static void muleng_close(struct diag_l0_device *dl0d);
 
@@ -189,8 +415,8 @@ static void muleng_close(struct diag_l0_device *dl0d);
  */
 static int
 muleng_init(void) {
-/* Global init flag */
-	static int muleng_initdone=0;
+	/* Global init flag */
+	static int muleng_initdone = 0;
 
 	if (muleng_initdone) {
 		return 0;
@@ -219,50 +445,52 @@ muleng_txcksum(uint8_t *data) {
  */
 static uint8_t
 j1850_crc(uint8_t *msg_buf, int nbytes) {
-	uint8_t crc_reg=0xff,poly,i,j;
+	uint8_t crc_reg = 0xff, poly, i, j;
 	uint8_t *byte_point;
 	uint8_t bit_point;
 
-	for (i=0, byte_point=msg_buf; i<nbytes; ++i, ++byte_point) {
-		for (j=0, bit_point=0x80 ; j<8; ++j, bit_point>>=1) {
-			if (bit_point & *byte_point) {	// case for new bit = 1
+	for (i = 0, byte_point = msg_buf; i < nbytes; ++i, ++byte_point) {
+		for (j = 0, bit_point = 0x80; j < 8; ++j, bit_point >>= 1) {
+			if (bit_point & *byte_point) { // case for new bit = 1
 				if (crc_reg & 0x80) {
-					poly=1;	// define the polynomial
+					poly = 1; // define the polynomial
 				} else {
 					poly = 0x1c;
 				}
-				crc_reg= ( (crc_reg << 1) | 1) ^ poly;
-			} else {		// case for new bit = 0
-				poly=0;
+				crc_reg = ((crc_reg << 1) | 1) ^ poly;
+			} else { // case for new bit = 0
+				poly = 0;
 				if (crc_reg & 0x80) {
 					poly = 0x1d;
 				}
-				crc_reg= (crc_reg << 1) ^ poly;
+				crc_reg = (crc_reg << 1) ^ poly;
 			}
 		}
 	}
-	return ~crc_reg;	// Return CRC
+	return ~crc_reg; // Return CRC
 }
 
-/* parse an ME response buffer, and return the actual payload length (including checksum / CRC byte) by
- * trying to find the longest message with a valid checksum or CRC.
+/* parse an ME response buffer, and return the actual payload length (including checksum /
+ * CRC byte) by trying to find the longest message with a valid checksum or CRC.
  * Limitations :
- * 1- ISO payloads that really have 0 as their checksum will be reported as maximum-length, i.e.
- * the checksum for [0xFF 0x01] is 0; but the function will report the actual message is
- * [FF 01 00 .... 00] which also has a valid checksum.
+ * 1- ISO payloads that really have 0 as their checksum will be reported as maximum-length,
+ * i.e. the checksum for [0xFF 0x01] is 0; but the function will report the actual message
+ * is [FF 01 00 .... 00] which also has a valid checksum.
  *
  * 2- J1850 CRC is less problematic; not sure if there can be collisions such as
- * [X1 ... Xn] where Xn is the valid CRC when calculated on X1..X(n-1) , while at the same time respecting
- * [X1 ... Xn Z1 Z2 .. Zn] where Z1..Zn are 0, and that the CRC of X1...Z(n-1) is 0x00 !?
+ * [X1 ... Xn] where Xn is the valid CRC when calculated on X1..X(n-1) , while at the same
+ * time respecting [X1 ... Xn Z1 Z2 .. Zn] where Z1..Zn are 0, and that the CRC of
+ * X1...Z(n-1) is 0x00 !?
  */
 static unsigned
 me_guess_rxlen(uint8_t *buf) {
 	/* Response format :
-	 * buf[1]=type; buf[2]: payload, padded with 0 bytes at the end; buf[13] : ME checksum (ignored here)
+	 * buf[1]=type; buf[2]: payload, padded with 0 bytes at the end; buf[13] : ME
+	 * checksum (ignored here)
 	 */
 	unsigned len;
 
-	for (len=10; len > 0; len--) {
+	for (len = 10; len > 0; len--) {
 		uint8_t msg_type = buf[1];
 		// verify if checksum/CRC works with this length:
 
@@ -284,8 +512,8 @@ me_guess_rxlen(uint8_t *buf) {
 		}
 
 		// was the last byte 0, therefore possibly just padding ?
-		if (buf[2+len] != 0) {
-			//not padding : can't continue.
+		if (buf[2 + len] != 0) {
+			// not padding : can't continue.
 			break;
 		}
 	}
@@ -297,7 +525,8 @@ me_guess_rxlen(uint8_t *buf) {
  * Open the diagnostic device, returns a file descriptor
  * records original state of term interface so we can restore later
  */
-static int muleng_open(struct diag_l0_device *dl0d, int iProtocol) {
+static int
+muleng_open(struct diag_l0_device *dl0d, int iProtocol) {
 	int rv;
 	struct muleng_device *dev;
 	struct diag_serial_settings set;
@@ -307,9 +536,9 @@ static int muleng_open(struct diag_l0_device *dl0d, int iProtocol) {
 	assert(dl0d);
 	dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open port %s L1proto %d\n",
-			FL, dev->port.val.str, iProtocol);
+	if (diag_l0_debug_load() & DIAG_DEBUG_OPEN) {
+		fprintf(stderr, FLFMT "open port %s L1proto %d\n", FL, dev->port.val.str,
+			iProtocol);
 	}
 
 	dev->protocol = iProtocol;
@@ -327,23 +556,22 @@ static int muleng_open(struct diag_l0_device *dl0d, int iProtocol) {
 	set.stopbits = diag_stopbits_1;
 	set.parflag = diag_par_n;
 
-	if ((rv=diag_tty_setup(dev->tty_int, &set))) {
+	if ((rv = diag_tty_setup(dev->tty_int, &set))) {
 		muleng_close(dl0d);
 		return diag_iseterr(rv);
 	}
 
 	/* And set DTR high and RTS low to power the device */
-	if ((rv=diag_tty_control(dev->tty_int, 1, 0))) {
+	if ((rv = diag_tty_control(dev->tty_int, 1, 0))) {
 		muleng_close(dl0d);
 		return diag_iseterr(rv);
 	}
 
-	diag_tty_iflush(dev->tty_int);	/* Flush unread input */
+	diag_tty_iflush(dev->tty_int); /* Flush unread input */
 	dl0d->opened = 1;
 
-	return 0 ;
+	return 0;
 }
-
 
 static int
 muleng_new(struct diag_l0_device *dl0d) {
@@ -378,7 +606,8 @@ muleng_new(struct diag_l0_device *dl0d) {
 	return 0;
 }
 
-static void muleng_del(struct diag_l0_device *dl0d) {
+static void
+muleng_del(struct diag_l0_device *dl0d) {
 	struct muleng_device *dev;
 
 	assert(dl0d);
@@ -394,7 +623,8 @@ static void muleng_del(struct diag_l0_device *dl0d) {
 	return;
 }
 
-static struct cfgi *muleng_getcfg(struct diag_l0_device *dl0d) {
+static struct cfgi *
+muleng_getcfg(struct diag_l0_device *dl0d) {
 	struct muleng_device *dev;
 	if (dl0d == NULL) {
 		return diag_pseterr(DIAG_ERR_BADCFG);
@@ -404,7 +634,6 @@ static struct cfgi *muleng_getcfg(struct diag_l0_device *dl0d) {
 	return &dev->port;
 }
 
-
 static void
 muleng_close(struct diag_l0_device *dl0d) {
 	if (!dl0d) {
@@ -412,7 +641,7 @@ muleng_close(struct diag_l0_device *dl0d) {
 	}
 	struct muleng_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_CLOSE) {
 		fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
 	}
 
@@ -435,10 +664,10 @@ muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, FLFMT "device link %p sending to ME device: ",
-			FL, (void *)dl0d);
+	if ((diag_l0_debug_load() & (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) ==
+	    (DIAG_DEBUG_WRITE | DIAG_DEBUG_DATA)) {
+		fprintf(stderr, FLFMT "device link %p sending to ME device: ", FL,
+			(void *)dl0d);
 		diag_data_dump(stderr, dp, txlen);
 		fprintf(stderr, "\n");
 	}
@@ -446,14 +675,13 @@ muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 	/*
 	 * And send it to the interface
 	 */
-	if (diag_tty_write(dev->tty_int, dp, txlen) != (int) txlen) {
+	if (diag_tty_write(dev->tty_int, dp, txlen) != (int)txlen) {
 		fprintf(stderr, FLFMT "muleng_write error!!\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	return 0;
 }
-
 
 /*
  * Do 5 Baud initialisation
@@ -463,7 +691,7 @@ muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
  * a tester present message
  */
 static int
-muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
+muleng_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		struct muleng_device *dev) {
 	/*
 	 * Slow init
@@ -479,13 +707,13 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 
 	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:
-		txbuf[1] = 0x20;	/* Raw mode 5 baud init */
+		txbuf[1] = 0x20; /* Raw mode 5 baud init */
 		txbuf[2] = in->addr;
 		break;
 	case DIAG_L1_ISO14230:
 		txbuf[1] = 0x85;
-		txbuf[2] = 0x01;		/* One byte message */
-		txbuf[3] = DIAG_KW2K_SI_TP;	/* tester present */
+		txbuf[2] = 0x01;            /* One byte message */
+		txbuf[3] = DIAG_KW2K_SI_TP; /* tester present */
 		break;
 	}
 
@@ -522,9 +750,8 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		}
 		baud = me_baud_table[rxbuf[0]];
 
-		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr,
-				FLFMT "device link %p setting baud to %u\n", FL,
+		if (diag_l0_debug_load() & DIAG_DEBUG_PROTO) {
+			fprintf(stderr, FLFMT "device link %p setting baud to %u\n", FL,
 				(void *)dl0d, baud);
 		}
 
@@ -555,7 +782,7 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		}
 
 		/*
- 		 * Now send the "get keybyte" request, and wait for
+		 * Now send the "get keybyte" request, and wait for
 		 * response
 		 */
 		memset(txbuf, 0, sizeof(txbuf));
@@ -586,7 +813,6 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		break;
 	}
 
-
 	return rv;
 }
 
@@ -607,10 +833,8 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-		fprintf(stderr,
-			FLFMT
-			"device link %p info %p initbus type %d proto %d\n",
+	if (diag_l0_debug_load() & DIAG_DEBUG_IOCTL) {
+		fprintf(stderr, FLFMT "device link %p info %p initbus type %d proto %d\n",
 			FL, (void *)dl0d, (void *)dev, in->type, dev->protocol);
 	}
 
@@ -636,9 +860,8 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
  * will have been done by the slowinit() code
  */
 static int
-muleng_send(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
-const void *data, size_t len) {
+muleng_send(struct diag_l0_device *dl0d, UNUSED(const char *subinterface),
+	    const void *data, size_t len) {
 	int rv;
 	uint8_t cmd;
 
@@ -656,10 +879,10 @@ const void *data, size_t len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %ld bytes protocol %d ",
-			FL, (void *)dl0d, (long)len, dev->protocol);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_WRITE) {
+		fprintf(stderr, FLFMT "device link %p send %ld bytes protocol %d ", FL,
+			(void *)dl0d, (long)len, dev->protocol);
+		if (diag_l0_debug_load() & DIAG_DEBUG_DATA) {
 			diag_data_dump(stderr, data, len);
 			fprintf(stderr, "\n");
 		}
@@ -686,7 +909,7 @@ const void *data, size_t len) {
 		} else {
 			cmd = 0x88;
 		}
-		dev->dev_wakeup = 0;	/* We've done the wakeup now */
+		dev->dev_wakeup = 0; /* We've done the wakeup now */
 		break;
 
 	case DIAG_L1_J1850_VPW:
@@ -713,7 +936,7 @@ const void *data, size_t len) {
 
 	txbuf[0] = dev->dev_addr.val.u8;
 	txbuf[1] = cmd;
-	txbuf[2] = (uint8_t) len;
+	txbuf[2] = (uint8_t)len;
 	memcpy(&txbuf[3], data, len);
 
 	(void)muleng_txcksum(txbuf);
@@ -739,9 +962,8 @@ const void *data, size_t len) {
  */
 
 static int
-muleng_recv(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
-void *data, size_t len, unsigned int timeout) {
+muleng_recv(struct diag_l0_device *dl0d, UNUSED(const char *subinterface), void *data,
+	    size_t len, unsigned int timeout) {
 	ssize_t xferd;
 	int rv;
 	uint8_t *pdata = (uint8_t *)data;
@@ -753,7 +975,7 @@ void *data, size_t len, unsigned int timeout) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 		fprintf(stderr,
 			FLFMT
 			"link %p recv upto %ld bytes timeout %u, rxlen %d "
@@ -779,8 +1001,7 @@ void *data, size_t len, unsigned int timeout) {
 			dev->dev_state = MULENG_STATE_KWP_SENDKB2;
 			return 1;
 		}
-		return 0;	/* Strange, user asked for 0 bytes */
-
+		return 0; /* Strange, user asked for 0 bytes */
 
 	case MULENG_STATE_KWP_SENDKB2:
 		if (len >= 1) {
@@ -788,14 +1009,13 @@ void *data, size_t len, unsigned int timeout) {
 			dev->dev_state = MULENG_STATE_OPEN;
 			return 1;
 		}
-		return 0;	/* Strange, user asked for 0 bytes */
-
+		return 0; /* Strange, user asked for 0 bytes */
 
 	case MULENG_STATE_RAW:
 		xferd = diag_tty_read(dev->tty_int, data, len, timeout);
-		if (diag_l0_debug & DIAG_DEBUG_READ) {
-			fprintf(stderr, FLFMT "link %p read %ld bytes\n", FL,
-				(void *)dl0d, (long)xferd);
+		if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
+			fprintf(stderr, FLFMT "link %p read %ld bytes\n", FL, (void *)dl0d,
+				(long)xferd);
 		}
 		return xferd;
 
@@ -804,7 +1024,7 @@ void *data, size_t len, unsigned int timeout) {
 		timeout = 200;
 		dev->dev_state = MULENG_STATE_OPEN;
 		/* Drop thru */
-	default:		/* Some other mode */
+	default: /* Some other mode */
 		break;
 	}
 
@@ -823,11 +1043,11 @@ void *data, size_t len, unsigned int timeout) {
 		if (bufbytes <= len) {
 			memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], bufbytes);
 			dev->dev_rxlen = dev->dev_rdoffset = dev->resp_len = 0;
-			return (int) bufbytes;
+			return (int)bufbytes;
 		}
 		memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], len);
 		dev->dev_rdoffset += len;
-		return (int) len;
+		return (int)len;
 	}
 
 	/*
@@ -836,7 +1056,7 @@ void *data, size_t len, unsigned int timeout) {
 	 */
 
 	rv = diag_tty_read(dev->tty_int, &dev->dev_rxbuf[dev->dev_rxlen],
-		(size_t)(14 - dev->dev_rxlen), timeout);
+			   (size_t)(14 - dev->dev_rxlen), timeout);
 	if (rv == DIAG_ERR_TIMEOUT) {
 		return DIAG_ERR_TIMEOUT;
 	}
@@ -852,9 +1072,8 @@ void *data, size_t len, unsigned int timeout) {
 	}
 
 	/* OK, got whole message */
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT "link %p received from ME: ", FL, (void *)dl0d);
+	if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
+		fprintf(stderr, FLFMT "link %p received from ME: ", FL, (void *)dl0d);
 		diag_data_dump(stderr, dev->dev_rxbuf, dev->dev_rxlen);
 		fprintf(stderr, "\n");
 	}
@@ -864,14 +1083,14 @@ void *data, size_t len, unsigned int timeout) {
 	xferd = diag_cks1(&dev->dev_rxbuf[1], 12);
 	if ((xferd & 0xff) != dev->dev_rxbuf[13]) {
 
-/* XXX, we should deal with this properly rather than just printing a message */
-		fprintf(stderr,"Got bad checksum from ME device 0x%X != 0x%X\n",
-			(int) xferd & 0xff, dev->dev_rxbuf[13]);
-		fprintf(stderr,"PC Serial port probably out of spec.\nRX Data: ");
+		/* XXX, we should deal with this properly rather than just printing a
+		 * message */
+		fprintf(stderr, "Got bad checksum from ME device 0x%X != 0x%X\n",
+			(int)xferd & 0xff, dev->dev_rxbuf[13]);
+		fprintf(stderr, "PC Serial port probably out of spec.\nRX Data: ");
 		diag_data_dump(stderr, dev->dev_rxbuf, dev->dev_rxlen);
 		fprintf(stderr, "\n");
 	}
-
 
 	/*
 	 * Check the type
@@ -881,7 +1100,7 @@ void *data, size_t len, unsigned int timeout) {
 		dev->dev_rxlen = 0;
 		dev->resp_len = 0;
 
-		if (diag_l0_debug & DIAG_DEBUG_READ) {
+		if (diag_l0_debug_load() & DIAG_DEBUG_READ) {
 			fprintf(stderr,
 				FLFMT
 				"link %p ME returns err 0x%X : %s; s/w v 0x%X "
@@ -892,17 +1111,17 @@ void *data, size_t len, unsigned int timeout) {
 		}
 
 		switch (dev->dev_rxbuf[3]) {
-		case 0x05:	/* No ISO response to request */
-		case 0x07:	/* No J1850 response to request */
-		case 0x0c:	/* No KWP response to request */
+		case 0x05: /* No ISO response to request */
+		case 0x07: /* No J1850 response to request */
+		case 0x0c: /* No KWP response to request */
 			return DIAG_ERR_TIMEOUT;
 			break;
 
 		default:
-			if ( !(diag_l0_debug & DIAG_DEBUG_READ)) {
-				//don't print the error twice
+			if (!(diag_l0_debug_load() & DIAG_DEBUG_READ)) {
+				// don't print the error twice
 				fprintf(stderr, FLFMT "ME : error 0x%0X, %s\n.", FL,
-					dev->dev_rxbuf[3], me_geterr(dev->dev_rxbuf[3]) );
+					dev->dev_rxbuf[3], me_geterr(dev->dev_rxbuf[3]));
 			}
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
@@ -912,14 +1131,14 @@ void *data, size_t len, unsigned int timeout) {
 	/* get actual bus message length without padding 0x00 bytes */
 	dev->resp_len = me_guess_rxlen(dev->dev_rxbuf);
 
-	dev->dev_rdoffset = 2;		/* Skip the ME header */
+	dev->dev_rdoffset = 2; /* Skip the ME header */
 
 	/* Copy data to user */
 	xferd = MIN(len, dev->resp_len);
 
 	memcpy(data, &dev->dev_rxbuf[dev->dev_rdoffset], (size_t)xferd);
 	dev->dev_rdoffset += xferd;
-	if (dev->dev_rdoffset == dev->resp_len +2) {
+	if (dev->dev_rdoffset == dev->resp_len + 2) {
 		/* End of message, reset pointers */
 		dev->dev_rxlen = 0;
 		dev->dev_rdoffset = 0;
@@ -942,33 +1161,32 @@ muleng_getflags(struct diag_l0_device *dl0d) {
 	switch (dev->protocol) {
 	case DIAG_L1_J1850_VPW:
 	case DIAG_L1_J1850_PWM:
-			flags |= DIAG_L1_DOESL2CKSUM;
-			flags |= DIAG_L1_DOESL2FRAME;
-			break;
+		flags |= DIAG_L1_DOESL2CKSUM;
+		flags |= DIAG_L1_DOESL2FRAME;
+		break;
 	case DIAG_L1_ISO9141:
-			flags |= DIAG_L1_SLOW ;
-/* XX does it ?		flags |= DIAG_L1_DOESL2CKSUM; */
-			break;
+		flags |= DIAG_L1_SLOW;
+		/* XX does it ?		flags |= DIAG_L1_DOESL2CKSUM; */
+		break;
 
- 	case DIAG_L1_ISO14230:
-			flags |= DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
-			flags |= DIAG_L1_DOESL2FRAME;
-			flags |= DIAG_L1_DOESSLOWINIT;
-			flags |= DIAG_L1_DOESL2CKSUM;
-			break;
-
+	case DIAG_L1_ISO14230:
+		flags |= DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
+		flags |= DIAG_L1_DOESL2FRAME;
+		flags |= DIAG_L1_DOESSLOWINIT;
+		flags |= DIAG_L1_DOESL2CKSUM;
+		break;
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "getflags link %p proto %d flags 0x%X\n",
-			FL, (void *)dl0d, dev->protocol, flags);
+	if (diag_l0_debug_load() & DIAG_DEBUG_PROTO) {
+		fprintf(stderr, FLFMT "getflags link %p proto %d flags 0x%X\n", FL,
+			(void *)dl0d, dev->protocol, flags);
 	}
 
-	return flags ;
+	return flags;
 }
 
-
-static int muleng_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+static int
+muleng_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 	int rv = 0;
 
 	switch (cmd) {
@@ -976,7 +1194,7 @@ static int muleng_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 		rv = muleng_initbus(dl0d, (struct diag_l1_initbus_args *)data);
 		break;
 	case DIAG_IOCTL_IFLUSH:
-		//do nothing
+		// do nothing
 		rv = 0;
 		break;
 	default:
@@ -987,19 +1205,17 @@ static int muleng_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 	return rv;
 }
 
-const struct diag_l0 diag_l0_me = {
-	"Multiplex Engineering T16 interface",
-	"MET16",
-	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
-		DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
-	muleng_init,
-	muleng_new,
-	muleng_getcfg,
-	muleng_del,
-	muleng_open,
-	muleng_close,
-	muleng_getflags,
-	muleng_recv,
-	muleng_send,
-	muleng_ioctl
-};
+const struct diag_l0 diag_l0_me = {"Multiplex Engineering T16 interface",
+				   "MET16",
+				   DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
+					   DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
+				   muleng_init,
+				   muleng_new,
+				   muleng_getcfg,
+				   muleng_del,
+				   muleng_open,
+				   muleng_close,
+				   muleng_getflags,
+				   muleng_recv,
+				   muleng_send,
+				   muleng_ioctl};
