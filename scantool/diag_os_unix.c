@@ -224,6 +224,12 @@ diag_os_init(void) {
 	setitimer(ITIMER_REAL, &tv, 0); /* Set timer : it will SIGALRM upon expiration */
 #endif // _POSIX_TIMERS
 
+	if (getuid() == 0) {
+		printf("\t******** WARNING ********\n"
+				"\tRunning as superuser (uid 0) !!\n"
+				"\tThis is dangerous, not required, and not recommended !\n");
+	}
+
 	diag_os_init_done = 1;
 	return 0;
 }	//diag_os_init
