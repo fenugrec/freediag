@@ -548,13 +548,6 @@ cmd_850_connect(int argc, char **argv) {
 		global_cfg.initmode = DIAG_L2_TYPE_SLOWINIT;
 	}
 
-	rv = diag_init();
-	if (rv != 0) {
-		fprintf(stderr, "diag_init failed\n");
-		diag_end();
-		return diag_iseterr(rv);
-	}
-
 	rv = diag_l2_open(dl0d, global_cfg.L1proto);
 	if (rv) {
 		fprintf(stderr, "cmd_850_connect: diag_l2_open failed\n");

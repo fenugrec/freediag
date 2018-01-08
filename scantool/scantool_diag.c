@@ -238,12 +238,6 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 		return CMD_OK;
 	}
 
-	rv = diag_init();
-	if (rv < 0) {
-		printf("Failed to initialise diagnostic layer\n");
-		diag_end();
-		return CMD_OK;
-	}
 	/* Open interface using hardware type ISO9141 */
 	rv = diag_l2_open(dl0d, DIAG_L1_ISO9141);
 	if (rv) {
@@ -344,13 +338,6 @@ do_l2_generic_start(void) {
 	if (!dl0d) {
 		printf("No global L0. Please select + configure L0 first\n");
 		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-
-	rv = diag_init();
-	if (rv != 0) {
-		fprintf(stderr, "diag_init failed\n");
-		diag_end();
-		return diag_iseterr(rv);
 	}
 
 	/* Open interface using current L1 proto and hardware */

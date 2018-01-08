@@ -53,12 +53,6 @@ cmd_watch(int argc, char **argv) {
 		return CMD_FAILED;
 	}
 
-	rv = diag_init();
-	if (rv != 0) {
-		fprintf(stderr, "diag_init failed\n");
-		diag_end();
-		return CMD_FAILED;
-	}
 	rv = diag_l2_open(dl0d, global_cfg.L1proto);
 	if (rv) {
 		printf("Failed to open hardware interface, ");

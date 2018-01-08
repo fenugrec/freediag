@@ -704,13 +704,6 @@ static struct diag_l2_conn *do_l2_common_start(int L1protocol, int L2protocol,
 	/* Clear out all ECU data as we're starting again */
 	clear_data();
 
-	rv = diag_init();
-	if (rv != 0) {
-		fprintf(stderr, "diag_init failed\n");
-		diag_end();
-		return NULL;
-	}
-
 	rv = diag_l2_open(dl0d, L1protocol);
 	if (rv) {
 		if ((rv != DIAG_ERR_BADIFADAPTER) &&
@@ -1553,11 +1546,17 @@ ecu_connect(void) {
 
 
 /*
- * Initialise
+ * Initialise. ret 0 if ok
  */
 static int
 do_init(void) {
 	clear_data();
+
+	if (diag_init()) {
+		fprintf(stderr, "diag_init() failed.\n");
+		diag_end();
+		return DIAG_ERR_GENERAL;
+	}
 
 	return 0;
 }
@@ -1774,7 +1773,9 @@ main(int argc, char **argv) {
 		}
 	}
 
-	do_init();
+	if (do_init()) {
+		exit(1);
+	}
 
 	if ( user_interface ) {
 		printf("%s version %s\n", PROJECT_NAME, PACKAGE_VERSION);

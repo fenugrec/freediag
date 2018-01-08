@@ -230,9 +230,6 @@ static int cmd_debug_l0test(int argc, char **argv) {
 		printf("Wrong global L0, please set to DUMBT\n");
 		return CMD_FAILED;
 	}
-	if (diag_init()) {
-		return CMD_FAILED;
-	}
 
 	printf("Trying test %u...\n", testnum);
 
