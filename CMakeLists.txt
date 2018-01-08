@@ -105,7 +105,7 @@ endif()
 
 ###### Build Options
 
-option(BUILDGUI "Enable scangui (default=no)" OFF)
+option(BUILD_GUI "Enable scangui (default=no)" OFF)
 option(BUILD_DIAGTEST "Build additional \"diag_test\" test suite (default=no)" OFF)
 
 option(BUILD_SCHEDSET "Build optional \"schedSetter\" helper to set realtime priority; linux/unix only. (default=no)" OFF)
@@ -179,7 +179,7 @@ endif ()
 ###### parse sub-dirs
 add_subdirectory(scantool)
 
-if (BUILDGUI)
+if (BUILD_GUI)
 	find_package(FLTK)
 	if (FLTK_FOUND)
 		add_subdirectory(scangui)
