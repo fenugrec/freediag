@@ -47,11 +47,6 @@ extern "C" {
 		A) needs _POSIX_TIMERS, uses clock_gettime()
 		B) (available everywhere?) gettimeofday()
 
-	## misc features ##
-	SEL_SCHED: diag_os_sched() : increasing priority ; check uid
-		A) _POSIX_PRIORITY_SCHEDULING && __linux__ : set scheduling to realtime.
-		B) _POSIX_PRIORITY_SCHEDULING : check uid; #warn; change nothing.
-		C) All others : #warn; change nothing.
 	######
 	For every feature listed above, it's possible to force compilation of
 	a specific implementation using the #defines below.
@@ -81,9 +76,6 @@ extern "C" {
 #define SEL_HRT	S_AUTO
 #endif
 
-#ifndef SEL_SCHED
-#define SEL_SCHED	S_AUTO
-#endif
 /****** ******/
 
 
