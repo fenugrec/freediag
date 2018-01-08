@@ -32,7 +32,7 @@ printUserGroup(void) {
 	getgroups(ret, groups);
 	printf("supplementary groups: ");
 	for (i = 0; i < ret; i++) {
-		printf("%ld ", groups[i]);
+		printf("%ld ", (long) groups[i]);
 	}
 	printf("\n");
 	free(groups);
