@@ -24,9 +24,10 @@
  *
  * OS abstraction & wrappers for unix, linux & OSX as much as possible.
  *
- * 
- *	(1) The process needs to be in real time mode, as we need to do some
- *	    very accurate sleeps in diag_l0_dumb ;
+ *
+ *	(1) Using the diag_l0_dumb driver requires very accurate timing,
+ *		which may require running the process in real time mode in certain
+ *		cases.
  *	(2) Another process needs to be capable of establishing (1)
  *
  * Some notes on syscall interruption :
@@ -410,11 +411,11 @@ diag_os_ipending(void) {
 }
 
 //diag_os_sched : set high priority for this thread/process.
-//this is called from most diag_l0_* devices; calling more than once
-//will harm nothing. There is no "opposite" function of this, to
+//There is no "opposite" function of this, to
 //reset normal priority.
 //
-//Removed, should be done from a separate process for security reasons.
+//Should be done from a separate process for security reasons,
+//a more thorough implementation can be found in schedSetter/
 int
 diag_os_sched(void) {
 	return 0;

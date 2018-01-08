@@ -27,20 +27,11 @@
 // file is in the usual line blocking mode, you should just press enter; in
 // non-blocking mode any character should work.
 
-// Building
-//
-// For a regular build, just run:
-//
-// "$CC" "$CFLAGS" -l rt -o schedSetter schedSetter.c
-//
-// For a debugging build, uncomment the "debugging.h" include and other commented out code
-// that is preceded with a "Debugging" comment, and run:
-//
-// "$CC" "$CFLAGS" -l rt -o schedSetter schedSetter.c debugging.c
+// For a debugging build, uncomment other commented out code
+// TODO : use #ifdef SCHEDSET_DEBUG
 
 // TODO: would it make sense to also set the Linux ioprio stuff?
 
-//#include "debugging.h"
 
 // setgroups is not a POSIX function, but seems to be a de-facto standard on Unixy
 // operating systems? On Linux it is required to include <grp.h> and define _BSD_SOURCE,
@@ -57,6 +48,10 @@
 #include <sched.h>
 #include <sys/mman.h> // mlockall
 #include <unistd.h>   // fork, exec
+
+#ifdef SCHEDSET_DEBUG
+	#include "debugging.h"
+#endif
 
 // Set given uid and gid, drop supplementary groups. If uid is zero, use getuid
 // and getgid.

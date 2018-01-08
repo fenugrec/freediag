@@ -2,7 +2,7 @@
 #Note : this file is a work in progress,
 #some checks may still be missing
 
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 3.0.2)
 
 
 project(freediag)
@@ -19,6 +19,7 @@ message("Using install prefix : ${CMAKE_INSTALL_PREFIX}")
 include (CheckLibraryExists)
 include (CheckFunctionExists)
 include (CheckTypeSize)
+include (CMakeDependentOption)
 include (GNUInstallDirs)
 
 set (PKGVERSIONMAJOR "1")
@@ -106,6 +107,10 @@ endif()
 
 option(BUILDGUI "Enable scangui (default=no)" OFF)
 option(BUILD_DIAGTEST "Build additional \"diag_test\" test suite (default=no)" OFF)
+
+option(BUILD_SCHEDSET "Build optional \"schedSetter\" helper to set realtime priority; linux/unix only. (default=no)" OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_SCHEDSET_DEBUG "Compile extra debugging code for \"schedSetter\"" OFF BUILD_SCHEDSET OFF)
+
 option(USE_RCFILE "At startup, search $home/ for an rc file to load initial commands. (default=disabled)" OFF)
 option(USE_INIFILE "At startup, search the current directory for an ini file to load initial commands. (default=enabled)" ON)
 
@@ -183,6 +188,9 @@ if (BUILDGUI)
 	endif()
 endif ()
 
+if (BUILD_SCHEDSET)
+	add_subdirectory(schedSetter)
+endif ()
 
 ###### files to install
 
