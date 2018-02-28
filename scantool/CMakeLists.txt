@@ -86,6 +86,9 @@ if (NOT WIN32)
 	#link to libmath (m); not required on win32 (msvcrt provides sin() etc)
 	#link to pthread (win* uses native API)
 	target_link_libraries(diag m ${CMAKE_THREAD_LIBS_INIT})
+else()
+	# if WIN32 then use winmm lib and timeBeginPeriod() to increase Sleep() accuracy under Windows
+	target_link_libraries(diag winmm)
 endif ()
 
 #if required, link with -lrt (see top-level CMakeLists.txt)

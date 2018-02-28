@@ -33,7 +33,7 @@
 #include <windows.h>
 #include <conio.h>	//for _kbhit, _getch
 #include <inttypes.h> 	//for PRIu64 formatters
-
+#include <mmsystem.h> // to allow usage of timeBeginPeriod()
 
 static int diag_os_init_done=0;
 
@@ -41,6 +41,7 @@ LARGE_INTEGER perfo_freq = {{0,0}};	//for use with QueryPerformanceFrequency and
 float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds, i.e. [us]=[counts]*pf_conv
 static int pfconv_valid=0;	//flag after querying perfo_freq; nothing will not work without a performance counter
 int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_millisleep & diag_os_calibrate
+static UINT timer_period = 0; // to store timeBeginPeriod(timer_period) value for future cleanup
 
 
 /* periodic callback:
@@ -81,6 +82,21 @@ diag_os_init(void) {
 		return 0;
 
 	diag_os_sched();	//call os_sched to increase thread priority.
+	
+	// workaround to increase Sleep() routine accuracy by decreasing PerformanceTimer time period to minimum possible
+	
+	TIMECAPS caps;
+	MMRESULT res = timeGetDevCaps(&caps, sizeof(caps)); 
+	
+	if (res != TIMERR_NOERROR) {
+		printf("Unable to get timer capabilities.\n ");
+	} else {
+		if (timeBeginPeriod(caps.wPeriodMin) != TIMERR_NOERROR ) {
+			printf ("Error setting timer period!\n");
+		} else {
+			timer_period = caps.wPeriodMin;
+		}
+	} // if trick doesn't work then give up and proceed as usual
 
 	//probably the nearest equivalent to a unix interval timer + associated alarm handler
 	//is the timer queue... so that's what we do.
@@ -134,6 +150,11 @@ int diag_os_close() {
 
 	diag_os_init_done=0;	//diag_os_init will have to be done again past this point.
 
+	// cleanup of multimedia timer
+	if (timeEndPeriod(timer_period) != TIMERR_NOERROR) {
+		printf("Error restoring timer period!\n");
+	}	
+	
 	if (hDiagTimer != INVALID_HANDLE_VALUE) {
 		if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
 			//success
