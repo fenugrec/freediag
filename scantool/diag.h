@@ -346,8 +346,11 @@ void diag_atomic_store_int(diag_atomic_int *a, int d);
 bool diag_atomic_load_bool(diag_atomic_bool *a);
 int diag_atomic_load_int(diag_atomic_int *a);
 
-// Returns true if the periodic timer is no longer necessary, ie. if the diag_end has been
-// run. Returns false otherwise.
+/** Check if periodic timers have finished
+ *
+ * Returns true if the periodic timer is no longer necessary, ie. if the diag_end has been
+ * run. Returns false otherwise.
+ */
 bool periodic_done(void);
 
 #if defined(__cplusplus)
