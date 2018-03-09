@@ -159,6 +159,7 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
 #define DIAG_DEBUG_DATA		0x80	/* Dump data depending on other flags */
 #define DIAG_DEBUG_TIMER	0x100	/* Timer stuff */
 
+
 enum debugflag_enum {OPEN=DIAG_DEBUG_OPEN,
 	CLOSE=DIAG_DEBUG_CLOSE,
 	READ=DIAG_DEBUG_READ,
@@ -170,12 +171,32 @@ enum debugflag_enum {OPEN=DIAG_DEBUG_OPEN,
 	TIMER=DIAG_DEBUG_TIMER,
 	NIL=0
 };
+
 // struct debugflags_descr : filled + used in scantool_debug.c
 struct debugflags_descr {
 	enum debugflag_enum mask;
 	const char *descr;		//associate short description for each flag.
 	const char *shortdescr;
 };
+
+
+// these are for identifying the debug message prefix to be printed
+enum debug_prefix {
+	DIAG_DEBUGPF_NONE,
+	DIAG_DEBUGPF_OPEN,
+	DIAG_DEBUGPF_CLOSE,
+	DIAG_DEBUGPF_READ,
+	DIAG_DEBUGPF_WRITE,
+	DIAG_DEBUGPF_IOCTL,
+	DIAG_DEBUGPF_PROTO,
+	DIAG_DEBUGPF_INIT,
+	DIAG_DEBUGPF_DATA,
+	DIAG_DEBUGPF_TIMER
+};
+
+/** debug message prefixes : dbg_prefixes[DIAG_DEBUGPF_XYZ] is a const char*
+ */
+extern const char *dbg_prefixes[];
 
 /*
  * Message handling.

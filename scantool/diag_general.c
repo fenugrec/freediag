@@ -42,6 +42,21 @@
 #include "utlist.h"
 
 
+const char *dbg_prefixes[] = {
+	[DIAG_DEBUGPF_NONE] = "GLOB:",
+	[DIAG_DEBUGPF_OPEN] = "OPEN:",
+	[DIAG_DEBUGPF_CLOSE] = "CLOSE:",
+	[DIAG_DEBUGPF_READ] = "READ:",
+	[DIAG_DEBUGPF_WRITE] = "WRITE:",
+	[DIAG_DEBUGPF_IOCTL] = "IOCTL:",
+	[DIAG_DEBUGPF_PROTO] = "PROTO:",
+	[DIAG_DEBUGPF_INIT] = "INIT:",
+	[DIAG_DEBUGPF_DATA] = "DATA:",
+	[DIAG_DEBUGPF_TIMER] = "TIMER:",
+};
+
+
+
 DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_bool periodic_done_wrapper)
 
 static void
