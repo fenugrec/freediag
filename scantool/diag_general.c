@@ -41,7 +41,6 @@
 
 #include "utlist.h"
 
-#define ERR_STR_LEN 50 // length of "illegal error X" string
 
 DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_bool periodic_done_wrapper)
 
@@ -324,17 +323,20 @@ static const struct {
 	{ DIAG_ERR_BADCFG, "Bad config/param" },
 };
 
+#define DIAG_ILLEGAL_ERR "Illegal error code: 0x%.2X\n"
+
 const char *
 diag_errlookup(const int code) {
 	unsigned i;
-	static char ill_str[ERR_STR_LEN];
+	static char ill_str[sizeof(DIAG_ILLEGAL_ERR) + 2 * sizeof(int)];
+
 	for (i = 0; i < ARRAY_SIZE(edesc); i++) {
 		if (edesc[i].code == code) {
 			return edesc[i].desc;
 		}
 	}
 
-	snprintf(ill_str,ERR_STR_LEN,"Illegal error code: 0x%.2X\n",code);
+	snprintf(ill_str, sizeof(ill_str), DIAG_ILLEGAL_ERR,code);
 	return ill_str;
 }
 
