@@ -218,10 +218,9 @@ void sim_free_ecu_responses(struct sim_ecu_response **resp_pp) {
 		count++;
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT " %d responses freed from queue.\n", FL,
-			count);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT " %d responses freed from queue.\n", FL, count);
+
 	return;
 }
 
@@ -344,11 +343,10 @@ void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, const uint8
 		}
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_DATA) {
-		fprintf(stderr,
-			FLFMT "%d responses queued for receive, %d new.\n", FL,
-			resp_count + new_resp_count, new_resp_count);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "%d responses queued for receive, %d new.\n",
+		FL, resp_count + new_resp_count, new_resp_count);
+	return;
 }
 
 
@@ -591,10 +589,8 @@ sim_open(struct diag_l0_device *dl0d, int iProtocol) {
 	dev = (struct sim_device *) dl0d->l0_int;
 	simfile = dev->simfile.val.str;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open simfile %s proto=%d\n", FL, simfile,
-			iProtocol);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "open simfile %s proto=%d\n", FL, simfile, iProtocol);
 
 	dev->protocol = iProtocol;
 	dev->sim_last_ecu_responses = NULL;
@@ -633,10 +629,8 @@ sim_close(struct diag_l0_device *dl0d) {
 	assert(dev != NULL);
 
 	// If debugging, print to stderr.
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
-		fprintf(stderr, FLFMT "dl0d=%p closing simfile\n", FL,
-			(void *)dl0d);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
+		FLFMT "dl0d=%p closing simfile\n", FL, (void *)dl0d);
 
 	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
@@ -662,11 +656,9 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-		fprintf(stderr,
-			FLFMT "device link %p info %p initbus type %d\n", FL,
-			(void *)dl0d, (void *)dev, in->type);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+		FLFMT "device link %p info %p initbus type %d\n",
+		FL, (void *)dl0d, (void *)dev, in->type);
 
 	if (!dev) {
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
@@ -680,9 +672,8 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	case DIAG_L1_INITBUS_FAST:
 		// Send break.
 		// We simulate a break with a single "0x00" char.
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
-			fprintf(stderr, FLFMT "Sending: BREAK!\n", FL);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
+			FLFMT "Sending: BREAK!\n", FL);
 		sim_send(dl0d, 0, &sim_break, 1);
 		break;
 	case DIAG_L1_INITBUS_5BAUD:
@@ -725,14 +716,8 @@ sim_send(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "dl0d=%p sending %u bytes\n", FL, (void *)dl0d, (unsigned int)len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
-			fprintf(stderr, FLFMT "L0 sim sending: ", FL);
-			diag_data_dump(stderr, data, len);
-			fprintf(stderr, "\n");
-		}
-	}
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, data, len,
+		FLFMT "dl0d=%p sending %u bytes; ", FL, (void *)dl0d, (unsigned int)len);
 
 	// Store a copy of this request for use by req* function tokens.
 	memcpy(dev->sim_last_ecu_request, data, len);
@@ -762,11 +747,9 @@ sim_recv(struct diag_l0_device *dl0d,
 	if (!len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT "link %p recv upto %ld bytes timeout %u\n", FL,
-			(void *)dl0d, (long)len, timeout);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "link %p recv upto %ld bytes timeout %u\n",
+		FL, (void *)dl0d, (long)len, timeout);
 
 	// "Receive from the ECU" a response.
 	resp_p = dev->sim_last_ecu_responses;
@@ -784,14 +767,8 @@ sim_recv(struct diag_l0_device *dl0d,
 		memset(data, 0, len);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "dl0d=%p recv %d byte;\n", FL, (void *)dl0d, (int) len);
-		if ((diag_l0_debug & DIAG_DEBUG_DATA) && (xferd>0)) {
-			fprintf(stderr, FLFMT "L0 sim receiving: ", FL);
-			diag_data_dump(stderr, data, xferd);
-			fprintf(stderr, "\n");
-		}
-	}
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V, data, xferd,
+		FLFMT "dl0d=%p recv %d byte; ", FL, (void *)dl0d, (int) len);
 
 	return (xferd == 0 ? DIAG_ERR_TIMEOUT : (int) xferd);
 }

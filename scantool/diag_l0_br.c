@@ -175,9 +175,8 @@ br_close(struct diag_l0_device *dl0d) {
 
 	struct br_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
-		fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
+		FLFMT "link %p closing\n", FL, (void *)dl0d);
 
 	diag_tty_close(dev->tty_int);
 	dev->tty_int = NULL;
@@ -227,9 +226,8 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "features 0x%X\n", FL, dev->dev_features);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "features 0x%X\n", FL, dev->dev_features);
 
 	/* Set serial line to 19200 baud , 8N1 */
 	set.speed = 19200;
@@ -251,28 +249,26 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	 */
 	buf[0] = 0x20;
 	if (br_write(dl0d, buf, 1)) {
-		if ((diag_l0_debug&DIAG_DEBUG_OPEN)) {
-			fprintf(stderr, FLFMT "CHIP CONNECT write failed link %p\n",
-				FL, (void *)dl0d);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+			FLFMT "CHIP CONNECT write failed link %p\n",
+			FL, (void *)dl0d);
+
 		br_close(dl0d);
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	/* And expect 0xff as a response */
 	if (diag_tty_read(dev->tty_int, buf, 1, 100) != 1) {
-		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "CHIP CONNECT read failed link %p\n",
-				FL, (void *)dl0d);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+			FLFMT "CHIP CONNECT read failed link %p\n",
+			FL, (void *)dl0d);
 
 		br_close(dl0d);
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	if (buf[0] != 0xff) {
-		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "CHIP CONNECT rcvd 0x%X != 0xff, link %p\n",
-				FL, buf[0], (void *)dl0d);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+			FLFMT "CHIP CONNECT rcvd 0x%X != 0xff, link %p\n",
+			FL, buf[0], (void *)dl0d);
 
 		br_close(dl0d);
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
@@ -297,10 +293,9 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 		return diag_iseterr(rv);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open succeeded link %p features 0x%X\n",
-			FL, (void *)dl0d, dev->dev_features);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "open succeeded link %p features 0x%X\n",
+		FL, (void *)dl0d, dev->dev_features);
 
 	dl0d->opened = 1;
 	return 0;
@@ -449,13 +444,9 @@ br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	dev = (struct br_device *)dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-		fprintf(stderr,
-			FLFMT
-			"device link %p info %p initbus type %d proto %d\n",
-			FL, (void *)dl0d, (void *)dev, in->type,
-			dev ? dev->protocol : -1);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+		FLFMT "device link %p info %p initbus type %d proto %d\n",
+		FL, (void *)dl0d, (void *)dev, in->type, dev ? dev->protocol : -1);
 
 	if (!dev) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -499,22 +490,17 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 	int rv;
 	struct br_device *dev = dl0d->l0_int;
 
-	if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, FLFMT "link %p getmsg timeout %u\n",
-			FL, (void *)dl0d, timeout);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+			FLFMT "link %p getmsg timeout %u\n", FL, (void *)dl0d, timeout);
 
 	/*
 	 * First read the 1st byte, using the supplied timeout
 	 */
 	rv = diag_tty_read(dev->tty_int, &firstbyte, 1, timeout);
 	if (rv != 1) {
-		if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
-			fprintf(stderr, FLFMT "link %p getmsg 1st byte timed out\n",
-				FL, (void *)dl0d);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+			FLFMT "link %p getmsg 1st byte timed out\n", FL, (void *)dl0d);
+
 		return diag_iseterr(rv);
 	}
 
@@ -534,13 +520,9 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if ( (diag_l0_debug & (DIAG_DEBUG_READ|DIAG_DEBUG_DATA)) ==
-		(DIAG_DEBUG_READ|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, FLFMT "link %p getmsg read ctl 0x%X data:",
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V, dp, readlen,
+			FLFMT "link %p getmsg read ctl 0x%X data:",
 			FL, (void *)dl0d, firstbyte & 0xff);
-		diag_data_dump(stderr, dp, readlen);
-		printf("\n");
-	}
 
 	/*
 	 * Message read complete, check error flag
@@ -579,11 +561,10 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 	int rv, j1850mode;
 	uint8_t outb;
 
-	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, FLFMT "device %p link %p sending to BR1\n",
-			FL, (void *)dev, (void *)dl0d);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT "device %p link %p sending to BR1\n",
+		FL, (void *)dev, (void *)dl0d);
+
 
 	if (txlen > 15) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -607,14 +588,10 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 	}
 
 	/* And now the data */
-	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, FLFMT "device %p writing data: ",
-			FL, (void *)dev);
-		fprintf(stderr,"0x%X ", (int)outb);	/* Length byte */
-		diag_data_dump(stderr, dp, txlen);
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, dp, txlen,
+		FLFMT "device %p writing data: 0x%X",
+		FL, (void *)dev, (unsigned) outb);
+
 	rv = br_write(dl0d, dp, txlen);
 	if (rv < 0) {
 		return diag_iseterr(rv);
@@ -626,12 +603,10 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 	 * in order to receive multiple frames.
 	 */
 	if (j1850mode) {
-		if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
-			fprintf(stderr,
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
 				FLFMT "device %p writing data: 0x%X\n",
-				FL, (void *)dev, dev->dev_framenr & 0xff);
-		}
+				FL, (void *)dev, (unsigned) dev->dev_framenr & 0xff);
+
 		rv = br_write(dl0d, &dev->dev_framenr, 1);
 		if (rv < 0) {
 			return diag_iseterr(rv);
@@ -663,18 +638,9 @@ const void *data, size_t len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr,
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, data, len,
 			FLFMT "device link %p send %ld bytes protocol %d state %d: ",
-			FL, (void *)dl0d, (long)len,
-			dev->protocol, dev->dev_state);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
-			diag_data_dump(stderr, data, len);
-			fprintf(stderr, "\n");
-		} else {
-			fprintf(stderr,"\n");
-		}
-	}
+			FL, (void *)dl0d, (long)len, dev->protocol, dev->dev_state);
 
 	/*
 	 * Special handling for fastinit, we need to collect up the
@@ -743,15 +709,13 @@ void *data, size_t len, unsigned int timeout) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT
-			"link %p recv upto %ld bytes timeout %u, rxlen %d "
-			"offset %d framenr %d protocol %d state %d\n",
-			FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
-			dev->dev_rdoffset, dev->dev_framenr, dev->protocol,
-			dev->dev_state);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT
+		"link %p recv upto %ld bytes timeout %u, rxlen %d "
+		"offset %d framenr %d protocol %d state %d\n",
+		FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
+		dev->dev_rdoffset, dev->dev_framenr, dev->protocol,
+		dev->dev_state);
 
 	switch (dev->dev_state) {
 		case BR_STATE_KWP_FASTINIT:
@@ -863,12 +827,9 @@ void *data, size_t len, unsigned int timeout) {
 	}
 
 	/* OK, got whole message */
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT "link %p received from BR1: ", FL, (void *)dl0d);
-		diag_data_dump(stderr, data, (size_t)xferd);
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		data, (size_t) xferd,
+		FLFMT "link %p received from BR1: ", FL, (void *)dl0d);
 
 	return xferd;
 }
@@ -901,10 +862,9 @@ br_getflags(struct diag_l0_device *dl0d) {
 			break;
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "getflags link %p proto %d flags 0x%X\n",
-			FL, (void *)dl0d, dev->protocol, flags);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		FLFMT "getflags link %p proto %d flags 0x%X\n",
+		FL, (void *)dl0d, dev->protocol, flags);
 
 	return flags;
 }

@@ -142,7 +142,7 @@ dumb_new(struct diag_l0_device *dl0d) {
 	}
 
 	dl0d->l0_int = dev;
-	
+
 	rv = diag_cfgn_tty(&dev->port);
 	if (rv != 0) {
 		free(dev);
@@ -203,10 +203,9 @@ static int dumb_open(struct diag_l0_device *dl0d, int iProtocol) {
 	assert(dl0d);
 	dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open port %s L1proto %d\n",
-			FL, dev->port.val.str, iProtocol);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "open port %s L1proto %d\n",
+		FL, dev->port.val.str, iProtocol);
 
 	/* try to open TTY */
 	dev->tty_int = diag_tty_open(dev->port.val.str);
@@ -252,9 +251,8 @@ dumb_close(struct diag_l0_device *dl0d) {
 
 	struct dumb_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
-		fprintf(stderr, FLFMT "l0 link %p closing\n", FL, (void *)dl0d);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
+		FLFMT "l0 link %p closing\n", FL, (void *)dl0d);
 
 	diag_tty_close(dev->tty_int);
 	dev->tty_int = NULL;
@@ -276,9 +274,9 @@ dumb_fastinit(struct diag_l0_device *dl0d) {
 	int rv=0;
 	uint8_t cbuf[MAXRBUF];
 
-	if (diag_l0_debug & DIAG_DEBUG_INIT) {
-		fprintf(stderr, FLFMT "dl0d=%p fastinit\n", FL, (void *)dl0d);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
+		FLFMT "dl0d=%p fastinit\n", FL, (void *)dl0d);
+
 	//Tidle before break : W5 (>300ms) on poweron; P3 (>55ms) after a StopCommunication; or 0ms after a P3 timeout.
 	// We assume the caller took care of this.
 	/* Send 25/25 ms break as initialisation pattern (TiniL) */
@@ -433,10 +431,8 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 	unsigned int tout;
 	struct diag_serial_settings set;
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "slowinit dl0d=%p address 0x%X\n",
-			FL, (void *)dl0d, in->addr);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		FLFMT "slowinit dl0d=%p address 0x%X\n", FL, (void *)dl0d, in->addr);
 
 
 	//two methods of sending at 5bps. Most USB-serial converts don't support such a slow bitrate !
@@ -530,10 +526,9 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 			return DIAG_ERR_GENERAL;
 		}
 
-		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr, FLFMT "\tgot address echo 0x%X\n", FL,
-				cbuf[0]);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			FLFMT "\tgot address echo 0x%X\n", FL, cbuf[0]);
+
 		if (diag_tty_setup(dev->tty_int, &dev->serial)) {
 			//reset original settings
 			fprintf(stderr, FLFMT "_slowinit: could not reset serial settings !\n", FL);
@@ -572,16 +567,13 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 
 	rv = diag_tty_read(dev->tty_int, cbuf, 1, tout);
 	if (rv <= 0) {
-		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr, FLFMT "\tdid not get Sync byte !\n",
-				FL);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			FLFMT "\tdid not get Sync byte !\n", FL);
+
 		return DIAG_ERR_TIMEOUT;
 	}
-	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "\tgot sync byte 0x%X!\n", FL,
-			cbuf[0]);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		FLFMT "\tgot sync byte 0x%X!\n", FL, cbuf[0]);
 
 	//If all's well at this point, we just read the sync pattern byte. L2 will take care
 	//of reading + echoing the keybytes
@@ -602,11 +594,9 @@ dumb_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	dev = (struct dumb_device *)dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-		fprintf(stderr,
-			FLFMT "device link %p info %p initbus type %d\n", FL,
-			(void *)dl0d, (void *)dev, in->type);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+		FLFMT "device link %p info %p initbus type %d\n", FL,
+		(void *)dl0d, (void *)dev, in->type);
 
 	if (!dev) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -668,14 +658,8 @@ const void *data, size_t len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "l0_send dl0d=%p len=%ld; ",
-			FL, (void *)dl0d, (long)len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
-			diag_data_dump(stderr, data, len);
-		}
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, data, len,
+		FLFMT "l0_send dl0d=%p len=%ld; ", FL, (void *)dl0d, (long)len);
 
 	if ((rv = diag_tty_write(dev->tty_int, data, len)) != (int) len) {
 		fprintf(stderr, FLFMT "dumb_send: write error\n", FL);
@@ -702,11 +686,9 @@ void *data, size_t len, unsigned int timeout) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT "_recv dl0d=%p req=%ld bytes timeout=%u\n", FL,
-			(void *)dl0d, (long)len, timeout);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "_recv dl0d=%p req=%ld bytes timeout=%u\n", FL,
+		(void *)dl0d, (long)len, timeout);
 
 	if ((rv=diag_tty_read(dev->tty_int, data, len, timeout)) <= 0) {
 		if (rv == DIAG_ERR_TIMEOUT) {
@@ -715,11 +697,9 @@ void *data, size_t len, unsigned int timeout) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if ((diag_l0_debug & DIAG_DEBUG_DATA) && (diag_l0_debug & DIAG_DEBUG_READ)) {
-		fprintf(stderr, FLFMT "Got ", FL);
-		diag_data_dump(stderr, data, (size_t)rv);
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		data, (size_t) rv, FLFMT "Got ", FL);
+
 	return rv;
 }
 

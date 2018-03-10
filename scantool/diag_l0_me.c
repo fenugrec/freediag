@@ -307,10 +307,9 @@ static int muleng_open(struct diag_l0_device *dl0d, int iProtocol) {
 	assert(dl0d);
 	dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open port %s L1proto %d\n",
-			FL, dev->port.val.str, iProtocol);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "open port %s L1proto %d\n",
+		FL, dev->port.val.str, iProtocol);
 
 	dev->protocol = iProtocol;
 
@@ -412,9 +411,8 @@ muleng_close(struct diag_l0_device *dl0d) {
 	}
 	struct muleng_device *dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_CLOSE) {
-		fprintf(stderr, FLFMT "link %p closing\n", FL, (void *)dl0d);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
+		FLFMT "link %p closing\n", FL, (void *)dl0d);
 
 	diag_tty_close(dev->tty_int);
 	dev->tty_int = NULL;
@@ -435,13 +433,9 @@ muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, FLFMT "device link %p sending to ME device: ",
-			FL, (void *)dl0d);
-		diag_data_dump(stderr, dp, txlen);
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, dp, txlen,
+		FLFMT "device link %p sending to ME device: ",
+		FL, (void *)dl0d);
 
 	/*
 	 * And send it to the interface
@@ -522,11 +516,9 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		}
 		baud = me_baud_table[rxbuf[0]];
 
-		if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr,
-				FLFMT "device link %p setting baud to %u\n", FL,
-				(void *)dl0d, baud);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			FLFMT "device link %p setting baud to %u\n",
+			FL, (void *)dl0d, baud);
 
 		if (baud) {
 			struct diag_serial_settings set;
@@ -607,12 +599,9 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-		fprintf(stderr,
-			FLFMT
-			"device link %p info %p initbus type %d proto %d\n",
-			FL, (void *)dl0d, (void *)dev, in->type, dev->protocol);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+		FLFMT "device link %p info %p initbus type %d proto %d\n",
+		FL, (void *)dl0d, (void *)dev, in->type, dev->protocol);
 
 	diag_tty_iflush(dev->tty_int); /* Empty the receive buffer, wait for idle bus */
 
@@ -656,14 +645,9 @@ const void *data, size_t len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "device link %p send %ld bytes protocol %d ",
-			FL, (void *)dl0d, (long)len, dev->protocol);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
-			diag_data_dump(stderr, data, len);
-			fprintf(stderr, "\n");
-		}
-	}
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, data, len,
+		FLFMT "device link %p send %ld bytes protocol %d ",
+		FL, (void *)dl0d, (long)len, dev->protocol);
 
 	if (dev->dev_state == MULENG_STATE_RAW) {
 		/* Raw mode, no pretty processing */
@@ -753,14 +737,11 @@ void *data, size_t len, unsigned int timeout) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT
-			"link %p recv upto %ld bytes timeout %u, rxlen %d "
-			"offset %d\n",
-			FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
-			dev->dev_rdoffset);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT
+		"link %p recv upto %ld bytes timeout %u, rxlen %d offset %d\n",
+		FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
+		dev->dev_rdoffset);
 
 	/*
 	 * Deal with 5 Baud init states where first two bytes read by
@@ -793,10 +774,9 @@ void *data, size_t len, unsigned int timeout) {
 
 	case MULENG_STATE_RAW:
 		xferd = diag_tty_read(dev->tty_int, data, len, timeout);
-		if (diag_l0_debug & DIAG_DEBUG_READ) {
-			fprintf(stderr, FLFMT "link %p read %ld bytes\n", FL,
-				(void *)dl0d, (long)xferd);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+			FLFMT "link %p read %ld bytes\n", FL, (void *)dl0d, (long)xferd);
+
 		return xferd;
 
 	case MULENG_STATE_FASTSTART:
@@ -852,12 +832,9 @@ void *data, size_t len, unsigned int timeout) {
 	}
 
 	/* OK, got whole message */
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT "link %p received from ME: ", FL, (void *)dl0d);
-		diag_data_dump(stderr, dev->dev_rxbuf, dev->dev_rxlen);
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		dev->dev_rxbuf, dev->dev_rxlen,
+		FLFMT "link %p received from ME: ", FL, (void *)dl0d);
 
 	/* Verify ME response checksum, 2nd byte onward */
 
@@ -881,15 +858,12 @@ void *data, size_t len, unsigned int timeout) {
 		dev->dev_rxlen = 0;
 		dev->resp_len = 0;
 
-		if (diag_l0_debug & DIAG_DEBUG_READ) {
-			fprintf(stderr,
-				FLFMT
-				"link %p ME returns err 0x%X : %s; s/w v 0x%X "
-				"i/f cap. 0x%X\n",
-				FL, (void *)dl0d, dev->dev_rxbuf[3],
-				me_geterr(dev->dev_rxbuf[3]), dev->dev_rxbuf[2],
-				dev->dev_rxbuf[4]);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+			FLFMT
+			"link %p ME returns err 0x%X : %s; s/w v 0x%X i/f cap. 0x%X\n",
+			FL, (void *)dl0d, dev->dev_rxbuf[3],
+			me_geterr(dev->dev_rxbuf[3]), dev->dev_rxbuf[2],
+			dev->dev_rxbuf[4]);
 
 		switch (dev->dev_rxbuf[3]) {
 		case 0x05:	/* No ISO response to request */
@@ -959,10 +933,9 @@ muleng_getflags(struct diag_l0_device *dl0d) {
 
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "getflags link %p proto %d flags 0x%X\n",
-			FL, (void *)dl0d, dev->protocol, flags);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		FLFMT "getflags link %p proto %d flags 0x%X\n",
+		FL, (void *)dl0d, dev->protocol, flags);
 
 	return flags ;
 }

@@ -50,9 +50,8 @@ diag_l3_init(void) {
 		return;
 	}
 
-	if (diag_l3_debug & DIAG_DEBUG_INIT) {
-		fprintf(stderr, FLFMT "entered diag_l3_init\n", FL);
-	}
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
+		FLFMT "entered diag_l3_init\n", FL);
 
 	diag_os_initstaticmtx(&connlist_mtx);
 
@@ -76,10 +75,9 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 
 	assert(d_l2_conn != NULL);
 
-	if (diag_l3_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "start protocol %s l2 %p\n", FL, protocol,
-			(void *)d_l2_conn);
-	}
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "start protocol %s l2 %p\n",
+		FL, protocol, (void *)d_l2_conn);
 
 	/* Find the protocol */
 	dp = NULL;
@@ -91,10 +89,8 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 	}
 
 	if (dp) {
-		if (diag_l3_debug & DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "start protocol %s found\n", FL,
-				dp->proto_name);
-		}
+		DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+			FLFMT "start protocol %s found\n", FL, dp->proto_name);
 		/*
 		 * Malloc us a L3
 		 */
@@ -135,10 +131,8 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 		diag_os_unlock(&connlist_mtx);
 	}
 
-	if (diag_l3_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "start returns %p\n", FL,
-			(void *)d_l3_conn);
-	}
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "start returns %p\n", FL, (void *)d_l3_conn);
 
 	return d_l3_conn;
 }
@@ -220,10 +214,9 @@ diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) 
 	struct diag_msg *rxmsg;
 	const struct diag_l3_proto *dl3p = dl3c->d_l3_proto;
 
-	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "_request dl3c=%p msg=%p called\n", FL,
-			(void *)dl3c, (void *)txmsg);
-	}
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT "_request dl3c=%p msg=%p called\n",
+		FL, (void *)dl3c, (void *)txmsg);
 
 	/* Call protocol specific send routine */
 	if (dl3p->diag_l3_proto_request) {
@@ -232,10 +225,9 @@ diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) 
 		rxmsg = NULL;
 	}
 
-	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "_request returns %p, err %d\n",
-				FL, (void *)rxmsg, *errval);
-	}
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT "_request returns %p, err %d\n",
+		FL, (void *)rxmsg, *errval);
 
 	if (rxmsg==NULL) {
 		return diag_pseterr(*errval);

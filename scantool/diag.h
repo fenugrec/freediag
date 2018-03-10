@@ -185,7 +185,7 @@ extern const char *dbg_prefixes[];
  *
  */
 
-
+#define DIAG_DBGLEVEL_V	0
 
 
 /** simple debug message formatter

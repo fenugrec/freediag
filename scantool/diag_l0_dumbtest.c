@@ -552,10 +552,8 @@ static int dt_open(struct diag_l0_device *dl0d, int testnum) {
 	assert(dl0d);
 	dev = dl0d->l0_int;
 
-	if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "open port %s test # %d\n",
-			FL, dev->port.val.str, testnum);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "open port %s test # %d\n", FL, dev->port.val.str, testnum);
 
 	dt_init();	 //make sure it is initted
 
@@ -690,23 +688,12 @@ const void *data, size_t len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "dt_send dl0d=%p , len=%ld. ",
-			FL, (void *)dl0d, (long)len);
-		if (diag_l0_debug & DIAG_DEBUG_DATA) {
-			diag_data_dump(stderr, data, len);
-		}
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, data, len,
+		FLFMT "dt_send dl0d=%p , len=%ld. ", FL, (void *)dl0d, (long)len);
 
 	if (diag_tty_write(dev->tty_int, data, len) != (int) len) {
 		fprintf(stderr, FLFMT "dt_send: write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
-	}
-
-	if ( (diag_l0_debug & (DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA)) ==
-			(DIAG_DEBUG_WRITE|DIAG_DEBUG_DATA) ) {
-		fprintf(stderr, "\n");
 	}
 
 	return 0;

@@ -60,9 +60,8 @@ diag_l1_init(void) {
 		return 0;
 	}
 
-	if (diag_l1_debug & DIAG_DEBUG_INIT) {
-		fprintf(stderr, FLFMT "entered diag_l1_init\n", FL);
-	}
+	DIAG_DBGM(diag_l1_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
+		FLFMT "entered diag_l1_init\n", FL);
 
 	/* Now call the init routines for the L0 devices */
 
@@ -95,10 +94,9 @@ int diag_l1_end(void) {
  */
 int
 diag_l1_open(struct diag_l0_device *dl0d, int l1protocol) {
-	if (diag_l1_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "diag_l1_open(0x%p, l1 proto=%d\n", FL,
-			(void *)dl0d, l1protocol);
-	}
+	DIAG_DBGM(diag_l1_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "diag_l1_open(0x%p, l1 proto=%d\n",
+		FL, (void *)dl0d, l1protocol);
 
 	/* Check h/w supports this l1 protocol */
 	if ((dl0d->dl0->l1proto_mask & l1protocol) == 0) {
@@ -113,10 +111,9 @@ diag_l1_open(struct diag_l0_device *dl0d, int l1protocol) {
 //specified diag_l0_device.
 void
 diag_l1_close(struct diag_l0_device *dl0d) {
-	if (diag_l1_debug & DIAG_DEBUG_CLOSE) {
-		fprintf(stderr, FLFMT "entering diag_l1_close: dl0d=%p\n", FL,
-			(void *)dl0d);
-	}
+	DIAG_DBGM(diag_l1_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
+		FLFMT "entering diag_l1_close: dl0d=%p\n", FL, (void *)dl0d);
+
 	if (dl0d) {
 		diag_l0_close(dl0d);
 	}
@@ -153,14 +150,9 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 
 	l0flags = diag_l1_getflags(dl0d);
 
-	if (diag_l1_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "_send: len=%d P4=%u l0flags=0x%X; ", FL,
-				(int) len, p4, l0flags);
-		if (diag_l1_debug & DIAG_DEBUG_DATA) {
-			diag_data_dump(stderr, data, len);
-		}
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l1_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, data, len,
+		FLFMT "_send: len=%d P4=%u l0flags=0x%X; ",
+		FL, (int) len, p4, l0flags);
 
 	/*
 	 * If p4 is zero and not in half duplex mode, or if
@@ -256,10 +248,9 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l1_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "_recv request len=%d, timeout=%u;", FL,
-			(int)len, timeout);
-	}
+	DIAG_DBGM(diag_l1_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "_recv request len=%d, timeout=%u;",
+		FL, (int)len, timeout);
 
 	if (timeout == 0) {
 		fprintf(stderr,
@@ -274,13 +265,9 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 		return DIAG_ERR_TIMEOUT;
 	}
 
-	if ((rv>0) &&
-			(diag_l1_debug & DIAG_DEBUG_DATA) && (diag_l1_debug & DIAG_DEBUG_READ)) {
-		fprintf(stderr, "got %d bytes, ",rv);
-		diag_data_dump(stderr, data, (size_t)rv);
-	}
-	if (diag_l1_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, "\n");
+	if (rv>0) {
+		DIAG_DBGMDATA(diag_l1_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+			data, (size_t) rv, "got %d bytes; ",rv);
 	}
 
 	return rv;

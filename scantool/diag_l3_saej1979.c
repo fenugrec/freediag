@@ -234,10 +234,9 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 	/* Get l2 connection info */
 	d_conn = d_l3_conn->d_l3l2_conn;
 
-	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "send %d bytes, l2 flags 0x%X\n", FL,
-			msg->len, d_l3_conn->d_l3l2_flags);
-	}
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT "send %d bytes, l2 flags 0x%X\n",
+		FL, msg->len, d_l3_conn->d_l3l2_flags);
 
 	//and make sure src address was set in msg:
 	if (!msg->src) {
@@ -273,12 +272,10 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg) {
 	struct diag_l3_conn *d_l3_conn = (struct diag_l3_conn *)handle;
 	struct l3_j1979_int *l3i = d_l3_conn->l3_int;
 
-	if (diag_l3_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT
-			"rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n",
-			FL, msg->len, msg->fmt, l3i->rxoffset);
-	}
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT
+		"rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n",
+		FL, msg->len, msg->fmt, l3i->rxoffset);
 
 	if (msg->fmt & DIAG_FMT_FRAMED) {
 		/* Send data upward if needed */
@@ -326,14 +323,10 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn) {
 		sae_msglen = diag_l3_j1979_getlen(l3i->rxbuf,
 					l3i->rxoffset);	//set expected packet length based on SID + TID
 
-		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr,FLFMT "process_data rxoffset is %d sae_msglen is %ld\n",
-				FL, l3i->rxoffset, (long)sae_msglen);
-			fprintf(stderr,FLFMT "process_data hex data is ",
-				FL);
-			diag_data_dump(stderr, l3i->rxbuf, l3i->rxoffset -1);
-			fprintf(stderr,"\n");
-		}
+		DIAG_DBGMDATA(diag_l3_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			l3i->rxbuf, l3i->rxoffset -1,
+			FLFMT "process_data rxoffset is %d sae_msglen is %ld; \n",
+			FL, l3i->rxoffset, (long)sae_msglen);
 
 		if (sae_msglen < 0 || sae_msglen > 255) {
 			if (sae_msglen == DIAG_ERR_INCDATA) {
@@ -462,10 +455,9 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 				break;
 		}
 
-		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr, FLFMT "recv state %d tout %u\n", FL,
-				state, tout);
-		}
+		DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			FLFMT "recv state %d tout %u\n",
+			FL, state, tout);
 
 		/*
 		 * Call L2 receive, L2 will build up the datapacket and
@@ -475,9 +467,8 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 		rv = diag_l2_recv(d_l3_conn->d_l3l2_conn, tout,
 			diag_l3_rcv_callback, (void *)d_l3_conn);
 
-		if (diag_l3_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr, FLFMT "recv returns %d\n", FL, rv);
-		}
+		DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			FLFMT "recv returns %d\n", FL, rv);
 
 		if ((rv < 0) && (rv != DIAG_ERR_TIMEOUT)) {
 			break; /* Some nasty failure */
@@ -503,12 +494,9 @@ diag_l3_j1979_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 			/* Process the data into messages */
 			diag_l3_j1979_process_data(d_l3_conn);
 
-			if (diag_l3_debug & DIAG_DEBUG_PROTO) {
-				fprintf(stderr,
-					FLFMT
-					"recv process_data called, msg %p\n",
-					FL, (void *)d_l3_conn->msg);
-			}
+			DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+				FLFMT "recv process_data called, msg %p\n",
+				FL, (void *)d_l3_conn->msg);
 
 			/*
 			 * If there is a full message, remove it, call back
@@ -745,10 +733,9 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
 	}
 
-	if (diag_l3_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "keepalive : got %u bytes, %02X ...\n",
-			FL, rxmsg->len, rxmsg->data[0]);
-	}
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		FLFMT "keepalive : got %u bytes, %02X ...\n",
+		FL, rxmsg->len, rxmsg->data[0]);
 
 	/* Check if its a valid SID 1 PID 0 response */
 	if ((rxmsg->len < 1) || (rxmsg->data[0] != 0x41)) {
@@ -822,12 +809,11 @@ diag_l3_j1979_timer(struct diag_l3_conn *d_l3_conn, unsigned long ms) {
 	}
 
 	/* OK, do keep alive on this connection */
+	/* XXX Not async-signal-safe */
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
+		FLFMT "\nP3 timeout impending for %p %lu ms\n",
+		FL, (void *)d_l3_conn, ms);
 
-	if (diag_l3_debug & DIAG_DEBUG_TIMER) {
-		/* XXX Not async-signal-safe */
-		fprintf(stderr, FLFMT "\nP3 timeout impending for %p %lu ms\n",
-				FL, (void *)d_l3_conn, ms);
-	}
 	diag_l2_debug=0;	//disable
 	diag_l1_debug=0;
 
