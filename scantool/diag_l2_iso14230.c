@@ -321,11 +321,9 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 				 */
 				diag_l2_addmsg(d_l2_conn, tmsg);
 				if (d_l2_conn->diag_msg == tmsg) {
-					if (diag_l2_debug & DIAG_DEBUG_DATA) {
-						DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-							tmsg->data, tmsg->len,
-							FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
-					}
+					DIAG_DBGMDATA(diag_l2_debug, (DIAG_DEBUG_PROTO | DIAG_DEBUG_DATA),
+						 DIAG_DBGLEVEL_V, tmsg->data, tmsg->len,
+						FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
 				}
 				state = ST_STATE3;
 				continue;
@@ -954,10 +952,8 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		len++;				/* + checksum */
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_DATA) {
-		DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, buf, len,
-			FLFMT "_send: ", FL);
-	}
+	DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, buf, len,
+		FLFMT "_send: ", FL);
 
 	/* Wait p3min milliseconds, but not if doing fast/slow init */
 	if (dp->state == STATE_ESTABLISHED) {

@@ -315,11 +315,9 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 		//will be interested in an ACK reply)
 		if (d_l2_conn->diag_msg == NULL && (tmsg->type == KWP1281_SID_ACK || tmsg->type == KWP1281_SID_NO_ACK)) {
 			diag_l2_addmsg(d_l2_conn, tmsg);
-			if (diag_l2_debug & DIAG_DEBUG_DATA) {
-				DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-						tmsg->data, tmsg->len,
-						FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
-			}
+			DIAG_DBGMDATA(diag_l2_debug, (DIAG_DEBUG_PROTO | DIAG_DEBUG_DATA),
+				DIAG_DBGLEVEL_V, tmsg->data, tmsg->len,
+				FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
 			break;
 		}
 
@@ -372,11 +370,9 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 			//add the new block to the telegram
 			diag_l2_addmsg(d_l2_conn, tmsg);
 			if (d_l2_conn->diag_msg == tmsg) {
-				if (diag_l2_debug & DIAG_DEBUG_DATA) {
-					DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-						tmsg->data, tmsg->len,
-						FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
-				}
+				DIAG_DBGMDATA(diag_l2_debug, (DIAG_DEBUG_PROTO | DIAG_DEBUG_DATA),
+					DIAG_DBGLEVEL_V, tmsg->data, tmsg->len,
+					FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
 			}
 			//reset the counter of No Ack Retry messages received in a row
 			na_retry_cnt = 0;

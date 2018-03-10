@@ -230,11 +230,14 @@ void sim_dump_ecu_responses(struct sim_ecu_response *resp_p) {
 	uint8_t count = 0;
 
 	LL_FOREACH(resp_p, tresp) {
-		fprintf(stderr, FLFMT "response #%d: %s", FL, count, tresp->text);
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
+			FLFMT "response #%d: %s", FL, count, tresp->text);
 		count++;
 	}
 
-	fprintf(stderr, FLFMT "%d responses in queue.\n", FL, count);
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
+		FLFMT "%d responses in queue.\n", FL, count);
+	return;
 }
 
 
@@ -725,9 +728,7 @@ sim_send(struct diag_l0_device *dl0d,
 	// Build the list of responses for this request.
 	sim_find_responses(&dev->sim_last_ecu_responses, dev->fp, data, (uint8_t) len);
 
-	if (diag_l0_debug & DIAG_DEBUG_DATA) {
-		sim_dump_ecu_responses(dev->sim_last_ecu_responses);
-	}
+	sim_dump_ecu_responses(dev->sim_last_ecu_responses);
 
 	return 0;
 }

@@ -182,23 +182,17 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 		"Time between sensor transitions"
 		};
 
-	if (diag_cli_debug & DIAG_DEBUG_DATA) {
-		fprintf(stderr,
-			"scantool: Got handle %p; %d bytes of data, src=0x%X, "
-			"dest=0x%X\n",
-			handle, msg->len, msg->src, msg->dest);
-		diag_printmsg(stdout, msg, 0);
-	}
+	DIAG_DBGMDATA(diag_cli_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
+		msg->data, msg->len,
+		"scantool: Got handle %p; %d bytes of data, src=0x%X, dest=0x%X; ",
+		handle, msg->len, msg->src, msg->dest);
 
 	/* Deal with the diag type responses (send/recv/watch) */
 	switch (ihandle) {
 	/* There is no difference between watch and decode ... */
 		case RQST_HANDLE_WATCH:
 		case RQST_HANDLE_DECODE:
-			if (!(diag_cli_debug & DIAG_DEBUG_DATA)) {
-				/* Print data (unless done already) */
-					diag_printmsg(stdout, msg, 0);
-			}
+			diag_printmsg(stdout, msg, 0);
 			return;
 			break;
 		default:

@@ -873,11 +873,8 @@ void *data, size_t len, unsigned int timeout) {
 			break;
 
 		default:
-			if ( !(diag_l0_debug & DIAG_DEBUG_READ)) {
-				//don't print the error twice
-				fprintf(stderr, FLFMT "ME : error 0x%0X, %s\n.", FL,
-					dev->dev_rxbuf[3], me_geterr(dev->dev_rxbuf[3]) );
-			}
+			fprintf(stderr, FLFMT "ME error 0x%0X: %s\n.", FL,
+				dev->dev_rxbuf[3], me_geterr(dev->dev_rxbuf[3]) );
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 		/* NOTREACHED */

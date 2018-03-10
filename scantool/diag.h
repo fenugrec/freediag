@@ -198,7 +198,7 @@ extern const char *dbg_prefixes[];
  *
  */
 #define DIAG_DBGM(flagvar, mask, level, ...) do { \
-	if ((flagvar) & (mask)) { \
+	if (((flagvar) & (mask)) == (mask)) { \
 		fprintf(stderr, __VA_ARGS__); \
 	}} while (0)
 
@@ -214,7 +214,7 @@ extern const char *dbg_prefixes[];
  *
  */
 #define DIAG_DBGMDATA(flagvar, mask, level, data, datalen, ...) do { \
-	if ((flagvar) & (mask)) { \
+	if (((flagvar) & (mask)) == (mask)) { \
 		fprintf(stderr, __VA_ARGS__); \
 		if ((flagvar) & DIAG_DEBUG_DATA) { \
 			diag_data_dump(stderr, data, datalen); \
