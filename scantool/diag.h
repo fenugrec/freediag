@@ -178,6 +178,51 @@ enum debug_prefix {
  */
 extern const char *dbg_prefixes[];
 
+
+/**** debug message fomatters.
+ *
+ * These macros will allow changing the backend and destination (stderr, file, etc)
+ *
+ */
+
+
+
+
+/** simple debug message formatter
+ *
+ * flagvar is the i.e. "diag_l1_debug" that is checked against mask.
+ * mask: see DIAG_DEBUG_* defs above
+ * level: not used yet
+ *
+ * Must be used for all non-essential messages. Does not add "\n"
+ *
+ */
+#define DIAG_DBGM(flagvar, mask, level, ...) do { \
+	if ((flagvar) & (mask)) { \
+		fprintf(stderr, __VA_ARGS__); \
+	}} while (0)
+
+/** debug message formatter with data
+ *
+ * flagvar is the i.e. "diag_l1_debug" that is checked against mask.
+ * mask: see DIAG_DEBUG_* defs above. No need to specify DIAG_DEBUG_DATA
+ * level: not used yet
+ *
+ * varargs: always printed. Automatically adds trailing "\n"
+ *
+ * Must be used for all non-essential messages.
+ *
+ */
+#define DIAG_DBGMDATA(flagvar, mask, level, data, datalen, ...) do { \
+	if ((flagvar) & (mask)) { \
+		fprintf(stderr, __VA_ARGS__); \
+		if ((flagvar) & DIAG_DEBUG_DATA) { \
+			diag_data_dump(stderr, data, datalen); \
+		} \
+		fprintf(stderr, "\n"); \
+	}} while (0)
+
+
 /*
  * Message handling.
  *
