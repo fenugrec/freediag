@@ -179,13 +179,22 @@ enum debug_prefix {
 extern const char *dbg_prefixes[];
 
 
-/**** debug message fomatters.
+/**** debug message helpers.
  *
  * These macros will allow changing the backend and destination (stderr, file, etc)
  *
  */
 
 #define DIAG_DBGLEVEL_V	0
+
+/** for diag.h internal use only */
+#define DIAG_DBG_BACKEND(...) fprintf(stderr, __VA_ARGS__)
+
+
+/** print general debug message
+ *
+ */
+#define DIAG_DBGGEN(level, ...) DIAG_DBG_BACKEND(__VA_ARGS__);
 
 
 /** simple debug message formatter
@@ -199,7 +208,7 @@ extern const char *dbg_prefixes[];
  */
 #define DIAG_DBGM(flagvar, mask, level, ...) do { \
 	if (((flagvar) & (mask)) == (mask)) { \
-		fprintf(stderr, __VA_ARGS__); \
+		DIAG_DBG_BACKEND(__VA_ARGS__); \
 	}} while (0)
 
 /** debug message formatter with data
@@ -215,7 +224,7 @@ extern const char *dbg_prefixes[];
  */
 #define DIAG_DBGMDATA(flagvar, mask, level, data, datalen, ...) do { \
 	if (((flagvar) & (mask)) == (mask)) { \
-		fprintf(stderr, __VA_ARGS__); \
+		DIAG_DBG_BACKEND(__VA_ARGS__); \
 		if ((flagvar) & DIAG_DEBUG_DATA) { \
 			diag_data_dump(stderr, data, datalen); \
 		} \
@@ -312,17 +321,27 @@ void smartcat(char *p1, const size_t s1, const char *p2 );
 
 /*
  * Error functions.
- * "pflseterr" and "iflseterr" aren't intended to be called directly.
+ * diag_p_* aren't intended to be called directly.
  * Use "diag_pseterr" (returns a NULL pointer) or
  * "diag_iseterr" (returns the passed in error code),
  * which will save where the error took place and optionally log it.
  */
 
-void *diag_pflseterr(const char *name, const int line, const int code);
-int diag_iflseterr(const char *name, const int line, const int code);
+void *diag_p_pseterr(const char *name, const int line, const int code);
+int diag_p_iseterr(const char *name, const int line, const int code);
+void *diag_p_pfwderr(const char *name, const int line, const int code);
+int diag_p_ifwderr(const char *name, const int line, const int code);
 
-#define diag_pseterr(C) diag_pflseterr(CURFILE, __LINE__, (C))
-#define diag_iseterr(C) diag_iflseterr(CURFILE, __LINE__, (C))
+/** return NULL, set and print error. */
+#define diag_pseterr(C) diag_p_pseterr(CURFILE, __LINE__, (C))
+/** return (C), set and print error. */
+#define diag_iseterr(C) diag_p_iseterr(CURFILE, __LINE__, (C))
+
+/** return NULL, print error as a debug msg */
+#define diag_pfwderr(C) diag_p_pfwderr(CURFILE, __LINE__, (C))
+/** return (C), print error as a debug msg */
+#define diag_ifwderr(C) diag_p_ifwderr(CURFILE, __LINE__, (C))
+
 
 /** Return the last error and clears it.
  */

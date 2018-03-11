@@ -110,7 +110,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 
 			if (rv < 0) {
 				*errval = rv;
-				return diag_pseterr(rv);
+				return diag_pfwderr(rv);
 			}
 			dp->msg_finish_time = diag_os_gethrt();
 			//currently the only framed L0 for KW1281 is carsim, so don't bother validating sequence number
@@ -154,7 +154,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 					//and we should try to go on as if we have received it
 					if (dp->rxoffset < dp->rxbuf[0] || rv != DIAG_ERR_TIMEOUT) {
 						*errval = rv;
-						return diag_pseterr(rv);
+						return diag_pfwderr(rv);
 					}
 				} else {
 					//the first byte of the re-started message has arrived, so just reset the rxoffset
@@ -163,7 +163,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 				}
 			} else {
 				*errval = rv;
-				return diag_pseterr(rv);
+				return diag_pfwderr(rv);
 			}
 		}
 		//now we can set the flag indicating that the initialization
@@ -197,7 +197,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 				rv = diag_l2_send(d_l2_conn, &noack);
 				if (rv < 0) {
 					*errval = rv;
-					return diag_pseterr(rv);
+					return diag_pfwderr(rv);
 				}
 				//set the old sequence number again
 				//NOTE: SAE J2818 says that "The Message number is NOT incremented by the transmitter for a repeated block."
@@ -233,7 +233,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 
 		if (rv < 0) {
 			*errval = rv;
-			return diag_pseterr(rv);
+			return diag_pfwderr(rv);
 		}
 	}
 
@@ -305,7 +305,7 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 				diag_freemsg(d_l2_conn->diag_msg);
 				d_l2_conn->diag_msg = NULL;
 			}
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		//if this is the first messag sent by the ECU in the current telegram and this is either
@@ -384,7 +384,7 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 			//clean up and set the error code
 			diag_freemsg(d_l2_conn->diag_msg);
 			d_l2_conn->diag_msg = NULL;
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		//re-calculate the message timeout
@@ -416,7 +416,7 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 
 	rv = diag_calloc(&dp, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
@@ -441,7 +441,7 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 	if (rv < 0) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	//Flush unread input, then wait for idle bus.
@@ -456,7 +456,7 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 	if (rv < 0) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	//Mode bytes are in 7-Odd-1, read as 8N1 and ignore parity
@@ -464,13 +464,13 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 	if (rv < 0) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, &cbuf[1], 1, KWP1281_T_R3_MAX);
 	if (rv < 0) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
@@ -495,7 +495,7 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 		if (rv < 0) {
 			free(dp);
 			d_l2_conn->diag_l2_proto_data=NULL;
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 	}
 	//update the message finish time so that when waiting for the first ECU message
@@ -514,7 +514,7 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 		//we cannot do anything about it here; so just report the error and leave
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	//the first telegram is now stored in d_l2_conn->diag_msg - copy its address
 	//to the dp->ecu_id_telegram pointer
@@ -598,7 +598,7 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 				FLFMT "after send, rv=%d\n", FL, rv);
 
 			if (rv < 0) {
-				return diag_iseterr(rv);
+				return diag_ifwderr(rv);
 			}
 			dp->msg_finish_time = diag_os_gethrt();
 			break;
@@ -614,7 +614,7 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 			FL, rv, dp->rxoffset);
 
 		if (rv < 0) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		//have we just written the last byte? if so, then no inverted response will arrive
@@ -635,7 +635,7 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 			//finish communication if exceeded the max number of retries or if some other error than timeout
 			if (++retries > KWP1281_TO_RETRIES ||
 			    rv != DIAG_ERR_TIMEOUT) {
-				return diag_iseterr(rv);
+				return diag_ifwderr(rv);
 			}
 			//retry sending the message
 			dp->rxoffset = 0;
@@ -749,14 +749,14 @@ dl2p_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errv
 		rv = diag_l2_send(d_l2_conn, msg);
 		if (rv < 0) {
 			*errval = rv;
-			return diag_pseterr(rv);
+			return diag_pfwderr(rv);
 		}
 
 		//and receive the response telegram
 		rv = diag_l2_vag_int_recv(d_l2_conn, KWP1281_T_RB_MAX);
 		if (rv < 0) {
 			*errval = rv;
-			return diag_pseterr(rv);
+			return diag_pfwderr(rv);
 		}
 
 		//if it isn't No Acknowledge - Retry, then ok

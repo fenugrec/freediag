@@ -85,7 +85,7 @@ target_type target, source_type source) {
 
 	rv = diag_calloc(&dp, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
@@ -212,7 +212,7 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 				buf, (size_t)offset, 0);
 
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_ifwderr(rv):0 ;
 }
 
 /*

@@ -551,7 +551,7 @@ cmd_850_connect(int argc, char **argv) {
 	rv = diag_l2_open(dl0d, global_cfg.L1proto);
 	if (rv) {
 		fprintf(stderr, "cmd_850_connect: diag_l2_open failed\n");
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	global_l2_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
@@ -593,7 +593,7 @@ cmd_850_connect(int argc, char **argv) {
 		ecu_id = NULL;
 		rv = diag_l2_recv(global_l2_conn, 300, ecu_id_callback, &ecu_id);
 		if (rv < 0) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 		if (ecu_id == NULL) {
 			return diag_iseterr(DIAG_ERR_NOMEM);
@@ -910,7 +910,7 @@ read_family(int argc, char **argv, enum namespace ns) {
 
 	rv = diag_calloc(&items, count);
 	if (rv) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	for (i=0; i<count; i++) {
@@ -1108,12 +1108,12 @@ cmd_850_freeze_all(void) {
 
 	rv = diag_calloc(&argbuf, 5);
 	if (rv) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	rv = diag_calloc(&argvout, count+1);
 	if (rv) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	p = argbuf;

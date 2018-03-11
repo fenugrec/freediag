@@ -328,13 +328,13 @@ static int muleng_open(struct diag_l0_device *dl0d, int iProtocol) {
 
 	if ((rv=diag_tty_setup(dev->tty_int, &set))) {
 		muleng_close(dl0d);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/* And set DTR high and RTS low to power the device */
 	if ((rv=diag_tty_control(dev->tty_int, 1, 0))) {
 		muleng_close(dl0d);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	diag_tty_iflush(dev->tty_int);	/* Flush unread input */
@@ -353,7 +353,7 @@ muleng_new(struct diag_l0_device *dl0d) {
 
 	rv = diag_calloc(&dev, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	dl0d->l0_int = dev;
@@ -361,7 +361,7 @@ muleng_new(struct diag_l0_device *dl0d) {
 	rv = diag_cfgn_tty(&dev->port);
 	if (rv != 0) {
 		free(dev);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	dev->port.next = &dev->dev_addr;
 
@@ -488,7 +488,7 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 	 */
 	(void)muleng_txcksum(txbuf);
 	if ((rv = muleng_write(dl0d, txbuf, 15))) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/*
@@ -539,7 +539,7 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		 * Should get an ack back, rather than an error response
 		 */
 		if ((rv = diag_tty_read(dev->tty_int, rxbuf, 14, 200)) < 0) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		if (rxbuf[1] == ME_RESP_ERROR) {
@@ -556,15 +556,15 @@ muleng_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 		(void)muleng_txcksum(txbuf);
 		rv = muleng_write(dl0d, txbuf, 15);
 		if (rv < 0) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		if ((rv = diag_tty_read(dev->tty_int, rxbuf, 14, 200)) < 0) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		if (rxbuf[1] == ME_RESP_ERROR) { /* Error */
-			return diag_iseterr(rv);
+			return diag_iseterr(DIAG_ERR_ECUSAIDNO);
 		}
 		/*
 		 * Store the keybytes

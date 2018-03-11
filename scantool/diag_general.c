@@ -83,17 +83,17 @@ int diag_init(void) { // returns 0 if normal exit
 	// XXX This is interesting: the following functions only ever return 0...
 
 	if ((rv = diag_l1_init())) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	if ((rv = diag_l2_init())) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	diag_l3_init();
 
 	diag_atomic_init(&periodic_done_wrapper);
 	if ((rv = diag_os_init())) {
 		diag_atomic_del(&periodic_done_wrapper);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	diag_dtc_init();
@@ -151,7 +151,7 @@ diag_allocmsg(size_t datalen) {
 
 	rv = diag_calloc(&newmsg, 1);
 	if (rv != 0) {
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	newmsg->iflags |= DIAG_MSG_IFLAG_MALLOC;
@@ -160,7 +160,7 @@ diag_allocmsg(size_t datalen) {
 		rv = diag_calloc(&newmsg->idata, datalen);
 		if (rv != 0) {
 			free(newmsg);
-			return diag_pseterr(rv);
+			return diag_pfwderr(rv);
 		}
 	} else {
 		newmsg->idata = NULL;
@@ -358,9 +358,8 @@ diag_errlookup(const int code) {
 	return ill_str;
 }
 
-//do not call diag_pflseterr; refer to diag.h for related macros
-void *
-diag_pflseterr(const char *name, const int line, const int code) {
+//do not call diag_pflseterr etc; refer to diag.h for related macros
+void *diag_p_pseterr(const char *name, const int line, const int code) {
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
 	if (latchedCode == 0) {
 		latchedCode = code;
@@ -369,13 +368,22 @@ diag_pflseterr(const char *name, const int line, const int code) {
 	return NULL;
 }
 
-int
-diag_iflseterr(const char *name, const int line, const int code) {
+int diag_p_iseterr(const char *name, const int line, const int code) {
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
 	if (latchedCode == 0) {
 		latchedCode = code;
 	}
 
+	return code;
+}
+
+void *diag_p_pfwderr(const char *name, const int line, const int code) {
+	DIAG_DBGGEN(DIAG_DBGLEVEL_V, "%s:%d: %s.\n", name, line, diag_errlookup(code));
+	return NULL;
+}
+
+int diag_p_ifwderr(const char *name, const int line, const int code) {
+	DIAG_DBGGEN(DIAG_DBGLEVEL_V, "%s:%d: %s.\n", name, line, diag_errlookup(code));
 	return code;
 }
 

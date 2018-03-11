@@ -79,7 +79,7 @@ UNUSED(source_type source)) {
 	/* Set the speed as shown */
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, (void *) &set);
 	if (rv < 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/* Flush unread input, then wait for idle bus. */
@@ -93,7 +93,7 @@ UNUSED(source_type source)) {
 	in.addr = target;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 	if (rv < 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/*
@@ -103,12 +103,12 @@ UNUSED(source_type source)) {
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		cbuf, 1, 100);
 	if (rv < 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 		&cbuf[1], 1, 100);
 	if (rv < 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
@@ -347,7 +347,7 @@ dl2p_mb1_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		txbuf, txbuf[2], d_l2_conn->diag_l2_p4min);
 
 
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_ifwderr(rv):0 ;
 }
 
 static struct diag_msg *

@@ -398,7 +398,7 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 				dp->first_frame);
 
 			if (rv <= 0 || rv > 260) { /* decode failure */
-				return diag_iseterr(rv);
+				return diag_iseterr(DIAG_ERR_BADDATA);
 			}
 
 			// check for sufficient data: (rv = expected len = hdrlen + datalen + ckslen)
@@ -523,7 +523,7 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 	rv = diag_calloc(&dp, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
@@ -566,7 +566,7 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	if ((rv=diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, (void *) &set))) {
 			free(dp);
 			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 	}
 
 	dp->state = STATE_CONNECTING ;
@@ -885,7 +885,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DATAONLY) {
 		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
 				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
-		return rv? diag_iseterr(rv):0;
+		return rv? diag_ifwderr(rv):0;
 	}
 
 	/* Build the new message */
@@ -963,7 +963,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
 		buf, len, d_l2_conn->diag_l2_p4min);
 
-	return rv? diag_iseterr(rv):0;
+	return rv? diag_ifwderr(rv):0;
 }
 
 /*
@@ -1030,7 +1030,7 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	rv = diag_l2_send(d_l2_conn, msg);
 	if (rv < 0) {
 		*errval = rv;
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	while (1) {
@@ -1044,7 +1044,7 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 				if (rv == DIAG_ERR_TIMEOUT) {
 					return NULL;
 				}
-				return diag_pseterr(rv);
+				return diag_pfwderr(rv);
 			}
 		}
 

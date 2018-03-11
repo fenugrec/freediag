@@ -814,7 +814,7 @@ rc_file(void) {
 	char *inihomeinit;
 	rv = diag_malloc(&inihomeinit, strlen(progname) + strlen(".ini") + 1);
 	if (rv != 0) {
-		diag_iseterr(rv);
+		diag_ifwderr(rv);
 		return CMD_OK;
 	}
 

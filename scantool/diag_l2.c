@@ -252,12 +252,12 @@ diag_l2_open(struct diag_l0_device *dl0d, int L1protocol) {
 
 	rv = diag_l1_open(dl0d, L1protocol);
 	if (rv) {
-		return diag_iseterr(rv);	//forward error to next level
+		return diag_ifwderr(rv);	//forward error to next level
 	}
 
 	/* Create the L2 link */
 	if ((rv=diag_calloc(&dl2l, 1))) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	dl2l->l2_dl0d = dl0d;
@@ -372,7 +372,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	rv = diag_calloc(&d_l2_conn, 1);
 	if (rv != 0) {
 		diag_os_unlock(&l2internal.connlist_mtx);
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 	d_l2_conn->diag_link = dl2l;
 
@@ -432,7 +432,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 		free(d_l2_conn);
 		diag_os_unlock(&l2internal.connlist_mtx);
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	/*
@@ -515,7 +515,7 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	}
 
 
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_ifwderr(rv):0 ;
 }
 
 /*
@@ -539,7 +539,7 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
 		FL, (void *)rxmsg, *errval);
 
 	if (rxmsg==NULL) {
-		return diag_pseterr(*errval);
+		return diag_pfwderr(*errval);
 	}
 		//update timers
 	d_l2_conn->tlast = diag_os_getms();
@@ -641,5 +641,5 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data) 
 		break;
 	}
 
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_ifwderr(rv):0 ;
 }

@@ -58,7 +58,7 @@ int diag_cfg_setstr(struct cfgi *cfgp, const char *str) {
 	}
 	rv = diag_malloc(&cfgp->val.str, slen+1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	cfgp->dyn_val = 1;	//need to free
 	strcpy(cfgp->val.str, str);
@@ -148,7 +148,7 @@ char *diag_cfg_getstr(struct cfgi *cfgp) {
 
 	rv = diag_malloc(&str, len);
 	if (rv != 0) {
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	snprintf(str, len, fmt, cfgp->val.str);
@@ -312,12 +312,12 @@ int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const c
 	cfgp->type = CFGT_STR;
 	rv = diag_malloc(&dval, strlen(def)+1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	rv = diag_malloc(&val, strlen(def)+1);
 	if (rv != 0) {
 		free(dval);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	cfgp->dval.str = dval;

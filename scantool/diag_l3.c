@@ -96,7 +96,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 		 */
 		rv = diag_calloc(&d_l3_conn, 1);
 		if (rv != 0) {
-			return diag_pseterr(rv);
+			return diag_pfwderr(rv);
 		}
 
 		d_l3_conn->d_l3l2_conn = d_l2_conn;
@@ -116,7 +116,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 		rv = dp->diag_l3_proto_start(d_l3_conn);
 		if (rv < 0) {
 			free(d_l3_conn);
-			return diag_pseterr(rv);
+			return diag_pfwderr(rv);
 		}
 		/*
 		 * Set time to now
@@ -152,7 +152,7 @@ int diag_l3_stop(struct diag_l3_conn *d_l3_conn) {
 
 	free(d_l3_conn);
 
-	return rv? diag_iseterr(rv):0;
+	return rv? diag_ifwderr(rv):0;
 }
 
 int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
@@ -165,7 +165,7 @@ int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 		d_l3_conn->timer = diag_os_getms();
 	}
 
-	return rv? diag_iseterr(rv):0;
+	return rv? diag_ifwderr(rv):0;
 }
 
 int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
@@ -183,7 +183,7 @@ int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 	if (rv == DIAG_ERR_TIMEOUT) {
 		return rv;
 	}
-	return rv? diag_iseterr(rv):0;
+	return rv? diag_ifwderr(rv):0;
 }
 
 
@@ -230,7 +230,7 @@ diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) 
 		FL, (void *)rxmsg, *errval);
 
 	if (rxmsg==NULL) {
-		return diag_pseterr(*errval);
+		return diag_pfwderr(*errval);
 	}
 		//update timers
 	dl3c->timer = diag_os_getms();
@@ -317,7 +317,7 @@ struct diag_msg *diag_l3_base_request(struct diag_l3_conn *dl3c,
 	rxmsg = diag_l2_request(dl3c->d_l3l2_conn, txmsg, errval);
 
 	if (rxmsg == NULL) {
-		return diag_pseterr(*errval);
+		return diag_pfwderr(*errval);
 	}
 	dl3c->timer=diag_os_getms();
 

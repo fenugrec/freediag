@@ -82,7 +82,7 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 	in.addr = address;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 	if (rv < 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) {
@@ -136,7 +136,7 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 					&inv_kb2, 1, 0);
 		if (rv < 0) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		// Wait for the address byte inverted:
@@ -151,7 +151,7 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 				"wakeupECU(dl2conn %p) did not get "
 				"inv. address; rx error %d\n",
 				FL, (void *)d_l2_conn, rv);
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		// Check the received inverted address:
@@ -191,7 +191,7 @@ dl2p_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 
 	rv = diag_calloc(&dp, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	dp->srcaddr = source;
@@ -217,7 +217,7 @@ dl2p_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	if ((rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set))) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	// Initialize ECU (unless if in monitor mode):
@@ -442,8 +442,7 @@ dl2p_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 					// Copy data into a message.
 					tmsg = diag_allocmsg((size_t)dp->rxoffset);
 					if (tmsg == NULL) {
-						return diag_iseterr(
-							DIAG_ERR_NOMEM);
+						return diag_iseterr(DIAG_ERR_NOMEM);
 					}
 					memcpy(tmsg->data, dp->rxbuf,
 						(size_t)dp->rxoffset);
@@ -627,7 +626,7 @@ dl2p_iso9141_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 		d_l2_conn->diag_msg = NULL;
 	}
 
-	return (rv<0)? diag_iseterr(rv):0 ;
+	return (rv<0)? diag_ifwderr(rv):0 ;
 }
 
 /*
@@ -674,7 +673,7 @@ dl2p_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DATAONLY) {
 		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
 				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
-		return rv? diag_iseterr(rv):0;
+		return rv? diag_ifwderr(rv):0;
 	}
 
 	/* add ISO9141-2 header */
@@ -701,7 +700,7 @@ dl2p_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 			buf, (size_t)offset, d_l2_conn->diag_l2_p4min);
 
 
-	return rv? diag_iseterr(rv):0;
+	return rv? diag_ifwderr(rv):0;
 }
 
 

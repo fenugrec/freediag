@@ -138,7 +138,7 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 	// L2 does framing, adds addressing and CRC, so do nothing special
 
 	rv = diag_l2_send(d_conn, msg);
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_ifwderr(rv):0 ;
 }
 
 

@@ -93,7 +93,7 @@ dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 		msg->data, msg->len, d_l2_conn->diag_l2_p4min);
 
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_ifwderr(rv):0 ;
 }
 
 /*

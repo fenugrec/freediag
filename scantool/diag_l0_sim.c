@@ -129,7 +129,7 @@ struct sim_ecu_response
 	int rv;
 
 	if ((rv = diag_calloc(&resp, 1))) {
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	resp->data = NULL;
@@ -140,7 +140,7 @@ struct sim_ecu_response
 	if ((text != NULL) && strlen(text)) {
 		if ((rv=diag_calloc(&(resp->text), strlen(text)+1))) {
 			free(resp);
-			return diag_pseterr(rv);
+			return diag_pfwderr(rv);
 		}
 
 		strncpy(resp->text, text, strlen(text));	//using strlen() defeats the purpose of strncpy ...
@@ -158,7 +158,7 @@ struct sim_ecu_response
 
 	rv = diag_calloc(&resp, 1);
 	if (rv != 0) {
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 	resp->data = NULL;
 	resp->len = 0;
@@ -169,7 +169,7 @@ struct sim_ecu_response
 		rv = diag_calloc(&resp->data, len);
 		if (rv != 0) {
 			free(resp);
-			return diag_pseterr(rv);
+			return diag_pfwderr(rv);
 		}
 		memcpy(resp->data, data, len);
 		resp->len = len;
@@ -547,7 +547,7 @@ sim_new(struct diag_l0_device *dl0d) {
 
 	// Create sim_device:
 	if ((rv = diag_calloc(&dev, 1))) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	dl0d->l0_int = dev;

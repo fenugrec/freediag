@@ -126,7 +126,7 @@ br_new(struct diag_l0_device *dl0d) {
 
 	rv = diag_calloc(&dev, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	dl0d->l0_int = dev;
@@ -134,7 +134,7 @@ br_new(struct diag_l0_device *dl0d) {
 	rv = diag_cfgn_tty(&dev->port);
 	if (rv != 0) {
 		free(dev);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	dev->port.next = NULL;
@@ -290,7 +290,7 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	}
 	if (rv) {
 		br_close(dl0d);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
@@ -335,13 +335,13 @@ br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr) {
 			rv = br_write(dl0d, txbuf, 2);
 		}
 		if (rv) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 	} else {
 		timeout = 100;
 		rv = br_write(dl0d, txbuf, 2);
 		if (rv) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 	}
 
@@ -349,7 +349,7 @@ br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr) {
 	 * And get back the fail/success message
 	 */
 	if ((rv = br_getmsg(dl0d, rxbuf, timeout)) < 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/*
@@ -501,7 +501,7 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
 			FLFMT "link %p getmsg 1st byte timed out\n", FL, (void *)dl0d);
 
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/*
@@ -584,7 +584,7 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 	/* Send the length byte */
 	rv = br_write(dl0d, &outb, 1);
 	if (rv < 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/* And now the data */
@@ -594,7 +594,7 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 
 	rv = br_write(dl0d, dp, txlen);
 	if (rv < 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/*
@@ -609,7 +609,7 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 
 		rv = br_write(dl0d, &dev->dev_framenr, 1);
 		if (rv < 0) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 	}
 	return 0;

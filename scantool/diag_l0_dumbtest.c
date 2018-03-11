@@ -482,7 +482,7 @@ dt_new(struct diag_l0_device *dl0d) {
 
 	rv = diag_calloc(&dev, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	dl0d->l0_int = dev;
@@ -490,14 +490,14 @@ dt_new(struct diag_l0_device *dl0d) {
 	rv = diag_cfgn_tty(&dev->port);
 	if (rv != 0) {
 		free(dev);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	rv = diag_cfgn_int(&dev->dumbopts, DUMBDEFAULTS, DUMBDEFAULTS);
 	if (rv != 0) {
 		diag_cfg_clear(&dev->port);
 		free(dev);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/* finish filling the dumbopts cfgi */

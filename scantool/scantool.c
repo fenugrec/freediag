@@ -517,7 +517,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	data[5] = p5;
 	data[6] = p6;
 	if ((rv = diag_l3_send(d_conn, &msg))) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/* And get response(s) within a short while */
@@ -525,7 +525,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	if (rv < 0) {
 		fprintf(stderr, "Request failed, retrying...\n");
 		if ((rv = diag_l3_send(d_conn, &msg))) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 		rv = diag_l3_recv(d_conn, 300, j1979_data_rcv, handle);
 		if (rv < 0) {
@@ -533,7 +533,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 			rv= d_conn->d_l3_proto->diag_l3_proto_timer(d_conn, 6000);	//force keepalive
 			if (rv < 0) {
 				fprintf(stderr, "\tfailed, connection to ECU may be lost!\n");
-				return diag_iseterr(rv);
+				return diag_ifwderr(rv);
 			}
 			fprintf(stderr, "\tOK.\n");
 			return DIAG_ERR_TIMEOUT;
@@ -704,7 +704,7 @@ static struct diag_l2_conn *do_l2_common_start(int L1protocol, int L2protocol,
 			fprintf(stderr, "Failed to open hardware interface\n");
 		}
 
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	/* Now do the Layer 2 startcommunications */

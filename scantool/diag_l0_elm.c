@@ -135,7 +135,7 @@ int elm_new(struct diag_l0_device *dl0d) {
 
 	rv = diag_calloc(&dev, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	dl0d->l0_int = dev;
@@ -143,14 +143,14 @@ int elm_new(struct diag_l0_device *dl0d) {
 	rv = diag_cfgn_tty(&dev->port);
 	if (rv != 0) {
 		free(dev);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	rv = diag_cfgn_int(&dev->speed, 38400, 38400);
 	if (rv != 0) {
 		diag_cfg_clear(&dev->port);
 		free(dev);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	dev->speed.descr = CFGSPEED_DESCR;
 	dev->speed.shortname = CFGSPEED_SHORTN;
@@ -418,7 +418,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 			fprintf(stderr, FLFMT "Error setting %u;8N1 on %s\n",
 				FL, sset.speed, dev->port.val.str);
 			elm_close(dl0d);
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		diag_tty_iflush(dev->tty_int);	/* Flush unread input */
@@ -654,7 +654,7 @@ elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout) {
 		rv = elm_send(dl0d, NULL, generic_data, 2);
 	}
 	if (rv) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	// receive everything; we're hoping for a prompt at the end and no error message.

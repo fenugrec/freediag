@@ -730,7 +730,7 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 	rxmsg=diag_l3_request(d_l3_conn, &msg, &errval);
 
 	if (rxmsg == NULL) {
-		return diag_iseterr(DIAG_ERR_TIMEOUT);
+		return diag_ifwderr(errval);
 	}
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
@@ -761,7 +761,7 @@ int diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
 
 	rv = diag_calloc(&l3i, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	d_l3_conn->l3_int = l3i;
@@ -771,7 +771,7 @@ int diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
 	if (rv<0) {
 		fprintf(stderr, FLFMT "J1979 Keepalive failed ! Try to disconnect and reconnect.\n", FL);
 		free(l3i);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 
