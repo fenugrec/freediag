@@ -40,7 +40,7 @@
 
 int diag_l3_debug;
 
-static diag_mtx connlist_mtx = LOCK_INITIALIZER;
+static diag_mtx connlist_mtx;
 static struct diag_l3_conn *diag_l3_list;
 static bool init_done;
 

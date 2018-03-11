@@ -54,7 +54,11 @@ static struct {
 	struct diag_l2_conn *dl2conn_list; // linked-list of current diag_l2_conn-s
 	struct diag_l2_link *dl2l_list;    // linked-list of current L2-L0 links
 	bool init_done;
-} l2internal = {LOCK_INITIALIZER, NULL, NULL, false};
+} l2internal = {
+	.dl2conn_list = NULL,
+	.dl2l_list = NULL,	// linked-list of current L2-L0 links
+	.init_done = NULL
+};
 
 
 /** Find an existing L2 link using the specified L0 device.

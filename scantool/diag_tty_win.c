@@ -116,7 +116,7 @@ void diag_tty_close(ttyp *ttyh) {
 		CloseHandle(wti->fd);
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
 			FLFMT "diag_tty_close : closing fd %p\n", FL, wti->fd);
-
+	}
 	free(wti);
 
 	return;

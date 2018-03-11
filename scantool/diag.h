@@ -33,8 +33,6 @@ extern "C" {
 
 #include "cconf.h"
 
-#include "diag_os.h" // For mutexes.
-
 #ifdef WIN32
 	#ifndef _WIN32_WINNT
 		#define _WIN32_WINNT 0x0500	//use > winXP features...
@@ -49,6 +47,8 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>		/* For uint8_t, etc. This is a C99 header */
 #include <stdio.h>		/* For FILE */
+
+#include "diag_os.h"	//for mutexes...
 
 // Nice to have anywhere...
 #define MIN(_a_, _b_) (((_a_) < (_b_) ? (_a_) : (_b_)))
@@ -383,9 +383,8 @@ typedef struct {
 	int v;
 } diag_atomic_int;
 
-#define DIAG_ATOMIC_STATICALLY_DECL_INIT(V) V = {LOCK_INITIALIZER, 0};
-#define DIAG_ATOMIC_INITSTATIC(V) diag_os_initstaticmtx(&((V)->mtx))
-#define DIAG_ATOMIC_DEL(V) diag_os_delmtx(&((V)->mtx))
+#define diag_atomic_init(V) diag_os_initstaticmtx(&((V)->mtx))
+#define diag_atomic_del(V) diag_os_delmtx(&((V)->mtx))
 
 void diag_atomic_store_bool(diag_atomic_bool *a, bool d);
 void diag_atomic_store_int(diag_atomic_int *a, int d);

@@ -120,16 +120,14 @@ unsigned long long diag_os_hrtus(unsigned long long hrdelta);
  * lowest-common-denominator stuff here; regular mutexes (not necessarily recursive etc)
  */
 #if defined(_WIN32)
-#	include <Windows.h>
-// No static mutex initialization on Windows.
-#	define LOCK_INITIALIZER 0
-typedef CRITICAL_SECTION diag_mtx;
+	#include <windows.h>
+	// No static mutex initialization on Windows ( CRITICAL_SECTION is an opaque type)
+	typedef CRITICAL_SECTION diag_mtx;
 #elif defined(__unix__)
-#	include <pthread.h>
-#	define LOCK_INITIALIZER PTHREAD_MUTEX_INITIALIZER
-typedef pthread_mutex_t diag_mtx;
+	#include <pthread.h>
+	typedef pthread_mutex_t diag_mtx;
 #else
-#	error Weird compilation environment, report this!
+	#error Weird compilation environment, report this!
 #endif
 
 /** initialize mutex.

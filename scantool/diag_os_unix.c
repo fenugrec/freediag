@@ -679,9 +679,10 @@ diag_os_initmtx(diag_mtx *mtx) {
 }
 
 void
-diag_os_initstaticmtx(UNUSED(diag_mtx *mtx)) {
-	// This should have been statically initialized (in the Pthreads case, specifically), so
-	// we do not do anything.
+diag_os_initstaticmtx(diag_mtx *mtx) {
+	// This could have been statically initialized (in the Pthreads case, specifically)
+	// see notes in diag_os.h
+	pthread_mutex_init((pthread_mutex_t *)mtx, NULL);
 	return;
 }
 

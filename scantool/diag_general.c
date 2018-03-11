@@ -57,7 +57,7 @@ const char *dbg_prefixes[] = {
 
 
 
-DIAG_ATOMIC_STATICALLY_DECL_INIT(static diag_atomic_bool periodic_done_wrapper)
+static diag_atomic_bool periodic_done_wrapper;
 
 static void
 set_periodic_done(void) {
@@ -89,8 +89,10 @@ int diag_init(void) { // returns 0 if normal exit
 		return diag_iseterr(rv);
 	}
 	diag_l3_init();
-	DIAG_ATOMIC_INITSTATIC(&periodic_done_wrapper);
+
+	diag_atomic_init(&periodic_done_wrapper);
 	if ((rv = diag_os_init())) {
+		diag_atomic_del(&periodic_done_wrapper);
 		return diag_iseterr(rv);
 	}
 
@@ -125,7 +127,8 @@ int diag_end(void) {
 
 	// There would be a race with the periodic timer, trying to take the lock, if we
 	// deleted the mutex.
-	// DIAG_ATOMIC_DEL(&periodic_done_wrapper)
+	// XXX why ? diag_os_close should've taken care of killing the periodic timer
+	diag_atomic_del(&periodic_done_wrapper);
 
 	// nothing to do for diag_dtc_init
 
