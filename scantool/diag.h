@@ -324,13 +324,14 @@ int diag_iflseterr(const char *name, const int line, const int code);
 #define diag_pseterr(C) diag_pflseterr(CURFILE, __LINE__, (C))
 #define diag_iseterr(C) diag_iflseterr(CURFILE, __LINE__, (C))
 
-/*
- * diag_geterr returns the last error and clears it.
+/** Return the last error and clears it.
  */
 int diag_geterr(void);
 
-/*
- * Textual description of error.
+/** Get textual description of error
+ *
+ * Note, it returns a pointer to a statically allocated buffer
+ * common to all threads and that must not be free'd.
  */
 const char *diag_errlookup(const int code);
 
