@@ -56,9 +56,9 @@ ttyp *diag_tty_open(const char *portname) {
 	//File hande is created as non-overlapped. This may change eventually.
 
 	if (wti->fd != INVALID_HANDLE_VALUE) {
-		if (diag_l0_debug & DIAG_DEBUG_OPEN)
-			fprintf(stderr, FLFMT "Device %s opened, fd %p\n",
-				FL, wti->name, wti->fd);
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+			FLFMT "Device %s opened, fd %p\n",
+			FL, wti->name, wti->fd);
 	} else {
 		fprintf(stderr,
 			FLFMT "Open of device interface \"%s\" failed: %s\n",
@@ -114,10 +114,9 @@ void diag_tty_close(ttyp *ttyh) {
 	if (wti->fd != INVALID_HANDLE_VALUE) {
 		PurgeComm(wti->fd,PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
 		CloseHandle(wti->fd);
-		if (diag_l0_debug & DIAG_DEBUG_CLOSE)
-			fprintf(stderr, FLFMT "diag_tty_close : closing fd %p\n", FL, wti->fd);
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
+			FLFMT "diag_tty_close : closing fd %p\n", FL, wti->fd);
 	}
-
 	free(wti);
 
 	return;
@@ -159,11 +158,10 @@ diag_tty_setup(ttyp *ttyh,
 
 
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-		fprintf(stderr, FLFMT "dev %p; %dbps %d,%d,%d \n",
-			FL, (void *)devhandle, pset->speed,
-			pset->databits, pset->stopbits, pset->parflag);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+		FLFMT "dev %p; %dbps %d,%d,%d \n",
+		FL, (void *)devhandle, pset->speed, pset->databits,
+		pset->stopbits, pset->parflag);
 
 	/*
 	 * Now load the DCB with the parameters requested.
@@ -338,10 +336,9 @@ diag_tty_read(ttyp *ttyh, void *buf, size_t count, unsigned int timeout) {
 
 	if ((count <= 0) || (timeout <= 0)) return DIAG_ERR_BADLEN;
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "tty_read: ttyh=%p, fd=%p, len=%zu, t=%u\n", FL,
-					(void *)wti, (void *)wti->fd, count, timeout);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "tty_read: ttyh=%p, fd=%p, len=%zu, t=%u\n",
+		FL, (void *)wti, (void *)wti->fd, count, timeout);
 
 	if (wti->fd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
@@ -384,10 +381,11 @@ int diag_tty_iflush(ttyp *ttyh) {
 
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(wti, buf, sizeof(buf), IFLUSH_TIMEOUT);
-	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
-		fprintf(stderr, FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n", FL, rv, buf[0]);
-		// diag_data_dump(stderr, (void *) buf, (size_t) rv); //this could take a long time.
-		// fprintf(stderr,"\n");
+	if (rv > 0) {
+		//don't dump data : flood
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
+			FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n",
+			FL, rv, buf[0]);
 	}
 	PurgeComm(wti->fd, PURGE_RXABORT | PURGE_RXCLEAR);
 

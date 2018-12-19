@@ -37,32 +37,63 @@
 #include "diag_dtc.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
+#include "diag_l3.h"
 
 #include "utlist.h"
 
-#define ERR_STR_LEN 50	//length of "illegal error X" string
 
-static int diag_initialized=0;
+const char *dbg_prefixes[] = {
+	[DIAG_DEBUGPF_NONE] = "GLOB:",
+	[DIAG_DEBUGPF_OPEN] = "OPEN:",
+	[DIAG_DEBUGPF_CLOSE] = "CLOSE:",
+	[DIAG_DEBUGPF_READ] = "READ:",
+	[DIAG_DEBUGPF_WRITE] = "WRITE:",
+	[DIAG_DEBUGPF_IOCTL] = "IOCTL:",
+	[DIAG_DEBUGPF_PROTO] = "PROTO:",
+	[DIAG_DEBUGPF_INIT] = "INIT:",
+	[DIAG_DEBUGPF_DATA] = "DATA:",
+	[DIAG_DEBUGPF_TIMER] = "TIMER:",
+};
 
-//diag_init : should be called once before doing anything.
-//and call diag_end before terminating.
-int diag_init(void) {	//returns 0 if normal exit
+
+
+static diag_atomic_bool periodic_done_wrapper;
+
+static void
+set_periodic_done(void) {
+	diag_atomic_store_bool(&periodic_done_wrapper, true);
+}
+
+bool
+periodic_done(void) {
+	return diag_atomic_load_bool(&periodic_done_wrapper);
+}
+
+static int diag_initialized = 0;
+
+// diag_init : should be called once before doing anything.
+// and call diag_end before terminating.
+int diag_init(void) { // returns 0 if normal exit
 	int rv;
 
 	if (diag_initialized) {
 		return 0;
 	}
 
-	//XXX This is interesting: the following functions only ever return 0...
+	// XXX This is interesting: the following functions only ever return 0...
 
 	if ((rv = diag_l1_init())) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 	if ((rv = diag_l2_init())) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
+	diag_l3_init();
+
+	diag_atomic_init(&periodic_done_wrapper);
 	if ((rv = diag_os_init())) {
-		return diag_iseterr(rv);
+		diag_atomic_del(&periodic_done_wrapper);
+		return diag_ifwderr(rv);
 	}
 
 	diag_dtc_init();
@@ -71,29 +102,37 @@ int diag_init(void) {	//returns 0 if normal exit
 	return 0;
 }
 
-//must be called before exiting. Ret 0 if ok
-//this is the "opposite" of diag_init
+// must be called before exiting. Ret 0 if ok
+// this is the "opposite" of diag_init
 int diag_end(void) {
-	int rv=0;
+	int rv = 0;
 	if (!diag_initialized) {
 		return 0;
 	}
 
+	set_periodic_done();
+	if (diag_os_close()) {
+		fprintf(stderr, FLFMT "Could not close OS functions!\n", FL);
+		rv = -1;
+	}
+	diag_l3_end();
 	if (diag_l2_end()) {
 		fprintf(stderr, FLFMT "Could not close L2 level\n", FL);
-		rv=-1;
+		rv = -1;
 	}
 	if (diag_l1_end()) {
 		fprintf(stderr, FLFMT "Could not close L1 level\n", FL);
-		rv=-1;
+		rv = -1;
 	}
-	if (diag_os_close()) {
-		fprintf(stderr, FLFMT "Could not close OS functions!\n", FL);
-		rv=-1;
-	}
-	//nothing to do for diag_dtc_init
 
-	diag_initialized=0;
+	// There would be a race with the periodic timer, trying to take the lock, if we
+	// deleted the mutex.
+	// XXX why ? diag_os_close should've taken care of killing the periodic timer
+	diag_atomic_del(&periodic_done_wrapper);
+
+	// nothing to do for diag_dtc_init
+
+	diag_initialized = 0;
 	return rv;
 }
 
@@ -112,7 +151,7 @@ diag_allocmsg(size_t datalen) {
 
 	rv = diag_calloc(&newmsg, 1);
 	if (rv != 0) {
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	newmsg->iflags |= DIAG_MSG_IFLAG_MALLOC;
@@ -121,7 +160,7 @@ diag_allocmsg(size_t datalen) {
 		rv = diag_calloc(&newmsg->idata, datalen);
 		if (rv != 0) {
 			free(newmsg);
-			return diag_pseterr(rv);
+			return diag_pfwderr(rv);
 		}
 	} else {
 		newmsg->idata = NULL;
@@ -302,23 +341,25 @@ static const struct {
 	{ DIAG_ERR_BADCFG, "Bad config/param" },
 };
 
+#define DIAG_ILLEGAL_ERR "Illegal error code: 0x%.2X\n"
+
 const char *
 diag_errlookup(const int code) {
 	unsigned i;
-	static char ill_str[ERR_STR_LEN];
+	static char ill_str[sizeof(DIAG_ILLEGAL_ERR) + 2 * sizeof(int)];
+
 	for (i = 0; i < ARRAY_SIZE(edesc); i++) {
 		if (edesc[i].code == code) {
 			return edesc[i].desc;
 		}
 	}
 
-	snprintf(ill_str,ERR_STR_LEN,"Illegal error code: 0x%.2X\n",code);
+	snprintf(ill_str, sizeof(ill_str), DIAG_ILLEGAL_ERR,code);
 	return ill_str;
 }
 
-//do not call diag_pflseterr; refer to diag.h for related macros
-void *
-diag_pflseterr(const char *name, const int line, const int code) {
+//do not call diag_pflseterr etc; refer to diag.h for related macros
+void *diag_p_pseterr(const char *name, const int line, const int code) {
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
 	if (latchedCode == 0) {
 		latchedCode = code;
@@ -327,13 +368,22 @@ diag_pflseterr(const char *name, const int line, const int code) {
 	return NULL;
 }
 
-int
-diag_iflseterr(const char *name, const int line, const int code) {
+int diag_p_iseterr(const char *name, const int line, const int code) {
 	fprintf(stderr, "%s:%d: %s.\n", name, line, diag_errlookup(code));
 	if (latchedCode == 0) {
 		latchedCode = code;
 	}
 
+	return code;
+}
+
+void *diag_p_pfwderr(const char *name, const int line, const int code) {
+	DIAG_DBGGEN(DIAG_DBGLEVEL_V, "%s:%d: %s.\n", name, line, diag_errlookup(code));
+	return NULL;
+}
+
+int diag_p_ifwderr(const char *name, const int line, const int code) {
+	DIAG_DBGGEN(DIAG_DBGLEVEL_V, "%s:%d: %s.\n", name, line, diag_errlookup(code));
 	return code;
 }
 
@@ -453,4 +503,38 @@ diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp) {
 		}
 		i++;
 	}
+}
+
+// Atomic access functions.
+
+void
+diag_atomic_store_bool(diag_atomic_bool *a, bool d) {
+	diag_os_lock(&a->mtx);
+	a->v = d;
+	diag_os_unlock(&a->mtx);
+}
+
+void
+diag_atomic_store_int(diag_atomic_int *a, int d) {
+	diag_os_lock(&a->mtx);
+	a->v = d;
+	diag_os_unlock(&a->mtx);
+}
+
+bool
+diag_atomic_load_bool(diag_atomic_bool *a) {
+	bool r;
+	diag_os_lock(&a->mtx);
+	r = a->v;
+	diag_os_unlock(&a->mtx);
+	return r;
+}
+
+int
+diag_atomic_load_int(diag_atomic_int *a) {
+	int r;
+	diag_os_lock(&a->mtx);
+	r = a->v;
+	diag_os_unlock(&a->mtx);
+	return r;
 }

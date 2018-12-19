@@ -82,7 +82,7 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 	in.addr = address;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 	if (rv < 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) {
@@ -136,7 +136,7 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 					&inv_kb2, 1, 0);
 		if (rv < 0) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 
 		// Wait for the address byte inverted:
@@ -146,14 +146,12 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 		rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 					&inv_address, 1, W4max + RXTOFFSET);
 		if (rv < 0) {
-			if (diag_l2_debug & DIAG_DEBUG_OPEN) {
-				fprintf(stderr,
-					FLFMT
-					"wakeupECU(dl2conn %p) did not get "
-					"inv. address; rx error %d\n",
-					FL, (void *)d_l2_conn, rv);
-			}
-			return diag_iseterr(rv);
+			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+				FLFMT
+				"wakeupECU(dl2conn %p) did not get "
+				"inv. address; rx error %d\n",
+				FL, (void *)d_l2_conn, rv);
+			return diag_ifwderr(rv);
 		}
 
 		// Check the received inverted address:
@@ -167,11 +165,9 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 
 	//Success! Handshaking done.
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr,
-			FLFMT "_wakeupECU dl2con=%p kb1=0x%02X kb2=0x%02X\n",
-			FL, (void *)d_l2_conn, kb1, kb2);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "_wakeupECU dl2con=%p kb1=0x%02X kb2=0x%02X\n",
+		FL, (void *)d_l2_conn, kb1, kb2);
 
 	return 0;
 }
@@ -189,15 +185,13 @@ dl2p_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	struct diag_serial_settings set;
 	struct diag_l2_iso9141 *dp;
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr,
-			FLFMT "_startcomms conn %p %ubps tgt=0x%X src=0x%X\n",
-			FL, (void *)d_l2_conn, bitrate, target, source);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "_startcomms conn %p %ubps tgt=0x%X src=0x%X\n",
+		FL, (void *)d_l2_conn, bitrate, target, source);
 
 	rv = diag_calloc(&dp, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	dp->srcaddr = source;
@@ -223,7 +217,7 @@ dl2p_iso9141_startcomms(struct diag_l2_conn *d_l2_conn,
 	if ((rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, &set))) {
 		free(dp);
 		d_l2_conn->diag_l2_proto_data=NULL;
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	// Initialize ECU (unless if in monitor mode):
@@ -287,11 +281,8 @@ static int
 dl2p_iso9141_decode(uint8_t *data, int len,
 				 uint8_t *hdrlen, int *datalen, uint8_t *source, uint8_t *dest) {
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "decode len %d: ", FL, len);
-		diag_data_dump(stderr,data, len);
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V, data, len,
+		FLFMT "decode len %d: ", FL, len);
 
 	//Check header bytes:
 	if (data[0] != 0x48 || data[1] != 0x6B) {
@@ -302,9 +293,8 @@ dl2p_iso9141_decode(uint8_t *data, int len,
 	if (len - OHLEN_ISO9141 > 0) {
 		*datalen = len - OHLEN_ISO9141;
 	} else {
-		if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr, FLFMT "decode len short \n", FL);
-		}
+		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			FLFMT "decode len short \n", FL);
 
 		return diag_iseterr(DIAG_ERR_INCDATA);
 	}
@@ -320,10 +310,9 @@ dl2p_iso9141_decode(uint8_t *data, int len,
 		*source = data[2]; // Originating ECU;
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "decode total len = %d, datalen = %d\n",
-			FL, len, *datalen);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		FLFMT "decode total len = %d, datalen = %d\n",
+		FL, len, *datalen);
 
 	return OHLEN_ISO9141 + *datalen;
 }
@@ -357,10 +346,9 @@ dl2p_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 #define ST_STATE2 2 // In frame - wait for more bytes.
 #define ST_STATE3 3 // End of frame - wait for more frames.
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "_int_recv offset 0x%X\n", FL,
-			d_l2_conn->rxoffset);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "_int_recv offset 0x%X\n",
+		FL, d_l2_conn->rxoffset);
 
 	dp = (struct diag_l2_iso9141 *)d_l2_conn->diag_l2_proto_data;
 
@@ -454,18 +442,15 @@ dl2p_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 					// Copy data into a message.
 					tmsg = diag_allocmsg((size_t)dp->rxoffset);
 					if (tmsg == NULL) {
-						return diag_iseterr(
-							DIAG_ERR_NOMEM);
+						return diag_iseterr(DIAG_ERR_NOMEM);
 					}
 					memcpy(tmsg->data, dp->rxbuf,
 						(size_t)dp->rxoffset);
 					tmsg->rxtime = diag_os_getms();
 
-					if (diag_l2_debug & DIAG_DEBUG_READ) {
-						fprintf(stderr, "l2_iso9141_recv: ");
-						diag_data_dump(stderr, dp->rxbuf, (size_t)dp->rxoffset);
-						fprintf(stderr, "\n");
-					}
+					DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+						dp->rxbuf, (size_t)dp->rxoffset,
+						"l2_iso9141_recv: ");
 
 					dp->rxoffset = 0;
 
@@ -626,11 +611,9 @@ dl2p_iso9141_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 
 	rv = dl2p_iso9141_int_recv(d_l2_conn, timeout);
 	if ((rv >= 0) && (d_l2_conn->diag_msg !=NULL)) {
-		if (diag_l2_debug & DIAG_DEBUG_READ) {
-			fprintf(stderr, FLFMT "_recv : handle=%p\n", FL,
-				handle); //%pcallback! we won't try to
-					 // printf the callback pointer.
-		}
+		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+			FLFMT "_recv : handle=%p\n", FL, handle);
+
 		/*
 		 * Call user callback routine
 		 */
@@ -643,7 +626,7 @@ dl2p_iso9141_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 		d_l2_conn->diag_msg = NULL;
 	}
 
-	return (rv<0)? diag_iseterr(rv):0 ;
+	return (rv<0)? diag_ifwderr(rv):0 ;
 }
 
 /*
@@ -663,10 +646,9 @@ dl2p_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 
 	dp = d_l2_conn->diag_l2_proto_data;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "_send dl2c=%p msg=%p\n", FL,
-			(void *)d_l2_conn, (void *)msg);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT "_send dl2c=%p msg=%p\n", FL,
+		(void *)d_l2_conn, (void *)msg);
 
 	// Check if the payload plus the overhead (and checksum) exceed protocol packet size:
 	if (msg->len + OHLEN_ISO9141 > MAXLEN_ISO9141) {
@@ -691,7 +673,7 @@ dl2p_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DATAONLY) {
 		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
 				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
-		return rv? diag_iseterr(rv):0;
+		return rv? diag_ifwderr(rv):0;
 	}
 
 	/* add ISO9141-2 header */
@@ -709,18 +691,16 @@ dl2p_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		buf[offset++] = diag_cks1(buf, curoff);
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, "l2_iso9141_send: ");
-		diag_data_dump(stderr, buf, (size_t)offset);
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		buf, (size_t)offset,
+		"l2_iso9141_send: ");
 
 	// Send it over the L1 link:
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
 			buf, (size_t)offset, d_l2_conn->diag_l2_p4min);
 
 
-	return rv? diag_iseterr(rv):0;
+	return rv? diag_ifwderr(rv):0;
 }
 
 

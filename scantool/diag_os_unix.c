@@ -120,15 +120,17 @@ diag_os_periodic(UNUSED(union sigval sv)) {
 diag_os_periodic(UNUSED(int unused)) {
 #endif
 	/* Warning: these indirectly use non-async-signal-safe functions
-	* Their behavior is undefined if they happen
-	* to occur during any other non-async-signal-safe function.
-	* See doc/sourcetree_notes.txt
-	*/
-	if (pthread_mutex_trylock(&periodic_lock)) {
+	 * Their behavior is undefined if they happen
+	 * to occur during any other non-async-signal-safe function.
+	 * See doc/sourcetree_notes.txt
+	 */
+
+	if (periodic_done() || pthread_mutex_trylock(&periodic_lock)) {
 		return;
 	}
-	diag_l3_timer();	/* Call L3 Timers */
-	diag_l2_timer();	/* Call L2 timers */
+
+	diag_l3_timer(); /* Call L3 Timers */
+	diag_l2_timer(); /* Call L2 timers */
 	pthread_mutex_unlock(&periodic_lock);
 }
 
@@ -670,43 +672,45 @@ unsigned long long diag_os_hrtus(unsigned long long hrdelta) {
 #endif // _POSIX_TIMERS
 }
 
-diag_mtx *diag_os_newmtx(void) {
-	pthread_mutex_t *pmt;
-	diag_calloc(&pmt, 1);
-	if (pthread_mutex_init(pmt, NULL)) {
-		free(pmt);
-		return NULL;
-	}
-	return (diag_mtx *) pmt;
-}
-
-void diag_os_delmtx(diag_mtx *mtx) {
-	pthread_mutex_t *pmt = (pthread_mutex_t *) mtx;
-	pthread_mutex_destroy(pmt);
-	free(pmt);
+void
+diag_os_initmtx(diag_mtx *mtx) {
+	pthread_mutex_init((pthread_mutex_t *)mtx, NULL);
 	return;
 }
 
-void diag_os_lock(diag_mtx *mtx) {
-	pthread_mutex_t *pmt = (pthread_mutex_t *) mtx;
-	if (pthread_mutex_lock(pmt) == EDEADLK) {
-		//do we even check for error values...
+void
+diag_os_initstaticmtx(diag_mtx *mtx) {
+	// This could have been statically initialized (in the Pthreads case, specifically)
+	// see notes in diag_os.h
+	pthread_mutex_init((pthread_mutex_t *)mtx, NULL);
+	return;
+}
+
+void
+diag_os_delmtx(diag_mtx *mtx) {
+	pthread_mutex_destroy((pthread_mutex_t *)mtx);
+	return;
+}
+
+void
+diag_os_lock(diag_mtx *mtx) {
+	if (pthread_mutex_lock((pthread_mutex_t *)mtx) == EDEADLK) {
+		// do we even check for error values...
 		fprintf(stderr, "DEADLOCK !\n");
 	}
 	return;
 }
 
-bool diag_os_trylock(diag_mtx *mtx) {
-	pthread_mutex_t *pmt = (pthread_mutex_t *) mtx;
-	if (pthread_mutex_trylock(pmt)) {
+bool
+diag_os_trylock(diag_mtx *mtx) {
+	if (pthread_mutex_trylock((pthread_mutex_t *)mtx)) {
 		return 0;
 	}
 	return 1;
 }
 
-void diag_os_unlock(diag_mtx *mtx) {
-	pthread_mutex_t *pmt = (pthread_mutex_t *) mtx;
-	pthread_mutex_unlock(pmt);
+void
+diag_os_unlock(diag_mtx *mtx) {
+	pthread_mutex_unlock((pthread_mutex_t *)mtx);
 	return;
 }
-

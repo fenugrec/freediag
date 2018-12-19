@@ -257,3 +257,11 @@ global connection linked-lists and associated structures
 *alloc() should not be called from the timeout functions (it is: if the L2 timeout
 function receives a message, it alloc's it). Maybe freediag's wrappers (diag_?alloc())
 could be made re-entrant with locks + waits.
+
+**** debug / error messages
+- Messages and information the user needs to see at the CLI : printf
+- error messages : fprintf(stderr,...)
+- debug / extra info : DIAG_DBGM() or DIAG_DBGMDATA() (see diag.h)
+- if a diag_... function returns an error, only return "diag_[i,p]seterr() when generating a new
+error makes sense. Otherwise, to avoid "stacking" many error messages, use
+diag_ifwderr / diag_pfwderr to forward the error to the upper level.

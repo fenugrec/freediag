@@ -104,6 +104,15 @@ struct diag_l3_proto {
 
 };
 
+/** Initialize L3 layer
+ * Must be called once before using any L3 function
+ */
+void diag_l3_init(void);
+
+/** De-initialize L3 layer
+ * opposite of diag_l3_init(); call before unloading / exiting
+ */
+void diag_l3_end(void);
 
 /** Start L3 connection
  *

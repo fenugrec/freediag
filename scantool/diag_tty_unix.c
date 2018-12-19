@@ -147,10 +147,9 @@ ttyp *diag_tty_open(const char *portname) {
 #endif // O_NONBLOCK
 
 	if (uti->fd >= 0) {
-		if (diag_l0_debug & DIAG_DEBUG_OPEN) {
-			fprintf(stderr, FLFMT "Device %s opened, fd %d\n", FL,
-				uti->name, uti->fd);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+			FLFMT "Device %s opened, fd %d\n",
+			FL, uti->name, uti->fd);
 	} else {
 		fprintf(stderr,
 			FLFMT "Could not open \"%s\" : %s. "
@@ -352,9 +351,8 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 			break;
 		}
 
-		if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-			fprintf(stderr, FLFMT "Speed set using TCSETS + BOTHER.\n", FL);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+			FLFMT "Speed set using TCSETS + BOTHER.\n", FL);
 		return spd_real;
 	}
 	if (rv != 0) {
@@ -407,9 +405,8 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 		st_new.c_cflag &= ~CBAUD;
 		st_new.c_cflag |= B38400;
 		spd_done = 1;
-		if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-			fprintf(stderr, FLFMT "Speed set using TIOCSSERIAL + ASYNC_SPD_CUST.\n", FL);
-		}
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+			FLFMT "Speed set using TIOCSSERIAL + ASYNC_SPD_CUST.\n", FL);
 	}
 #endif	//deprecated ASYNC_SPD_CUST trick
 
@@ -456,9 +453,9 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 				!cfsetospeed(&st_new, spd)) {
 			spd_real = spd;
 			spd_done = 1;
-			if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-				fprintf(stderr, FLFMT "Speed set with cfset*speed(uint).\n", FL);
-			}
+			DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+				FLFMT "Speed set with cfset*speed(uint).\n", FL);
+
 			break;
 		}
 		fprintf(stderr,
@@ -468,9 +465,9 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 				!cfsetospeed(&st_new, std_names[spd_nearest])) {
 			//spd_real already ok
 			spd_done = 1;
-			if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-				fprintf(stderr, FLFMT "Speed set with cfset*speed(B%u).\n", FL, std_table[spd_nearest]);
-			}
+			DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+				FLFMT "Speed set with cfset*speed(B%u).\n",
+				FL, std_table[spd_nearest]);
 			break;
 		}
 		fprintf(stderr,
@@ -527,10 +524,9 @@ diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset) {
 
 	assert(fd != DL0D_INVALIDHANDLE);
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-		fprintf(stderr, FLFMT "setup: fd=%d, %ubps, %d bits, %d stop, parity %d\n",
-			FL, fd, pset->speed, pset->databits, pset->stopbits, pset->parflag);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+		FLFMT "setup: fd=%d, %ubps, %d bits, %d stop, parity %d\n",
+		FL, fd, pset->speed, pset->databits, pset->stopbits, pset->parflag);
 
 	/* Copy current settings to working copy */
 	st_new = uti->st_cur;
@@ -621,10 +617,9 @@ diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset) {
 		fprintf(stderr, "Warning : speed off by >= 5%% !\n");
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL) {
-		fprintf(stderr, FLFMT "Speed set to %u, error~%ld%%\n", FL,
-				spd_real, spd_err);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+		FLFMT "Speed set to %u, error~%ld%%\n",
+		FL, spd_real, spd_err);
 
 	return 0;
 }	//diag_tty_setup
@@ -665,10 +660,8 @@ diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		unsigned long tc=diag_os_getms();
-		fprintf(stderr, FLFMT "%lu : DTR/RTS changed\n", FL, tc);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
+		FLFMT "%lu : DTR/RTS changed\n", FL, diag_os_getms());
 
 	return 0;
 }
@@ -906,10 +899,8 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 	tstart=diag_os_gethrt();
 	incr = timeout * 1000;	//us
 
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, "timeout=%u, start=%llu, delta=%llu\n",
-			timeout, tstart, incr);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
+		"timeout=%u, start=%llu, delta=%llu\n", timeout, tstart, incr);
 
 	errno = 0;
 	p = (uint8_t *)buf;	/* For easy pointer I/O */
@@ -1009,10 +1000,9 @@ finished:
 
 	assert((timeout < MAXTIMEOUT) && (count > 0));
 
-	if (diag_l0_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "Entered diag_tty_read with count=%u, timeout=%ums\n", FL,
-			(unsigned int) count, timeout);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "Entered diag_tty_read with count=%u, timeout=%ums\n",
+		FL, (unsigned int) count, timeout);
 
 	errno = 0;
 	time = 0;
@@ -1066,10 +1056,11 @@ finished:
 	ioctl(fd, RTC_PIE_OFF, 0);
 	close(fd);
 
-	if (diag_l0_debug & DIAG_DEBUG_IOCTL)
-		if (time>=timeout) {
-			fprintf(stderr, FLFMT "timed out: %ums\n",FL,timeout*1000/2048);
-		}
+
+	if (time>=timeout) {
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
+			FLFMT "timed out: %ums\n",FL,timeout*1000/2048);
+	}
 
 	switch (rv) {
 	case 0:
@@ -1085,8 +1076,10 @@ finished:
 		 * XXX Yes, possibly !
 		 */
 		rv = read(uti->fd, buf, count);
-		if ((diag_l0_debug & DIAG_DEBUG_READ) && (rv<=0))
-			fprintf(stderr, "read() returned %d?", rv);
+		if (rv <= 0) {
+			DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+				"read() returned %d?", rv);
+		}
 		return rv;
 
 	default:
@@ -1127,10 +1120,11 @@ int diag_tty_iflush(ttyp *tty_int) {
 
 	/* Read any old data hanging about on the port */
 	rv = diag_tty_read(uti, buf, sizeof(buf), IFLUSH_TIMEOUT);
-	if ((rv > 0) && (diag_l0_debug & DIAG_DEBUG_DATA)) {
-		fprintf(stderr, FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n", FL, rv, buf[0]);
-//		diag_data_dump(stderr, buf, rv);		//could flood the screen
-//		fprintf(stderr, "\n");
+	if (rv > 0) {
+		//not dumping data : could flood screen
+		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
+			FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n",
+			FL, rv, buf[0]);
 	}
 
 	return 0;
@@ -1257,9 +1251,8 @@ int diag_tty_fastbreak(ttyp *tty_int, const unsigned int ms) {
 	tvdiff = diag_os_hrtus(tv2 - tv1);	//us
 
 	//XXX this message may need to be removed if timing is impaired
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "Fast break finished : tWUP=%llu\n", FL, tvdiff);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
+		FLFMT "Fast break finished : tWUP=%llu\n", FL, tvdiff);
 
 	return 0;
 }

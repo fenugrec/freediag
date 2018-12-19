@@ -134,9 +134,9 @@ diag_os_init(void) {
 	pf_conv=1.0E6 / perfo_freq.QuadPart;
 	pfconv_valid =1;
 
-	if (diag_l0_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "Performance counter frequency : %9"PRIu64"Hz\n", FL, perfo_freq.QuadPart);
-	}
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
+		FLFMT "Performance counter frequency : %9"PRIu64"Hz\n", FL, perfo_freq.QuadPart);
+
 	diag_os_calibrate();
 	diag_os_init_done = 1;
 	return 0;
@@ -419,35 +419,40 @@ unsigned long long diag_os_hrtus(unsigned long long hrdelta) {
 }
 
 
-diag_mtx *diag_os_newmtx(void) {
-	CRITICAL_SECTION *lpc;
-	diag_calloc(&lpc, 1);
-	InitializeCriticalSection(lpc);
-	return (diag_mtx *) lpc;
-}
-
-void diag_os_delmtx(diag_mtx *mtx) {
-	CRITICAL_SECTION *lpc = (CRITICAL_SECTION *) mtx;
-	DeleteCriticalSection(lpc);
-	free(lpc);
+void
+diag_os_initmtx(diag_mtx *mtx) {
+	InitializeCriticalSection((CRITICAL_SECTION *)mtx);
 	return;
 }
 
-void diag_os_lock(diag_mtx *mtx) {
-	CRITICAL_SECTION *lpc = (CRITICAL_SECTION *) mtx;
-	EnterCriticalSection(lpc);
+void
+diag_os_initstaticmtx(diag_mtx *mtx) {
+	// No static initialization of mutexes on Windows.
+	diag_os_initmtx(mtx);
 	return;
 }
 
-bool diag_os_trylock(diag_mtx *mtx) {
-	CRITICAL_SECTION *lpc = (CRITICAL_SECTION *) mtx;
-	if (!TryEnterCriticalSection(lpc)) return 0;
+void
+diag_os_delmtx(diag_mtx *mtx) {
+	DeleteCriticalSection((CRITICAL_SECTION *)mtx);
+	return;
+}
+
+void
+diag_os_lock(diag_mtx *mtx) {
+	EnterCriticalSection((CRITICAL_SECTION *)mtx);
+	return;
+}
+
+bool
+diag_os_trylock(diag_mtx *mtx) {
+	if (!TryEnterCriticalSection((CRITICAL_SECTION *)mtx))
+		return 0;
 	return 1;
 }
 
-void diag_os_unlock(diag_mtx *mtx) {
-	CRITICAL_SECTION *lpc = (CRITICAL_SECTION *) mtx;
-	LeaveCriticalSection(lpc);
+void
+diag_os_unlock(diag_mtx *mtx) {
+	LeaveCriticalSection((CRITICAL_SECTION *)mtx);
 	return;
 }
-

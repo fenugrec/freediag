@@ -130,21 +130,15 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 	/* Get l2 connection info */
 	d_conn = d_l3_conn->d_l3l2_conn;
 
-	if (diag_l3_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr,FLFMT "_send %d bytes, l2 flags 0x%X\n",
-			FL, msg->len,  d_l3_conn->d_l3l2_flags);
-
-		if ((diag_l3_debug & DIAG_DEBUG_DATA) &&
-		    (diag_l3_debug & DIAG_DEBUG_WRITE)) {
-			diag_data_dump(stderr, (void *)msg->data,
-				       (size_t)msg->len);
-		}
-	}
+	DIAG_DBGMDATA(diag_l3_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		msg->data, (size_t)msg->len,
+		FLFMT "_send %d bytes, l2 flags 0x%X\n",
+		FL, msg->len,  d_l3_conn->d_l3l2_flags);
 
 	// L2 does framing, adds addressing and CRC, so do nothing special
 
 	rv = diag_l2_send(d_conn, msg);
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_ifwderr(rv):0 ;
 }
 
 
@@ -161,10 +155,9 @@ diag_l3_14230_rxcallback(void *handle, struct diag_msg *msg) {
 	struct diag_l3_conn *d_l3_conn = (struct diag_l3_conn *)handle;
 	char buffer[200];
 
-	if (diag_l3_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,FLFMT "rcv_callback for %d bytes fmt 0x%X conn\n",
-			FL, msg->len, msg->fmt);
-	}
+	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "rcv_callback for %d bytes fmt 0x%X conn\n",
+		FL, msg->len, msg->fmt);
 
 	if (diag_l3_iso14230_decode_response(msg, buffer, sizeof(buffer))) {
 	 fprintf(stderr, "DECODED: %s\n",buffer);
@@ -208,9 +201,9 @@ diag_l3_iso14230_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 		rv = diag_l2_recv(d_l3_conn->d_l3l2_conn, timeout,
 			diag_l3_14230_rxcallback, (void *)d_l3_conn);
 
-		if (diag_l3_debug & DIAG_DEBUG_READ) {
-			fprintf(stderr, FLFMT "_recv returns %d\n", FL, rv);
-		}
+		DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+			FLFMT "_recv returns %d\n", FL, rv);
+
 	} else {
 		//problem : the only time DIAG_L2_FLAG_FRAMED is not set is if
 		//L2 is raw. Who uses a raw L2 instead of 14230 L2 ???

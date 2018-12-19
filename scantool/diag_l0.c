@@ -44,14 +44,14 @@ struct diag_l0_device *diag_l0_new(const char *shortname) {
 
 	rv=diag_calloc(&dl0d, 1);
 	if (rv) {
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	dl0d->dl0 = l0dev;
 	rv = l0dev->_new(dl0d);
 	if (rv != 0) {
 		free(dl0d);
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	return dl0d;

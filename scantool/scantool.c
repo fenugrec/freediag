@@ -182,23 +182,17 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 		"Time between sensor transitions"
 		};
 
-	if (diag_cli_debug & DIAG_DEBUG_DATA) {
-		fprintf(stderr,
-			"scantool: Got handle %p; %d bytes of data, src=0x%X, "
-			"dest=0x%X\n",
-			handle, msg->len, msg->src, msg->dest);
-		diag_printmsg(stdout, msg, 0);
-	}
+	DIAG_DBGMDATA(diag_cli_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
+		msg->data, msg->len,
+		"scantool: Got handle %p; %d bytes of data, src=0x%X, dest=0x%X; ",
+		handle, msg->len, msg->src, msg->dest);
 
 	/* Deal with the diag type responses (send/recv/watch) */
 	switch (ihandle) {
 	/* There is no difference between watch and decode ... */
 		case RQST_HANDLE_WATCH:
 		case RQST_HANDLE_DECODE:
-			if (!(diag_cli_debug & DIAG_DEBUG_DATA)) {
-				/* Print data (unless done already) */
-					diag_printmsg(stdout, msg, 0);
-			}
+			diag_printmsg(stdout, msg, 0);
 			return;
 			break;
 		default:
@@ -495,10 +489,9 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	uint8_t mode_lengths[] = { 0, 2, 3, 1, 1, 3, 2, 1, 7, 2 };
 #define J1979_MODE_MAX 9
 
-	if (diag_cli_debug & DIAG_DEBUG_DATA) {
-		fprintf(stderr, "j1979_rqst: handle %p conn %p mode %#02X\n",
-			handle, (void *)d_conn, mode);
-	}
+	DIAG_DBGM(diag_cli_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		"j1979_rqst: handle %p conn %p mode %#02X\n",
+		handle, (void *)d_conn, mode);
 
 	/* Put in src/dest etc, L3 or L2 may override/ignore them */
 	msg.src = global_cfg.src;
@@ -524,7 +517,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	data[5] = p5;
 	data[6] = p6;
 	if ((rv = diag_l3_send(d_conn, &msg))) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	/* And get response(s) within a short while */
@@ -532,7 +525,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 	if (rv < 0) {
 		fprintf(stderr, "Request failed, retrying...\n");
 		if ((rv = diag_l3_send(d_conn, &msg))) {
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 		}
 		rv = diag_l3_recv(d_conn, 300, j1979_data_rcv, handle);
 		if (rv < 0) {
@@ -540,7 +533,7 @@ l3_do_j1979_rqst(struct diag_l3_conn *d_conn, uint8_t mode, uint8_t p1, uint8_t 
 			rv= d_conn->d_l3_proto->diag_l3_proto_timer(d_conn, 6000);	//force keepalive
 			if (rv < 0) {
 				fprintf(stderr, "\tfailed, connection to ECU may be lost!\n");
-				return diag_iseterr(rv);
+				return diag_ifwderr(rv);
 			}
 			fprintf(stderr, "\tOK.\n");
 			return DIAG_ERR_TIMEOUT;
@@ -711,7 +704,7 @@ static struct diag_l2_conn *do_l2_common_start(int L1protocol, int L2protocol,
 			fprintf(stderr, "Failed to open hardware interface\n");
 		}
 
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	/* Now do the Layer 2 startcommunications */

@@ -58,11 +58,9 @@ dl2p_14230_decode(uint8_t *data, int len,
 		int first_frame) {
 	uint8_t dl;
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "decode len %d, ", FL, len);
-		diag_data_dump(stderr, data, (size_t) len);
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		data, (size_t) len,
+		FLFMT "decode len %d, ", FL, len);
 
 	dl = data[0] & 0x3f;
 	if (dl == 0) {
@@ -72,11 +70,8 @@ dl2p_14230_decode(uint8_t *data, int len,
 		case 0xC0:
 			/* Addresses supplied, additional len byte */
 			if (len < 4) {
-				if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-					fprintf(stderr,
-						FLFMT "decode len short \n",
-						FL);
-				}
+				DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+					FLFMT "decode len short \n", FL);
 				return diag_iseterr(DIAG_ERR_INCDATA);
 			}
 			*hdrlen = 4;
@@ -158,10 +153,9 @@ dl2p_14230_decode(uint8_t *data, int len,
 		return diag_iseterr(DIAG_ERR_BADDATA);
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "decode hdrlen=%d, datalen=%d, cksum=1\n",
-			FL, *hdrlen, *datalen);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		FLFMT "decode hdrlen=%d, datalen=%d, cksum=1\n",
+		FL, *hdrlen, *datalen);
 
 	// return "theoretical" frame length, including headers + data + checksum byte. We
 	// don't complain if the actual len is shorter because sometimes the cksum will be stripped.
@@ -220,11 +214,9 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT "_int_recv dl2conn=%p offset=0x%X, tout=%u\n", FL,
-			(void *)d_l2_conn, dp->rxoffset, timeout);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "_int_recv dl2conn=%p offset=0x%X, tout=%u\n",
+		FL, (void *)d_l2_conn, dp->rxoffset, timeout);
 
 	state = ST_STATE1;
 	tout = timeout;
@@ -274,13 +266,9 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 
 		/* Receive data into the buffer */
 
-		if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr,
-				FLFMT
-				"before recv, state=%d timeout=%u, rxoffset "
-				"%d\n",
-				FL, state, tout, dp->rxoffset);
-		}
+		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			FLFMT "before recv, state=%d timeout=%u, rxoffset %d\n",
+			FL, state, tout, dp->rxoffset);
 
 		/*
 		 * In l1_doesl2frame mode, we get full frames, so we don't
@@ -295,10 +283,9 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 					  tout);
 		}
 
-		if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr, FLFMT "after recv, rv=%d rxoffset=%d\n",
-				FL, rv, dp->rxoffset);
-		}
+		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			FLFMT "after recv, rv=%d rxoffset=%d\n",
+			FL, rv, dp->rxoffset);
 
 		if (rv == DIAG_ERR_TIMEOUT) {
 			/* Timeout, end of message, or end of responses */
@@ -334,14 +321,9 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 				 */
 				diag_l2_addmsg(d_l2_conn, tmsg);
 				if (d_l2_conn->diag_msg == tmsg) {
-
-					if ((diag_l2_debug & DIAG_DEBUG_DATA) && (diag_l2_debug & DIAG_DEBUG_PROTO)) {
-						fprintf(stderr, FLFMT "Copying %u bytes to data: ",
-							FL, tmsg->len);
-						diag_data_dump(stderr, tmsg->data, tmsg->len);
-						fprintf(stderr, "\n");
-					}
-
+					DIAG_DBGMDATA(diag_l2_debug, (DIAG_DEBUG_PROTO | DIAG_DEBUG_DATA),
+						 DIAG_DBGLEVEL_V, tmsg->data, tmsg->len,
+						FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
 				}
 				state = ST_STATE3;
 				continue;
@@ -416,7 +398,7 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 				dp->first_frame);
 
 			if (rv <= 0 || rv > 260) { /* decode failure */
-				return diag_iseterr(rv);
+				return diag_iseterr(DIAG_ERR_BADDATA);
 			}
 
 			// check for sufficient data: (rv = expected len = hdrlen + datalen + ckslen)
@@ -466,14 +448,11 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 			tmsg = amsg; /* Finish processing this one */
 		}
 
-		if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-			fprintf(stderr,
-				FLFMT
-				"msg %p decode/rejig done rv=%d hdrlen=%u "
-				"datalen=%d src=%02X dst=%02X\n",
-				FL, (void *)tmsg, rv, hdrlen, datalen, source,
-				dest);
-		}
+		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+			FLFMT
+			"msg %p decode/rejig done rv=%d hdrlen=%u "
+			"datalen=%d src=%02X dst=%02X\n",
+			FL, (void *)tmsg, rv, hdrlen, datalen, source, dest);
 
 		tmsg->fmt = DIAG_FMT_FRAMED;
 
@@ -544,7 +523,7 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 	rv = diag_calloc(&dp, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
@@ -563,11 +542,9 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	dp->first_frame = 0;
 	dp->monitor_mode = 0;
 
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr,
-			FLFMT "_startcomms flags=0x%X tgt=0x%X src=0x%X\n", FL,
-			flags, target, source);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		FLFMT "_startcomms flags=0x%X tgt=0x%X src=0x%X\n", FL,
+		flags, target, source);
 
 	memset(data, 0, sizeof(data));
 
@@ -589,7 +566,7 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 	if ((rv=diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED, (void *) &set))) {
 			free(dp);
 			d_l2_conn->diag_l2_proto_data=NULL;	//delete pointer to dp
-			return diag_iseterr(rv);
+			return diag_ifwderr(rv);
 	}
 
 	dp->state = STATE_CONNECTING ;
@@ -669,27 +646,22 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			d_l2_conn->diag_l2_kb2 = d_l2_conn->diag_msg->data[2];
 			d_l2_conn->diag_l2_physaddr = d_l2_conn->diag_msg->src;
 
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-				fprintf(stderr,
-					FLFMT "_StartComms Physaddr=0x%X KB1=%02X, KB2=%02X\n",
-					FL, d_l2_conn->diag_l2_physaddr, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
-			}
+			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+				FLFMT "_StartComms Physaddr=0x%X KB1=%02X, KB2=%02X\n",
+				FL, d_l2_conn->diag_l2_physaddr, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
 			rv=0;
 			dp->state = STATE_ESTABLISHED ;
 			break;
 		case DIAG_KW2K_RC_NR:
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-				fprintf(stderr,
-					FLFMT "_StartComms got neg response\n", FL);
-			}
+			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+				FLFMT "_StartComms got neg response\n", FL);
 			rv=DIAG_ERR_ECUSAIDNO;
 			break;
 		default:
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-				fprintf(stderr,
-					FLFMT "_StartComms got unexpected response 0x%X\n",
-					FL, d_l2_conn->diag_msg->data[0]);
-			}
+			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+				FLFMT "_StartComms got unexpected response 0x%X\n",
+				FL, d_l2_conn->diag_msg->data[0]);
+
 			rv=DIAG_ERR_ECUSAIDNO;
 			break;
 		}	//switch data[0]
@@ -757,12 +729,9 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 				break;
 			}
 
-			if (diag_l2_debug & DIAG_DEBUG_INIT) {
-				fprintf(stderr,
-					FLFMT "ISO14230 KB1=%02X KB2=%02X\n",
-					FL, d_l2_conn->diag_l2_kb1,
-					d_l2_conn->diag_l2_kb2);
-			}
+			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
+				FLFMT "ISO14230 KB1=%02X KB2=%02X\n",
+				FL, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
 		}
 		rv=0;
 		dp->state = STATE_ESTABLISHED ;
@@ -791,10 +760,10 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			((d_l2_conn->diag_l2_kb1 & 2)? ISO14230_LENBYTE:0) |
 			((d_l2_conn->diag_l2_kb1 & 4)? ISO14230_SHORTHDR:0) |
 			((d_l2_conn->diag_l2_kb1 & 8)? ISO14230_LONGHDR:0);
-	if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-		fprintf(stderr, FLFMT "new modeflags=0x%04X\n", FL,
-			dp->modeflags);
-	}
+
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+		FLFMT "new modeflags=0x%04X\n", FL, dp->modeflags);
+
 	//For now, we won't bother with Normal / Extended timings. We don't
 	//need to unless we use the AccessTimingParameters service (scary)
 
@@ -870,9 +839,8 @@ dl2p_14230_stopcomms(struct diag_l2_conn *pX) {
 		debugstr="ECU did not respond to request, connection will timeout in 5s. (err=";
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_CLOSE) {
-		fprintf(stderr, FLFMT "_stopcomms: %s0x%02X).\n", FL, debugstr, errval);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
+		FLFMT "_stopcomms: %s0x%02X).\n", FL, debugstr, errval);
 
 	//and free() what startcomms alloc'ed.
 	if (pX->diag_l2_proto_data) {
@@ -906,10 +874,9 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "_send: dl2conn=%p msg=%p len=%d\n", FL,
-			(void *)d_l2_conn, (void *)msg, msg->len);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT "_send: dl2conn=%p msg=%p len=%d\n",
+		FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 
@@ -918,7 +885,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DATAONLY) {
 		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
 				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
-		return rv? diag_iseterr(rv):0;
+		return rv? diag_ifwderr(rv):0;
 	}
 
 	/* Build the new message */
@@ -985,11 +952,8 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		len++;				/* + checksum */
 	}
 
-	if ((diag_l2_debug & DIAG_DEBUG_WRITE) && (diag_l2_debug & DIAG_DEBUG_DATA)) {
-		fprintf(stderr, FLFMT "_send: ", FL);
-		diag_data_dump(stderr, buf, len);
-		fprintf(stderr, "\n");
-	}
+	DIAG_DBGMDATA(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, buf, len,
+		FLFMT "_send: ", FL);
 
 	/* Wait p3min milliseconds, but not if doing fast/slow init */
 	if (dp->state == STATE_ESTABLISHED) {
@@ -999,7 +963,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
 		buf, len, d_l2_conn->diag_l2_p4min);
 
-	return rv? diag_iseterr(rv):0;
+	return rv? diag_ifwderr(rv):0;
 }
 
 /*
@@ -1028,11 +992,9 @@ dl2p_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 		return rv;
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "_int_recv : handle=%p timeout=%u\n", FL,
-			handle, timeout); //%pcallback! we won't try to
-					  // printf the callback pointer.
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "_int_recv : handle=%p timeout=%u\n",
+		FL, handle, timeout);
 
 	/*
 	 * Call user callback routine
@@ -1045,9 +1007,8 @@ dl2p_14230_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	diag_freemsg(d_l2_conn->diag_msg);
 	d_l2_conn->diag_msg = NULL;
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "_recv callback completed\n", FL);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "_recv callback completed\n", FL);
 
 	return 0;
 }
@@ -1069,7 +1030,7 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	rv = diag_l2_send(d_l2_conn, msg);
 	if (rv < 0) {
 		*errval = rv;
-		return diag_pseterr(rv);
+		return diag_pfwderr(rv);
 	}
 
 	while (1) {
@@ -1083,7 +1044,7 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 				if (rv == DIAG_ERR_TIMEOUT) {
 					return NULL;
 				}
-				return diag_pseterr(rv);
+				return diag_pfwderr(rv);
 			}
 		}
 
@@ -1124,12 +1085,8 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 				*errval = rv;
 				return diag_pseterr(rv);
 			}
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-				fprintf(stderr,
-					FLFMT
-					"got BusyRepeatRequest: retrying...\n",
-					FL);
-			}
+			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+				FLFMT "got BusyRepeatRequest: retrying...\n", FL);
 
 			continue;
 		}
@@ -1139,11 +1096,8 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 			 * Msg is a requestCorrectlyRcvd-RspPending
 			 * so do read again
 			 */
-			if (diag_l2_debug & DIAG_DEBUG_PROTO) {
-				fprintf(stderr,
-					FLFMT "got RspPending: retrying...\n",
-					FL);
-			}
+			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
+				FLFMT "got RspPending: retrying...\n", FL);
 
 			/* reattach the rest of the chain, in case the good response
 			 * was already received
@@ -1178,10 +1132,9 @@ dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn) {
 	dp = (struct diag_l2_14230 *)d_l2_conn->diag_l2_proto_data;
 
 	/* XXX fprintf not async-signal-safe */
-	if (diag_l2_debug & DIAG_DEBUG_TIMER) {
-		fprintf(stderr, FLFMT "\ntimeout impending for dl2c=%pd\n",
-				FL, (void *)d_l2_conn);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
+		FLFMT "\ntimeout impending for dl2c=%pd\n",
+		FL, (void *)d_l2_conn);
 
 	diag_l2_debug=0;	//disable
 	diag_l1_debug=0;

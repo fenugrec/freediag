@@ -79,14 +79,13 @@ target_type target, source_type source) {
 	struct diag_l2_j1850 *dp;
 	int rv;
 
-	if (diag_l2_debug & DIAG_DEBUG_OPEN) {
-		fprintf(stderr, FLFMT "diag_l2_j1850_startcomms dl2conn %p\n",
-			FL, (void *)d_l2_conn);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
+		FLFMT "diag_l2_j1850_startcomms dl2conn %p\n",
+		FL, (void *)d_l2_conn);
 
 	rv = diag_calloc(&dp, 1);
 	if (rv != 0) {
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	d_l2_conn->diag_l2_proto_data = (void *)dp;
@@ -166,11 +165,9 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	uint8_t buf[MAXRBUF];
 	int offset = 0;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr,
-			FLFMT "diag_l2_j1850_send %p msg %p len %d called\n",
-			FL, (void *)d_l2_conn, (void *)msg, msg->len);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT "diag_l2_j1850_send %p msg %p len %d called\n",
+		FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	if ((msg->len + 4) >= MAXRBUF) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -207,17 +204,15 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		buf[offset++] = dl2p_j1850_crc(buf, curoff);
 	}
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr,
-			FLFMT "diag_l2_j1850_send sending %d bytes to L1\n", FL,
-			offset);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT "diag_l2_j1850_send sending %d bytes to L1\n",
+		FL, offset);
 
 	// And send data to Layer 1
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 				buf, (size_t)offset, 0);
 
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_ifwderr(rv):0 ;
 }
 
 /*
@@ -244,12 +239,10 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
 	diag_freemsg(d_l2_conn->diag_msg);
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT "diag_l2_j1850_int_recv offset 0x%X, "
-			      "timeout=%u\n",
-			FL, dp->rxoffset, timeout);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "diag_l2_j1850_int_recv offset 0x%X, "
+			  "timeout=%u\n",
+		FL, dp->rxoffset, timeout);
 
 	// No support for non framing L2 interfaces yet ...
 	if (!(l1flags & DIAG_L1_DOESL2FRAME)) {
@@ -377,13 +370,9 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	/*
 	 * We now have data stored on the L2 descriptor
 	 */
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr,
-			FLFMT "calling rcv msg=%p callback, handle=%p\n", FL,
-			(void *)d_l2_conn->diag_msg,
-			handle); //%pcallback! we won't try to printf the
-				 //callback pointer.
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "calling rcv msg=%p callback, handle=%p\n",
+		FL, (void *)d_l2_conn->diag_msg, handle);
 
 	tmsg = d_l2_conn->diag_msg;
 	d_l2_conn->diag_msg = NULL;
@@ -396,9 +385,8 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	/* message no longer needed */
 	diag_freemsg(tmsg);
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "rcv callback completed\n", FL);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "rcv callback completed\n", FL);
 
 	return 0;
 }

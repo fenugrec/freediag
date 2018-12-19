@@ -182,7 +182,7 @@ static int cmd_diag_reml3(UNUSED(int argc), UNUSED(char **argv)) {
 						// hanging there
 	}
 
-	return rv? diag_iseterr(rv):0;
+	return rv? diag_ifwderr(rv):0;
 }
 
 
@@ -345,7 +345,7 @@ do_l2_generic_start(void) {
 	if (rv) {
 		fprintf(stderr, "l2_generic_start: open failed for protocol %d on %s\n",
 			global_cfg.L1proto, dl0d->dl0->shortname);
-		return diag_iseterr(rv);
+		return diag_ifwderr(rv);
 	}
 
 	if (global_cfg.addrtype) {

@@ -48,6 +48,8 @@ extern "C" {
 #include <stdint.h>		/* For uint8_t, etc. This is a C99 header */
 #include <stdio.h>		/* For FILE */
 
+#include "diag_os.h"	//for mutexes...
+
 // Nice to have anywhere...
 #define MIN(_a_, _b_) (((_a_) < (_b_) ? (_a_) : (_b_)))
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
@@ -157,23 +159,78 @@ typedef uint16_t flag_type;	//this is used for L2 type flags (see diag_l2.h)
 #define DIAG_DEBUG_DATA		0x80	/* Dump data depending on other flags */
 #define DIAG_DEBUG_TIMER	0x100	/* Timer stuff */
 
-enum debugflag_enum {OPEN=DIAG_DEBUG_OPEN,
-	CLOSE=DIAG_DEBUG_CLOSE,
-	READ=DIAG_DEBUG_READ,
-	WRITE=DIAG_DEBUG_WRITE,
-	IOCTL=DIAG_DEBUG_IOCTL,
-	PROTO=DIAG_DEBUG_PROTO,
-	INIT=DIAG_DEBUG_INIT,
-	DATA=DIAG_DEBUG_DATA,
-	TIMER=DIAG_DEBUG_TIMER,
-	NIL=0
+
+// these are for identifying the debug message prefix to be printed
+enum debug_prefix {
+	DIAG_DEBUGPF_NONE,
+	DIAG_DEBUGPF_OPEN,
+	DIAG_DEBUGPF_CLOSE,
+	DIAG_DEBUGPF_READ,
+	DIAG_DEBUGPF_WRITE,
+	DIAG_DEBUGPF_IOCTL,
+	DIAG_DEBUGPF_PROTO,
+	DIAG_DEBUGPF_INIT,
+	DIAG_DEBUGPF_DATA,
+	DIAG_DEBUGPF_TIMER
 };
-// struct debugflags_descr : filled + used in scantool_debug.c
-struct debugflags_descr {
-	enum debugflag_enum mask;
-	const char *descr;		//associate short description for each flag.
-	const char *shortdescr;
-};
+
+/** debug message prefixes : dbg_prefixes[DIAG_DEBUGPF_XYZ] is a const char*
+ */
+extern const char *dbg_prefixes[];
+
+
+/**** debug message helpers.
+ *
+ * These macros will allow changing the backend and destination (stderr, file, etc)
+ *
+ */
+
+#define DIAG_DBGLEVEL_V	0
+
+/** for diag.h internal use only */
+#define DIAG_DBG_BACKEND(...) fprintf(stderr, __VA_ARGS__)
+
+
+/** print general debug message
+ *
+ */
+#define DIAG_DBGGEN(level, ...) DIAG_DBG_BACKEND(__VA_ARGS__);
+
+
+/** simple debug message formatter
+ *
+ * flagvar is the i.e. "diag_l1_debug" that is checked against mask.
+ * mask: see DIAG_DEBUG_* defs above
+ * level: not used yet
+ *
+ * Must be used for all non-essential messages. Does not add "\n"
+ *
+ */
+#define DIAG_DBGM(flagvar, mask, level, ...) do { \
+	if (((flagvar) & (mask)) == (mask)) { \
+		DIAG_DBG_BACKEND(__VA_ARGS__); \
+	}} while (0)
+
+/** debug message formatter with data
+ *
+ * flagvar is the i.e. "diag_l1_debug" that is checked against mask.
+ * mask: see DIAG_DEBUG_* defs above. No need to specify DIAG_DEBUG_DATA
+ * level: not used yet
+ *
+ * varargs: always printed. Automatically adds trailing "\n"
+ *
+ * Must be used for all non-essential messages.
+ *
+ */
+#define DIAG_DBGMDATA(flagvar, mask, level, data, datalen, ...) do { \
+	if (((flagvar) & (mask)) == (mask)) { \
+		DIAG_DBG_BACKEND(__VA_ARGS__); \
+		if ((flagvar) & DIAG_DEBUG_DATA) { \
+			diag_data_dump(stderr, data, datalen); \
+		} \
+		fprintf(stderr, "\n"); \
+	}} while (0)
+
 
 /*
  * Message handling.
@@ -264,25 +321,36 @@ void smartcat(char *p1, const size_t s1, const char *p2 );
 
 /*
  * Error functions.
- * "pflseterr" and "iflseterr" aren't intended to be called directly.
+ * diag_p_* aren't intended to be called directly.
  * Use "diag_pseterr" (returns a NULL pointer) or
  * "diag_iseterr" (returns the passed in error code),
  * which will save where the error took place and optionally log it.
  */
 
-void *diag_pflseterr(const char *name, const int line, const int code);
-int diag_iflseterr(const char *name, const int line, const int code);
+void *diag_p_pseterr(const char *name, const int line, const int code);
+int diag_p_iseterr(const char *name, const int line, const int code);
+void *diag_p_pfwderr(const char *name, const int line, const int code);
+int diag_p_ifwderr(const char *name, const int line, const int code);
 
-#define diag_pseterr(C) diag_pflseterr(CURFILE, __LINE__, (C))
-#define diag_iseterr(C) diag_iflseterr(CURFILE, __LINE__, (C))
+/** return NULL, set and print error. */
+#define diag_pseterr(C) diag_p_pseterr(CURFILE, __LINE__, (C))
+/** return (C), set and print error. */
+#define diag_iseterr(C) diag_p_iseterr(CURFILE, __LINE__, (C))
 
-/*
- * diag_geterr returns the last error and clears it.
+/** return NULL, print error as a debug msg */
+#define diag_pfwderr(C) diag_p_pfwderr(CURFILE, __LINE__, (C))
+/** return (C), print error as a debug msg */
+#define diag_ifwderr(C) diag_p_ifwderr(CURFILE, __LINE__, (C))
+
+
+/** Return the last error and clears it.
  */
 int diag_geterr(void);
 
-/*
- * Textual description of error.
+/** Get textual description of error
+ *
+ * Note, it returns a pointer to a statically allocated buffer
+ * common to all threads and that must not be free'd.
  */
 const char *diag_errlookup(const int code);
 
@@ -322,6 +390,33 @@ char **strlist_add(char **list, const char *news, int elems);
 * @param elems: number of strings in list
 */
 void strlist_free(char **slist, int elems);
+
+// Atomics
+
+// Atomically accessed types
+typedef struct {
+	diag_mtx mtx;
+	bool v;
+} diag_atomic_bool;
+typedef struct {
+	diag_mtx mtx;
+	int v;
+} diag_atomic_int;
+
+#define diag_atomic_init(V) diag_os_initstaticmtx(&((V)->mtx))
+#define diag_atomic_del(V) diag_os_delmtx(&((V)->mtx))
+
+void diag_atomic_store_bool(diag_atomic_bool *a, bool d);
+void diag_atomic_store_int(diag_atomic_int *a, int d);
+bool diag_atomic_load_bool(diag_atomic_bool *a);
+int diag_atomic_load_int(diag_atomic_int *a);
+
+/** Check if periodic timers have finished
+ *
+ * Returns true if the periodic timer is no longer necessary, ie. if the diag_end has been
+ * run. Returns false otherwise.
+ */
+bool periodic_done(void);
 
 #if defined(__cplusplus)
 }

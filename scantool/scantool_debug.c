@@ -36,9 +36,26 @@
 #include "scantool_cli.h"
 
 
+enum debugflag_enum {OPEN=DIAG_DEBUG_OPEN,
+	CLOSE=DIAG_DEBUG_CLOSE,
+	READ=DIAG_DEBUG_READ,
+	WRITE=DIAG_DEBUG_WRITE,
+	IOCTL=DIAG_DEBUG_IOCTL,
+	PROTO=DIAG_DEBUG_PROTO,
+	INIT=DIAG_DEBUG_INIT,
+	DATA=DIAG_DEBUG_DATA,
+	TIMER=DIAG_DEBUG_TIMER,
+	NIL=0
+};
+
 //declare an array of structs to associate debug flag masks with short description.
-//See diag.h
-const struct debugflags_descr debugflags[] = {
+struct debugflags_descr {
+	enum debugflag_enum mask;
+	const char *descr;		//associate short description for each flag.
+	const char *shortdescr;
+};
+
+static const struct debugflags_descr debugflags[] = {
 	{OPEN, "Open events","OPEN"},
 	{CLOSE, "Close events","CLOSE"},
 	{READ, "Read events","READ"},

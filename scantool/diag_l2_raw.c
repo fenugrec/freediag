@@ -86,15 +86,14 @@ int
 dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
-	if (diag_l2_debug & DIAG_DEBUG_WRITE) {
-		fprintf(stderr, FLFMT "diag_l2_send %p, msg %p len %d called\n",
-			FL, (void *)d_l2_conn, (void *)msg, msg->len);
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
+		FLFMT "diag_l2_send %p, msg %p len %d called\n",
+		FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 		msg->data, msg->len, d_l2_conn->diag_l2_p4min);
 
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_ifwderr(rv):0 ;
 }
 
 /*
@@ -123,11 +122,8 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	msg.idata=NULL;
 	msg.rxtime = diag_os_getms();
 
-	if (diag_l2_debug & DIAG_DEBUG_READ) {
-		fprintf(stderr, FLFMT "l2_proto_raw_recv: handle=%p\n", FL,
-			handle); //%pcallback! we won't try to printf the
-				 //callback pointer.
-	}
+	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
+		FLFMT "l2_proto_raw_recv: handle=%p\n", FL,	handle);
 
 	/*
 	 * Call user callback routine
