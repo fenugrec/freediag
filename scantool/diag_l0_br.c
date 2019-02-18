@@ -110,8 +110,6 @@ br_init(void) {
 		return 0;
 	}
 
-	/* Do required scheduling tweeks */
-	diag_os_sched();
 	br_initdone = 1;
 
 	return 0;

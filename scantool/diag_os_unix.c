@@ -418,18 +418,6 @@ diag_os_ipending(void) {
 
 }
 
-//diag_os_sched : set high priority for this thread/process.
-//There is no "opposite" function of this, to
-//reset normal priority.
-//
-//Should be done from a separate process for security reasons,
-//a more thorough implementation can be found in schedSetter/
-int
-diag_os_sched(void) {
-	return 0;
-}
-
-
 //diag_os_geterr : get OS-specific error string.
 //Either gets the last error if os_errno==0, or print the
 //message associated with the specified os_errno

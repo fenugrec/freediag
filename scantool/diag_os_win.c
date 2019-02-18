@@ -43,6 +43,9 @@ static int pfconv_valid=0;	//flag after querying perfo_freq; nothing will not wo
 int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_millisleep & diag_os_calibrate
 
 
+static void tweak_timing(bool change_interval);
+static void reset_timing(void);
+
 /* periodic callback:
 +* the current implementation uses non-async-signal-safe functions
 +* in the signal handlers.  Their behavior is undefined if they happen
@@ -68,10 +71,9 @@ VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
 	return;
 }
 
-//diag_os_init : a bit of a misnomer. This sets up a periodic callback
-//to call diag_l3_timer and diag_l2_timer; that would sound like a job
-//for "diag_os_sched". The WIN32 version of diag_os_init also
-//calls diag_os_sched to increase thread priority.
+//diag_os_init : Sets up a periodic callback
+//to call diag_l3_timer and diag_l2_timer.
+// Also calls tweak_timing() to increase thread priority.
 //return 0 if ok
 int
 diag_os_init(void) {
@@ -80,7 +82,7 @@ diag_os_init(void) {
 	if (diag_os_init_done)
 		return 0;
 
-	diag_os_sched();	//call os_sched to increase thread priority.
+	tweak_timing(1);
 
 	//probably the nearest equivalent to a unix interval timer + associated alarm handler
 	//is the timer queue... so that's what we do.
@@ -133,6 +135,8 @@ int diag_os_close() {
 	DWORD err;
 
 	diag_os_init_done=0;	//diag_os_init will have to be done again past this point.
+
+	reset_timing();
 
 	if (hDiagTimer != INVALID_HANDLE_VALUE) {
 		if (DeleteTimerQueueTimer(NULL,hDiagTimer,NULL)) {
@@ -224,19 +228,13 @@ diag_os_ipending(void) {
 	return 0;
 }
 
-//diag_os_sched : set high priority for this thread/process.
-//this is called from most diag_l0_* devices; calling more than once
-//will harm nothing. There is no "opposite" function of this, to
-//reset normal priority.
-//we ifdef the body of the function according to the OS capabilities
-int
-diag_os_sched(void) {
-	static int os_sched_done=0;
-	int rv=0;
-
-	if (os_sched_done)
-		return 0;	//don't do it more than once
-
+/** Adjust priority and OS time interval
+ *
+ * @param change_interval : if 1, use timeBeginPeriod
+ *
+ * call reset_timing() before exiting
+ */
+static void tweak_timing(bool change_interval) {
 	HANDLE curprocess, curthread;
 
 	//set the current process to high priority.
@@ -250,11 +248,15 @@ diag_os_sched(void) {
 	if (! SetThreadPriority(curthread, THREAD_PRIORITY_HIGHEST)) {
 		fprintf(stderr, FLFMT "Warning : could not increase thread priority. Timing may be impaired.\n", FL);
 	}
-	rv=0;
 
-	os_sched_done=1;
-	return rv;
-}	//of diag_os_sched
+	return;
+}
+
+/** reset prio and OS time interval
+*/
+static void reset_timing(void) {
+
+}
 
 
 

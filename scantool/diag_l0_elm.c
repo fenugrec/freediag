@@ -120,9 +120,6 @@ elm_init(void) {
 		return 0;
 	}
 
-	/* Do required scheduling tweaks */
-	diag_os_sched();
-
 	elm_initdone = 1;
 	return 0;
 }

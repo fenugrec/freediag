@@ -83,9 +83,6 @@ void diag_os_calibrate(void);
  */
 const char *diag_os_geterr(OS_ERRTYPE os_errno);
 
-/* Scheduler */
-int diag_os_sched(void);
-
 /** Return current "time" in milliseconds.
  *
  * This must use a monotonic (i.e. always increasing) clock source; this
