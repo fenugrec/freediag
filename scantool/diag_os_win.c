@@ -34,13 +34,14 @@
 #include <conio.h>	//for _kbhit, _getch
 #include <inttypes.h> 	//for PRIu64 formatters
 
-
-static int diag_os_init_done=0;
+static bool diag_os_init_done=0;
+static bool timer_period_changed = 0;	//do we need to reset timeEndPeriod on exit
 
 LARGE_INTEGER perfo_freq = {{0,0}};	//for use with QueryPerformanceFrequency and QueryPerformanceCounter
 float pf_conv=0;		//this will be (1E6 / perfo_freq) to convert counts to microseconds, i.e. [us]=[counts]*pf_conv
 static int pfconv_valid=0;	//flag after querying perfo_freq; nothing will not work without a performance counter
 int shortsleep_reliable=0;	//TODO : auto-detect this on startup. See diag_os_millisleep & diag_os_calibrate
+static UINT timer_period = 0; // to store timeBeginPeriod(timer_period) value for future cleanup
 
 
 static void tweak_timing(bool change_interval);
@@ -249,12 +250,50 @@ static void tweak_timing(bool change_interval) {
 		fprintf(stderr, FLFMT "Warning : could not increase thread priority. Timing may be impaired.\n", FL);
 	}
 
+	if (!change_interval) return;
+
+	// workaround to increase Sleep() routine accuracy by decreasing PerformanceTimer time period to minimum possible
+	// not fatal if any of this fails
+
+	TIMECAPS caps;
+	MMRESULT res = timeGetDevCaps(&caps, sizeof(caps));
+
+	if (res != TIMERR_NOERROR) {
+		printf("Unable to timeGetDevCaps.\n");
+	} else {
+		if (timeBeginPeriod(caps.wPeriodMin) != TIMERR_NOERROR ) {
+			printf ("Error setting OS timer period!\n");
+		} else {
+			timer_period = caps.wPeriodMin;
+			timer_period_changed = 1;
+		}
+	}
+
 	return;
 }
 
 /** reset prio and OS time interval
 */
 static void reset_timing(void) {
+	HANDLE curprocess, curthread;
+
+	//reset the current process to normal
+	curprocess=GetCurrentProcess();
+	curthread=GetCurrentThread();
+	if (! SetPriorityClass(curprocess, NORMAL_PRIORITY_CLASS)) {
+		fprintf(stderr, FLFMT "Warning: could not reset process priority.\n", FL);
+	}
+
+	if (! SetThreadPriority(curthread, THREAD_PRIORITY_NORMAL)) {
+		fprintf(stderr, FLFMT "Warning : could not reset thread priority.\n", FL);
+	}
+
+	if (!timer_period_changed) return;
+
+	// restore multimedia timer
+	if (timeEndPeriod(timer_period) != TIMERR_NOERROR) {
+		printf("Error restoring OS timer period!\n");
+	}
 
 }
 
