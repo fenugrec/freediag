@@ -25,7 +25,7 @@ void initFreediag ( void )
   dup2 ( outFiledes[0], fileno ( stdin  ) ) ;
   dup2 (  inFiledes[1], fileno ( stdout ) ) ;
 
-  execl ( "../scantool/scantool", "scantool", "-a", NULL ) ;
+  execl ( "../scantool/freediag", "freediag", "-a", NULL ) ;
   perror ( "scangui" ) ;
   exit ( 1 ) ;
 }

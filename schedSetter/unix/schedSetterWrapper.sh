@@ -10,7 +10,7 @@ main=schedSetter
 uid=1000
 gid=1000
 
-program=scantool
+program=freediag
 #program=dc
 
 i="`basename "$main"`-`basename "$program"`StdInFIFO"

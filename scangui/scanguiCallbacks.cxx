@@ -76,7 +76,7 @@ void exitCB ( Fl_Button *me, void * )
 
   // Shouldn't be needed - except during development.
 
-  system ( "killall scantool" ) ;
+  system ( "killall freediag" ) ;
 
   fprintf ( stderr, "Exiting scangui.\n" ) ;
   exit ( 0 ) ;

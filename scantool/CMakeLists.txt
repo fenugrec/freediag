@@ -106,9 +106,9 @@ if (BUILD_DIAGTEST)
 	install(TARGETS diag_test DESTINATION ${BIN_DESTDIR})
 endif ()
 
-# scantool binary
+# freediag binary
 
-add_executable(scantool  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
+add_executable(freediag  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
 
 target_link_libraries(freediagcli diag)
 if (HAVE_LIBREADLINE)
@@ -116,14 +116,14 @@ if (HAVE_LIBREADLINE)
 	target_link_libraries(freediagcli readline)
 endif ()
 
-target_link_libraries(scantool dyno freediagcli)
+target_link_libraries(freediag dyno freediagcli)
 
-install(TARGETS scantool DESTINATION ${BIN_DESTDIR})
+install(TARGETS freediag DESTINATION ${BIN_DESTDIR})
 
 
 
 ## Test suite (WIP)
-# scantool tests; these are arranged roughly from slowest to fastest
+# freediag tests; these are arranged roughly from slowest to fastest
 set(SCANTOOL_TESTS
 #tty_patgen requires oscilloscope validation
 #	tty_patgen
@@ -155,7 +155,7 @@ foreach (TF_ITER IN LISTS SCANTOOL_TESTS)
 	add_test(NAME ${TF_ITER}
 		WORKING_DIRECTORY ${TESTSRC}
 		COMMAND ${CMAKE_COMMAND}
-		-DTEST_PROG=$<TARGET_FILE:scantool>
+		-DTEST_PROG=$<TARGET_FILE:freediag>
 		-DTESTFDIR=${TESTSRC}
 		-DTESTF=${TF_ITER}
 		-P ${TESTSRC}/runcli.cmake

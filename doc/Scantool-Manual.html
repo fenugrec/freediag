@@ -97,15 +97,15 @@
   hardware. Running as root was recommended in  previous versions of freediag in the hope of improving precision of timing,
   but the effect has not proved to be worth the risk.
   
-  <p>Start the Scantool CLI by running &quot;./scantool&quot;, you will get a
+  <p>Start the Scantool CLI by running &quot;./freediag&quot;, you will get a
   command prompt:
 
   <p><ul>
-    <code>scantool&gt; </code>
+    <code>freediag&gt; </code>
   </ul>
 
   <p>The scantool will read commands from a startup file called
-  <i>.scantoolrc</i> in your home directory or scantool.ini in the program directory,
+  <i>.freediagrc</i> in your home directory or freediag.ini in the program directory,
   depending on options set at compile time.
 
   <p>Many people will put the appropriate <code>set interface &lt;<i>type</i>&gt;</code>
@@ -149,13 +149,13 @@
   <p>Note the cli prompt will change from
   
   <p><ul>
-    <code>scantool&gt;</code>
+    <code>freediag&gt;</code>
   </ul>
   
   <p>to
   
   <p><ul>
-    <code>scantool/set&gt;</code>
+    <code>freediag/set&gt;</code>
   </ul>
   
   <p>To leave a submenu and return to the main menu, type:
@@ -472,7 +472,7 @@
   appropriate <code>set interface [name]</code> command needs to be run. The
   default interface driver is the <i>dumb</i> driver which works with most
   generic serial to ISO9141 interfaces. It is recommended that you put this
-  command in your <i>.scantoolrc</i> file.
+  command in your <i>.freediagrc</i> file.
   
   <ul>
  <p>Generic serial adaptors (opto-isolated or not):<br>

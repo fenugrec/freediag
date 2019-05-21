@@ -25,10 +25,7 @@ Other GUI applications will appear over time.
 LICENSING:
 ~~~~~~~~~~
 
-scantool is licensed under GPL - but other packages found here
-may have other OpenSource licensing arrangements - which is OK
-because each is a separate program and does not link against
-scantool.  Check in each directory for details.
+freediag and its backend library "libdiag" are licensed under GPL.
 
 
 AUTHORS:

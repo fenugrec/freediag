@@ -25,7 +25,7 @@ include (GNUInstallDirs)
 set (PKGVERSIONMAJOR "1")
 set (PKGVERSIONMINOR "08")
 set (PKGVERSION "${PKGVERSIONMAJOR}.${PKGVERSIONMINOR}")
-set (SCANTOOL_PROGNAME "scantool")
+set (SCANTOOL_PROGNAME "freediag")
 #that sets the command-line tool prompt.
 
 

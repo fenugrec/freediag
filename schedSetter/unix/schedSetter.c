@@ -18,7 +18,7 @@
 // For example; if sudo gives root rights, stdinFIFO is an appropriate FIFO
 // special file, "1000" are an appropriate user's UID and GID, and the target
 // executable is called scantool; it could be called with:
-// sudo schedSetter stdinFIFO 1000 1000 scantool
+// sudo schedSetter stdinFIFO 1000 1000 freediag
 //
 // See schedSetterWrapper.sh.
 //

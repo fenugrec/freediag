@@ -1560,7 +1560,8 @@ do_init(void) {
 static void do_usage (void) {
 	fprintf( stderr, "FreeDiag ScanTool:\n\n" ) ;
 	fprintf( stderr, "  Usage -\n" ) ;
-	fprintf( stderr, "	scantool [-h][-a|-c][-f <file]\n\n" ) ;
+	fprintf( stderr, "	freediag [-h][-a|-c][-f <file]\n" ) ;
+	fprintf( stderr, "	or scangui for an fltk gui\n\n" ) ;
 	fprintf( stderr, "  Where:\n" ) ;
 	fprintf( stderr, "\t-h   -- Display this help message\n" ) ;
 	fprintf( stderr, "\t-a   -- Start in Application/Interface mode\n" ) ;

@@ -1,6 +1,6 @@
 #script for running freediag "scantool" with a script, and matching stdout and stderr output to "desired output" files.
 #Caller passes
-# TEST_PROG (scantool binary)
+# TEST_PROG (freediag binary)
 # TESTFDIR (directory for .ini, .stdout, .stderr files)
 # TESTF (root of files)
 
