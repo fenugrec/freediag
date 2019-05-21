@@ -146,7 +146,9 @@ int diag_l3_stop(struct diag_l3_conn *d_l3_conn) {
 	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 
 	/* Remove from list */
+	diag_os_lock(&connlist_mtx);
 	LL_DELETE(diag_l3_list, d_l3_conn);
+	diag_os_unlock(&connlist_mtx);
 
 	rv = dp->diag_l3_proto_stop(d_l3_conn);
 

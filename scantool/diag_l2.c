@@ -119,7 +119,7 @@ diag_l2_timer(void) {
 	}
 
 	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
-		int expired = 0;
+		bool expired = 0;
 
 		/*
 		 * If in monitor mode, or the connection isn't open,
