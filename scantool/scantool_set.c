@@ -211,9 +211,9 @@ static int cmd_set_custom(int argc, char **argv) {
 	if (helping) {
 		printf("%s\n", cfgp->descr);
 		diag_cfg_refresh(cfgp);
+		printf("Available options:\n");
 		if (cfgp->numopts > 0) {
 			int i;
-			printf("Available options:\n");
 			for (i=0; i < cfgp->numopts; i++) {
 				printf("\t\t%s\n", cfgp->opt[i]);
 			}
