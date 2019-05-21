@@ -126,7 +126,7 @@ option(USE_INIFILE "At startup, search the current directory for an ini file to 
 if(DEFINED L0LIST)
 		message("Using provided list of L0 : ${L0LIST}")
 else()
-		set(L0LIST "me" "dumb" "br" "elm" "sim" "dumbtest")
+		set(L0LIST "dumb" "br" "elm" "me" "sim" "dumbtest")
 endif()
 
 if(DEFINED L2LIST)

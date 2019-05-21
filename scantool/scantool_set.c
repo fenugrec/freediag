@@ -45,43 +45,6 @@ struct globcfg global_cfg;
 
 struct diag_l0_device *global_dl0d;
 
-
-/*
- * XXX All commands should probably have optional "init" hooks.
- */
-int set_init(void) {
-	/* Reset parameters to defaults. */
-
-	global_cfg.speed = 10400;	/* Comms speed; ECUs will probably send at 10416 bps (96us per bit) */
-
-	global_cfg.src = 0xf1;	/* Our tester ID */
-	global_cfg.addrtype = 1;	/* Use functional addressing */
-	global_cfg.tgt = 0x33;	/* Dest ECU address */
-
-	global_cfg.L1proto = DIAG_L1_ISO9141;	/* L1 protocol type */
-
-	global_cfg.L2idx = 0;
-	global_cfg.L2proto = l2proto_list[0]->diag_l2_protocol; /* cannot guarantee 9141 was compiled... DIAG_L2_PROT_ISO9141; */
-
-	global_cfg.initmode = DIAG_L2_TYPE_FASTINIT ;
-
-	global_cfg.units = 0;		/* English (1), or Metric (0) */
-
-	global_cfg.l0name = l0dev_list[0]->shortname;	/* Default H/w interface to use */
-
-	printf( "%s: Interface set to default: %s\n", progname, global_cfg.l0name);
-
-	global_dl0d=NULL;
-
-	return 0;
-}
-
-void set_close(void) {
-	return;
-}
-
-
-
 /* SET sub menu */
 static int cmd_set_custom(int argc, char **argv);
 static int cmd_set_help(int argc, char **argv);
@@ -152,6 +115,39 @@ const char *const l1_names[] = { //these MUST be in the same order as they are l
 const char *const l2_initmodes[] = {
 	"5BAUD", "FAST", "CARB", NULL
 };
+
+
+/* workaround to use cmd_set_interface() properly: set up fake command args */
+static char *default_cmd = "interface";
+static char *default_iface = "DUMB";
+
+int set_init(void) {
+	/* Reset parameters to defaults. */
+
+	global_cfg.speed = 10400;	/* Comms speed; ECUs will probably send at 10416 bps (96us per bit) */
+
+	global_cfg.src = 0xf1;	/* Our tester ID */
+	global_cfg.addrtype = 1;	/* Use functional addressing */
+	global_cfg.tgt = 0x33;	/* Dest ECU address */
+
+	global_cfg.L1proto = DIAG_L1_ISO9141;	/* L1 protocol type */
+
+	global_cfg.L2idx = 0;
+	global_cfg.L2proto = l2proto_list[0]->diag_l2_protocol; /* cannot guarantee 9141 was compiled... DIAG_L2_PROT_ISO9141; */
+
+	global_cfg.initmode = DIAG_L2_TYPE_FASTINIT ;
+
+	global_cfg.units = 0;		/* English (1), or Metric (0) */
+
+	char *garbage_args[] = {default_cmd, default_iface};
+	cmd_set_interface(2, garbage_args); /* Default H/w interface to use */
+
+	return 0;
+}
+
+void set_close(void) {
+	return;
+}
 
 // handle dynamic options (L0-specific).
 // argv[0] is the config shortname, etc.
