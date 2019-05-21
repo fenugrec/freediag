@@ -32,17 +32,18 @@ set (SCANTOOL_PROGNAME "scantool")
 ###### Compiler flags & build types
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
 	message(STATUS "No build type selected, defaulting to Debug")
-	message(STATUS "Available build types : Debug, Release, RelWithDebInfo")
+	message(STATUS "Available build types : Debug, Profiling, Release, RelWithDebInfo")
 	set(CMAKE_BUILD_TYPE "DEBUG" CACHE STRING
-		"Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel."
+		"Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Profiling Release RelWithDebInfo MinSizeRel."
 		FORCE)
-	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Profiling" "Release"
 		"MinSizeRel" "RelWithDebInfo")
 endif ()
 
 
 if (CMAKE_COMPILER_IS_GNUCC)
 	set (CMAKE_C_FLAGS_DEBUG "-g")
+	set (CMAKE_C_FLAGS_PROFILING "-g -pg")
 	set (CMAKE_C_FLAGS_RELEASE "-DNDEBUG")
 	set (CMAKE_C_FLAGS_RELWITHDEBINFO "-gsplit-dwarf")
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wformat -pedantic -std=gnu99 -Wstrict-prototypes -Wsign-compare -Wredundant-decls" )
