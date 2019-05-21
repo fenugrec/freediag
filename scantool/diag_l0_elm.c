@@ -71,7 +71,7 @@ struct elm_device {
 // _CLONE can be set in addition to the basic type
 #define ELM_323_BASIC	1	//device type is 323
 #define ELM_327_BASIC	2	//device type is 327
-#define ELM_32x_CLONE	4	 //device is a clone; some commands will not be supported
+#define ELM_32x_CLONE	4	//device is a clone; some commands will not be supported
 #define ELM_INITDONE	0x10	//set when "BUS INIT" has happened. This is important for clones.
 
 
@@ -199,17 +199,17 @@ elm_close(struct diag_l0_device *dl0d) {
 		elm_sendcmd(dl0d, buf, 5, 500, NULL);	//close protocol. So clean !
 	}
 
-	 dev = (struct elm_device *)dl0d->l0_int;
+	dev = (struct elm_device *)dl0d->l0_int;
 
 	/* If debugging, print to stderr */
-	 DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
-		 FLFMT "link %p closing\n", FL, (void *)dl0d);
+	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
+		FLFMT "link %p closing\n", FL, (void *)dl0d);
 
-	 diag_tty_close(dev->tty_int);
-	 dev->tty_int = NULL;
-	 dl0d->opened = 0;
+	diag_tty_close(dev->tty_int);
+	dev->tty_int = NULL;
+	dl0d->opened = 0;
 
-	 return;
+	return;
 }
 
 
@@ -549,8 +549,8 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 
 	//check if proto is really supported (323 supports only 9141 and 14230)
 	if ((dev->elmflags & ELM_323_BASIC) &&
-	    ((iProtocol != DIAG_L1_ISO9141) &&
-	     (iProtocol != DIAG_L1_ISO14230))) {
+		((iProtocol != DIAG_L1_ISO9141) &&
+		(iProtocol != DIAG_L1_ISO14230))) {
 		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 	}
 
@@ -966,7 +966,7 @@ elm_send(struct diag_l0_device *dl0d,
 		// if ISO9141 protocol setting with KWP message format,
 		// adjust receive filter
 		if ((dev->atsh[0] & 0x80) &&
-		   (dev->atsh[2] == (unsigned int)((uint8_t *)data)[2])) {
+			(dev->atsh[2] == (unsigned int)((uint8_t *)data)[2])) {
 			// already sent ATSR for this address
 		} else if ((unsigned int)((uint8_t *)data)[0] & 0x80) {
 			sprintf((char *)buf, "ATSR %02X\x0D",
