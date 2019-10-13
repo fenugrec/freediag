@@ -90,6 +90,8 @@ extern "C" {
 	// The disadvantage of __FILE__ is that it often (always ?) holds the absolute path of the file,
 	// not just the filename. For our debugging messages we only care about the filename, hence CURFILE.
 	#define FL  __FILE__, __LINE__
+	#define _CRT_SECURE_NO_WARNINGS	//silence warnings about non-portable "_s" function replacements. Not going to happen
+	#pragma warning(disable:4996)	//same thing, apparently on some setups the above doesn't work.
 #else
 	#define FL CURFILE, __LINE__
 #endif
