@@ -77,7 +77,7 @@ extern "C" {
 #endif // __GNUC__
 
 //hacks for MS Visual studio / visual C
-#ifdef MSVC
+#ifdef _MSC_VER
 	typedef SSIZE_T ssize_t;	//XXX ssize_t is currently only needed because of diag_tty_unix.c:diag_tty_{read,write}.
 				//TODO : rework read/write types to use a combination of size_t and int ?
 	#define snprintf _snprintf	//danger : _snprintf doesn't guarantee zero-termination !?
@@ -89,7 +89,7 @@ extern "C" {
 	// same for all source files.
 	// The disadvantage of __FILE__ is that it often (always ?) holds the absolute path of the file,
 	// not just the filename. For our debugging messages we only care about the filename, hence CURFILE.
-	#define CURFILE __FILE__
+	#define FL  __FILE__, __LINE__
 #else
 	#define FL CURFILE, __LINE__
 #endif
