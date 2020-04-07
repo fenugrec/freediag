@@ -67,3 +67,15 @@ CMakeLists.txt	//there's one of these in every subdirectory with compiled code.
 
 The CMakeLists.txt are roughly equivalent to the autotools' configure.ac and Makefile.am files, which
 are edited manually to describe the build process : dependencies, required source files, executable names, etc.
+
+4- Debian/Ubuntu build simple script
+Install requirements:
+
+	sudo apt install wget unzip build-essential cmake g++ make pkg-config libfltk1.3-dev
+
+Download latest sources (via wget):
+
+	wget -O freediag.zip https://github.com/fenugrec/freediag/archive/master.zip
+	unzip freediag.zip
+	cd freediag-master
+	./build_simple.sh
