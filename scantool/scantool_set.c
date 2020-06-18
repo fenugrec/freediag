@@ -43,8 +43,6 @@
 /* struct global_cfg contains all global parameters */
 struct globcfg global_cfg;
 
-struct diag_l0_device *global_dl0d;
-
 /* SET sub menu */
 static int cmd_set_custom(int argc, char **argv);
 static int cmd_set_help(int argc, char **argv);
