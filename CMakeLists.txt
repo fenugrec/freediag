@@ -4,6 +4,27 @@
 
 cmake_minimum_required(VERSION 3.0.2)
 
+#
+# The following policies introduced in CMake 3.15 are needed to work
+# around a flaw in the Visual Studio CMake integration. The used
+# toolchain and platform definitions define /W3 and /MD (Release)
+# respectively /MDd (Debug) by default during the compiler
+# determination process.
+# If the warning level or the C runtime option are changed afterwards
+# these new options will not replace the already set ones but will be
+# added additionally. This leads to compiler warning D9025 (overriding
+# command line options) which can not be suppressed. These policies
+# prevent the warning flags and runtime option set by default.
+#
+#  CMP0092 - warnings (https://cmake.org/cmake/help/v3.15/policy/CMP0092.html)
+#  CMP0091 - runtime  (https://cmake.org/cmake/help/v3.15/policy/CMP0091.html)
+#
+if (POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif ()
+if (POLICY CMP0092)
+  cmake_policy(SET CMP0092 NEW)
+endif ()
 
 project(freediag)
 
@@ -18,6 +39,7 @@ message("Using install prefix : ${CMAKE_INSTALL_PREFIX}")
 
 include (CheckLibraryExists)
 include (CheckFunctionExists)
+include (CheckSymbolExists)
 include (CheckTypeSize)
 include (CMakeDependentOption)
 include (GNUInstallDirs)
@@ -47,7 +69,33 @@ if (CMAKE_COMPILER_IS_GNUCC)
 	set (CMAKE_C_FLAGS_RELEASE "-DNDEBUG")
 	set (CMAKE_C_FLAGS_RELWITHDEBINFO "-gsplit-dwarf")
 	add_compile_options(-Wall -Wextra -Wformat -pedantic -std=gnu99 -Wstrict-prototypes -Wsign-compare)
-	add_compile_options(-Wredundant-decls -Wformat-overflow)
+	add_compile_options(-Wredundant-decls)
+elseif (CMAKE_BASE_NAME STREQUAL "bcc32c")
+	#set all warnings as errors for Embarcadero clang based borland compiler.
+	add_compile_options("-w!")
+	#add static C runtime.
+	link_libraries("cw32mt")
+elseif (CMAKE_BASE_NAME STREQUAL "bcc32x")
+	#set all warnings as errors for Embarcadero clang based compiler.
+	add_compile_options("-Wall" "-Werror")
+	#add static C runtime.
+	link_libraries("cw32mt")
+elseif (CMAKE_BASE_NAME STREQUAL "bcc64")
+	#set all warnings as errors for Embarcadero clang based 64 bit compiler.
+	add_compile_options("-Wall" "-Werror")
+	#add static C runtime.
+	link_libraries("cw64mt")
+elseif (MSVC)
+    # 1. Set the warning level to 2.
+	add_compile_options(/W2 /WX)
+	# 2. Clear the default content of CMAKE_MSVC_RUNTIME_LIBRARY
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "")
+	# 3. Set the compiler options for the static multithreaded version.
+	add_compile_options($<$<CONFIG:>:/MT> $<$<CONFIG:Debug>:/MTd> $<$<CONFIG:Release>:/MT>)
+	if (MSVC_VERSION LESS 1920)
+		#require at least winXP
+		message(WARNING "Visual Studio version before 16 (2019) may not work ! Proceed at your risk !")
+	endif ()
 else ()
 	message(WARNING "non-gcc compiler, verify compiler options !")
 	#not sure what we should use on other compilers.
@@ -79,6 +127,22 @@ if(WIN32)
 		message(WARNING "At least Win XP is required ! Proceed at your risk !")
 	endif ()
 	set (PLATF "-win32")	#for package name string generation only.
+	#check for old Microsoft compliant kbhit() and getch()
+	#exports in the C runtime.
+	check_symbol_exists (_kbhit "conio.h" HAVE_STD_KBHIT)
+	if (NOT HAVE_STD_KBHIT)
+	    check_symbol_exists (kbhit "conio.h" HAVE_MS_KBHIT)
+        if (NOT HAVE_MS_KBHIT)
+            message(FATAL_ERROR "neither _kbhit nor kbhit function present.")
+		endif ()
+	endif ()
+	check_symbol_exists (_getch "conio.h" HAVE_STD_GETCH)
+	if (NOT HAVE_STD_GETCH)
+	    check_symbol_exists (getch "conio.h" HAVE_MS_GETCH)
+        if (NOT HAVE_MS_GETCH)
+            message(FATAL_ERROR "neither _getch nor getch function present.")
+		endif ()
+	endif ()
 else()
 	check_function_exists (alarm HAVE_ALARM)
 	check_function_exists (select HAVE_SELECT)

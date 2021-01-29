@@ -46,6 +46,13 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdint.h>		/* For uint8_t, etc. This is a C99 header */
+
+#if defined(_MSC_VER)
+	//silence warnings about non-portable "_s" function replacements.
+	//this must be set before including <stdio.h>.
+	#define _CRT_SECURE_NO_WARNINGS
+	#pragma warning(disable:4996)
+#endif /* _MSC_VER Visual Studio */
 #include <stdio.h>		/* For FILE */
 
 #include "diag_os.h"	//for mutexes...
@@ -80,24 +87,28 @@ extern "C" {
 #endif // __GNUC__
 
 //hacks for MS Visual studio / visual C
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 	typedef SSIZE_T ssize_t;	//XXX ssize_t is currently only needed because of diag_tty_unix.c:diag_tty_{read,write}.
-				//TODO : rework read/write types to use a combination of size_t and int ?
-	#define snprintf _snprintf	//danger : _snprintf doesn't guarantee zero-termination !?
-	#pragma message("Warning: MSVC _sprintf() may be dangerous !\
-					Please ask your compiler vendor to supply a C99-compliant snprintf()...")
-	//CURFILE will be defined by CMake on a per-file basis !
-	#pragma message("Warning: MSVC may not work with the CURFILE macro. See diag.h")
-	// apparently some (all ?) MSVC compilers don't support per-file defines, so CURFILE would be the
-	// same for all source files.
-	// The disadvantage of __FILE__ is that it often (always ?) holds the absolute path of the file,
-	// not just the filename. For our debugging messages we only care about the filename, hence CURFILE.
-	#define FL  __FILE__, __LINE__
-	#define _CRT_SECURE_NO_WARNINGS	//silence warnings about non-portable "_s" function replacements. Not going to happen
-	#pragma warning(disable:4996)	//same thing, apparently on some setups the above doesn't work.
+								//TODO : rework read/write types to use a combination of size_t and int ?
+	#if _MSC_VER < 1920 /* anything older than Visual Studio 2019 */
+		#define snprintf _snprintf	//danger : _snprintf doesn't guarantee zero-termination !?
+									//as of Visual Studio 2015 the snprintf function is c99 compatible.
+									//https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/snprintf-snprintf-snprintf-l-snwprintf-snwprintf-l?view=msvc-160
+		#pragma message("Warning: MSVC _sprintf() may be dangerous ! Please ask your compiler vendor to supply a C99-compliant snprintf()...")
+		//CURFILE will be defined by CMake on a per-file basis !
+		#pragma message("Warning: MSVC may not work with the CURFILE macro. See diag.h")
+		// apparently some (all ?) MSVC compilers don't support per-file defines, so CURFILE would be the
+		// same for all source files.
+		// The disadvantage of __FILE__ is that it often (always ?) holds the absolute path of the file,
+		// not just the filename. For our debugging messages we only care about the filename, hence CURFILE.
+		#define FL  __FILE__, __LINE__
+	#else
+		// Using Visual Studio 2019 and higher the CURFILE macro will work.
+		#define FL CURFILE, __LINE__
+	#endif /* _MSC_VER < 1920  Visual Studio 2019 */
 #else
 	#define FL CURFILE, __LINE__
-#endif
+#endif /* _MSC_VER Visual Studio */
 /****** ******/
 
 /*

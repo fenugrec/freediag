@@ -10,6 +10,8 @@
 
 #cmakedefine HAVE_GETTIMEOFDAY
 #cmakedefine HAVE_STRCASECMP
+#cmakedefine HAVE_MS_KBHIT
+#cmakedefine HAVE_MS_GETCH
 #cmakedefine HAVE_ALARM
 #cmakedefine HAVE_SELECT
 
