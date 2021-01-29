@@ -28,14 +28,13 @@
  * Extended diagnostics for '96-'98 Volvo 850, S40, C70, S70, V70, XC70 and V90
  *
  */
-
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <ctype.h>
 #include <errno.h>
-
+ 
 #include "diag.h"
 #include "diag_l1.h"
 #include "diag_l2.h"

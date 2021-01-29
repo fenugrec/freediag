@@ -1,2 +1,8 @@
 build/*
+out/*
 .git/*
+.vscode/*
+.vs/*
+.idea/*
+CMakeSettings.json
+CMakeUserPresets.json

@@ -57,7 +57,7 @@ static struct {
 } l2internal = {
 	.dl2conn_list = NULL,
 	.dl2l_list = NULL,	// linked-list of current L2-L0 links
-	.init_done = NULL
+	.init_done = false
 };
 
 

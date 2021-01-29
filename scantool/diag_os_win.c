@@ -32,7 +32,16 @@
 #include <process.h>
 #include <windows.h>
 #include <conio.h>	//for _kbhit, _getch
-#include <inttypes.h> 	//for PRIu64 formatters
+/** Check the _kbhit function **/
+#ifdef HAVE_MS_KBHIT
+#define _kbhit kbhit
+#endif
+/** Check the _getch function **/
+#ifdef HAVE_MS_GETCH
+#define _getch getch
+#endif
+
+#include <inttypes.h> //for PRIu64 formatters
 
 static bool diag_os_init_done=0;
 static bool timer_period_changed = 0;	//do we need to reset timeEndPeriod on exit
