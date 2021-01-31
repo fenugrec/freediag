@@ -157,7 +157,6 @@ cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv)) {
 	}
 
 	if (merged_mode9_info[6]) {
-		get_vit_info(d_conn, 6, infostring, MODE9_INFO_MAXLEN);
 		unsigned cvn_len = get_vit_info(d_conn, 6, infostring, MODE9_INFO_MAXLEN);
 		if (cvn_len) {
 			printf("CVN: ");
