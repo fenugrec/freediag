@@ -96,8 +96,8 @@ diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn) {
 /* The request message for reading memory */
 static int
 read_MEMORY_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count) {
-	static struct diag_msg msg = { 0 };
-	static uint8_t data[3];
+	struct diag_msg msg = { 0 };
+	uint8_t data[3];
 
 	msg.type = readMemoryByAddress;
 	msg.len = 3;
@@ -113,8 +113,8 @@ read_MEMORY_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint
 /* The request message for reading ROM */
 static int
 read_ROM_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count) {
-	static struct diag_msg msg = { 0 };
-	static uint8_t data[3];
+    struct diag_msg msg = { 0 };
+	uint8_t data[3];
 
 	msg.type = readROMByAddress;
 	msg.len = 3;
@@ -130,8 +130,8 @@ read_ROM_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t
 /* The request message for taking ADC readings */
 static int
 read_ADC_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr) {
-	static struct diag_msg msg = { 0 };
-	static uint8_t data[1];
+	struct diag_msg msg = { 0 };
+	uint8_t data[1];
 
 	if (addr > 0xff) {
 		fprintf(stderr, FLFMT "read_ADC_req invalid address %x\n", FL, addr);
