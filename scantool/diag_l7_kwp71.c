@@ -93,56 +93,49 @@ diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn) {
 	return DIAG_ERR_ECUSAIDNO;
 }
 
-/* The request message for reading memory */
-static int
-read_MEMORY_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count) {
-	struct diag_msg msg = { 0 };
-	uint8_t data[3];
 
-	msg.type = readMemoryByAddress;
-	msg.len = 3;
+#define KWP71_REQSIZE 3
+/* Fill the request message for reading memory */
+static int
+read_MEMORY_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr, uint8_t count) {
+	uint8_t *data=msg->data;
+
+	msg->type = readMemoryByAddress;
+	msg->len = 3;
 	data[0] = count;
 	data[1] = (addr>>8)&0xff;
 	data[2] = addr&0xff;
-	msg.data = data;
-	*msgout = &msg;
 	*wantresp = readMemoryByAddress_resp;
 	return 0;
 }
 
-/* The request message for reading ROM */
+/* Fill the request message for reading ROM */
 static int
-read_ROM_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr, uint8_t count) {
-    struct diag_msg msg = { 0 };
-	uint8_t data[3];
+read_ROM_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr, uint8_t count) {
+    uint8_t *data=msg->data;
 
-	msg.type = readROMByAddress;
-	msg.len = 3;
+	msg->type = readROMByAddress;
+	msg->len = 3;
 	data[0] = count;
 	data[1] = (addr>>8)&0xff;
 	data[2] = addr&0xff;
-	msg.data = data;
-	*msgout = &msg;
 	*wantresp = readROMByAddress_resp;
 	return 0;
 }
 
 /* The request message for taking ADC readings */
 static int
-read_ADC_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr) {
-	struct diag_msg msg = { 0 };
-	uint8_t data[1];
+read_ADC_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr) {
+	uint8_t *data=msg->data;
 
 	if (addr > 0xff) {
 		fprintf(stderr, FLFMT "read_ADC_req invalid address %x\n", FL, addr);
 		return DIAG_ERR_GENERAL;
 	}
 
-	msg.type = readADC;
-	msg.len = 3;
+	msg->type = readADC;
+	msg->len = 3;
 	data[0] = addr;
-	msg.data = data;
-	*msgout = &msg;
 	*wantresp = readADC_resp;
 	return 0;
 }
@@ -160,11 +153,13 @@ read_ADC_req(struct diag_msg **msgout, uint8_t *wantresp, uint16_t addr) {
  */
 int
 diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out) {
-	struct diag_msg *req;
+	struct diag_msg req;    //build request message in this
+	uint8_t request_data[KWP71_REQSIZE];
 	struct diag_msg *resp = NULL;
 	uint8_t wantresp;
 	int rv;
 
+	req.data = request_data;
 	switch (ns) {
 	case NS_MEMORY:
 		rv = read_MEMORY_req(&req, &wantresp, addr, buflen);
@@ -184,7 +179,7 @@ diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t a
 		return rv;
 	}
 
-	resp = diag_l2_request(d_l2_conn, req, &rv);
+	resp = diag_l2_request(d_l2_conn, &req, &rv);
 	if (resp == NULL) {
 		return rv;
 	}
