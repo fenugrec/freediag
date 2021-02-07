@@ -646,6 +646,11 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			d_l2_conn->diag_l2_kb2 = d_l2_conn->diag_msg->data[2];
 			d_l2_conn->diag_l2_physaddr = d_l2_conn->diag_msg->src;
 
+			if (d_l2_conn->diag_l2_kb1 != 0x8f) {
+				DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
+					"Warning : non-standard KB1 received (0x%02X) !\n", d_l2_conn->diag_l2_kb1);
+			}
+
 			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
 				FLFMT "_StartComms Physaddr=0x%X KB1=%02X, KB2=%02X\n",
 				FL, d_l2_conn->diag_l2_physaddr, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
@@ -695,8 +700,8 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 
 		/* ISO14230 uses KB2 of 0x8F */
 		if (cbuf[1] != 0x8f) {
-			rv=DIAG_ERR_WRONGKB;
-			break;
+			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
+					"Warning : non-standard KB1 received (0x%02X) !\n", d_l2_conn->diag_l2_kb1);
 		}
 
 		/* Note down the mode bytes */
