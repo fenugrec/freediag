@@ -56,13 +56,16 @@ extern "C" {
 #define FLFMT "%s:%d:  "		//for debug messages
 
 
-#ifndef HAVE_STRCASECMP	//strcasecmp is POSIX, but kernel32 provides lstrcmpi which should be equivalent.
-#ifdef WIN32
-	#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b)
+#ifdef HAVE_STRCASECMP
+	#include <strings.h>
 #else
-	#error Your system provides no strcasecmp ! This is a problem !
-#endif 	//WIN32
-#endif	//have_strcasecmp
+	#ifdef WIN32
+        //strcasecmp is POSIX, but kernel32 provides lstrcmpi which should be equivalent.
+		#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b)
+	#else
+		#error Your system provides no strcasecmp ! This is a problem !
+	#endif 	//WIN32
+#endif	//HAVE_STRCASECMP
 
 
 #define DB_FILE "./freediag_carsim_all.db"	//default simfile for CARSIM interface
