@@ -64,14 +64,15 @@
 
 extern const struct diag_l0 diag_l0_sim;
 
-const char *simfile_default=DB_FILE;	//default filename
+static const char *simfile_default=DB_FILE;	//default filename
 
+#define MAX_RESP_LEN 260	//iso14230 can be 4bytes header + 255 bytes payload, + 1 checksum
 
 // ECU responses linked list:
 struct sim_ecu_response {
 	char *text; // unparsed text for the response!
 	uint8_t *data; // parsed final response.
-	uint8_t len; // final response length.
+	unsigned len; // final response length.
 	struct sim_ecu_response *next;
 };
 
@@ -94,7 +95,7 @@ struct sim_device {
 
 	struct cfgi simfile;
 
-	uint8_t sim_last_ecu_request[255];	// Copy of most recent request.
+	uint8_t sim_last_ecu_request[MAX_RESP_LEN];	// Copy of most recent request.
 	struct sim_ecu_response *sim_last_ecu_responses;	// For keeping all the responses to the last request.
 };
 
@@ -105,17 +106,15 @@ struct sim_device {
 /**************************************************/
 
 
-static int
-sim_send(struct diag_l0_device *dl0d,
+int sim_send(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 const void *data, size_t len);
 
-static int
-sim_recv(struct diag_l0_device *dl0d,
+int sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 void *data, size_t len, unsigned int timeout);
 
-static void sim_close(struct diag_l0_device *dl0d);
+void sim_close(struct diag_l0_device *dl0d);
 
 /**************************************************/
 // LOCAL FUNCTIONS:
@@ -123,8 +122,7 @@ static void sim_close(struct diag_l0_device *dl0d);
 
 
 // Allocates one new ecu response and fills it with given text.
-struct sim_ecu_response
-*sim_new_ecu_response_txt(const char *text) {
+static struct sim_ecu_response *sim_new_ecu_response_txt(const char *text) {
 	struct sim_ecu_response *resp;
 	int rv;
 
@@ -151,8 +149,7 @@ struct sim_ecu_response
 
 // Allocates one new ecu response and fills it with given data.
 // (not used yet, here for "just in case")
-struct sim_ecu_response
-*sim_new_ecu_response_bin(const uint8_t *data, const uint8_t len) {
+static struct sim_ecu_response *sim_new_ecu_response_bin(const uint8_t *data, const unsigned len) {
 	struct sim_ecu_response *resp;
 	int rv;
 
@@ -179,8 +176,7 @@ struct sim_ecu_response
 }
 
 // Frees an ecu response and returns the next one in the list.
-struct sim_ecu_response
-*sim_free_ecu_response(struct sim_ecu_response **resp) {
+static struct sim_ecu_response *sim_free_ecu_response(struct sim_ecu_response **resp) {
 	struct sim_ecu_response* next_resp = NULL;
 
 	if (resp && *resp) {
@@ -205,7 +201,7 @@ struct sim_ecu_response
 
 
 // Frees all responses from the given one until the end of the list.
-void sim_free_ecu_responses(struct sim_ecu_response **resp_pp) {
+static void sim_free_ecu_responses(struct sim_ecu_response **resp_pp) {
 	struct sim_ecu_response **temp_resp_pp = resp_pp;
 	uint8_t count = 0;
 
@@ -225,7 +221,7 @@ void sim_free_ecu_responses(struct sim_ecu_response **resp_pp) {
 }
 
 // for debug purposes.
-void sim_dump_ecu_responses(struct sim_ecu_response *resp_p) {
+static void sim_dump_ecu_responses(struct sim_ecu_response *resp_p) {
 	struct sim_ecu_response *tresp;
 	uint8_t count = 0;
 
@@ -242,16 +238,16 @@ void sim_dump_ecu_responses(struct sim_ecu_response *resp_p) {
 
 
 // Builds a list of responses for a request, by finding them in the DB file.
-void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, const uint8_t *data, const uint8_t len) {
+static void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, const uint8_t *data, const unsigned len) {
 #define TAG_REQUEST "RQ"
 #define TAG_RESPONSE "RP"
 #define VALUE_DONTCARE "XXXX"
-#define REQBYTES	11	//number of request bytes analyzed
+#define REQBYTES	MAX_RESP_LEN	//number of request bytes analyzed
 
 	uint8_t resp_count = 0;
 	uint8_t new_resp_count = 0;
 	uint8_t synth_req[REQBYTES];
-	char line_buf[1280+1]; // 255 response bytes * 5 ("0xYY ") + tolerance for a token ("abc1 ") = 1280.
+	char line_buf[(MAX_RESP_LEN * 5)+ 6]; // 260 response bytes * 5 ("0xYY ") + tolerance for a token ("abc1 ")
 	int end_responses = 0;
 	int request_found = 0;
 	struct sim_ecu_response *resp_p;
@@ -276,7 +272,7 @@ void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, const uint8
 		if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) != 0) {
 			continue;
 		}
-		// synthesize up to 11 byte values from DB request line.
+		// synthesize up to REQBYTES bytes from DB request line.
 		unsigned int i, num;
 		char *p, *q;
 		p = line_buf + 3;
@@ -355,7 +351,7 @@ void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, const uint8
 
 // Returns a value between 0x00 and 0xFF calculated as the trigonometric
 // sine of the current system time (with a period of one second).
-uint8_t sine1(UNUSED(uint8_t *data), UNUSED(uint8_t pos)) {
+static uint8_t sine1(UNUSED(uint8_t *data), UNUSED(uint8_t pos)) {
 	unsigned long now=diag_os_getms();
 	//sin() returns a float between -1.0 and 1.0
 	return (uint8_t) (0x7F * sin(now * 6.283185 / 1000));
@@ -363,13 +359,13 @@ uint8_t sine1(UNUSED(uint8_t *data), UNUSED(uint8_t pos)) {
 
 // Returns a value between 0x00 and 0xFF directly proportional
 // to the value of the current system time (with a period of one second).
-uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos)) {
+static uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos)) {
 	unsigned long now=diag_os_getms();
 	return (uint8_t) (0xFF * (now % 1000));
 }
 
 // Returns a value copied from the specified position in the request.
-uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[]) {
+static uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[]) {
 	int index;
 	bool increment = 0;
 	bool bogus = 0;
@@ -386,7 +382,7 @@ uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[]) {
 	}
 
 	index--;
-	if (index < 0 || index > 254) {
+	if (index < 0 || index >= MAX_RESP_LEN) {
 		bogus = 1;
 	}
 
@@ -404,14 +400,14 @@ uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[]) {
 
 // Parses a response's text to data.
 // Replaces special tokens with function results. This mangles resp_p->text, which shouldn't be a problem
-void sim_parse_response(struct sim_ecu_response *resp_p, uint8_t req[]) {
+static void sim_parse_response(struct sim_ecu_response *resp_p, uint8_t req[]) {
 #define TOKEN_SINE1	 "sin1"
 #define TOKEN_SAWTOOTH1 "swt1"
 #define TOKEN_ISO9141CS "cks1"
 #define TOKEN_REQUESTBYTE "req"
-#define SRESP_SIZE 255
+#define SRESP_SIZE MAX_RESP_LEN
 
-	uint8_t synth_resp[SRESP_SIZE];	// 255 response bytes.
+	uint8_t synth_resp[SRESP_SIZE];	// response bytes.
 	char *cur_tok = NULL;		//current token
 	char *rptr = resp_p->text;	//working copy of the ptr. We will mangle resp_p->text
 	int ret;
@@ -419,8 +415,8 @@ void sim_parse_response(struct sim_ecu_response *resp_p, uint8_t req[]) {
 
 	// extract byte values from response line, splitting tokens at whitespace / EOL.
 	while ((cur_tok = strtok(rptr, " \t\r\n")) != NULL) {
-		if (pos == 0xff) {
-			fprintf(stderr, "Malformed db file, > 255 bytes on one line !");
+		if (pos >= MAX_RESP_LEN) {
+			fprintf(stderr, "Malformed db file, too many bytes on one line !");
 			break;
 		}
 		// try replacing a token with a calculated value.
@@ -458,7 +454,7 @@ void sim_parse_response(struct sim_ecu_response *resp_p, uint8_t req[]) {
 
 // Reads the configuration options from the file.
 // Stores them in globals.
-void sim_read_cfg(struct sim_device *dev) {
+static void sim_read_cfg(struct sim_device *dev) {
 	FILE *fp = dev->fp;
 	char *p; // temp string pointer.
 	char line_buf[21]; // 20 chars generally enough for a config token.
@@ -534,14 +530,12 @@ void sim_read_cfg(struct sim_device *dev) {
 
 
 // Initializes the simulator.
-static int
-sim_init(void) {
+int sim_init(void) {
 	return 0;
 }
 
 /* fill & init new dl0d */
-int
-sim_new(struct diag_l0_device *dl0d) {
+int sim_new(struct diag_l0_device *dl0d) {
 	int rv;
 	struct sim_device *dev;
 
@@ -563,8 +557,7 @@ sim_new(struct diag_l0_device *dl0d) {
 }
 
 /* Clear + free the contents of dl0d; assumes L0 was closed first */
-static void
-sim_del(struct diag_l0_device *dl0d) {
+void sim_del(struct diag_l0_device *dl0d) {
 	struct sim_device *dev;
 
 	assert(dl0d !=NULL);
@@ -582,8 +575,7 @@ sim_del(struct diag_l0_device *dl0d) {
 }
 
 // Opens the simulator DB file
-int
-sim_open(struct diag_l0_device *dl0d, int iProtocol) {
+int sim_open(struct diag_l0_device *dl0d, int iProtocol) {
 	struct sim_device *dev;
 	const char *simfile;
 
@@ -623,8 +615,7 @@ sim_open(struct diag_l0_device *dl0d, int iProtocol) {
 
 
 // Closes the simulator DB file; cleanup after _sim_open()
-static void
-sim_close(struct diag_l0_device *dl0d) {
+void sim_close(struct diag_l0_device *dl0d) {
 	assert(dl0d != NULL);
 	//if (!dl0d) return;
 
@@ -699,8 +690,7 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 // Should be called with the full message to send, because
 // CARSIM behaves like a smart interface (does P4).
 // Gets the list of responses from the DB file for the given request.
-static int
-sim_send(struct diag_l0_device *dl0d,
+int sim_send(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		 const void *data, const size_t len) {
 	struct sim_device *dev = dl0d->l0_int;
@@ -709,8 +699,8 @@ sim_send(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
-	if (len > 255) {
-		fprintf(stderr, FLFMT "Error : calling sim_send with len >255 bytes! (%u)\n", FL, (unsigned int) len);
+	if (len > MAX_RESP_LEN) {
+		fprintf(stderr, FLFMT "Error : calling sim_send with len (%u) > MAX_RESP_LEN !\n", FL, (unsigned int) len);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -726,7 +716,7 @@ sim_send(struct diag_l0_device *dl0d,
 	memcpy(dev->sim_last_ecu_request, data, len);
 
 	// Build the list of responses for this request.
-	sim_find_responses(&dev->sim_last_ecu_responses, dev->fp, data, (uint8_t) len);
+	sim_find_responses(&dev->sim_last_ecu_responses, dev->fp, data, (unsigned) len);
 
 	sim_dump_ecu_responses(dev->sim_last_ecu_responses);
 
@@ -737,8 +727,7 @@ sim_send(struct diag_l0_device *dl0d,
 // Gets present ECU response from the prepared list.
 // Returns ECU response with parsed data (if applicable).
 // Returns number of bytes read.
-static int
-sim_recv(struct diag_l0_device *dl0d,
+int sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
 		void *data, size_t len, unsigned int timeout) {
 	size_t xferd;
@@ -769,7 +758,7 @@ sim_recv(struct diag_l0_device *dl0d,
 	}
 
 	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V, data, xferd,
-		FLFMT "dl0d=%p recv %d byte; ", FL, (void *)dl0d, (int) len);
+		FLFMT "dl0d=%p recv %d bytes; ", FL, (void *)dl0d, (int) len);
 
 	return (xferd == 0 ? DIAG_ERR_TIMEOUT : (int) xferd);
 }
@@ -779,8 +768,7 @@ sim_recv(struct diag_l0_device *dl0d,
 // Returns the interface's physical flags.
 // The simulator doesn't need half-duplex or
 // P4 timing, and implements all types of init.
-static uint32_t
-sim_getflags(struct diag_l0_device *dl0d) {
+uint32_t sim_getflags(struct diag_l0_device *dl0d) {
 	struct sim_device *dev = dl0d->l0_int;
 	int ret;
 
@@ -813,8 +801,7 @@ sim_getflags(struct diag_l0_device *dl0d) {
 }
 
 
-static struct cfgi
-*sim_getcfg(struct diag_l0_device *dl0d) {
+struct cfgi *sim_getcfg(struct diag_l0_device *dl0d) {
 	struct sim_device *dev;
 	if (dl0d == NULL) {
 		return diag_pseterr(DIAG_ERR_BADCFG);
@@ -825,7 +812,7 @@ static struct cfgi
 }
 
 
-static int sim_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
+int sim_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 	int rv = 0;
 
 	switch (cmd) {

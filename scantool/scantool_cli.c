@@ -140,7 +140,7 @@ static const struct cmd_tbl_entry *current_cmd_level;
 static const struct cmd_tbl_entry *completion_cmd_level;
 #endif
 
-#define INPUT_MAX 1024
+#define INPUT_MAX 1400	//big enough to fit long "diag sendreq..." commands
 
 char *
 basic_get_input(const char *prompt, FILE *instream) {
