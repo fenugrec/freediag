@@ -27,8 +27,7 @@
 // file is in the usual line blocking mode, you should just press enter; in
 // non-blocking mode any character should work.
 
-// For a debugging build, uncomment other commented out code
-// TODO : use #ifdef SCHEDSET_DEBUG
+// For a debugging build, use #ifdef SCHEDSET_DEBUG
 
 // TODO: would it make sense to also set the Linux ioprio stuff?
 
@@ -59,10 +58,6 @@
 // A return value less than zero indicates an error.
 static int
 dropPrivileges(uid_t uid, gid_t gid) {
-	/*
-	if (setuid(0) < 0) {
-	}
-	*/
 
 	if (uid == 0) {
 		uid = getuid();
@@ -78,11 +73,10 @@ dropPrivileges(uid_t uid, gid_t gid) {
 		return -1;
 	}
 
-	/*
-	// Debugging
+#ifdef SCHEDSET_DEBUG
 	if (setuid(0) < 0) {
 	}
-	*/
+#endif
 
 	return 0;
 }
@@ -105,23 +99,21 @@ f(char inputFile[], uid_t uid, gid_t gid, char targetCommand[]) {
 		return 3;
 	}
 	if (pid == 0) {
-		/*
-		// Debugging
+#ifdef SCHEDSET_DEBUG
 		if (printUserGroup() < 0) {
 			return 30;
 		}
-		*/
+#endif
 
 		if (dropPrivileges(uid, gid) < 0) {
 			return 31;
 		}
 
-		/*
-		// Debugging
+#ifdef SCHEDSET_DEBUG
 		if (printUserGroup() < 0) {
 			return 32;
 		}
-		*/
+#endif
 
 		execlp(targetCommand, targetCommand, (char *)NULL);
 		return 4;
@@ -137,15 +129,14 @@ f(char inputFile[], uid_t uid, gid_t gid, char targetCommand[]) {
 		return 6;
 	}
 
-	/*
-	// Debugging
+#ifdef SCHEDSET_DEBUG
 	if (printRange(min, max) < 0) {
 		return 7;
 	}
 	if (printSchedInfo(0) < 0) {
 		return 8;
 	}
-	*/
+#endif
 
 	// Get process scheduler policy.
 	oldPolicy = sched_getscheduler(0);
@@ -165,12 +156,11 @@ f(char inputFile[], uid_t uid, gid_t gid, char targetCommand[]) {
 		return 11;
 	}
 
-	/*
-	// Debugging
+#ifdef SCHEDSET_DEBUG
 	if (printSchedInfo(0) < 0) {
 		return 12;
 	}
-	*/
+#endif
 
 	// TODO: MCL_FUTURE is irrelevant here, right?
 	// TODO: Move this to the beginning of the function?
@@ -201,12 +191,12 @@ f(char inputFile[], uid_t uid, gid_t gid, char targetCommand[]) {
 		}
 	}
 
-	/*
-	// Debugging
+
+#ifdef SCHEDSET_DEBUG
 	if (printSchedInfo(pid) < 0) {
 		return 16;
 	}
-	*/
+#endif
 
 	inputF = fopen(inputFile, "r");
 	if (inputF == NULL) {
