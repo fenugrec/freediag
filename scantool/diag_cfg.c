@@ -133,9 +133,9 @@ char *diag_cfg_getstr(struct cfgi *cfgp) {
 		fmt="0x%02X";
 		break;
 	case CFGT_INT:
-		//handle 5 digits.
-		len=6;
-		fmt="%5d";
+		//handle 7 digits.
+		len=8;
+		fmt="%7d";
 		break;
 	case CFGT_STR:
 		len=strlen(cfgp->val.str)+1;
