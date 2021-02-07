@@ -147,33 +147,6 @@ static struct sim_ecu_response *sim_new_ecu_response_txt(const char *text) {
 	return resp;
 }
 
-// Allocates one new ecu response and fills it with given data.
-// (not used yet, here for "just in case")
-static struct sim_ecu_response *sim_new_ecu_response_bin(const uint8_t *data, const unsigned len) {
-	struct sim_ecu_response *resp;
-	int rv;
-
-	rv = diag_calloc(&resp, 1);
-	if (rv != 0) {
-		return diag_pfwderr(rv);
-	}
-	resp->data = NULL;
-	resp->len = 0;
-	resp->text = NULL;
-	resp->next = NULL;
-
-	if ((len > 0) && (data != NULL)) {
-		rv = diag_calloc(&resp->data, len);
-		if (rv != 0) {
-			free(resp);
-			return diag_pfwderr(rv);
-		}
-		memcpy(resp->data, data, len);
-		resp->len = len;
-	}
-
-	return resp;
-}
 
 // Frees an ecu response and returns the next one in the list.
 static struct sim_ecu_response *sim_free_ecu_response(struct sim_ecu_response **resp) {
