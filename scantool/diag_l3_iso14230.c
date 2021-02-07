@@ -42,6 +42,7 @@
 static const char *l3_iso14230_sidlookup(const int id);
 static const char *l3_iso14230_neglookup(const int id);
 
+#define RESP_MAXLEN 80	//max length for response code strings.
 
 /*
  * We'll use a big switch statement here, and rely on the compiler
@@ -52,7 +53,7 @@ static const char *l3_iso14230_neglookup(const int id);
 char *
 diag_l3_iso14230_decode_response(struct diag_msg *msg,
 	char *buf, const size_t bufsize) {
-	char buf2[80];
+	char buf2[RESP_MAXLEN];
 
 	switch (msg->data[0]) {
 		//for these 3 SID's,
@@ -329,13 +330,16 @@ static const struct {
 
 static const char *l3_iso14230_neglookup(const int id) {
 	unsigned i;
+	static char unk_resp[RESP_MAXLEN];
 	for (i = 0; i < ARRAY_SIZE(negresps); i++) {
 		if (negresps[i].id == id) {
 			return negresps[i].response;
 		}
 	}
 
-	return "Unknown Response code";
+	snprintf(unk_resp, sizeof(unk_resp) - 1, "Unknown Response code 0x%02X", id & 0xFF);
+	unk_resp[RESP_MAXLEN - 1] = 0;
+	return unk_resp;
 }
 
 
