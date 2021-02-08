@@ -646,7 +646,6 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 			printf("Unrecognized command. Try \"help\"\n");
 			if (argc) {
 				//was a single command : exit this level of do_cli()
-				done = 1;
 				break;
 			}
 			//else : continue getting input
@@ -690,7 +689,6 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 
 		if (argc) {
 			/* Single command */
-			done = 1;
 			break;
 		}
 	}	//while !done
