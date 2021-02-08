@@ -63,11 +63,11 @@
 int
 dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 	struct diag_l1_initbus_args in;
-	uint8_t kb1, kb2, address, inv_address, inv_kb2;
+	uint8_t kb1, kb2, inv_address, inv_kb2;
 	int rv = 0;
 	struct diag_l2_iso9141 *dp;
 
-	kb1 = kb2 = address = inv_address = inv_kb2 = 0;
+	kb1 = kb2 = inv_address = inv_kb2 = 0;
 	dp = d_l2_conn->diag_l2_proto_data;
 
 	// Flush unread input:
@@ -77,9 +77,8 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 	diag_os_millisleep(W5min);
 
 	// Do 5Baud init (write Address, read Synch Pattern):
-	address = dp->target;
 	in.type = DIAG_L1_INITBUS_5BAUD;
-	in.addr = address;
+	in.addr = dp->target;
 	rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 	if (rv < 0) {
 		return diag_ifwderr(rv);
@@ -155,10 +154,10 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 		}
 
 		// Check the received inverted address:
-		if ( inv_address != ((~address) & 0xff)) {
+		if ( inv_address != ((~dp->target) & 0xff)) {
 			fprintf(stderr,
 					FLFMT "wakeupECU(dl2conn %p) addr mismatch: 0x%02X != 0x%02X\n",
-					FL, (void *)d_l2_conn, inv_address, ~address);
+					FL, (void *)d_l2_conn, inv_address, ~dp->target);
 			return diag_iseterr(DIAG_ERR_BADDATA);
 		}
 	}
@@ -510,8 +509,6 @@ dl2p_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	while (tmsg) {
 		int datalen;
 		uint8_t hdrlen=0, source=0, dest=0;
-
-		dp = (struct diag_l2_iso9141 *)d_l2_conn->diag_l2_proto_data;
 
 		if ((l1flags & DIAG_L1_NOHDRS)==0) {
 			// Parse message structure, if headers are present

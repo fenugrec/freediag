@@ -140,7 +140,7 @@ static struct diag_msg *
 dl2p_d2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
                 int *errval) {
 	int rv;
-	struct diag_msg *rmsg;
+	struct diag_msg *rmsg = NULL;
 
 	*errval = 0;
 

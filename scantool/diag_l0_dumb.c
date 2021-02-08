@@ -455,13 +455,11 @@ dumb_slowinit(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in,
 				//to prevent spurious breaks if we have a sequence of 0's :
 				//this is an RLE of sorts...
 				for (; bitcounter <=7; bitcounter++) {
-					if (tempbyte &
-					    1) { // test bit 1; we just tested
-						 // curbit before getting here.
+					if (tempbyte & 1) {
+						// test bit 1; we just tested curbit before getting here.
 						break;
 					}
 					lowtime += BPS_PERIOD;
-					curbit = tempbyte & 1;
 					tempbyte = tempbyte >>1;
 				}
 				//this way, we know for sure the next bit is 1 (either bit 7==1 or stopbit==1 !)
@@ -651,7 +649,7 @@ const void *data, size_t len) {
 	 * as the L1 code that called this will be adding the P4 gap between
 	 * bytes
 	 */
-	int rv;
+
 	struct dumb_device *dev = dl0d->l0_int;
 
 	if (len <= 0) {
@@ -661,7 +659,7 @@ const void *data, size_t len) {
 	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, data, len,
 		FLFMT "l0_send dl0d=%p len=%ld; ", FL, (void *)dl0d, (long)len);
 
-	if ((rv = diag_tty_write(dev->tty_int, data, len)) != (int) len) {
+	if (diag_tty_write(dev->tty_int, data, len) != (int) len) {
 		fprintf(stderr, FLFMT "dumb_send: write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}

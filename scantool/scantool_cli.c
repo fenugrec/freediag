@@ -157,7 +157,7 @@ basic_get_input(const char *prompt, FILE *instream) {
 			printf("%s", prompt);
 			fflush(stdout);
 		}
-		do_prompt = 1;
+
 		if (fgets(input, INPUT_MAX, instream)) {
 			break;
 		}

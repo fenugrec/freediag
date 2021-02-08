@@ -277,9 +277,7 @@ void diag_tty_close(ttyp *tty_int) {
 	return;
 }
 
-//internal use : _tty_setspeed, used inside diag_tty_setup.
-//returns actual new speed, or 0 if failed. updates ->tty_int struct;
-//should probably called last (i.e. after setting other flags)
+
 /* Baud rate hell. Status in 2015 seems to be :
 	- termios2 struct + BOTHER flag + TCSETS2 ioctl; questionable availability
 	- ASYNC_SPD_CUST + B38400 + custom divisor trick is "deprecated",
@@ -289,6 +287,12 @@ void diag_tty_close(ttyp *tty_int) {
 	- use nearest standard speed + cfsetispeed
 	- OSX >10.4 : (unconfirmed, TODO)	: IOSSIOSPEED ioctl ?
 	- BSD ? (unconfirmed, TODO) : IOSSIOSPEED ioctl ?
+*/
+/** internal use : _tty_setspeed, used inside diag_tty_setup.
+*
+* @return  actual new speed, or 0 if failed.
+* updates ->tty_int struct;
+* should probably called last (i.e. after setting other flags)
 */
 static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 	struct unix_tty_int *uti = tty_int;
