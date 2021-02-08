@@ -600,17 +600,17 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		in.type = DIAG_L1_INITBUS_FAST;
 		in.addr = target;
 		in.testerid = source;
-		rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
 
-		// some L0 devices already do the full startcomm transaction:
-		if ((d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) && (rv==0)) {
-			//TODO : somehow extract keybyte data for those cases...
-			//original elm327s have the "atkw" command to get the keybytes, but clones suck.
-			dp->state = STATE_ESTABLISHED;
+		rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_INITBUS, &in);
+		if (rv < 0) {
 			break;
 		}
 
-		if (rv < 0) {
+		// some L0 devices already do the full startcomm transaction:
+		if (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESFULLINIT) {
+			//TODO : somehow extract keybyte data for those cases...
+			//original elm327s have the "atkw" command to get the keybytes, but clones suck.
+			dp->state = STATE_ESTABLISHED;
 			break;
 		}
 
@@ -716,8 +716,11 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			 * Now transmit KB2 inverted
 			 */
 			cbuf[0] = ~ d_l2_conn->diag_l2_kb2;
-			rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
+			rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, 0,
 				cbuf, 1, d_l2_conn->diag_l2_p4min);
+			if (rv) {
+				break;
+			}
 
 			/*
 			 * And wait for the address byte inverted
@@ -726,6 +729,9 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			cbuf[0]= (uint8_t) target;
 			rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
 				cbuf, 1, 350);
+			if (rv < 0) {
+				break;
+			}
 
 			if (cbuf[0] != ((~target) & 0xFF) ) {
 				fprintf(stderr, FLFMT "_startcomms : addr mismatch %02X!=%02X\n",

@@ -543,8 +543,8 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 }
 
 
-/*
- * Write Message routine. Adds the length byte to the data before sending,
+/** Write Message routine
+ * Adds the length byte to the data before sending,
  * and the frame number for VPW/PWM. The type is used to set the top bits
  * of the control byte
  *
@@ -782,6 +782,9 @@ void *data, size_t len, unsigned int timeout) {
 				rv = br_writemsg(dl0d,
 					BR_WRTYPE_DATA,
 					dev->dev_txbuf, (size_t)dev->dev_txlen);
+				if (rv < 0) {
+					return rv;
+				}
 			}
 			dev->dev_framenr++;
 

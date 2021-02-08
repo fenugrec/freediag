@@ -3,7 +3,7 @@ freediag build system overview
 Note : since release 1.06, the autotools (./configure etc.)  build system has been removed. I could not maintain
 it to the same level of functionality as the CMake buildsys.
 
-1- instructions for cmake
+**************** instructions for cmake ****************
 **** 1A- Steps to compile freediag on MS Windows ****
 To compile freediag on win, the general process is as such (rename directories as required)
 	-make sure cmake is installed and %PATH% holds the cmake/bin directory
@@ -52,7 +52,7 @@ If generating makefiles, there are a few special targets added by CMake :
 Once the Makefiles are generated, it's usually not necessary to run cmake again unless the CMakeLists.txt files
 were changed, or build options were changed. 
 
-3- CMake background info
+**************** CMake background info ****************
 I added a CMake build system specifically to support WIN targets, as the GNU autotools
 (autoconf, ./configure & friends) are not trivial to use on MS platforms. CMake should also make
 other platforms (OSX) easier to support as well.
@@ -79,3 +79,17 @@ Download latest sources (via wget):
 	unzip freediag.zip
 	cd freediag-master
 	./build_simple.sh
+
+**************** running CMake test suite ****************
+There are a few tests to verify minimal functionality.
+Automating tests of software such as freediag is very challenging : runs on a vast assortment of hardware, to connect with a vast variety of ECUs.
+
+The current test strategy is :
+
+- a collection of script-like tests in the test/ subfolder, comprising of .ini scripts and carsom .db files.
+- a standalone program, `diag_test`, to "exercise code paths not easy to test through the .ini-based testsuite."
+
+To run the ini-based tests in 16x parallel:
+`ctest -j 16`
+To skip the tests that need a connected dumb interface :
+`ctest -I 3 -j 16`
