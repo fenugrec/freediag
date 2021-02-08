@@ -151,6 +151,9 @@ int diag_l3_stop(struct diag_l3_conn *d_l3_conn) {
 	diag_os_unlock(&connlist_mtx);
 
 	rv = dp->diag_l3_proto_stop(d_l3_conn);
+	if (d_l3_conn->msg != NULL) {
+		diag_freemsg(d_l3_conn->msg);
+	}
 
 	free(d_l3_conn);
 

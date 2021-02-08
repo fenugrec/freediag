@@ -381,8 +381,7 @@ diag_l3_j1979_process_data(struct diag_l3_conn *d_l3_conn) {
 
 			/* Add it to the list */
 			LL_CONCAT(d_l3_conn->msg, msg);
-			free(data);
-			free(msg);	//we don't use diag_freemsg() since we alloc'ed it manually
+
 			if (badpacket) {
 				/* No point in continuing */
 				break;
