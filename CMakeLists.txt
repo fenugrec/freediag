@@ -48,7 +48,14 @@ set (PKGVERSIONMAJOR "1")
 set (PKGVERSIONMINOR "08")
 set (PKGVERSION "${PKGVERSIONMAJOR}.${PKGVERSIONMINOR}")
 set (SCANTOOL_PROGNAME "freediag")
+set (DIAG_TEST_PROGNAME "diag_test")
 #that sets the command-line tool prompt.
+
+# remove leading zeros from the version numbers to 
+# avoid MinGW resource compiler (windres.exe) warnings 
+# during Windows resource compile.
+math (EXPR PKGVERSIONMAJOR_VALUE "${PKGVERSIONMAJOR}")
+math (EXPR PKGVERSIONMINOR_VALUE "${PKGVERSIONMINOR}")
 
 
 ###### Compiler flags & build types
@@ -92,6 +99,8 @@ elseif (MSVC)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "")
 	# 3. Set the compiler options for the static multithreaded version.
 	add_compile_options($<$<CONFIG:>:/MT> $<$<CONFIG:Debug>:/MTd> $<$<CONFIG:Release>:/MT>)
+	# 4. Disable the auto generated manifests.
+	add_link_options(/MANIFEST:NO)
 	if (MSVC_VERSION LESS 1920)
 		#require at least winXP
 		message(WARNING "Visual Studio version before 16 (2019) may not work ! Proceed at your risk !")
