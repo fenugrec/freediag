@@ -32,9 +32,14 @@ configure_file ( diag_config.c.in diag_config.c)
 if(WIN32)
 	set (OS_DIAGTTY "diag_tty_win.c")
 	set (OS_DIAGOS "diag_os_win.c")
+	set (FREEDIAG_RC "freediag.rc")
+	set (DIAG_TEST_RC "diag_test.rc")
+	enable_language (RC)
 else()
 	set (OS_DIAGTTY "diag_tty_unix.c")
 	set (OS_DIAGOS "diag_os_unix.c")
+	set (FREEDIAG_RC "")
+	set (DIAG_TEST_RC "")
 endif()
 
 
@@ -47,12 +52,12 @@ set (LIBDIAG_SRCS ${DL0_SRCS} ${DL2_SRCS}
 	diag_l7_d2.c diag_l7_kwp71.c
 	diag_general.c diag_dtc.c diag_cfg.c)
 set (LIBDYNO_SRCS dyno.c)
-set (DIAGTEST_SRCS diag_test.c)
+set (DIAGTEST_SRCS diag_test.c ${DIAG_TEST_RC})
 set (CLI_SRCS scantool_cli.c scantool_diag.c scantool_set.c
 	scantool_debug.c)
 set (SCANTOOL_SRCS scantool.c
 	scantool_test.c scantool_vag scantool_850.c scantool_dyno.c
-	scantool_obd.c scantool_aif.c)
+	scantool_obd.c scantool_aif.c ${FREEDIAG_RC})
 
 #and GLOB all the headers. This is *only* so that the headers end up in
 #the file list of IDE projects (at least Code::blocks)
@@ -101,14 +106,14 @@ add_library(freediagcli STATIC ${CLI_SRCS})
 
 # diag_test binary
 if (BUILD_DIAGTEST)
-	add_executable(diag_test ${DIAGTEST_SRCS})
+	add_executable(${DIAG_TEST_PROGNAME} ${DIAGTEST_SRCS})
 	target_link_libraries(diag_test diag)
 	install(TARGETS diag_test DESTINATION ${BIN_DESTDIR})
 endif ()
 
 # freediag binary
 
-add_executable(freediag  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
+add_executable(${SCANTOOL_PROGNAME}  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
 
 target_link_libraries(freediagcli diag)
 if (HAVE_LIBREADLINE)

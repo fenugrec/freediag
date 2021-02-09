@@ -1,0 +1,56 @@
+/////////////////////////////////////////////////////////////////////////////
+//
+// Includes
+//
+#include <windows.h>
+#include <winuser.h>
+#include "cconf.h"
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral (Default) resources
+//
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Manifest
+//
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "freediag.manifest"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION PACKAGE_VERSION_VALUE
+ PRODUCTVERSION PACKAGE_VERSION_VALUE
+ FILEFLAGSMASK 0x0L
+ FILEFLAGS 0x0L
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004e2"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", PROJECT_NAME_STR
+            VALUE "FileDescription", PROJECT_NAME_STR
+            VALUE "FileVersion", PACKAGE_VERSION_STR
+            VALUE "InternalName", PROJECT_NAME_STR
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", SCANTOOL_PROGNAME_EXE
+            VALUE "ProductName", PROJECT_NAME_STR
+            VALUE "ProductVersion", PACKAGE_VERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0, 1250
+    END
+END
