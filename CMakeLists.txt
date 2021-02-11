@@ -45,7 +45,7 @@ include (CMakeDependentOption)
 include (GNUInstallDirs)
 
 set (PKGVERSIONMAJOR "1")
-set (PKGVERSIONMINOR "08")
+set (PKGVERSIONMINOR "09")
 set (PKGVERSION "${PKGVERSIONMAJOR}.${PKGVERSIONMINOR}")
 set (SCANTOOL_PROGNAME "freediag")
 set (DIAG_TEST_PROGNAME "diag_test")

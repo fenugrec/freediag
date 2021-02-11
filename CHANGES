@@ -1,10 +1,36 @@
 This summarizes the changes between freediag releases. Each release package
 contains a more detailed changelog.
 
-Since ~ 2009, I (fenugrec) have maintained the freediag project on sourceforge.
+Since ~ 2009, I (fenugrec) have maintained the freediag project on sourceforge for releases, and github for sourcecode.
 I took the liberty of modifying the version number format to MAJOR.MINOR, the MINOR number
 written with 2 digits ( %02d if you will). Some early versions had a suffixed lower-case letter
 indicating a snapshot of the CVS source tree.
+
+
+
+
+*** Release 1.09 ; 2021-02-10
+- Renamed binary from 'scantool' to 'freediag' : too many collisions with the commercial product from "scantool.net".
+- lots of under-the-hood restructuring, too much to list
+
+* v-ladimir @Shuher:
+- Windows: use timeBeginPeriod() to improve timing. Should improve iso14230 fastini
+
+* Adam Goldman @aaeegg:
+- Did a lot of work adding extended diagnostics for '96-'98 Volvo 850, S40, C70, S70, V70, XC70 and V90
+(D2 protocol, previously called KWP6227 based on the (KW2*128)+KW1 formula for its key bytes)
+- More work on KWP71/1281 protocols
+
+* Neven Sajko @nsajko:
+- Cleaned up a lot of poor/inconsistent formatting, subtle concurrency bugs and data races.
+- added schedSetter, a program to run freediag and set its scheduling priority
+
+* Christian Fehse @cfehse:
+- Added version and manifest resources to the windows build.
+- support native , current Windows compilers from Microsoft and Embarcadero.
+- add example "build_simple.bat" script
+
+
 
 *** Release 1.08 ; 2016-11-03
 - Some breaking changes to CLI (L0-specific options, etc)
