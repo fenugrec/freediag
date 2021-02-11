@@ -2,7 +2,7 @@
 #Note : this file is a work in progress,
 #some checks may still be missing
 
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.7)
 
 #
 # The following policies introduced in CMake 3.15 are needed to work
