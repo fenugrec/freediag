@@ -258,6 +258,7 @@ endif ()
 
 ###### parse sub-dirs
 add_subdirectory(scantool)
+add_subdirectory(tests)
 
 if (BUILD_GUI)
 	find_package(FLTK)
