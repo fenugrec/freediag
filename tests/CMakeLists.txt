@@ -23,6 +23,7 @@ set(SCANTOOL_TESTS
 	l2_j1850_mrx
 	l2_raw_01
 	l3_j1979_9141_1
+	l3_j1979_j1850_1
 	l7_850_01
 	l7_850_02
 	)
