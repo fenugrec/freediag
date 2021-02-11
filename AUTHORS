@@ -1,4 +1,6 @@
-Listed in approximate chronological order of activity:
+Currently maintained by fenugrec.
+
+Other contributors listed in approximate chronological order of activity:
 
 Richard Almeida 2001-2003
 Bjorn Helgaas ~ 2001-2002 ?
@@ -11,13 +13,13 @@ Steve Meisner ~2004
 Vasco Nevoa ~2004
 Tomasz Kazmierczak 2015-2016
 Adam Goldman 2016-2017
-Neven Sajko 2017-
+Neven Sajko 2017-2018
+Christian Fehse 2021-
 fenugrec 2009-
 
 
 ****
-The following notes were written by Steve Baker
-when he took over the project (~2003) :
+The following notes were written by Steve Baker when he took over the project (~2003) :
 
                                --ooOoo--
 
@@ -29,8 +31,7 @@ Windows version.
 
 Bjorn Helgaas added logging and some other functionality.
  
-Guilhem Valentin is believed to have written the dynamometer package
-[EDIT : Yes, in 2003 according to the mailing list]
+Guilhem Valentin wrote the dynamometer package in 2003 according to the mailing list.
 
                                --ooOoo--
 
@@ -39,9 +40,6 @@ developers and the present maintainers - so I cannot tell precisely who
 contributed what before August 2003.  If you were a contributor and would
 like to be credited here - please let me know.
 
-Peter Dufault has undertaken a radical cleanup of the code and is responsible
-for a large fraction of the present code-base.
-
-Steve Baker.
+Peter Dufault did a radical cleanup of the code (around 2003)
 
                                --ooOoo--

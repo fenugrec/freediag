@@ -1,10 +1,22 @@
-freediag build system overview
+freediag build system overview and compilation instructions
 
-Note : since release 1.06, the autotools (./configure etc.)  build system has been removed. I could not maintain
-it to the same level of functionality as the CMake buildsys.
+
+**************** Notes for compiling on Windows ****************
+
+As of 2021/02 :
+
+* Visual Studio 2019 (x86/x64) (integrated cmake and cmake 3.19.3) works
+* Visual Studio Code on Windows (MinGW, MinGW64, BCC, MSVC) (cmake 3.6.0 and higher) works
+* Visual Studio Code remote on WSL (cmake 3.13.4 default installation debian) works
+* Visual Studio 2019 builds will not run on XP but will run on 7 and higher.
+* MinGW and Borland work for Windows XP
+
 
 **************** instructions for cmake ****************
+
+
 **** 1A- Steps to compile freediag on MS Windows ****
+
 To compile freediag on win, the general process is as such (rename directories as required)
 	-make sure cmake is installed and %PATH% holds the cmake/bin directory
 	-extract the source tree (git clone, or a source package) to somewhere\srcdir\
@@ -16,8 +28,12 @@ To compile freediag on win, the general process is as such (rename directories a
 	 (Make sure to look at the configurable options. The nearest equivalent to "./configure --help" would
 	 be "cmake -L", or browsing the cached variable list from cmake-gui.
 	-compile according to your selected toolchain. I run mingw32-make from the builddir and off it goes.
-	
+
+
+
+
 **** 1B- Steps to compile freediag on linux ****
+
 The instructions given above for Win may be used almost as-is on linux; here are methods without using
 "cmake-gui"
 	-extract the source tree (git clone, or a source package) to  <srcdir>
@@ -52,18 +68,19 @@ If generating makefiles, there are a few special targets added by CMake :
 Once the Makefiles are generated, it's usually not necessary to run cmake again unless the CMakeLists.txt files
 were changed, or build options were changed. 
 
+
+
 **************** CMake background info ****************
+
 I added a CMake build system specifically to support WIN targets, as the GNU autotools
 (autoconf, ./configure & friends) are not trivial to use on MS platforms. CMake should also make
 other platforms (OSX) easier to support as well.
-The main drawback is that the CMake package is quite large (~30MB), and is an additional
-dependency that I force on anyone who wants to compile freediag. However, as of 1.06 (09-2015),
-I no longer maintain the autotools build system.
 
-As distributed, the CMake build system for freediag consists of the following files in
-the source tree :
-cconf.h.in 		// manually edited, it is eventually parsed by CMake to create cconf.h
-CMakeLists.txt	//there's one of these in every subdirectory with compiled code.
+
+As distributed, the CMake build system for freediag consists of the following files in the source tree :
+
+- cconf.h.in 		// manually edited, it is eventually parsed by CMake to create cconf.h
+- CMakeLists.txt	//there's one of these in every subdirectory with compiled code.
 
 The CMakeLists.txt are roughly equivalent to the autotools' configure.ac and Makefile.am files, which
 are edited manually to describe the build process : dependencies, required source files, executable names, etc.
@@ -71,7 +88,7 @@ are edited manually to describe the build process : dependencies, required sourc
 4- Debian/Ubuntu build simple script
 Install requirements:
 
-	sudo apt install wget unzip build-essential cmake g++ make pkg-config libfltk1.3-dev
+	sudo apt install wget unzip build-essential cmake g++ make pkg-config
 
 Download latest sources (via wget):
 
@@ -81,8 +98,9 @@ Download latest sources (via wget):
 	./build_simple.sh
 
 **************** running CMake test suite ****************
+
 There are a few tests to verify minimal functionality.
-Automating tests of software such as freediag is very challenging : runs on a vast assortment of hardware, to connect with a vast variety of ECUs.
+Automating tests of software such as freediag is very challenging as it can run on a vast assortment of hardware, to connect with a wide variety of ECUs.
 
 The current test strategy is :
 
