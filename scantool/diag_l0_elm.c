@@ -1160,7 +1160,7 @@ static int elm_setwm(struct diag_l0_device *dl0d, struct diag_msg *pmsg) {
 	}
 
 	if (pmsg->len != 4) {
-		fprintf(stderr, FLFMT "elm_setwm: invalid message length %d\n", FL, pmsg->len);
+		fprintf(stderr, FLFMT "elm_setwm: invalid message length %u\n", FL, pmsg->len);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 

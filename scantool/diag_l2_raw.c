@@ -87,7 +87,7 @@ dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_send %p, msg %p len %d called\n",
+		FLFMT "diag_l2_send %p, msg %p len %u called\n",
 		FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,

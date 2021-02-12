@@ -133,7 +133,7 @@ diag_l3_iso14230_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 
 	DIAG_DBGMDATA(diag_l3_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
 		msg->data, (size_t)msg->len,
-		FLFMT "_send %d bytes, l2 flags 0x%X\n",
+		FLFMT "_send %u bytes, l2 flags 0x%X\n",
 		FL, msg->len,  d_l3_conn->d_l3l2_flags);
 
 	// L2 does framing, adds addressing and CRC, so do nothing special
@@ -157,7 +157,7 @@ diag_l3_14230_rxcallback(void *handle, struct diag_msg *msg) {
 	char buffer[200];
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "rcv_callback for %d bytes fmt 0x%X conn\n",
+		FLFMT "rcv_callback for %u bytes fmt 0x%X conn\n",
 		FL, msg->len, msg->fmt);
 
 	if (diag_l3_iso14230_decode_response(msg, buffer, sizeof(buffer))) {

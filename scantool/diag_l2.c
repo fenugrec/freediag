@@ -503,7 +503,7 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_send %p msg %p msglen %d called\n",
+		FLFMT "diag_l2_send %p msg %p msglen %u called\n",
 		FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	/* Call protocol specific send routine */

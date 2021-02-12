@@ -363,7 +363,7 @@ cmd_set_speed(int argc, char **argv) {
 
 		global_cfg.speed = htoi(argv[1]);
 	}
-	printf("Connect speed: %d\n", global_cfg.speed);
+	printf("Connect speed: %u\n", global_cfg.speed);
 
 	return CMD_OK;
 }

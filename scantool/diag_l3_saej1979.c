@@ -235,7 +235,7 @@ diag_l3_j1979_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 	d_conn = d_l3_conn->d_l3l2_conn;
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "send %d bytes, l2 flags 0x%X\n",
+		FLFMT "send %u bytes, l2 flags 0x%X\n",
 		FL, msg->len, d_l3_conn->d_l3l2_flags);
 
 	//and make sure src address was set in msg:
@@ -274,7 +274,7 @@ diag_l3_rcv_callback(void *handle, struct diag_msg *msg) {
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
 		FLFMT
-		"rcv_callback for %d bytes fmt 0x%X conn rxoffset %d\n",
+		"rcv_callback for %u bytes fmt 0x%X conn rxoffset %d\n",
 		FL, msg->len, msg->fmt, l3i->rxoffset);
 
 	if (msg->fmt & DIAG_FMT_FRAMED) {
@@ -617,7 +617,7 @@ struct diag_msg *msg, char *buf, size_t bufsize) {
 						area = 'U';
 						break;
 					default:
-						fprintf(stderr, "Illegal msg->data[%d] value\n", j);
+						fprintf(stderr, "Illegal msg->data[%u] value\n", j);
 						area = 'X';
 						break;
 				}

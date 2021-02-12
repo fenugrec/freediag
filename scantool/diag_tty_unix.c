@@ -763,19 +763,16 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	struct unix_tty_int *uti = tty_int;
 	const uint8_t *p;
 	unsigned long long t1, t2;
-	int expired;
 	long unsigned int timeout = uti->byte_write_timeout_us * count + 10000ul;
 
 	t1 = diag_os_gethrt();
 	p = (const uint8_t *)buf;	/* For easy pointer I/O */
 	n = 0;
-	expired = 0;
 	errno = 0;
 
-	while ((c > 0) && !expired) {
+	while (c > 0) {
 		t2 = diag_os_hrtus(diag_os_gethrt() - t1);
 		if (t2 >= timeout) {
-			expired=1;
 			break;
 		}
 
@@ -963,7 +960,7 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 		}
 
 		if (rv<=0) {
-			fprintf(stderr, FLFMT "read() says %zu: %s.\n", FL, rv, strerror(errno));
+			fprintf(stderr, FLFMT "read() says %ld: %s.\n", FL, (long) rv, strerror(errno));
 			break;
 		}
 

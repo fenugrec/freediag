@@ -159,7 +159,7 @@ diag_tty_setup(ttyp *ttyh,
 
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-		FLFMT "dev %p; %dbps %d,%d,%d \n",
+		FLFMT "dev %p; %ubps %d,%d,%d \n",
 		FL, (void *)devhandle, pset->speed, pset->databits,
 		pset->stopbits, pset->parflag);
 

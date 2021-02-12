@@ -184,7 +184,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 
 	DIAG_DBGMDATA(diag_cli_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
 		msg->data, msg->len,
-		"scantool: Got handle %p; %d bytes of data, src=0x%X, dest=0x%X; ",
+		"scantool: Got handle %p; %u bytes of data, src=0x%X, dest=0x%X; ",
 		handle, msg->len, msg->src, msg->dest);
 
 	/* Deal with the diag type responses (send/recv/watch) */
@@ -338,7 +338,7 @@ j1979_data_rcv(void *handle, struct diag_msg *msg) {
 				return;
 			case RQST_HANDLE_O2S:
 				if (ecu_count > 1) {
-					fprintf(stderr, "ECU %d ", ecu_idx);
+					fprintf(stderr, "ECU %u ", ecu_idx);
 				}
 
 				/* O2 Sensor test results */
@@ -948,14 +948,14 @@ void do_j1979_basics() {
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		if ( (ep->mode1_data[2].type == TYPE_GOOD) &&
 			(ep->mode1_data[2].data[2] | ep->mode1_data[2].data[3]) ) {
-			fprintf(stderr, "ECU %d Freezeframe data exists, caused by DTC ",
+			fprintf(stderr, "ECU %u Freezeframe data exists, caused by DTC ",
 				i);
 			print_single_dtc(ep->mode1_data[2].data[2] , ep->mode1_data[2].data[3]);
 			fprintf(stderr, "\n");
 		}
 
 		if (ep->mode1_data[0x1c].type == TYPE_GOOD) {
-			fprintf(stderr, "ECU %d is ", i);
+			fprintf(stderr, "ECU %u is ", i);
 			switch (ep->mode1_data[0x1c].data[2]) {
 			case 1:
 				fprintf(stderr, "OBD II (California ARB)");
@@ -1093,10 +1093,6 @@ do_j1979_ncms(int printall) {
 
 	if (merged_mode6_info[0] == 0x00) {
 		/* Either not supported, or tests havent been done */
-		do_j1979_getmodeinfo(6, 3);
-	}
-
-	if (merged_mode6_info[0] == 0x00) {
 		fprintf(stderr, "ECU doesn't support non-continuously monitored system tests\n");
 		return;
 	}

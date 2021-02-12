@@ -254,7 +254,7 @@ cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv)) {
 					value = (ep->mode1_data[1].data[5]>>(i-4))&1;
 				}
 				if (ecu_count > 1) {
-					printf("ECU %d: ", i);
+					printf("ECU %u: ", i);
 				}
 				printf("%s: ", text);
 				if (supported) {

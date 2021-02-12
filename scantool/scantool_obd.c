@@ -391,10 +391,10 @@ cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
 		return CMD_OK;
 	}
 
-	printf("%d ECUs found\n", ecu_count);
+	printf("%u ECUs found\n", ecu_count);
 
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
-		printf("ECU %d: Address 0x%02X ", i, ep->ecu_addr & 0xff);
+		printf("ECU %u: Address 0x%02X ", i, ep->ecu_addr & 0xff);
 		if (ep->supress) {
 			printf("output supressed for monitor mode\n");
 		} else {

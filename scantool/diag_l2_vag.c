@@ -555,10 +555,9 @@ static int dl2p_vag_stopcomms(struct diag_l2_conn *d_l2_conn) {
  */
 static int
 dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
-	int rv = 0;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_vag_send %p msg %p len %d called\n",
+		FLFMT "diag_l2_vag_send %p msg %p len %u called\n",
 		FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	struct diag_l2_vag *dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
@@ -591,6 +590,7 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int retries = 0;
 	//send the block to the ECU
 	while (1) {
+		int rv = 0;
 		if (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESL2FRAME) {
 			//for framed L0, must send the whole block at once
 			rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, 0, dp->rxbuf, dp->rxbuf[0]+1, d_l2_conn->diag_l2_p4min);
@@ -692,7 +692,7 @@ dl2p_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	if (timeout != 0) {
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
 			FLFMT
-			"WARNING! l2_vag will ignore the given timeout! (%d msec)\n",
+			"WARNING! l2_vag will ignore the given timeout! (%u msec)\n",
 			FL, timeout);
 	}
 

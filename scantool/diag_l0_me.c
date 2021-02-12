@@ -737,7 +737,7 @@ void *data, size_t len, unsigned int timeout) {
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
 		FLFMT
-		"link %p recv upto %ld bytes timeout %u, rxlen %d offset %d\n",
+		"link %p recv upto %ld bytes timeout %u, rxlen %u offset %u\n",
 		FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
 		dev->dev_rdoffset);
 

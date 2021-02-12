@@ -357,7 +357,7 @@ static void dtest_9(struct diag_l0_device *dl0d) {
 			diag_tty_read(dev->tty_int, garbage, MAXRBUF, i);
 		}
 		tf = (diag_os_gethrt() - t0) / DT9_ITERS;	//average measured timeout
-		printf("Timeout=%d: avg=%dms\n", i, (int) (diag_os_hrtus(tf)/1000));
+		printf("Timeout=%u: avg=%dms\n", i, (int) (diag_os_hrtus(tf)/1000));
 	}
 
 	return;
@@ -387,14 +387,14 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 			t0=diag_os_gethrt();
 			if ((rv=diag_tty_read(dev->tty_int, garbage, MAXRBUF, i)) != 1) {
 				// failed: purge + try next timeout value
-				fprintf(stderr, "failed @ timeout=%d : %s\n", i, diag_errlookup(rv));
+				fprintf(stderr, "failed @ timeout=%u : %s\n", i, diag_errlookup(rv));
 				diag_tty_iflush(dev->tty_int);
 				break;
 			}
 			tf = tf + diag_os_gethrt() - t0;
 		}
 		tf = tf / DT11_ITERS;
-		printf("Timeout=%d: avg=%dms\n", i, (int) (diag_os_hrtus(tf)/1000));
+		printf("Timeout=%u: avg=%dms\n", i, (int) (diag_os_hrtus(tf)/1000));
 	}
 	return;
 failed:
@@ -417,7 +417,7 @@ static void dtest_12(struct diag_l0_device *dl0d) {
 
 	for (i=1; i<=50; i += 5) {
 		tf=0;
-		printf("len=%d:", i);
+		printf("len=%u:", i);
 		ts1=diag_os_gethrt();
 		for (iters=0; iters < DT12_ITERS; iters++) {
 			unsigned long long tt1;

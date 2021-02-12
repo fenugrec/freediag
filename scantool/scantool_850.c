@@ -1216,7 +1216,7 @@ cmd_850_id_kwp71(void) {
 	msg = ecu_id;
 
 	if (msg->len != 10) {
-		printf("Identification block was %d bytes, expected %d\n", msg->len, 10);
+		printf("Identification block was %u bytes, expected %d\n", msg->len, 10);
 		return CMD_OK;
 	}
 
@@ -1243,7 +1243,7 @@ cmd_850_id_kwp71(void) {
 	}
 
 	if (msg->len != 10) {
-		printf("Identification block was %d bytes, expected %d\n", msg->len, 10);
+		printf("Identification block was %u bytes, expected %d\n", msg->len, 10);
 		return CMD_OK;
 	}
 

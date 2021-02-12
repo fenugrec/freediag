@@ -166,7 +166,7 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int offset = 0;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_j1850_send %p msg %p len %d called\n",
+		FLFMT "diag_l2_j1850_send %p msg %p len %u called\n",
 		FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	if ((msg->len + 4) >= MAXRBUF) {
