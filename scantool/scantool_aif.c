@@ -147,12 +147,13 @@ static void aif_monitor (UNUSED(void *data)) {
 		BadToApp() ;
 	} else {
 		/* Currently monitored DTCs: */
+		unsigned ecuid;
 
-		for (i = 0 ; i < ecu_count ; i++) {
-			LL_FOREACH(ecu_info[i].rxmsg, msg) {
-				int i, j ;
+		for (ecuid = 0 ; ecuid < ecu_count ; ecuid++) {
+			LL_FOREACH(ecu_info[ecuid].rxmsg, msg) {
+				int id, j ;
 
-				for (i = 0, j = 1 ; i < 3 ; i++, j += 2) {
+				for (id = 0, j = 1 ; id < 3 ; id++, j += 2) {
 					char buf[256];
 					uint8_t db[2];
 

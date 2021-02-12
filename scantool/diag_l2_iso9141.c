@@ -63,11 +63,11 @@
 int
 dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 	struct diag_l1_initbus_args in;
-	uint8_t kb1, kb2, inv_address, inv_kb2;
+	uint8_t kb1, kb2, inv_address;
 	int rv = 0;
 	struct diag_l2_iso9141 *dp;
 
-	kb1 = kb2 = inv_address = inv_kb2 = 0;
+	kb1 = kb2 = inv_address = 0;
 	dp = d_l2_conn->diag_l2_proto_data;
 
 	// Flush unread input:
@@ -131,7 +131,7 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 		diag_os_millisleep(W4min);
 
 		//Send inverted kb2:
-		inv_kb2 = (uint8_t) ~kb2;
+		uint8_t inv_kb2 = (uint8_t) ~kb2;
 		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
 					&inv_kb2, 1, 0);
 		if (rv < 0) {
