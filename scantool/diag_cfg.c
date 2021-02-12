@@ -110,8 +110,9 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid) {
 		break;
 	case CFGT_U8:	//these don't really make sense
 	case CFGT_BOOL:
+		break;
 	default:
-		return diag_iseterr(DIAG_ERR_BADCFG);
+		assert(0);
 		break;
 	}
 	return 0;
@@ -124,25 +125,23 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid) {
 //for u8 / int types, sprintf with %X and %d formatters respectively
 char *diag_cfg_getstr(struct cfgi *cfgp) {
 	char *str;
-	const char *fmt;
 	size_t len;
 	int rv;
+
+	/* determine required length first */
 	switch (cfgp->type) {
 	case CFGT_U8:
 		len=5;
-		fmt="0x%02X";
 		break;
 	case CFGT_INT:
 		//handle 7 digits.
 		len=8;
-		fmt="%7d";
 		break;
 	case CFGT_STR:
 		len=strlen(cfgp->val.str)+1;
-		fmt="%s";
 		break;
 	default:
-		return diag_pseterr(DIAG_ERR_BADCFG);
+		assert(0);
 		break;
 	}
 
@@ -151,7 +150,22 @@ char *diag_cfg_getstr(struct cfgi *cfgp) {
 		return diag_pfwderr(rv);
 	}
 
-	snprintf(str, len, fmt, cfgp->val.str);
+	/* fill str */
+	switch (cfgp->type) {
+	case CFGT_U8:
+		snprintf(str, len, "0x%02X", (unsigned) cfgp->val.u8);
+		break;
+	case CFGT_INT:
+		snprintf(str, len, "%7d", cfgp->val.i);
+		break;
+	case CFGT_STR:
+		memcpy(str, cfgp->val.str, len);
+		break;
+	default:
+		assert(0);
+		break;
+	}
+
 	return str;
 }
 
