@@ -405,7 +405,7 @@ diag_geterr(void) {
 int diag_fl_alloc(const char *fName, const int line,
 	void **pp, size_t n, size_t s, bool allocIsCalloc) {
 	char allocator;
-	char *errMsg = "%s:%d: %calloc(%ld, %ld) failed: %s\n";
+	const char *errMsg = "%s:%d: %calloc(%zu, %zu) failed: %s\n";
 
 	if (allocIsCalloc) {
 		allocator = 'c';
