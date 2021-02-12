@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="1">
+    <builddir>cppcheck_proj-cppcheck-build-dir</builddir>
+    <platform>unknown</platform>
+    <analyze-all-vs-configs>false</analyze-all-vs-configs>
+    <check-headers>true</check-headers>
+    <check-unused-templates>true</check-unused-templates>
+    <max-ctu-depth>2</max-ctu-depth>
+    <max-template-recursion>100</max-template-recursion>
+    <defines>
+        <define name="__unix__"/>
+        <define name="HAVE_STRCASECMP"/>
+    </defines>
+    <paths>
+        <dir name="scantool"/>
+    </paths>
+    <suppressions>
+        <suppression>variableScope</suppression>
+    </suppressions>
+</project>
