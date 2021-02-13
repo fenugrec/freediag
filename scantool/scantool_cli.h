@@ -66,7 +66,7 @@ void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_en
 
 
 /** Prompt for some input.
- * Returns a new 0-terminated string with trailing CR/LF stripped
+ * @return a new 0-terminated string with trailing CR/LF stripped, NULL if no more input
  *
  * Caller must free returned buffer. Used if we don't
  * have readline, and when reading init or command files.

@@ -318,6 +318,11 @@ static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {}
 
 #endif	//HAVE_LIBREADLINE
 
+/** get input from user or file
+*
+* @instream either stdin or file
+* @return NULL if no more input
+*/
 static char *
 command_line_input(const char *prompt, FILE *instream) {
 	if (instream == stdin) {
@@ -570,9 +575,15 @@ static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, co
 
 static char nullstr[2] = {0,0};	//can't be const char because it goes into argv
 
-/*
- * CLI, returns results as CMD_xxx (such as CMD_EXIT)
- * If argc is supplied, then this is one shot cli, ie run the command
+/** CLI processor
+ *
+ * @prompt will be prompted only if argc==0
+ * @argc  If supplied, then this is one shot cli, ie run the command
+ * @instream stdin or file to source commands
+ *
+ * @return results as CMD_xxx (such as CMD_EXIT)
+ *
+ * prints *prompt,
  */
 static int
 do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv) {
@@ -592,7 +603,8 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 	current_cmd_level = cmd_tbl;
 #endif
 
-	rv = CMD_FAILED, done = 0;
+	rv = CMD_FAILED;
+	done = 0;
 	snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
 	while (!done) {
 		char *inptr, *s;
@@ -604,9 +616,6 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 			}
 			input = command_line_input(promptbuf, instream);
 			if (!input) {
-				if (instream == stdin) {
-					printf("\n");
-				}
 				break;
 			}
 
@@ -645,8 +654,8 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 
 		if (ctp == NULL) {
 			printf("Unrecognized command. Try \"help\"\n");
-			if (argc) {
-				//was a single command : exit this level of do_cli()
+			if (instream != stdin) {
+				//processing a file : abort
 				break;
 			}
 			//else : continue getting input
