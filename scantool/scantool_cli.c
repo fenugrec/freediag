@@ -568,6 +568,8 @@ static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, co
 	return custom_cmd;
 }
 
+static char nullstr[2] = {0,0};	//can't be const char because it goes into argv
+
 /*
  * CLI, returns results as CMD_xxx (such as CMD_EXIT)
  * If argc is supplied, then this is one shot cli, ie run the command
@@ -584,7 +586,6 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 	int i;
 
 	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
-	static char nullstr[2] = {0,0};
 
 #ifdef HAVE_LIBREADLINE
 	//set the current command level for command completion
