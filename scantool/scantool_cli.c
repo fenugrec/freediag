@@ -390,10 +390,17 @@ static int
 cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
 	struct tm *tm;
 	time_t now;
+	char str[256];
 
 	now = time(NULL);
 	tm = localtime(&now);
-	printf("%s", asctime(tm));
+	if (strftime(str, sizeof(str), "%a %b %d %H:%M:%S %Y", tm) == 0) {
+		printf("unable to format timestamp");
+	}
+	else {
+		printf("%s", str);
+	}
+	
 
 	return CMD_OK;
 }
@@ -434,6 +441,7 @@ cmd_log(int argc, char **argv) {
 	char autofilename[20]="";
 	char *file;
 	time_t now;
+	char timestr[256];
 	int i;
 
 	file=autofilename;
@@ -476,9 +484,12 @@ cmd_log(int argc, char **argv) {
 
 	fprintf(global_logfp, "%s\n", LOG_FORMAT);
 	log_timestamp("#");
-	fprintf(global_logfp, "logging started at %s",
-		asctime(localtime(&now)));
-
+	if (strftime(timestr, sizeof(timestr), "%a %b %d %H:%M:%S %Y", localtime(&now)) == 0) {
+		fprintf(global_logfp, "unable to format timestamp");
+	}
+	else {
+		fprintf(global_logfp, "logging started at %s", timestr);
+	}
 	printf("Logging to file %s\n", file);
 	return CMD_OK;
 }
@@ -765,7 +776,7 @@ cmd_source(int argc, char **argv) {
 //rc_file : returns CMD_OK or CMD_EXIT only.
 static int
 rc_file(void) {
-	int rv;
+	int rv = CMD_FAILED;
 	//this loads either a $home/.<progname>.rc or ./<progname>.ini (in order of preference)
 	//to load general settings.
 

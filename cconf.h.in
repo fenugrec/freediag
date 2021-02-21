@@ -23,12 +23,12 @@
 #define DIAG_TEST_PROGNAME "@DIAG_TEST_PROGNAME@"
 #define PROJECT_NAME "@PROJECT_NAME@"
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
     #define PACKAGE_VERSION_VALUE ${PKGVERSIONMAJOR_VALUE},${PKGVERSIONMINOR_VALUE},0,0
     #define PACKAGE_VERSION_STR "@PKGVERSION@\0"
     #define PROJECT_NAME_STR "@PROJECT_NAME@\0" 
     #define SCANTOOL_PROGNAME_EXE "@SCANTOOL_PROGNAME@.exe\0"
     #define DIAG_TEST_PROGNAME_EXE "@DIAG_TEST_PROGNAME@.exe\0"
-#endif //_WIN32
+#endif //Windows
 
 #endif //ifndef _cconf_h
