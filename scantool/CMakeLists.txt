@@ -23,6 +23,45 @@ foreach (L2NAME IN LISTS L2LIST)
 	endif()
 endforeach()
 
+#integrate cppcheck checks if the binary is present.
+find_program (CPPCHECK_BIN NAMES cppcheck)
+if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
+       # cppcheck is found in the path so use it.
+       find_program (CMAKE_C_CPPCHECK NAMES cppcheck)
+       list (
+        APPEND CMAKE_C_CPPCHECK
+            "--enable=warning"
+			"--enable=style"
+			"--enable=performance"
+			"--enable=information"
+            "--suppress=missingInclude"
+			"--suppress=missingSystemInclude"
+			"--suppress=unmatchedSuppression"
+			"--suppress=variableScope"
+			"--suppress=unsignedLessThanZero"
+            "--error-exitcode=1"
+            "--inline-suppr"
+       )
+	   if (WIN32)
+	      list (
+             APPEND CMAKE_C_CPPCHECK 
+             "--platform=win32A"
+			 "-D_WIN32"
+			 #
+			 # This is to prevent cppcheck to include windows.h.
+			 # The header leads to problems with the borland compilers.
+			 #
+			 "-D_WINDOWS_"
+		  )
+	   else ()
+	      list (
+		     APPEND CMAKE_C_CPPCHECK
+		     "--platform=unix32"
+		     "-D__unix__"
+	      )
+	   endif ()
+endif ()
+
 #and now generate diag_config.c ! (output in the build directory)
 configure_file ( diag_config.c.in diag_config.c)
 

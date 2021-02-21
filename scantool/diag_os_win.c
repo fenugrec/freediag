@@ -414,7 +414,7 @@ void diag_os_calibrate(void) {
 		//fragile. We just print it out; there's not much we can do to fix this.
 		if ((min < counts) || (avgerr > 900))
 			printf("diag_os_millisleep(%d) off by %+"PRId64"%% (%+"PRId64"us)"
-			"; spread=%"PRIu64"%%\n", testval, (avgerr*100/1000)/testval, avgerr, ((max-min)*100)/counts);
+			"; spread=%"PRId64"%%\n", testval, (avgerr*100/1000)/testval, avgerr, ((max-min)*100)/counts);
 
 
 		if (testval>=30)

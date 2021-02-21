@@ -34,7 +34,7 @@ extern "C" {
 
 #include <stdbool.h>
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 	#include <windows.h>
 	typedef DWORD OS_ERRTYPE;
 #else
@@ -116,7 +116,7 @@ unsigned long long diag_os_hrtus(unsigned long long hrdelta);
  * the backends use pthread, C11, winAPI etc.
  * lowest-common-denominator stuff here; regular mutexes (not necessarily recursive etc)
  */
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 	#include <windows.h>
 	// No static mutex initialization on Windows ( CRITICAL_SECTION is an opaque type)
 	typedef CRITICAL_SECTION diag_mtx;

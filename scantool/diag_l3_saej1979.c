@@ -709,11 +709,10 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 	 * Service 1 Pid 0 request is the SAEJ1979 idle message
 	 * XXX Need to get the address bytes correct
 	 */
-
-	msg.data = data;
 	msg.len = 2;
 	data[0] = 1 ;		/* Mode 1 */
 	data[1] = 0; 		/* Pid 0 */
+	msg.data = data;
 
 	/*
 	 * And set the source address, if no sends have happened, then

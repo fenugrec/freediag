@@ -125,7 +125,7 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid) {
 //for u8 / int types, sprintf with %X and %d formatters respectively
 char *diag_cfg_getstr(struct cfgi *cfgp) {
 	char *str;
-	size_t len;
+	size_t len = 0;
 	int rv;
 
 	/* determine required length first */

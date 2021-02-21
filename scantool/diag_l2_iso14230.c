@@ -1067,12 +1067,12 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 		d_l2_conn->diag_msg = NULL;
 
 		/* Check for negative response */
-		if (rmsg->data[0] != DIAG_KW2K_RC_NR) {
+		if (rmsg && rmsg->data[0] != DIAG_KW2K_RC_NR) {
 			/* Success */
 			break;
 		}
 
-		if (rmsg->data[2] == DIAG_KW2K_RC_B_RR) {
+		if (rmsg && rmsg->data[2] == DIAG_KW2K_RC_B_RR) {
 			/*
 			 * Msg is busyRepeatRequest
 			 * So send again (if retries>0).
@@ -1102,7 +1102,7 @@ dl2p_14230_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 			continue;
 		}
 
-		if (rmsg->data[2] == DIAG_KW2K_RC_RCR_RP) {
+		if (rmsg && rmsg->data[2] == DIAG_KW2K_RC_RCR_RP) {
 			/*
 			 * Msg is a requestCorrectlyRcvd-RspPending
 			 * so do read again
@@ -1151,8 +1151,6 @@ dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn) {
 	diag_l1_debug=0;
 	diag_l0_debug=0;
 
-	msg.data = data;
-
 	/* Prepare the "keepalive" message */
 	if (dp->modeflags & ISO14230_IDLE_J1978) {
 		/* Idle using J1978 / J1979 keep alive message : SID 1 PID 0 */
@@ -1166,6 +1164,8 @@ dl2p_14230_timeout(struct diag_l2_conn *d_l2_conn) {
 		msg.src = 0;	/* Use default */
 		data[0] = DIAG_KW2K_SI_TP;
 	}
+
+	msg.data = data;
 
 	/*
 	 * There is no point in checking for errors, or checking

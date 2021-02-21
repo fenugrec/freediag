@@ -33,7 +33,7 @@ extern "C" {
 
 #include "cconf.h"
 
-#ifdef WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 	#ifndef _WIN32_WINNT
 		#define _WIN32_WINNT 0x0500	//use > winXP features...
 	#endif
@@ -66,7 +66,7 @@ extern "C" {
 #ifdef HAVE_STRCASECMP
 	#include <strings.h>
 #else
-	#ifdef WIN32
+	#ifdef _WIN32
         //strcasecmp is POSIX, but kernel32 provides lstrcmpi which should be equivalent.
 		#define strcasecmp(a,b) lstrcmpi((LPCTSTR) a, (LPCTSTR) b)
 	#else
