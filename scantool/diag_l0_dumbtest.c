@@ -682,7 +682,7 @@ const void *data, size_t len) {
 	 * as the L1 code that called this will be adding the P4 gap between
 	 * bytes
 	 */
-	if (len <= 0) {
+	if (len == 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 

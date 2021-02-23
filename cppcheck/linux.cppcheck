@@ -24,6 +24,5 @@
     </exclude>
     <suppressions>
         <suppression>variableScope</suppression>
-		<suppression>unsignedLessThanZero</suppression>
     </suppressions>
 </project>

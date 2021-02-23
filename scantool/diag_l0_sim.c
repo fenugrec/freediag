@@ -668,7 +668,7 @@ int sim_send(struct diag_l0_device *dl0d,
 		 const void *data, const size_t len) {
 	struct sim_device *dev = dl0d->l0_int;
 
-	if (len <= 0) {
+	if (len == 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 

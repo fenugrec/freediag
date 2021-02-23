@@ -935,7 +935,7 @@ elm_send(struct diag_l0_device *dl0d,
 	int rv;
 	unsigned int i;
 
-	if (len <= 0) {
+	if (len == 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 

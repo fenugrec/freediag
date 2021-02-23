@@ -300,7 +300,7 @@ ssize_t diag_tty_write(ttyp *ttyh, const void *buf, const size_t count) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (count <= 0)
+	if (count == 0)
 		return diag_iseterr(DIAG_ERR_BADLEN);
 
 	if (! WriteFile(wti->fd, buf, count, &byteswritten, pOverlap)) {
@@ -334,7 +334,7 @@ diag_tty_read(ttyp *ttyh, void *buf, size_t count, unsigned int timeout) {
 	pOverlap=NULL;
 	COMMTIMEOUTS devtimeouts;
 
-	if ((count <= 0) || (timeout <= 0)) return DIAG_ERR_BADLEN;
+	if ((count == 0) || (timeout == 0)) return DIAG_ERR_BADLEN;
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
 		FLFMT "tty_read: ttyh=%p, fd=%p, len=%zu, t=%u\n",

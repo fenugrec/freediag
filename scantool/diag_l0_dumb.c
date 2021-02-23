@@ -652,7 +652,7 @@ const void *data, size_t len) {
 
 	struct dumb_device *dev = dl0d->l0_int;
 
-	if (len <= 0) {
+	if (len == 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
@@ -680,7 +680,7 @@ void *data, size_t len, unsigned int timeout) {
 	int rv;
 	struct dumb_device *dev = dl0d->l0_int;
 
-	if (len <= 0) {
+	if (len == 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 

@@ -38,7 +38,6 @@ if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
 			"--suppress=missingSystemInclude"
 			"--suppress=unmatchedSuppression"
 			"--suppress=variableScope"
-			"--suppress=unsignedLessThanZero"
             "--error-exitcode=1"
             "--inline-suppr"
        )

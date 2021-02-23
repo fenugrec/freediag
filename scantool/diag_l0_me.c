@@ -427,7 +427,7 @@ static int
 muleng_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 	struct muleng_device *dev = dl0d->l0_int;
 
-	if (txlen <= 0) {
+	if (txlen == 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
@@ -634,7 +634,7 @@ const void *data, size_t len) {
 
 	dev = (struct muleng_device *)dl0d->l0_int;
 
-	if (len <= 0) {
+	if (len == 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 
