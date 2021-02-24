@@ -5,17 +5,34 @@ freediag build system overview and compilation instructions
 
 As of 2021/02 :
 
-* Visual Studio 2019 (x86/x64) (integrated cmake and cmake 3.19.3) works
-* Visual Studio Code on Windows (MinGW, MinGW64, BCC, MSVC) (cmake 3.6.0 and higher) works
+* Visual Studio 2019 (x86/x64) (integrated cmake) works
+* Visual Studio Code on Windows (MinGW, MinGW64, BCC, MSVC) (cmake 3.10.0 and higher) works
 * Visual Studio Code remote on WSL (cmake 3.13.4 default installation debian) works
-* Visual Studio 2019 builds will not run on XP but will run on 7 and higher.
-* MinGW and Borland work for Windows XP
+* Visual Studio 2019 builds will not run on Windows XP but will run on Windows 7 and higher.
+* Binaries build with MinGW and Borland/Embarcadero work for Windows XP
 
 
 **************** instructions for cmake ****************
 
+**** 1A- Steps to compile freediag on MS Windows Visual Studio/Visual Studio Code ****
 
-**** 1A- Steps to compile freediag on MS Windows ****
+To compile freediag on win using these IDEs, the general process is as such
+    -extract the source tree (git clone, or a source package).
+    -make sure cmake version 3.10 or higher is installed and %PATH% holds the cmake/bin directory.
+	 Visual Studio 2019 has a cmake installation integrated so no extra action is required. 
+	-open the source directory from the IDE. Visual Studio 2019 has the option "Open local folder" which 
+	 will start the cmake integration automatically. There is no need to generate MSBuild project files 
+	 with cmake although this works as well. Visual Studio Code may suggest the installation of serveral 
+	 extensions (e.g. C/C++ support, IntelliSense, CMake Tools). 
+	-the cmake integration in both IDEs will guide you through the cmake configuration process.
+	-Visual Studio Code will detect existing MinGW and Visual Studio Build Tool installations. The 
+	 Borland/Embarcadero Compiler (e.g Embarcadero C++ Compiler Tools or C++ Builder Community Edition)
+	 can be added manually. For Visual Studio 2019 the build targets x86/x64 Debug/Release are tested.
+	-After configuration start the build process in the IDE. 
+
+
+
+**** 1B- Steps to compile freediag on MS Windows using Cmake GUI and MinGW ****
 
 To compile freediag on win, the general process is as such (rename directories as required)
 	-make sure cmake is installed and %PATH% holds the cmake/bin directory
@@ -31,8 +48,7 @@ To compile freediag on win, the general process is as such (rename directories a
 
 
 
-
-**** 1B- Steps to compile freediag on linux ****
+**** 1C- Steps to compile freediag on linux ****
 
 The instructions given above for Win may be used almost as-is on linux; here are methods without using
 "cmake-gui"
