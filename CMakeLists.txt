@@ -101,9 +101,9 @@ elseif (MSVC)
 	add_compile_options($<$<CONFIG:>:/MT> $<$<CONFIG:Debug>:/MTd> $<$<CONFIG:Release>:/MT>)
 	# 4. Disable the auto generated manifests.
 	add_link_options(/MANIFEST:NO)
-	if (MSVC_VERSION LESS 1920)
+	if (MSVC_VERSION LESS 1910)
 		#require at least winXP
-		message(WARNING "Visual Studio version before 16 (2019) may not work ! Proceed at your risk !")
+		message(WARNING "Visual Studio version before 15 (2017) may not work ! Proceed at your risk !")
 	endif ()
 else ()
 	message(WARNING "non-gcc compiler, verify compiler options !")

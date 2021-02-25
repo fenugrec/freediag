@@ -90,7 +90,7 @@ extern "C" {
 #if defined(_MSC_VER)
 	typedef SSIZE_T ssize_t;	//XXX ssize_t is currently only needed because of diag_tty_unix.c:diag_tty_{read,write}.
 								//TODO : rework read/write types to use a combination of size_t and int ?
-	#if _MSC_VER < 1920 /* anything older than Visual Studio 2019 */
+	#if _MSC_VER < 1910 /* anything older than Visual Studio 2017 */
 		#define snprintf _snprintf	//danger : _snprintf doesn't guarantee zero-termination !?
 									//as of Visual Studio 2015 the snprintf function is c99 compatible.
 									//https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/snprintf-snprintf-snprintf-l-snwprintf-snwprintf-l?view=msvc-160
@@ -103,9 +103,9 @@ extern "C" {
 		// not just the filename. For our debugging messages we only care about the filename, hence CURFILE.
 		#define FL  __FILE__, __LINE__
 	#else
-		// Using Visual Studio 2019 and higher the CURFILE macro will work.
+		// Using Visual Studio 2017 and higher the CURFILE macro will work.
 		#define FL CURFILE, __LINE__
-	#endif /* _MSC_VER < 1920  Visual Studio 2019 */
+	#endif /* _MSC_VER < 1910  Visual Studio 2017 */
 #else
 	#define FL CURFILE, __LINE__
 #endif /* _MSC_VER Visual Studio */
