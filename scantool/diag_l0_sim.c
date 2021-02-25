@@ -108,7 +108,7 @@ struct sim_device {
 
 int sim_send(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
-		 const void *data, size_t len);
+		 const void *data, const size_t len);
 
 int sim_recv(struct diag_l0_device *dl0d,
 		UNUSED(const char *subinterface),
