@@ -105,6 +105,10 @@ elseif (MSVC)
 		#require at least winXP
 		message(WARNING "Visual Studio version before 15 (2017) may not work ! Proceed at your risk !")
 	endif ()
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    #using regular Clang or AppleClang
+	#set all warnings as errors for clang based compiler.
+	add_compile_options("-Wall" "-Werror" "-pedantic" "-pedantic-errors" "-std=gnu99")
 else ()
 	message(WARNING "non-gcc compiler, verify compiler options !")
 	#not sure what we should use on other compilers.
