@@ -653,7 +653,7 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 		} else {
 			/* Use supplied argc */
 			cmd_argc = argc;
-			for (i = 0; i <= argc; i++) {
+			for (i = 0; i < argc; i++) {
 				cmd_argv[i] = argv[i];
 			}
 		}
