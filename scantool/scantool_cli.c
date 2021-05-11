@@ -747,6 +747,7 @@ command_file(const char *filename) {
 	FILE *fstream;
 
 	if ( (fstream=fopen(filename, "r"))) {
+		printf("running commands from file %s...\n", filename);
 		rv=do_cli(root_cmd_table, progname, fstream, 0, NULL);
 		fclose(fstream);
 		return (rv==CMD_EXIT)? CMD_EXIT:CMD_OK;
@@ -879,6 +880,7 @@ enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *
 	set_init();
 
 	if (initscript != NULL) {
+		printf("running commands from file %s...\n", initscript);
 		int rv=command_file(initscript);
 		switch (rv) {
 			case CMD_OK:

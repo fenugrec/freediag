@@ -1768,7 +1768,7 @@ main(int argc, char **argv) {
 	}
 
 	if ( user_interface ) {
-		printf("%s version %s\n", PROJECT_NAME, PACKAGE_VERSION);
+		printf("\n**************** %s version %s ****************\n", PROJECT_NAME, PACKAGE_VERSION);
 		enter_cli(SCANTOOL_PROGNAME, startfile, scantool_cmd_table);
 	} else {
 		enter_aif(SCANTOOL_PROGNAME);
