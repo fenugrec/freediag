@@ -65,10 +65,8 @@ struct diag_l0 {
 	void (*_close)(struct diag_l0_device *);
 	uint32_t	(*_getflags)(struct diag_l0_device *);
 
-	int	(*_recv)(struct diag_l0_device *,
-		const char *subinterface, void *data, size_t len, unsigned int timeout);
-	int	(*_send)(struct diag_l0_device *,
-		const char *subinterface, const void *data, size_t len);
+	int	(*_recv)(struct diag_l0_device *, void *data, size_t len, unsigned int timeout);
+	int	(*_send)(struct diag_l0_device *, const void *data, size_t len);
 
 	int (*_ioctl)(struct diag_l0_device *, unsigned cmd, void *data);
 };
@@ -122,16 +120,13 @@ uint32_t	diag_l0_getflags(struct diag_l0_device *);
  * @param timeout: in ms
  * @return # of bytes read
  */
-int diag_l0_recv(struct diag_l0_device *,
-				const char *subinterface, void *data, size_t len, unsigned int timeout);
+int diag_l0_recv(struct diag_l0_device *, void *data, size_t len, unsigned int timeout);
 
 
 /** Send bytes.
- * @param subinterface: ignored
  * @return 0 on success
  */
-int	diag_l0_send(struct diag_l0_device *,
-					const char *subinterface, const void *data, size_t len);
+int	diag_l0_send(struct diag_l0_device *, const void *data, size_t len);
 
 /** Send IOCTL to L0
  *	@param command : IOCTL #, defined in diag.h

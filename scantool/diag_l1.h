@@ -147,20 +147,6 @@ extern "C" {
 #define DIAG_L1_RES2 0x40	/* Reserved */
 #define	DIAG_L1_RAW		0x80	/* Raw data interface */
 
-/*
- * Number of concurrently supported logical interfaces
- * remember a single physical interface may be many logical interfaces
- * if it has K, CAN, etc in one device
- *
- * For interfaces with muxes (such as to talk to a MB 33 way diagnostic port)
- * the subinterface flag is used for read and write purposes
- * XXX what's an MB 33 way diagnostic port ?!
- *
- * This makes "un-duplexing" a half duplex interface hard work...
- *  and not yet supported in this code
- */
-//#define DIAG_L1_MAXINTF		16
-
 
 /*
  * L2 -> L1 interface
@@ -215,14 +201,14 @@ void diag_l1_close(struct diag_l0_device *);
  * @param p4 : inter-byte spacing (ms), if applicable.
  * @return 0 if ok
  */
-int diag_l1_send(struct diag_l0_device *, const char *subinterface, const void *data, size_t len, unsigned int p4);
+int diag_l1_send(struct diag_l0_device *, const void *data, size_t len, unsigned int p4);
 
 /** Receive data.
  *
  * @return # of bytes read, DIAG_ERR_TIMEOUT or \<0 if failed. DIAG_ERR_TIMEOUT is not a hard failure
  * since a lot of L2 code uses this to detect end of responses
  */
-int diag_l1_recv(struct diag_l0_device *, const char *subinterface, void *data, size_t len, unsigned int timeout);
+int diag_l1_recv(struct diag_l0_device *, void *data, size_t len, unsigned int timeout);
 
 /** Get L0/L1 device flags (defined in diag_l1.h)
  * @return bitmask of L0/L1 flags

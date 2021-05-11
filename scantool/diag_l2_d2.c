@@ -87,7 +87,7 @@ dl2p_d2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 
 	diag_os_millisleep(d_l2_conn->diag_l2_p3min);
 
-	rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, NULL, buf,
+	rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, buf,
 		msg->len + 3, d_l2_conn->diag_l2_p4min);
 
 	return rv?diag_ifwderr(rv):0;
@@ -101,7 +101,7 @@ dl2p_d2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	uint8_t buf[3 + 62 + 1];
 	struct diag_msg *msg;
 
-	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, NULL, buf,
+	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, buf,
 		sizeof(buf), timeout + 100);
 	if (rv < 0) {
 		return rv;

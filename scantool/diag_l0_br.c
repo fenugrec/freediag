@@ -624,7 +624,6 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
  */
 static int
 br_send(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
 const void *data, size_t len) {
 	int rv = 0;
 
@@ -695,7 +694,6 @@ const void *data, size_t len) {
  */
 static int
 br_recv(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
 void *data, size_t len, unsigned int timeout) {
 	int xferd, rv, retrycnt;
 	uint8_t *pdata = (uint8_t *)data;

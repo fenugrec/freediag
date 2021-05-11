@@ -642,7 +642,6 @@ static int dumb_iflush(struct diag_l0_device *dl0d) {
 
 static int
 dumb_send(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
 const void *data, size_t len) {
 	/*
 	 * This will be called byte at a time unless P4 timing parameter is zero
@@ -675,7 +674,6 @@ const void *data, size_t len) {
 
 static int
 dumb_recv(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
 void *data, size_t len, unsigned int timeout) {
 	int rv;
 	struct dumb_device *dev = dl0d->l0_int;

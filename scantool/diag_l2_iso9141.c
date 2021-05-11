@@ -94,13 +94,13 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 	// The L1 device has read the 0x55, and reset the previous speed.
 
 	// Receive the first KeyByte:
-	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0, &kb1, 1, W2max+RXTOFFSET);
+	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, &kb1, 1, W2max+RXTOFFSET);
 	if (rv < 0) {
 		return diag_iseterr(DIAG_ERR_WRONGKB);
 	}
 
 	// Receive the second KeyByte:
-	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0, &kb2, 1, W3max+RXTOFFSET);
+	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, &kb2, 1, W3max+RXTOFFSET);
 	if (rv < 0) {
 		return diag_iseterr(DIAG_ERR_WRONGKB);
 	}
@@ -132,7 +132,7 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 
 		//Send inverted kb2:
 		uint8_t inv_kb2 = (uint8_t) ~kb2;
-		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
+		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d,
 					&inv_kb2, 1, 0);
 		if (rv < 0) {
 			return diag_ifwderr(rv);
@@ -142,7 +142,7 @@ dl2p_iso9141_wakeupECU(struct diag_l2_conn *d_l2_conn) {
 		// XXX I added RXTOFFSET as a band-aid fix for systems, like
 		//mine, that don't receive ~addr with only W4max. See #define
 		//NOTE : l2_iso14230 uses a huge 350ms timeout for this!!
-		rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
+		rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
 					&inv_address, 1, W4max + RXTOFFSET);
 		if (rv < 0) {
 			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
@@ -415,7 +415,7 @@ dl2p_iso9141_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 			rv = DIAG_ERR_TIMEOUT;	//we got a full frame already !
 		} else {
 			// Receive data into the buffer:
-			rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0,
+			rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d,
 					  &dp->rxbuf[dp->rxoffset],
 					  MAXLEN_ISO9141 - dp->rxoffset, tout);
 		}
@@ -668,7 +668,7 @@ dl2p_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 
 	//if L1 requires headerless data, send directly :
 	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DATAONLY) {
-		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
+		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d,
 				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
 		return rv? diag_ifwderr(rv):0;
 	}
@@ -693,7 +693,7 @@ dl2p_iso9141_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		"l2_iso9141_send: ");
 
 	// Send it over the L1 link:
-	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
+	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d,
 			buf, (size_t)offset, d_l2_conn->diag_l2_p4min);
 
 

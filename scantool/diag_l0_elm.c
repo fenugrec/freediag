@@ -96,8 +96,7 @@ static const unsigned elm_speeds[] = {ELM_CUSTOMSPEED, 38400, 9600, 115200, 0};
 
 extern const struct diag_l0 diag_l0_elm;
 
-static int elm_send(struct diag_l0_device *dl0d,
-	UNUSED(const char *subinterface), const void *data, size_t len);
+static int elm_send(struct diag_l0_device *dl0d, const void *data, size_t len);
 
 static int elm_sendcmd(struct diag_l0_device *dl0d,
 	const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp);
@@ -646,9 +645,9 @@ elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout) {
 
 	dev = dl0d->l0_int;
 	if (dev->protocol & DIAG_L1_ISO9141) {
-		rv = elm_send(dl0d, NULL, iso9141_data, 5);
+		rv = elm_send(dl0d, iso9141_data, 5);
 	} else {
-		rv = elm_send(dl0d, NULL, generic_data, 2);
+		rv = elm_send(dl0d, generic_data, 2);
 	}
 	if (rv) {
 		return diag_ifwderr(rv);
@@ -927,8 +926,7 @@ static int elm_purge(struct diag_l0_device *dl0d) {
  */
 
 static int
-elm_send(struct diag_l0_device *dl0d,
-	UNUSED(const char *subinterface), const void *data, size_t len) {
+elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 	uint8_t buf[ELM_BUFSIZE];
 	struct elm_device *dev = dl0d->l0_int;
 	//ssize_t xferd;
@@ -1022,8 +1020,7 @@ elm_send(struct diag_l0_device *dl0d,
  * let L2 do another call to get further messages (typical case of multiple responses)
  */
 static int
-elm_recv(struct diag_l0_device *dl0d,
-	UNUSED(const char *subinterface), void *data, size_t len, unsigned int timeout) {
+elm_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeout) {
 	int rv, xferd;
 	struct elm_device *dev = dl0d->l0_int;
 	uint8_t rxbuf[3*MAXRBUF +1];	//I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.

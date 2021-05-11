@@ -107,11 +107,9 @@ struct sim_device {
 
 
 int sim_send(struct diag_l0_device *dl0d,
-		UNUSED(const char *subinterface),
 		 const void *data, const size_t len);
 
 int sim_recv(struct diag_l0_device *dl0d,
-		UNUSED(const char *subinterface),
 		 void *data, size_t len, unsigned int timeout);
 
 void sim_close(struct diag_l0_device *dl0d);
@@ -641,13 +639,13 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 		// We simulate a break with a single "0x00" char.
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
 			FLFMT "Sending: BREAK!\n", FL);
-		sim_send(dl0d, 0, &sim_break, 1);
+		sim_send(dl0d, &sim_break, 1);
 		break;
 	case DIAG_L1_INITBUS_5BAUD:
 		// Send Service Address (as if it was at 5baud).
-		sim_send(dl0d, 0, &in->addr, 1);
+		sim_send(dl0d, &in->addr, 1);
 		// Receive Synch Pattern (as if it was at 10.4kbaud).
-		sim_recv(dl0d, 0 , synch_patt, 1, 0);
+		sim_recv(dl0d, synch_patt, 1, 0);
 		break;
 	default:
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
@@ -664,7 +662,6 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 // CARSIM behaves like a smart interface (does P4).
 // Gets the list of responses from the DB file for the given request.
 int sim_send(struct diag_l0_device *dl0d,
-		UNUSED(const char *subinterface),
 		 const void *data, const size_t len) {
 	struct sim_device *dev = dl0d->l0_int;
 
@@ -701,7 +698,6 @@ int sim_send(struct diag_l0_device *dl0d,
 // Returns ECU response with parsed data (if applicable).
 // Returns number of bytes read.
 int sim_recv(struct diag_l0_device *dl0d,
-		UNUSED(const char *subinterface),
 		void *data, size_t len, unsigned int timeout) {
 	size_t xferd;
 	struct sim_ecu_response *resp_p = NULL;

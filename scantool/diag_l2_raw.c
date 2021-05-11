@@ -90,7 +90,7 @@ dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		FLFMT "diag_l2_send %p, msg %p len %u called\n",
 		FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
-	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, 0,
+	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d,
 		msg->data, msg->len, d_l2_conn->diag_l2_p4min);
 
 	return rv? diag_ifwderr(rv):0 ;
@@ -108,7 +108,7 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	/*
  	 * Read data from fd
 	 */
-	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
+	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
 		rxbuf, sizeof(rxbuf), timeout);
 
 	if (rv <= 0) { /* Failure, or 0 bytes (which cant happen) */
@@ -152,7 +152,7 @@ dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 
 	/* And wait for response */
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
-		0, rxbuf, sizeof(rxbuf), 1000);
+		rxbuf, sizeof(rxbuf), 1000);
 
 	if (rv <= 0) {
 		*errval = rv;

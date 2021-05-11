@@ -7,7 +7,7 @@
  * a vehicle is connected; only for debugging the electrical interface itself.
 
  * This is a dummy l0 driver : most functions do nothing except
- * _open which opens the subinterface, runs the specified test, and closes everything
+ * _open which opens the interface, runs the specified test, and closes everything
  * before returning.
  */
 
@@ -94,7 +94,6 @@ extern const struct diag_l0 diag_l0_dumbtest;
 
 static int
 dt_send(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
 const void *data, size_t len);
 
 /*
@@ -263,7 +262,7 @@ static void dtest_7(struct diag_l0_device *dl0d) {
 	for (i=0; i<DT7_ITERS; i++) {
 		echo=i-1;	//init to bad value
 		ti=diag_os_gethrt();	//get starting time.
-		if (dt_send(dl0d, NULL, &i, 1)) {
+		if (dt_send(dl0d, &i, 1)) {
 			break;
 		}
 
@@ -308,7 +307,7 @@ static void dtest_8(struct diag_l0_device *dl0d) {
 
 	for (i=0; i<=DT8_ITERS; i++) {
 		ti=diag_os_gethrt();	//get starting time.
-		if (dt_send(dl0d, NULL, tx, DT8_MSIZE)) {
+		if (dt_send(dl0d, tx, DT8_MSIZE)) {
 			break;
 		}
 
@@ -381,7 +380,7 @@ static void dtest_11(struct diag_l0_device *dl0d) {
 		tf=0;
 		for (iters=0; iters < DT11_ITERS; iters++) {
 			uint8_t tc = i;
-			if ((rv = dt_send(dl0d, NULL, &tc, 1))) {
+			if ((rv = dt_send(dl0d, &tc, 1))) {
 				goto failed;
 			}
 			t0=diag_os_gethrt();
@@ -422,7 +421,7 @@ static void dtest_12(struct diag_l0_device *dl0d) {
 		for (iters=0; iters < DT12_ITERS; iters++) {
 			unsigned long long tt1;
 			t0 = diag_os_gethrt();
-			if (dt_send(dl0d, NULL, garbage, i)) {
+			if (dt_send(dl0d, garbage, i)) {
 				goto failed;
 			}
 			tt1 = diag_os_gethrt();
@@ -673,7 +672,6 @@ dt_close(UNUSED(struct diag_l0_device *dl0d)) {
 
 static int
 dt_send(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
 const void *data, size_t len) {
 	struct dt_device *dev = dl0d->l0_int;
 
@@ -702,7 +700,6 @@ const void *data, size_t len) {
 
 static int
 dt_recv(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
 UNUSED(void *data), size_t len, unsigned int timeout) {
 	fprintf(stderr,
 		FLFMT "link %p recv upto %ld bytes timeout %u; doing nothing.\n",

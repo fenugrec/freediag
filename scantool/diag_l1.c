@@ -139,7 +139,7 @@ int diag_l1_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
  * Returns 0 on success
  */
 int
-diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *data, size_t len, unsigned int p4) {
+diag_l1_send(struct diag_l0_device *dl0d, const void *data, size_t len, unsigned int p4) {
 	int rv = DIAG_ERR_GENERAL;
 	uint32_t l0flags;
 	uint8_t duplexbuf[MAXRBUF];
@@ -167,14 +167,14 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 		/*
 		 * Send the lot
 		 */
-		rv = diag_l0_send(dl0d, subinterface, data, len);
+		rv = diag_l0_send(dl0d, data, len);
 
 		//optionally remove echos
 		if ((l0flags & DIAG_L1_BLOCKDUPLEX) && (rv==0)) {
 			//try to read the same number of sent bytes; timeout=300ms + 1ms/byte
 			//This is plenty OK for typical 10.4kbps but should be changed
 			//if ever slow speeds are used.
-			if (diag_l0_recv(dl0d, NULL, duplexbuf, len, 300+len) != (int) len) {
+			if (diag_l0_recv(dl0d, duplexbuf, len, 300+len) != (int) len) {
 				rv=DIAG_ERR_GENERAL;
 			}
 
@@ -189,7 +189,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 		const uint8_t *dp = (const uint8_t *)data;
 
 		while (len--) {
-			rv = diag_l0_send(dl0d, subinterface, dp, 1);
+			rv = diag_l0_send(dl0d, dp, 1);
 			if (rv != 0) {
 				break;
 			}
@@ -204,7 +204,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
 				uint8_t c;
 
 				c = *dp - 1; /* set it with wrong val. */
-				if (diag_l0_recv(dl0d, NULL, &c, 1, 200) != 1) {
+				if (diag_l0_recv(dl0d, &c, 1, 200) != 1) {
 					rv=DIAG_ERR_GENERAL;
 					break;
 				}
@@ -241,8 +241,7 @@ diag_l1_send(struct diag_l0_device *dl0d, const char *subinterface, const void *
  * generated.
  */
 int
-diag_l1_recv(struct diag_l0_device *dl0d,
-	const char *subinterface, void *data, size_t len, unsigned int timeout) {
+diag_l1_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeout) {
 	int rv;
 	if (!len) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -259,7 +258,7 @@ diag_l1_recv(struct diag_l0_device *dl0d,
 			FL);
 	}
 
-	rv=diag_l0_recv(dl0d, subinterface, data, len, timeout);
+	rv=diag_l0_recv(dl0d, data, len, timeout);
 	if (!rv) {
 		fprintf(stderr, FLFMT "L0 returns with 0 bytes; returning TIMEOUT instead. Report this !\n", FL);
 		return DIAG_ERR_TIMEOUT;

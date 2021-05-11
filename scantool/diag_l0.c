@@ -86,16 +86,14 @@ uint32_t diag_l0_getflags(struct diag_l0_device *dl0d) {
 	return dl0d->dl0->_getflags(dl0d);
 }
 
-int diag_l0_recv(struct diag_l0_device *dl0d,
-				const char *subinterface, void *data, size_t len, unsigned int timeout) {
+int diag_l0_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeout) {
 	assert(dl0d);
-	return dl0d->dl0->_recv(dl0d, subinterface, data, len, timeout);
+	return dl0d->dl0->_recv(dl0d, data, len, timeout);
 }
 
-int	diag_l0_send(struct diag_l0_device *dl0d,
-		const char *subinterface, const void *data, size_t len) {
+int	diag_l0_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 	assert(dl0d);
-	return dl0d->dl0->_send(dl0d, subinterface, data, len);
+	return dl0d->dl0->_send(dl0d, data, len);
 }
 
 int diag_l0_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {

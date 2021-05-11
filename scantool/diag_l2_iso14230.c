@@ -277,7 +277,7 @@ dl2p_14230_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 		if ((state == ST_STATE2) && l1_doesl2frame) {
 			rv = DIAG_ERR_TIMEOUT;
 		} else {
-			rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0,
+			rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d,
 					  &dp->rxbuf[dp->rxoffset],
 					  sizeof(dp->rxbuf) - dp->rxoffset,
 					  tout);
@@ -692,7 +692,7 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		}
 
 		/* Mode bytes are in 7-Odd-1, read as 8N1 and ignore parity */
-		rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
+		rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
 			cbuf, 2, 100);
 		if (rv < 0) {
 			break;
@@ -716,7 +716,7 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			 * Now transmit KB2 inverted
 			 */
 			cbuf[0] = ~ d_l2_conn->diag_l2_kb2;
-			rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, 0,
+			rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d,
 				cbuf, 1, d_l2_conn->diag_l2_p4min);
 			if (rv) {
 				break;
@@ -727,7 +727,7 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			 */
 			//first init cbuf[0] to the wrong value in case l1_recv gets nothing
 			cbuf[0]= (uint8_t) target;
-			rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d, 0,
+			rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
 				cbuf, 1, 350);
 			if (rv < 0) {
 				break;
@@ -793,7 +793,7 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 		wait_time = d_l2_conn->diag_l2_p4max * 5;
 	}
 
-	while (diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, 0, data,
+	while (diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, data,
 			    sizeof(data), wait_time) != DIAG_ERR_TIMEOUT) {
 		;
 	}
@@ -894,7 +894,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 
 	//if L1 requires headerless data, send directly :
 	if (d_l2_conn->diag_link->l1flags & DIAG_L1_DATAONLY) {
-		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
+		rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d,
 				msg->data, msg->len, d_l2_conn->diag_l2_p4min);
 		return rv? diag_ifwderr(rv):0;
 	}
@@ -971,7 +971,7 @@ dl2p_14230_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		diag_os_millisleep(d_l2_conn->diag_l2_p3min);
 	}
 
-	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d, NULL,
+	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d,
 		buf, len, d_l2_conn->diag_l2_p4min);
 
 	return rv? diag_ifwderr(rv):0;

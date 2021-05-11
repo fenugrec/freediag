@@ -624,7 +624,6 @@ muleng_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
  */
 static int
 muleng_send(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
 const void *data, size_t len) {
 	int rv;
 	uint8_t cmd;
@@ -722,7 +721,6 @@ const void *data, size_t len) {
 
 static int
 muleng_recv(struct diag_l0_device *dl0d,
-UNUSED(const char *subinterface),
 void *data, size_t len, unsigned int timeout) {
 	ssize_t xferd;
 	int rv;

@@ -107,19 +107,15 @@ uint32_t	d0_getflags(struct diag_l0_device *dl0d) {
 	(void) dl0d;
 	return 0;
 }
-int	d0_recv(struct diag_l0_device *dl0d,
-	const char *subinterface, void *data, size_t len, unsigned int timeout) {
+int	d0_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeout) {
 	(void) dl0d;
-	(void) subinterface;
 	(void) data;
 	(void) len;
 	(void) timeout;
 	return 0;
 }
-int	d0_send(struct diag_l0_device *dl0d,
-	const char *subinterface, const void *data, size_t len) {
+int	d0_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 	(void) dl0d;
-	(void) subinterface;
 	(void) data;
 	(void) len;
 	return 0;
