@@ -317,7 +317,6 @@ ssize_t diag_tty_write(ttyp *ttyh, const void *buf, const size_t count) {
 
 // diag_tty_read
 //attempt to read (count) bytes until (timeout) passes.
-//calling with timeout==0 makes ReadFile return immediately with or without any data.
 //This one returns # of bytes read (if any)
 //This is non-overlapped for now i.e. blocking.
 //timeouts and incomplete data are not handled properly. This is alpha...
@@ -347,7 +346,7 @@ diag_tty_read(ttyp *ttyh, void *buf, size_t count, unsigned int timeout) {
 
 //	GetCommTimeouts(wti->, &devtimeouts);	//get current timeouts
 	//and modify them
-	devtimeouts.ReadIntervalTimeout= timeout ? 0:MAXDWORD;	//disabled unless timeout was 0.
+	devtimeouts.ReadIntervalTimeout= 0; //disabled
 	devtimeouts.ReadTotalTimeoutMultiplier=0;	//timeout per requested byte
 	devtimeouts.ReadTotalTimeoutConstant=timeout;	// (tconst + mult*numbytes) = total timeout on read
 	devtimeouts.WriteTotalTimeoutMultiplier=0;	//probably useless as all flow control will be disabled ??
