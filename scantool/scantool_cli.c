@@ -665,8 +665,8 @@ do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, 
 
 		if (ctp == NULL) {
 			printf("Unrecognized command. Try \"help\"\n");
-			if (instream != stdin) {
-				//processing a file : abort
+			if ((instream != stdin) || (argc > 0)) {
+				//processing a file, or running a subcommand : abort
 				break;
 			}
 			//else : continue getting input
