@@ -299,7 +299,8 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 	unsigned int	spd_real;	//validate baud rate precision
 	struct termios st_new;
 	int spd_done=0;	//flag success
-	int rv, fd;
+	int rv = 1;
+	int fd;
 
 	fd = uti->fd;
 

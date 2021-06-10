@@ -275,7 +275,7 @@ cmd_set_show(UNUSED(int argc), UNUSED(char **argv)) {
 static int cmd_set_interface(int argc, char **argv) {
 	const struct diag_l0 *iter;
 
-	if (argc <= 1) {
+	if (argc <= 1 || argv == NULL) {
 		printf("interface: using %s\n",
 			global_cfg.l0name);
 		return CMD_OK;
