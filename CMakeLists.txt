@@ -181,7 +181,6 @@ endif()
 
 ###### Build Options
 
-option(BUILD_GUI "Enable scangui (default=no)" OFF)
 option(BUILD_DIAGTEST "Build additional \"diag_test\" test suite (default=no)" OFF)
 
 if(WIN32)
@@ -259,15 +258,6 @@ endif ()
 ###### parse sub-dirs
 add_subdirectory(scantool)
 add_subdirectory(tests)
-
-if (BUILD_GUI)
-	find_package(FLTK)
-	if (FLTK_FOUND)
-		add_subdirectory(scangui)
-	else ()
-		message(WARNING "Cannot build scangui without FLTK !")
-	endif()
-endif ()
 
 if (BUILD_SCHEDSET)
 	add_subdirectory(schedSetter)

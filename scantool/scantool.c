@@ -83,7 +83,6 @@
 #include "scantool.h"
 #include "scantool_obd.h"
 #include "scantool_cli.h"
-#include "scantool_aif.h"
 #include "utlist.h"
 
 
@@ -1560,9 +1559,6 @@ static void do_usage (void) {
 	fprintf( stderr, "	or scangui for an fltk gui\n\n" ) ;
 	fprintf( stderr, "  Where:\n" ) ;
 	fprintf( stderr, "\t-h   -- Display this help message\n" ) ;
-	fprintf( stderr, "\t-a   -- Start in Application/Interface mode\n" ) ;
-	fprintf( stderr, "\t		(some other program provides the\n" ) ;
-	fprintf( stderr, "\t		user interface)\n" ) ;
 	fprintf( stderr, "\t-c   -- Start in command-line interface mode\n" ) ;
 	fprintf( stderr, "\t		(this is the default)\n" ) ;
 	fprintf( stderr, "\t-f <file> Runs the commands from <file> at startup\n");
@@ -1735,17 +1731,14 @@ const struct pid *get_pid ( unsigned int i ) {
 
 int
 main(int argc, char **argv) {
-	int user_interface = 1 ;
 	int i ;
 	const char *startfile=NULL;	/* optional commands to run at startup */
 
 	for ( i = 1 ; i < argc ; i++ ) {
 		if ( argv[i][0] == '-' || argv[i][0] == '+' ) {
 			switch ( argv[i][1] ) {
-			case 'c' : user_interface = 1 ; break ;
-			case 'a' : user_interface = 0 ; break ;
+			case 'c' : break ;
 			case 'f' :
-				user_interface = 1;
 				i++;
 				if (i < argc) {
 					startfile = argv[i];
@@ -1767,12 +1760,8 @@ main(int argc, char **argv) {
 		exit(1);
 	}
 
-	if ( user_interface ) {
-		printf("\n**************** %s version %s ****************\n", PROJECT_NAME, PACKAGE_VERSION);
-		enter_cli(SCANTOOL_PROGNAME, startfile, scantool_cmd_table);
-	} else {
-		enter_aif(SCANTOOL_PROGNAME);
-	}
+	printf("\n**************** %s version %s ****************\n", PROJECT_NAME, PACKAGE_VERSION);
+	enter_cli(SCANTOOL_PROGNAME, startfile, scantool_cmd_table);
 
 	/* Done */
 	exit(0);

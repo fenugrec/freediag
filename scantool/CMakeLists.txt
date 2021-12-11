@@ -96,7 +96,7 @@ set (CLI_SRCS scantool_cli.c scantool_diag.c scantool_set.c
 	scantool_debug.c)
 set (SCANTOOL_SRCS scantool.c
 	scantool_test.c scantool_vag.c scantool_850.c scantool_dyno.c
-	scantool_obd.c scantool_aif.c ${FREEDIAG_RC})
+	scantool_obd.c ${FREEDIAG_RC})
 
 #and GLOB all the headers. This is *only* so that the headers end up in
 #the file list of IDE projects (at least Code::blocks)
