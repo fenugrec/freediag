@@ -24,5 +24,6 @@
     </exclude>
     <suppressions>
         <suppression>variableScope</suppression>
+		<suppression>constParameter</suppression>
     </suppressions>
 </project>

@@ -34,6 +34,7 @@ if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
 			"--enable=style"
 			"--enable=performance"
 			"--enable=information"
+			"--suppress=constParameter"
             "--suppress=missingInclude"
 			"--suppress=missingSystemInclude"
 			"--suppress=unmatchedSuppression"
