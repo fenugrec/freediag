@@ -12,9 +12,7 @@ Under this directory are the following sub-directories:
 
 * doc      -- Documentation that applies to the package as a whole.
 * doc_interfaces -- some interface-specific notes and specifications
-* include  -- Include files that describe the interface between scantool and the GUI application(s).
 * scantool -- Source code for the 'freediag' core package (libdiag and freediag CLI)
-* scangui  -- A basic GUI interface to scantool. (outdated, abandoned)
 * schedSetter -- a linux utility to allow freediag to run as a high-priority but unpriviledged process.
 
 
@@ -28,7 +26,7 @@ freediag and its backend library `libdiag` are licensed under GPL.
 AUTHORS:
 ~~~~~~~~
 
-Each package contains a list of it's contributors.
+Each package contains a list of its contributors.
 
 
 OS REQUIREMENTS:

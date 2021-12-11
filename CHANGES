@@ -9,7 +9,7 @@ indicating a snapshot of the CVS source tree.
 
 
 
-*** Release 1.09 ; 2021-02-10
+*** Release 1.09 ; 2021-12-10
 - Renamed binary from 'scantool' to 'freediag' : too many collisions with the commercial product from "scantool.net".
 - lots of under-the-hood restructuring, too much to list
 

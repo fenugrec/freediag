@@ -6,9 +6,7 @@ RUN apt update && apt install -y --no-install-recommends \
   make \
   cmake \
   g++ \
-  pkg-config \
-  libfltk1.3-dev
-
+  pkg-config
 
 COPY . /root/freediag
 RUN cd /root/freediag \

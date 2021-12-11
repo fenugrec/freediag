@@ -224,8 +224,6 @@ endforeach()
 ###### Includes
 #proj_bin_dir = needed to find cconf.h (not in src_dir)
 include_directories("${PROJECT_BINARY_DIR}")
-#src_dir/include : to find freediag_aif.h
-include_directories("${PROJECT_SOURCE_DIR}/include")
 
 
 ###### Generate cconf.h

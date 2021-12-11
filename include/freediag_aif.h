@@ -1,3 +1,6 @@
+/*** Warning, this is deprecated and will be removed soon ! */
+
+#error Deprecated
 
 /* Commands from the application to scantool */
 
