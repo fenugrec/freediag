@@ -675,6 +675,7 @@ diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts) {
 // But write timeouts should be very rare, and are considered an error
 ssize_t
 diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
+	assert(count > 0);
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 	ssize_t rv;
 	struct unix_tty_int *uti = tty_int;
@@ -685,8 +686,6 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	errno = 0;
 	p = (const uint8_t *)buf;
 	rv = 0;
-
-	assert(count > 0);
 
 	//the timeout (the port is opened in blocking mode, and we don't want it to block indefinitely);
 	//the single byte timeout * count of bytes + 10ms (10 thousand microseconds; an arbitrary value)
@@ -757,7 +756,7 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	 * Technique: write loop, manually check timeout
 	 */
 
-	ssize_t rv;
+	ssize_t rv = DIAG_ERR_GENERAL;
 	ssize_t n;
 	size_t c = count;
 	struct unix_tty_int *uti = tty_int;
@@ -816,6 +815,7 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 
 ssize_t
 diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
+	assert((count > 0) && ( timeout > 0) && (timeout < MAXTIMEOUT));
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 	ssize_t rv;
 	size_t n;
@@ -825,7 +825,6 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 
 	struct itimerspec it;
 
-	assert((count > 0) && ( timeout > 0) && (timeout < MAXTIMEOUT));
 	//the timeout
 	it.it_value.tv_sec = timeout / 1000;
 	it.it_value.tv_nsec = (timeout % 1000) * 1000000;
@@ -890,7 +889,7 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 	//Loop with { select() with a timeout;
 	// read() ; manually check timeout}
 
-	ssize_t rv;
+	ssize_t rv = DIAG_ERR_GENERAL;
 	ssize_t n;
 	uint8_t *p;
 	unsigned long long tstart, incr, tdone, tdone_us;
@@ -998,8 +997,6 @@ finished:
 	int rv,fd,retval;
 	unsigned long data;
 	struct unix_tty_int *uti = tty_int;;
-
-	assert((timeout < MAXTIMEOUT) && (count > 0));
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
 		FLFMT "Entered diag_tty_read with count=%u, timeout=%ums\n",
