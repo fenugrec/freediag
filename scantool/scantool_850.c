@@ -252,15 +252,15 @@ ecu_desc_by_addr(uint8_t addr) {
  */
 static char *
 current_ecu_desc(void) {
-	int addr;
+	uint8_t addr;
 
 	if (global_state < STATE_CONNECTED) {
 		return "???";
 	}
 
-	addr = global_l2_conn->diag_l2_destaddr;
+	uint8_t = global_l2_conn->diag_l2_destaddr;
 
-	if ((addr < 0) || (addr > 0x7f)) {
+	if (addr > 0x7f) {
 		return "???";
 	}
 
