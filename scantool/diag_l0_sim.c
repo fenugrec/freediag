@@ -336,7 +336,7 @@ static uint8_t sawtooth1(UNUSED(uint8_t *data), UNUSED(uint8_t pos)) {
 }
 
 // Returns a value copied from the specified position in the request.
-static uint8_t requestbyten(UNUSED(uint8_t *data), char *s, uint8_t req[]) {
+static uint8_t requestbyten(UNUSED(uint8_t *data), char *s, const uint8_t req[]) {
 	int index;
 	bool increment = 0;
 	bool bogus = 0;

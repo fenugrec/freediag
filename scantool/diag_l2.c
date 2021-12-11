@@ -65,7 +65,7 @@ static struct {
  * @return NULL if not found
  */
 static struct diag_l2_link *
-diag_l2_findlink(struct diag_l0_device *dl0d) {
+diag_l2_findlink(const struct diag_l0_device *dl0d) {
 	struct diag_l2_link *dl2l=NULL;
 
 	LL_FOREACH(l2internal.dl2l_list, dl2l) {

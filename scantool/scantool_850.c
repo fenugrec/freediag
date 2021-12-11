@@ -258,7 +258,7 @@ current_ecu_desc(void) {
 		return "???";
 	}
 
-	uint8_t = global_l2_conn->diag_l2_destaddr;
+	addr = global_l2_conn->diag_l2_destaddr;
 
 	if (addr > 0x7f) {
 		return "???";
