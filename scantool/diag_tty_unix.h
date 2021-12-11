@@ -74,7 +74,7 @@ extern "C" {
 #define S_ALT3	3
 /** Insert desired selectors here **/
 //example:
-//#define SEL_TIMEOUT S_OTHER
+#define SEL_TIMEOUT S_OTHER
 //#define SEL_TIMEOUT S_LINUX
 //#define SEL_TTYBAUD S_ALT3
 
