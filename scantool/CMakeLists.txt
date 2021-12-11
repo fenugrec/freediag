@@ -35,6 +35,7 @@ if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
 			"--enable=performance"
 			"--enable=information"
 			"--suppress=constParameter"
+			"--suppress=knownConditionTrueFalse"
             "--suppress=missingInclude"
 			"--suppress=missingSystemInclude"
 			"--suppress=unmatchedSuppression"
