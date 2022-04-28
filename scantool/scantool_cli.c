@@ -367,9 +367,8 @@ help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 		if (ctp->flags & FLAG_CUSTOM) {
 			/* list custom subcommands too */
 			printf("Custom commands for the current level:\n");
-			char cust_special[]="?";
-			char *pcs = cust_special;
-			char **temp_argv = &pcs;
+			char *cust_special[]= { "?", NULL };
+			char **temp_argv = &cust_special[0];
 			ctp->routine(1, temp_argv);
 		}
 		ctp++;
