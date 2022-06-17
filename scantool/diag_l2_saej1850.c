@@ -422,10 +422,6 @@ dl2p_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	}
 
 	/* Return the message to user, who is responsible for freeing it */
-	if (!d_l2_conn->diag_msg) {
-		//no response, but no error either
-		*errval = DIAG_ERR_TIMEOUT;
-	}
 	rmsg = d_l2_conn->diag_msg;
 	d_l2_conn->diag_msg = NULL;
 	return rmsg;
