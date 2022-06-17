@@ -274,7 +274,8 @@ current_ecu_desc(void) {
  */
 static char *
 dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
-	static char printable[7+1];
+#define PRINTABLE_LEN	8	//including 0-termination
+	static char printable[PRINTABLE_LEN];
 	static char *empty="";
 	struct ecu_info *ecu_entry;
 	struct dtc_table_entry *dtc_entry;
@@ -295,7 +296,8 @@ dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
 			if (desc != NULL) {
 				*desc = dtc_entry->desc;
 			}
-			sprintf(printable, "%s-%03d", prefix, suffix);
+			if (suffix > 999) suffix = 999;
+			snprintf(printable, PRINTABLE_LEN, "%s-%03d", prefix, suffix);
 			return printable;
 		}
 	}
@@ -303,7 +305,7 @@ dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
 	if (desc != NULL) {
 		*desc = empty;
 	}
-	sprintf(printable, "%s-???", prefix);
+	snprintf(printable, PRINTABLE_LEN, "%s-???", prefix);
 	return printable;
 }
 
