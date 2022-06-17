@@ -24,9 +24,16 @@ foreach (L2NAME IN LISTS L2LIST)
 endforeach()
 
 #integrate cppcheck checks if the binary is present.
+
+# WIP : unset so that a parent scope that submodule's freediag doesn't keep appending stuff to
+# the cache variable when re-generating
+#unset(CMAKE_C_CPPCHECK CACHE)
+
 find_program (CPPCHECK_BIN NAMES cppcheck)
+
 if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
        # cppcheck is found in the path so use it.
+       # run find_program() again to populate the correct var names
        find_program (CMAKE_C_CPPCHECK NAMES cppcheck)
        list (
         APPEND CMAKE_C_CPPCHECK
@@ -60,6 +67,8 @@ if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
 		     "-D__unix__"
 	      )
 	   endif ()
+       #absolutely disgusting : force our customized CPPCHECK command line to propagate to global scope ?
+       #set(CMAKE_C_CPPCHECK "${CMAKE_C_CPPCHECK}" CACHE PATH "cppcheck command" FORCE)
 endif ()
 
 #and now generate diag_config.c ! (output in the build directory)
