@@ -893,12 +893,7 @@ enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *
 				goto exit_cleanup;
 		}
 	} else {
-		/* print banner and load rc file, only if running without an initscript */
-		printf("%s: Type HELP for a list of commands\n", name);
-		printf("%s: Type SCAN to start ODBII Scan\n", name);
-		printf("%s: Then use MONITOR to monitor real-time data\n", name);
-		printf("%s: **** IMPORTANT : this is beta software ! Use at your own risk.\n", name);
-		printf("%s: **** Remember, \"debug all -1\" displays all debugging info.\n", name);
+		/* no initscript : load rc file */
 		rc_rv = rc_file();
 	}
 

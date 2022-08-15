@@ -1761,6 +1761,12 @@ main(int argc, char **argv) {
 	}
 
 	printf("\n**************** %s version %s ****************\n", PROJECT_NAME, PACKAGE_VERSION);
+	printf("%s: Type HELP for a list of commands\n", SCANTOOL_PROGNAME);
+	printf("%s: Type SCAN to start ODBII Scan\n", SCANTOOL_PROGNAME);
+	printf("%s: Then use MONITOR to monitor real-time data\n", SCANTOOL_PROGNAME);
+	printf("%s: **** IMPORTANT : this is beta software ! Use at your own risk.\n", SCANTOOL_PROGNAME);
+	printf("%s: **** Remember, \"debug all -1\" displays all debugging info.\n", SCANTOOL_PROGNAME);
+
 	enter_cli(SCANTOOL_PROGNAME, startfile, scantool_cmd_table);
 
 	/* Done */
