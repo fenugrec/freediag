@@ -42,6 +42,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 // Message overhead length (header + checksum):
 #define OHLEN_ISO9141 4
 // Maximum message length (including overhead):

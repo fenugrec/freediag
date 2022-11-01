@@ -40,7 +40,9 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
+
 #include "diag.h"
 #include "diag_tty.h"
 #include "diag_err.h"

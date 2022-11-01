@@ -26,6 +26,10 @@
  * CLI routines - dyno subcommand
  */
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "diag.h"
 #include "diag_err.h"

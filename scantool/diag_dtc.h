@@ -32,6 +32,9 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
+#include <stdint.h>
+
 enum diag_dtc_protocol {
 	dtc_proto_j2012	=	1,	/* SAE J2012 */
 	dtc_proto_int8	=	2,	/* 8 bit integer */

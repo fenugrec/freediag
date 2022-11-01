@@ -31,6 +31,9 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
+#include <stdint.h>
+
 struct diag_l2_conn;
 struct diag_msg;
 

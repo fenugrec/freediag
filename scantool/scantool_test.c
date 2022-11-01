@@ -26,6 +26,10 @@
  * CLI routines - test subcommand
  */
 
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "diag.h" /* operating specific includes */
 #include "diag_l3.h" /* operating specific includes */
 

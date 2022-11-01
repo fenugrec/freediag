@@ -10,7 +10,6 @@
 #include <string.h>
 
 #include "diag.h"
-#include "diag_err.h"
 #include "diag_l0.h"
 
 int diag_l0_debug;	//debug flags for l0

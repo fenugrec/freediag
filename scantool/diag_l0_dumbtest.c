@@ -13,10 +13,14 @@
 
 
 #include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>	//for memcmp
 
 #include "diag.h"
+#include "diag_cfg.h"
 #include "diag_err.h"
 #include "diag_os.h"
 #include "diag_tty.h"

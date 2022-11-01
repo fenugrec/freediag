@@ -40,6 +40,8 @@
  */
 
 #include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // str**()
 #include <ctype.h>
@@ -49,7 +51,6 @@
 #include "diag.h"
 #include "diag_err.h"
 #include "diag_os.h"
-#include "diag_tty.h"
 #include "diag_l0.h"
 #include "diag_l1.h"
 #include "diag_cfg.h"

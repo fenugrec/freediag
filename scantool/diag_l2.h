@@ -41,6 +41,12 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
+#include "diag.h"
+
+struct diag_l0_device;
+
 //diag_l2_link : elements of the diag_l2_links linked-list.
 //An l2 link associates an existing diag_l0_device with
 //one L1 proto and L1 flags.
@@ -54,8 +60,6 @@ struct diag_l2_link {
 	struct diag_l2_link *next;		/* linked list of all connections */
 
 };
-
-struct diag_msg;
 
 /*
  * A structure to represent a link to an ECU from here

@@ -26,13 +26,12 @@
  * It provides iso14230 SID + response code string decoding,
  */
 
-#include <string.h>
-#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #include "diag.h"
 #include "diag_err.h"
 #include "diag_iso14230.h"
-#include "diag_l1.h"
 #include "diag_l2.h"
 #include "diag_l3.h"
 #include "diag_l3_iso14230.h"

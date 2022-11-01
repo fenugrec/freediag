@@ -23,9 +23,13 @@
  * L3 code to do SAE J1979 messaging
  *
  */
+
+
+#include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "diag.h"
 #include "diag_os.h"
@@ -747,9 +751,9 @@ static int diag_l3_j1979_keepalive(struct diag_l3_conn *d_l3_conn) {
 }
 
 //_start : send service 1 pid 0 request (J1979 keepalive); according to SAE J1979 (p.7) :
-// " IMPORTANT — All emissions-related OBD ECUs which at least support one of the services defined in this
+// " IMPORTANT - All emissions-related OBD ECUs which at least support one of the services defined in this
 //	document shall support service $01 and PID $00. Service $01 with PID $00 is defined as the universal
-//	“initialisation/keep alive/ping” message for all emissions-related OBD ECUs. "
+//	"initialisation/keep alive/ping" message for all emissions-related OBD ECUs. "
 //That sounds like a sure-fire way to make sure we have a succesful connection to a J1979-compliant ECU.
 int diag_l3_j1979_start(struct diag_l3_conn *d_l3_conn) {
 	int rv;

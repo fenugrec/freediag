@@ -33,14 +33,17 @@
 #include <unistd.h>
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
 
 #include "diag.h"
+#include "diag_l0.h"
 #include "diag_os.h"
 #include "diag_err.h"
+#include "diag_tty.h"
 #include "diag_tty_unix.h"
 
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)

@@ -33,11 +33,13 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "diag.h"
+#include "diag_cfg.h"
 #include "diag_err.h"
-#include "diag_os.h"
 #include "diag_tty.h"
 #include "diag_l0.h"
 #include "diag_l1.h"

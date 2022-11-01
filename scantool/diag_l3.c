@@ -25,9 +25,9 @@
  *
  */
 
-#include <stdlib.h>
-#include <string.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 #include "diag.h"
 #include "diag_os.h"

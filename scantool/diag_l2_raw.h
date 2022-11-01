@@ -36,6 +36,9 @@
 extern "C" {
 #endif
 
+#include "diag.h"
+struct diag_l2_conn;
+
 int
 dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn, flag_type flags,
 	unsigned int bitrate, target_type target, source_type source);

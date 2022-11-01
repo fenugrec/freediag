@@ -29,11 +29,14 @@
  * to enable certain features (L line on RTS, etc)
  */
 
-
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
 #include "diag.h"
+#include "diag_cfg.h"
 #include "diag_os.h"
 #include "diag_err.h"
 #include "diag_tty.h"

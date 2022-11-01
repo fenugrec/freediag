@@ -1,4 +1,5 @@
-#include "diag.h"
+#include <stddef.h>
+
 #include "diag_l2.h"
 #include "diag_l2_can.h"
 

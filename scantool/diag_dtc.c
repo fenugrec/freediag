@@ -24,6 +24,8 @@
  * DTC handling routines
  *
  */
+
+#include <stdio.h>
 #include <string.h>
 
 #include "diag.h"

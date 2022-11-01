@@ -33,6 +33,11 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+
+
 struct cmd_tbl_entry {
 	const char *command;		/* Command name */
 	const char *usage;		/* Usage info */

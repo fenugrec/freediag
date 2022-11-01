@@ -33,7 +33,8 @@
  * XXX NOT YET WRITTEN
  */
 
-#include <string.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #include "diag.h"
 #include "diag_err.h"

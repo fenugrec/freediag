@@ -32,10 +32,12 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "diag.h"
+#include "diag_cfg.h"
 #include "diag_os.h"
 #include "diag_err.h"
 #include "diag_tty.h"

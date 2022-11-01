@@ -31,14 +31,15 @@
  *
  */
 
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 
 #include "diag.h"
+#include "diag_l0.h"
 #include "diag_l1.h"
 #include "diag_os.h"
-#include "diag_tty.h"
 #include "diag_err.h"
 
 #include "diag_l2.h"

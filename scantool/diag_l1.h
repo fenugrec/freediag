@@ -29,10 +29,10 @@
  * - Layer 1 interface definitions
  */
 
-#include "diag.h"		//we need this for uint8_t
-#include "diag_tty.h"	//for structs serial_settings
-#include "diag_cfg.h"
-#include "diag_l0.h"
+#include <stddef.h>
+#include <stdint.h>
+
+struct diag_l0_device;
 
 
 #if defined(__cplusplus)

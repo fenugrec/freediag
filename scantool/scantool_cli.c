@@ -40,7 +40,6 @@
 
 #include "diag.h"
 #include "diag_os.h"
-#include "diag_err.h"
 
 #include "scantool_cli.h"
 

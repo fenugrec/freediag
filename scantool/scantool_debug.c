@@ -25,14 +25,15 @@
  *
  * CLI routines - debug subcommand
  */
+#include <stdio.h>
+#include <string.h>
 
 #include "diag.h"
-#include "diag_tty.h"
+#include "diag_l0.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
 #include "diag_l3.h"
 
-#include "scantool.h"
 #include "scantool_cli.h"
 
 

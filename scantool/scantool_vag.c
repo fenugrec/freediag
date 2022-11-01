@@ -28,10 +28,10 @@
  * CLI routines - vag subcommand
  */
 
-#include "diag.h"
+
+#include <stddef.h>
 
 #include "diag_vag.h"
-#include "scantool.h"
 #include "scantool_cli.h"
 
 

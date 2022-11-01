@@ -32,9 +32,11 @@
 extern "C" {
 #endif
 
-#include "diag.h"
-#include "diag_l2.h"
+#include <stdint.h>
+
 #include "diag_l7.h"
+
+struct diag_l2_conn;
 
 int diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn);
 int diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out);

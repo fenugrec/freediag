@@ -28,6 +28,7 @@
  */
 
 
+#include <stdint.h>
 #include <string.h>
 
 #include "diag.h"

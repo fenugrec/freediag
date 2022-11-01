@@ -125,6 +125,7 @@ extern "C" {
 #include <sys/ioctl.h>
 
 #if defined(_POSIX_TIMERS)
+	#include <signal.h>	//sig_atomic_t
 	#include <time.h>
 #endif
 

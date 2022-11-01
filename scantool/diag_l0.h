@@ -11,17 +11,9 @@
 extern "C" {
 #endif
 
-#include "diag_cfg.h"	//for cfgi
-
-/* Cheats for structs defined elsewhere;
- * the alternate solution of including diag_l*.h gets messy fast
- * because of inter-dependencies
- */
-
-struct diag_l2_link;
-struct diag_l1_initbus_args;
-struct diag_serial_settings;
-struct diag_l0;
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /*
  * L0 device structure

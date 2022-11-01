@@ -32,12 +32,13 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "diag.h"
+#include "diag_cfg.h"
 #include "diag_err.h"
 #include "diag_iso14230.h"	//for TesterPresent SID
-#include "diag_os.h"
 #include "diag_tty.h"
 #include "diag_l0.h"
 #include "diag_l1.h"

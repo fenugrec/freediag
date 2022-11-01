@@ -31,6 +31,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "diag.h"
+
 /*
  * ISO 14230 specific data
  */
