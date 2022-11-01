@@ -648,9 +648,9 @@ dl2p_14230_startcomms( struct diag_l2_conn	*d_l2_conn, flag_type flags,
 			d_l2_conn->diag_l2_kb2 = d_l2_conn->diag_msg->data[2];
 			d_l2_conn->diag_l2_physaddr = d_l2_conn->diag_msg->src;
 
-			if (d_l2_conn->diag_l2_kb1 != 0x8f) {
+			if (d_l2_conn->diag_l2_kb2 != 0x8f) {
 				DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
-					"Warning : non-standard KB1 received (0x%02X) !\n", d_l2_conn->diag_l2_kb1);
+					"Warning : non-standard KB2 received (0x%02X) !\n", d_l2_conn->diag_l2_kb2);
 			}
 
 			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
