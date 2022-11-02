@@ -64,6 +64,7 @@ struct diag_l0_device *global_dl0d;
 
 /* Main menu commands */
 
+static int cmd_help(int argc, char **argv);
 static int cmd_log(int argc, char **argv);
 static int cmd_stoplog(int argc, char **argv);
 
@@ -120,6 +121,12 @@ static const struct cmd_tbl_entry basic_cmd_table[] = {
 	CLI_TBL_END
 };
 
+struct cmd_tbl_entry *combined_table = NULL;
+
+static int cmd_help(int argc, char **argv) {
+	assert(combined_table);
+	return help_common(argc, argv, combined_table);
+}
 
 static int
 cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
@@ -353,41 +360,39 @@ char *find_rcfile(void) {
 /** temporary enter_cli() wrapper
  * 
  * combines basic_table with extra_cmdtable before calling enter_cli.
- * Will become irrelevant after "libcli" split
  * 
- * TODO: Leaks memory because the concatenated table is never free'd.
  */
 void scantool_cli(const char *prompt, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable) {
 
-	const struct cmd_tbl_entry *total_table = basic_cmd_table;
+	assert(extra_cmdtable);
 
 	global_logfp = NULL;
 
-	if (extra_cmdtable) {
-		// alloc a new table to append extra table
-		int i = 0;
-		const struct cmd_tbl_entry *ctp_iter;
-		struct cmd_tbl_entry *ctp;
-		for (ctp_iter = extra_cmdtable; ctp_iter && ctp_iter->command; ctp_iter++) {
-			i++;
-		}
-		assert(i); //need at least 1 entry...
-
-		diag_calloc(&ctp, i + ARRAY_SIZE(basic_cmd_table));
-		if (!ctp) {
-			return;
-		}
-		memcpy(ctp, extra_cmdtable, i * sizeof(struct cmd_tbl_entry));
-		memcpy(&ctp[i], basic_cmd_table, sizeof(basic_cmd_table));
-		total_table = ctp;
+	// alloc a new table to append extra table
+	int i = 0;
+	const struct cmd_tbl_entry *ctp_iter;
+	struct cmd_tbl_entry *ctp;
+	for (ctp_iter = extra_cmdtable; ctp_iter && ctp_iter->command; ctp_iter++) {
+		i++;
 	}
+	assert(i); //need at least 1 entry...
+
+	diag_calloc(&ctp, i + ARRAY_SIZE(basic_cmd_table));
+	if (!ctp) {
+		return;
+	}
+	memcpy(ctp, extra_cmdtable, i * sizeof(struct cmd_tbl_entry));
+	memcpy(&ctp[i], basic_cmd_table, sizeof(basic_cmd_table));
+	combined_table = ctp;
 
 	struct cli_callbacks cbs = {
 		.cli_logcmd = log_command,
 		.cli_atexit = scantool_atexit,
 	};
 	cli_set_callbacks(&cbs);
-	enter_cli(prompt, initscript, total_table);
+	enter_cli(prompt, initscript, combined_table);
+	free(combined_table);
+	combined_table = NULL;
 	return;
 }
 

@@ -102,6 +102,5 @@ int cmd_exit(int argc, char **argv);
 int cmd_source(int argc, char **argv);
 
 int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
-int cmd_help(int argc, char **argv);
 
 #endif

@@ -591,10 +591,6 @@ int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 	return CMD_OK;
 }
 
-int cmd_help(int argc, char **argv) {
-	return help_common(argc, argv, root_cmd_table);
-}
-
 int
 cmd_up(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_UP;
