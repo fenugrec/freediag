@@ -459,8 +459,13 @@ static int do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE 
 				case CMD_USAGE:
 					printf("Usage: %s\n%s\n", ctp->usage, ctp->help);
 					break;
-				case CMD_EXIT:
 				case CMD_UP:
+					if (cmd_tbl == root_cmd_table) {
+						//ignore cmd_up here
+						break;
+					}
+					// fallthrough
+				case CMD_EXIT:
 					done = 1;
 					break;
 			}
