@@ -44,6 +44,8 @@
 #include "diag_err.h"
 #include "diag_os.h"
 
+#include "libcli.h"
+
 #include "diag_l7_d2.h"
 #include "diag_l7_kwp71.h"
 #include "scantool.h"

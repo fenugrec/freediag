@@ -41,16 +41,10 @@
 #include "diag.h"
 #include "diag_os.h"
 
+#include "libcli.h"
 #include "scantool_cli.h"
+#include "scantool_diag.h"
 
-#ifdef HAVE_LIBREADLINE
-#include <readline/readline.h>
-#include <readline/history.h>
-#endif
-
-
-#define PROMPTBUFSIZE 80		//Length of prompt before the '>' character.
-#define CLI_MAXARGS 300
 const char *progname;
 const char projname[]=PROJECT_NAME;
 
@@ -71,8 +65,6 @@ struct diag_l0_device *global_dl0d;
 
 /* Main menu commands */
 
-static int cmd_help(int argc, char **argv);
-
 static int cmd_log(int argc, char **argv);
 static int cmd_stoplog(int argc, char **argv);
 
@@ -80,9 +72,7 @@ UNUSED(static int cmd_play(int argc, char **argv));
 
 static int cmd_date(int argc, char **argv);
 static int cmd_rem(int argc, char **argv);
-static int cmd_source(int argc, char **argv);
 
-const struct cmd_tbl_entry *root_cmd_table;	/* point to current root table */
 
 /* this table is appended to the "extra" cmdtable to construct the whole root cmd table */
 static const struct cmd_tbl_entry basic_cmd_table[] = {
@@ -132,257 +122,6 @@ static const struct cmd_tbl_entry basic_cmd_table[] = {
 	{ NULL, NULL, NULL, NULL, 0, NULL}
 };
 
-#ifdef HAVE_LIBREADLINE
-//current global command level for command completion
-static const struct cmd_tbl_entry *current_cmd_level;
-//command level in the command line, also needed for command completion
-static const struct cmd_tbl_entry *completion_cmd_level;
-#endif
-
-#define INPUT_MAX 1400	//big enough to fit long "diag sendreq..." commands
-
-char *
-basic_get_input(const char *prompt, FILE *instream) {
-	char *input;
-	bool do_prompt;
-
-	if (diag_malloc(&input, INPUT_MAX)) {
-		return NULL;
-	}
-
-	do_prompt = 1;
-	while (1) {
-		if (do_prompt && prompt) {
-			printf("%s", prompt);
-			fflush(stdout);
-		}
-
-		if (fgets(input, INPUT_MAX, instream)) {
-			break;
-		}
-		if (feof(instream)) {
-			free(input);
-			return NULL;
-		}
-		/* Ignore error and try again, but don't prompt. */
-		clearerr(instream);
-		do_prompt = 0;
-	}
-	input[strcspn(input, "\r\n")] = '\0'; /* Remove trailing CR/LF */
-	return input;
-}
-
-#ifdef HAVE_LIBREADLINE
-
-/* Caller must free returned buffer */
-static char *
-get_input(const char *prompt) {
-	char *input;
-	/* XXX Does readline change the prompt? */
-	char localprompt[128];
-	strncpy(localprompt, prompt, sizeof(localprompt));
-
-	input = readline(localprompt);
-	if (input && *input) {
-		add_history(input);
-	}
-	return input;
-}
-
-char *
-command_generator(const char *text, int state) {
-	static int list_index, length;
-	const struct cmd_tbl_entry *cmd_entry;
-
-	//a new word to complete
-	if (state == 0) {
-		list_index = 0;
-		length = strlen(text);
-	}
-
-	//find the command
-	while (completion_cmd_level[list_index].command != NULL) {
-		cmd_entry = &completion_cmd_level[list_index];
-		list_index++;
-		if (strncmp(cmd_entry->command, text, length) == 0 && !(cmd_entry->flags & FLAG_HIDDEN)) {
-			char *ret_name;
-			//we must return a copy of the string; libreadline frees it for us
-			if (diag_malloc(&ret_name,
-					strlen(cmd_entry->command) + 1) != 0) {
-				return (char *)NULL;
-			}
-			strcpy(ret_name, cmd_entry->command);
-			return ret_name;
-		}
-	}
-	return (char *)NULL;
-}
-
-char **
-scantool_completion(const char *text, int start, UNUSED(int end)) {
-	char **matches;
-
-	//start == 0 is when the command line is either empty or contains only whitespaces
-	if (start == 0) {
-		//we are at the beginning of the command line, so the completion command level is equal to the current command level
-		completion_cmd_level = current_cmd_level;
-		rl_attempted_completion_over = 0;
-	}
-	//(start != end) means that we are trying to complete a command;
-	//(start > 0 and start == end) means that all commands are completed and we need to check for their sub-commands;
-	//we handle here both cases so that the completion_cmd_level is always up-to-date
-	else {
-		//parse the command line so that we know on what command level we should do the completion
-		struct cmd_tbl_entry const *parsed_level = current_cmd_level;
-
-		//we need to omit leading whitespaces
-		size_t begin_at = strspn(rl_line_buffer, " ");
-		const char *cmd = &rl_line_buffer[begin_at];
-		//now get the length of the first command
-		size_t cmd_length = strcspn(cmd, " ");
-
-		//check all completed commands
-		while (cmd_length > 0 && cmd[cmd_length] == ' ') {
-			//find out what it might be...
-			bool found = 0;
-			for (int i = 0; parsed_level[i].command != NULL; i++) {
-				//if found the command on the current level
-				if (!(parsed_level[i].flags & FLAG_HIDDEN) &&
-				   strlen(parsed_level[i].command) == cmd_length &&
-				   strncmp(parsed_level[i].command, cmd, cmd_length) == 0) {
-					//does it have sub-commands?
-					if (parsed_level[i].sub_cmd_tbl != NULL) {
-						//go deeper
-						parsed_level = parsed_level[i].sub_cmd_tbl;
-						rl_attempted_completion_over = 0;
-						found = 1;
-					} else if (parsed_level[i].flags & FLAG_FILE_ARG) {
-						//the command accepts a filename as an argument, so use the libreadline's filename completion
-						rl_attempted_completion_over = 0;
-						return NULL;
-					} else {
-						//if no sub-commands, then no more completion
-						rl_attempted_completion_over = 1;
-						return NULL;
-					}
-					//stop searching on this level and go to another command in the command line (if any)
-					break;
-				}
-			}
-			//went through all commands and didn't find anything? then it is an unknown command
-			if (!found) {
-				rl_attempted_completion_over = 1;
-				return NULL;
-			}
-
-			//move past the just-parsed command
-			cmd = &cmd[cmd_length];
-			//again, omit whitespaces
-			begin_at = strspn(cmd, " ");
-			cmd = &cmd[begin_at];
-			//length of the next command
-			cmd_length = strcspn(cmd, " ");
-		}
-
-		//update the completion command level for the command_generator() function
-		completion_cmd_level = parsed_level;
-	}
-
-	matches = rl_completion_matches(text, command_generator);
-	if (matches == NULL) {
-		//this will disable the default (filename and username) completion in case no command matches are found
-		rl_attempted_completion_over = 1;
-	}
-	return matches;
-}
-
-static void
-readline_init(const struct cmd_tbl_entry *curtable) {
-	//preset levels for current table
-	current_cmd_level = curtable;
-	completion_cmd_level = curtable;
-
-	//our custom completion function
-	rl_attempted_completion_function = scantool_completion;
-}
-
-#else	// so no libreadline
-
-static char *
-get_input(const char *prompt) {
-	return basic_get_input(prompt, stdin);
-}
-
-static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {}
-
-#endif	//HAVE_LIBREADLINE
-
-/** get input from user or file
-*
-* @instream either stdin or file
-* @return NULL if no more input
-*/
-static char *
-command_line_input(const char *prompt, FILE *instream) {
-	if (instream == stdin) {
-		return get_input(prompt);
-	}
-
-	/* Reading from init or command file; no prompting or history */
-	return basic_get_input(NULL, instream);
-}
-
-int
-help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
-/*	int i;*/
-	const struct cmd_tbl_entry *ctp;
-
-	if (argc > 1) {
-		/* Single command help */
-		int found = 0;
-		ctp = cmd_table;
-		while (ctp->command) {
-			if (strcasecmp(ctp->command, argv[1]) == 0) {
-				printf("%s: %s\n", ctp->command, ctp->help);
-				printf("Usage: %s\n", ctp->usage);
-				found++;
-				break;
-			}
-			ctp++;
-		}
-		if (!found) {
-			printf("help: %s: no such command\n", argv[1]);
-		}
-		return CMD_OK;
-	}
-
-	/* Print help */
-	printf("Available commands are :\n");
-	ctp = cmd_table;
-	while (ctp->command) {
-		if ((ctp->flags & FLAG_HIDDEN) == 0) {
-			printf("\t%s\n", ctp->usage);
-		}
-		if (ctp->flags & FLAG_CUSTOM) {
-			/* list custom subcommands too */
-			printf("Custom commands for the current level:\n");
-			char *cust_special[]= { "?", NULL };
-			char **temp_argv = &cust_special[0];
-			ctp->routine(1, temp_argv);
-		}
-		ctp++;
-	}
-	printf("\nTry \"help <command>\" for further help\n");
-
-
-	return CMD_OK;
-}
-
-static int
-cmd_help(int argc, char **argv) {
-	return help_common(argc, argv, root_cmd_table);
-}
-
 
 static int
 cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
@@ -419,8 +158,12 @@ log_timestamp(const char *prefix) {
 	fprintf(global_logfp, "%s %04lu.%03lu ", prefix, tv / 1000, tv % 1000);
 }
 
-static void
-log_command(int argc, char **argv) {
+static void scantool_atexit(void) {
+	cmd_diag_disconnect(0, NULL);
+	return;
+}
+
+static void log_command(int argc, char **argv) {
 	int i;
 
 	if (!global_logfp) {
@@ -554,235 +297,7 @@ cmd_play(int argc, char **argv) {
 }
 
 
-/* Find matching cmd_tbl_entry for command *cmd in table *cmdt.
- * Returns the command or the custom handler if
- * no match was found and the custom handler exists.
- */
-static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, const char *cmd) {
-	const struct cmd_tbl_entry *ctp;
-	const struct cmd_tbl_entry *custom_cmd;
-
-	assert(cmdt != NULL);
-
-	ctp = cmdt;
-	custom_cmd = NULL;
-
-	while (ctp->command) {
-		if (ctp->flags & FLAG_CUSTOM) {
-			// found a custom handler; save it
-			custom_cmd = ctp;
-		}
-
-		if (strcasecmp(ctp->command, cmd) == 0) {
-			return ctp;
-		}
-		ctp++;
-	}
-
-	return custom_cmd;
-}
-
-static char nullstr[2] = {0,0};	//can't be const char because it goes into argv
-
-/** CLI processor
- *
- * @prompt will be prompted only if argc==0
- * @argc  If supplied, then this is one shot cli, ie run the command
- * @instream stdin or file to source commands
- *
- * @return results as CMD_xxx (such as CMD_EXIT)
- *
- * prints *prompt,
- */
-static int
-do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv) {
-	/* Build up argc/argv */
-	const struct cmd_tbl_entry *ctp;
-	int cmd_argc;
-	char *cmd_argv[CLI_MAXARGS];
-	char *input = NULL;
-	int rv;
-	bool done;	//when set, sub-command processing is ended and returns to upper level
-	int i;
-
-	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
-
-#ifdef HAVE_LIBREADLINE
-	//set the current command level for command completion
-	current_cmd_level = cmd_tbl;
-#endif
-
-	rv = CMD_FAILED;
-	done = 0;
-	snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
-	while (!done) {
-		char *inptr, *s;
-
-		if (argc == 0) {
-			/* Get Input */
-			if (input) {
-				free(input);
-			}
-			input = command_line_input(promptbuf, instream);
-			if (!input) {
-				break;
-			}
-
-			/* Parse it */
-			inptr = input;
-			if (*inptr == '@') {	//printing comment
-				printf("%s\n", inptr);
-				continue;
-			}
-			if (*inptr == '#') {		//non-printing comment
-				continue;
-			}
-			cmd_argc = 0;
-			while ( (s = strtok(inptr, " \t")) != NULL ) {
-				cmd_argv[cmd_argc] = s;
-				inptr = NULL;
-				if (cmd_argc == (ARRAY_SIZE(cmd_argv)-1)) {
-					fprintf(stderr, "Warning : excessive # of arguments\n");
-					break;
-				}
-				cmd_argc++;
-			}
-			cmd_argv[cmd_argc] = nullstr;
-		} else {
-			/* Use supplied argc */
-			cmd_argc = argc;
-			for (i = 0; i < argc; i++) {
-				cmd_argv[i] = argv[i];
-			}
-		}
-
-		if (cmd_argc == 0) {
-			continue;
-		}
-		ctp = find_cmd(cmd_tbl, cmd_argv[0]);
-
-		if (ctp == NULL) {
-			printf("Unrecognized command. Try \"help\"\n");
-			if ((instream != stdin) || (argc > 0)) {
-				//processing a file, or running a subcommand : abort
-				break;
-			}
-			//else : continue getting input
-			continue;
-		}
-
-		if (ctp->sub_cmd_tbl) {
-			/* has sub-commands */
-			log_command(1, cmd_argv);
-			snprintf(promptbuf, PROMPTBUFSIZE,"%s/%s",
-				prompt, ctp->command);
-			/* Sub menu */
-			rv = do_cli(ctp->sub_cmd_tbl,
-				promptbuf,
-				instream,
-				cmd_argc-1,
-				&cmd_argv[1]);
-#ifdef HAVE_LIBREADLINE
-			//went out of the sub-menu, so update the command level for command completion
-			current_cmd_level = cmd_tbl;
-#endif
-			if (rv == CMD_EXIT) { // allow exiting prog. from a
-					      // submenu
-				done = 1;
-			}
-			snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
-		} else {
-			// Regular command
-			log_command(cmd_argc, cmd_argv);
-			rv = ctp->routine(cmd_argc, cmd_argv);
-			switch (rv) {
-				case CMD_USAGE:
-					printf("Usage: %s\n%s\n", ctp->usage, ctp->help);
-					break;
-				case CMD_EXIT:
-				case CMD_UP:
-					done = 1;
-					break;
-			}
-		}
-
-		if (argc) {
-			/* Single command */
-			break;
-		}
-	}	//while !done
-
-	if (input) {
-		free(input);
-	}
-	if (rv == CMD_UP) {
-		return CMD_OK;
-	}
-	if (rv == CMD_EXIT) {
-		char *disco="disconnect";
-		if (global_logfp != NULL) {
-			cmd_stoplog(0, NULL);
-		}
-
-		do_cli(diag_cmd_table, "", instream, 1, &disco);	//XXX should be called recursively in case there are >1 active L3 conns...
-
-		rv=diag_end();
-		if (rv) {
-			fprintf(stderr, FLFMT "diag_end failed !?\n", FL);
-		}
-		rv = CMD_EXIT;
-	}
-	return rv;
-}
-
-/* execute commands read from *filename;
- * ret CMD_OK if file was readable (command/parsing problems are OK)
- * ret CMD_FAILED if file was unreadable
- * forward CMD_EXIT if applicable */
-static int
-command_file(const char *filename) {
-	int rv;
-	FILE *fstream;
-
-	if ( (fstream=fopen(filename, "r"))) {
-		printf("running commands from file %s...\n", filename);
-		rv=do_cli(root_cmd_table, progname, fstream, 0, NULL);
-		fclose(fstream);
-		return (rv==CMD_EXIT)? CMD_EXIT:CMD_OK;
-	}
-	return CMD_FAILED;
-}
-
-static int
-cmd_source(int argc, char **argv) {
-	char *file;
-	int rv;
-
-	if (argc < 2) {
-			printf("No filename\n");
-		return CMD_USAGE;
-	}
-
-	file = argv[1];
-	rv=command_file(file);
-	if (rv == CMD_FAILED) {
-			printf("Couldn't read %s\n", file);
-	}
-
-	return rv;
-}
-
-//rc_file : returns CMD_OK or CMD_EXIT only.
-static int
-rc_file(void) {
-	int rv = CMD_FAILED;
-	//this loads either a $home/.<progname>.rc or ./<progname>.ini (in order of preference)
-	//to load general settings.
-
-	/*
-	 * "." files don't play that well on some systems.
-	 * USE_RCFILE is not defined by default.
-	 */
+char *find_rcfile(void) {
 
 #ifdef USE_RCFILE
 	char *rchomeinit;
@@ -793,67 +308,49 @@ rc_file(void) {
 	if (homedir) {
 		/* we add "/." and "rc" ... 4 characters */
 		if (diag_malloc(&rchomeinit, strlen(homedir) + strlen(projname) + 5)) {
-			return CMD_FAILED;
+			return NULL;
 		}
 		strcpy(rchomeinit, homedir);
 		strcat(rchomeinit, "/.");
 		strcat(rchomeinit, projname);
 		strcat(rchomeinit, "rc");
 
-		rv=command_file(rchomeinit);
-		if (rv == CMD_FAILED) {
-			fprintf(stderr, FLFMT "Could not load rc file %s; ", FL, rchomeinit);
-			newrcfile=fopen(rchomeinit,"a");
-			if (newrcfile) {
-				//create the file if it didn't exist
-				fprintf(newrcfile, "\n#empty rcfile auto created by %s\n",progname);
-				fclose(newrcfile);
-				fprintf(stderr, "empty file created.\n");
-				free(rchomeinit);
-				return CMD_OK;
-			} else {
-				//could not create empty rcfile
-				fprintf(stderr, "could not create empty file %s.", rchomeinit);
-				free(rchomeinit);
-				return CMD_OK;
-			}
+		newrcfile=fopen(rchomeinit,"r");
+		if (newrcfile) {
+			fclose(newrcfile);
+			return rchomeinit;
 		} else {
-			//command_file was at least partly successful (rc file exists)
-			printf("%s: Settings loaded from %s\n",progname,rchomeinit);
+			fprintf(stderr, FLFMT "Could not open %s : ignoring", FL, rchomeinit);
 			free(rchomeinit);
-			return CMD_OK;
+			//try INIFILE next, if enabled
 		}
-
-	}	//if (homedir)
+	}
 #endif
 
 
 #ifdef USE_INIFILE
 	char *inihomeinit;
-	rv = diag_malloc(&inihomeinit, strlen(progname) + strlen(".ini") + 1);
-	if (rv != 0) {
-		diag_ifwderr(rv);
-		return CMD_OK;
+	FILE *inifile;
+	if (diag_malloc(&inihomeinit, strlen(progname) + strlen(".ini") + 1)) {
+		return NULL;
 	}
 
 	strcpy(inihomeinit, progname);
 	strcat(inihomeinit, ".ini");
 
-	rv=command_file(inihomeinit);
-	if (rv == CMD_FAILED) {
-		fprintf(stderr, FLFMT "Problem with %s, no configuration loaded\n", FL, inihomeinit);
+	inifile=fopen(inihomeinit,"r");
+	if (inifile) {
+		fclose(inifile);
+		return inihomeinit;
+	} else {
+		fprintf(stderr, FLFMT "Could not open %s : ignoring", FL, inihomeinit);
 		free(inihomeinit);
-		return CMD_OK;
 	}
-	printf("%s: Settings loaded from %s\n", progname, inihomeinit);
-	free(inihomeinit);
 #endif
-	return rv;	//could be CMD_EXIT
 
+	return NULL;
 }
 
-
-static void enter_cli_backend(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable);
 
 /** temporary enter_cli() wrapper
  * 
@@ -862,9 +359,11 @@ static void enter_cli_backend(const char *name, const char *initscript, const st
  * 
  * TODO: Leaks memory because the concatenated table is never free'd.
  */
-void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable) {
+void scantool_cli(const char *prompt, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable) {
 
 	const struct cmd_tbl_entry *total_table = basic_cmd_table;
+
+	global_logfp = NULL;
 
 	if (extra_cmdtable) {
 		// alloc a new table to append extra table
@@ -885,52 +384,15 @@ void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_en
 		total_table = ctp;
 	}
 
-	progname = name;
-	enter_cli_backend(name, initscript, total_table);
+	struct cli_callbacks cbs = {
+		.cli_logcmd = log_command,
+		.cli_atexit = scantool_atexit,
+	};
+	cli_set_callbacks(&cbs);
+	enter_cli(prompt, initscript, total_table);
 	return;
 }
 
-/* start a cli with <name> as a prompt, and optionally run the <initscript> file */
-static void
-enter_cli_backend(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable) {
-	int rc_rv=CMD_OK;
-	global_logfp = NULL;
-
-	assert(cmdtable);
-
-	root_cmd_table = cmdtable;
-
-	readline_init(cmdtable);
-
-	if (initscript != NULL) {
-		printf("running commands from file %s...\n", initscript);
-		int rv=command_file(initscript);
-		switch (rv) {
-			case CMD_OK:
-				/* script was succesful, start a normal CLI afterwards */
-				break;
-			case CMD_FAILED:
-				printf("Problem with file %s\n", initscript);
-				// fallthrough, yes
-			default:
-			case CMD_EXIT:
-				goto exit_cleanup;
-		}
-	} else {
-		/* no initscript : load rc file */
-		rc_rv = rc_file();
-	}
-
-	if (rc_rv != CMD_EXIT) {
-		printf("\n");
-		/* And go start CLI */
-		(void)do_cli(root_cmd_table, name, stdin, 0, NULL);
-	}
-exit_cleanup:
-	root_cmd_table = NULL;
-	return;
-
-}
 
 /*
  * ************
@@ -1013,16 +475,4 @@ void wait_enter(const char *message) {
  */
 int pressed_enter() {
 	return diag_os_ipending();
-}
-
-
-int
-cmd_up(UNUSED(int argc), UNUSED(char **argv)) {
-	return CMD_UP;
-}
-
-
-int
-cmd_exit(UNUSED(int argc), UNUSED(char **argv)) {
-	return CMD_EXIT;
 }

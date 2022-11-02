@@ -17,6 +17,8 @@
 #include "diag_l2.h"
 #include "diag_l3.h"
 
+#include "libcli.h"
+
 #include "scantool.h"
 #include "scantool_cli.h"
 #include "scantool_obd.h"

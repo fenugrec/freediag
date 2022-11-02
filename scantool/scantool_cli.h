@@ -37,48 +37,24 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
+#include "libcli.h"
 
-struct cmd_tbl_entry {
-	const char *command;		/* Command name */
-	const char *usage;		/* Usage info */
-	const char *help;		/* Help Text */
-	int	(*routine)(int argc, char **argv);	/* Command Routine */
-	const int flags;		/* Flag */
 
-	const struct cmd_tbl_entry *sub_cmd_tbl;		/* Next layer */
+/** Find either a $home/.<progname>.rc or ./<progname>.ini (in order of preference)
+ *
+ * @return a filename (must be free'd by caller) if either was found, otherwise NULL.
+ */
+char *find_rcfile(void);
 
-};
 
-/* Return values from the commands */
-#define CMD_OK		0	/* OK */
-#define CMD_USAGE	1	/* Bad usage, print usage info */
-#define CMD_FAILED	2	/* Cmd failed */
-#define CMD_EXIT	3	/* Exit called */
-#define CMD_UP		4	/* Go up one level in command tree */
+/** start CLI
+ *
+ * @param inistcript: optional
+ */
+void scantool_cli(const char *prompt, const char *initscript, const struct cmd_tbl_entry *cmdtable);
 
-#define FLAG_HIDDEN	(1 << 0)	/* Hidden command */
-#define FLAG_FILE_ARG (1 << 1) /* Command accepts a filename as an argument*/
-#define FLAG_CUSTOM (1 << 2)	/* Command handles other subcommands not in the subtable, max 1 per table */
-
-/*** Public CLI functions */
-
-int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
 void wait_enter(const char *message);
 int pressed_enter(void);
-
-void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable);
-
-
-
-/** Prompt for some input.
- * @return a new 0-terminated string with trailing CR/LF stripped, NULL if no more input
- *
- * Caller must free returned buffer. Used if we don't
- * have readline, and when reading init or command files.
- * No line editing or history.
- */
-char *
-basic_get_input(const char *prompt, FILE *instream);
 
 
 /**
@@ -91,12 +67,6 @@ basic_get_input(const char *prompt, FILE *instream);
  * Returns 0 if unable to decode.
  */
 int htoi(char *buf);
-
-
-int cmd_up(int argc, char **argv);
-int cmd_exit(int argc, char **argv);
-
-
 
 
 extern int diag_cli_debug;	/* debug level */

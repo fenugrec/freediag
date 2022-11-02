@@ -42,13 +42,15 @@
 #include "diag_l3.h"
 #include "diag_err.h"
 
+#include "libcli.h"
+
 #include "scantool.h"
 #include "scantool_cli.h"
 
 
 static int cmd_diag_help(int argc, char **argv);
 
-static int cmd_diag_disconnect(int argc, char **argv);
+int cmd_diag_disconnect(int argc, char **argv);
 static int cmd_diag_connect(int argc, char **argv);
 static int cmd_diag_sendreq(int argc, char **argv);
 static int cmd_diag_read(int argc, char **argv);
@@ -412,8 +414,7 @@ cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv)) {
 
 //Currently, this stops + removes the current global L3 conn.
 //If there are no more L3 conns, also stop + close the global L2 conn.
-static int
-cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv)) {
+int cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv)) {
 	if (argc > 1) {
 		return CMD_USAGE;
 	}

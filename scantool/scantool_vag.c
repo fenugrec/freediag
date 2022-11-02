@@ -31,6 +31,8 @@
 
 #include <stddef.h>
 
+#include "libcli.h"
+
 #include "diag_vag.h"
 #include "scantool_cli.h"
 

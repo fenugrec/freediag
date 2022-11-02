@@ -1735,7 +1735,7 @@ const struct pid *get_pid ( unsigned int i ) {
 int
 main(int argc, char **argv) {
 	int i ;
-	const char *startfile=NULL;	/* optional commands to run at startup */
+	char *startfile=NULL;	/* optional commands to run at startup */
 
 	for ( i = 1 ; i < argc ; i++ ) {
 		if ( argv[i][0] == '-' || argv[i][0] == '+' ) {
@@ -1770,9 +1770,28 @@ main(int argc, char **argv) {
 	printf("%s: **** IMPORTANT : this is beta software ! Use at your own risk.\n", SCANTOOL_PROGNAME);
 	printf("%s: **** Remember, \"debug all -1\" displays all debugging info.\n", SCANTOOL_PROGNAME);
 
+	progname = SCANTOOL_PROGNAME;
 	set_init();
-	enter_cli(SCANTOOL_PROGNAME, startfile, scantool_cmd_table);
+
+	bool using_rcfile = 0;
+	if (!startfile) {
+		// no file explicitly specified : try .rcfile or .ini
+		startfile = find_rcfile();
+		if (startfile) {
+			using_rcfile = 1;
+		}
+	}
+	scantool_cli(SCANTOOL_PROGNAME, startfile, scantool_cmd_table);
+
+	if (using_rcfile) {
+		free(startfile);
+	}
+
 	set_close();
+	int rv=diag_end();
+	if (rv) {
+		fprintf(stderr, FLFMT "diag_end failed !?\n", FL);
+	}
 
 	/* Done */
 	exit(0);

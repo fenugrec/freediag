@@ -384,6 +384,7 @@ int diag_fl_alloc(const char *fName, const int line,
 /** calloc() with logging (clears data)
  * @param P: *ptr
  * @param N: number of (sizeof) elems to allocate
+ * @return 0 if OK
  * @note there is no size argument - it gets it directly
  * using sizeof. This makes it a little unusual, but reduces potential errors.
  */
@@ -391,6 +392,7 @@ int diag_fl_alloc(const char *fName, const int line,
 	((void **)(P)), (N), sizeof(**(P)), true)
 
 /** malloc() with logging.
+ * @return 0 if OK
  * Same as diag_calloc, but without clearing.
  */
 #define diag_malloc(P, N) diag_fl_alloc(CURFILE, __LINE__, \

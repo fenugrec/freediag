@@ -101,6 +101,7 @@ set (LIBDIAG_SRCS ${DL0_SRCS} ${DL2_SRCS}
 	diag_general.c diag_dtc.c diag_cfg.c)
 set (LIBDYNO_SRCS dyno.c)
 set (DIAGTEST_SRCS diag_test.c ${DIAG_TEST_RC})
+set (LIBCLI_SRCS libcli.c)
 set (CLI_SRCS scantool_cli.c scantool_diag.c scantool_set.c
 	scantool_debug.c)
 set (SCANTOOL_SRCS scantool.c
@@ -122,7 +123,7 @@ file (GLOB SCANTOOL_HEADERS *.h)
 # -source-codes-filename-at-compile-time/22161316
 
 foreach (F IN LISTS LIBDIAG_SRCS;LIBDYNO_SRCS;
-	DIAGTEST_SRCS;CLI_SRCS;SCANTOOL_SRCS)
+	DIAGTEST_SRCS;LIBCLI_SRCS;CLI_SRCS;SCANTOOL_SRCS)
 	get_filename_component (BNAME ${F} NAME)
 	set_source_files_properties (${F} PROPERTIES
 		COMPILE_DEFINITIONS "CURFILE=\"${BNAME}\"")
@@ -147,6 +148,8 @@ endif ()
 #if required, link with -lrt (see top-level CMakeLists.txt)
 target_link_libraries(diag ${LIBRT})
 
+add_library(cli STATIC ${LIBCLI_SRCS})
+
 add_library(dyno STATIC ${LIBDYNO_SRCS})
 
 add_library(freediagcli STATIC ${CLI_SRCS})
@@ -163,7 +166,7 @@ endif ()
 
 add_executable(${SCANTOOL_PROGNAME}  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
 
-target_link_libraries(freediagcli diag)
+target_link_libraries(freediagcli diag cli)
 if (HAVE_LIBREADLINE)
 	#this was optional
 	target_link_libraries(freediagcli readline)

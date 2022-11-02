@@ -33,6 +33,8 @@
 #include "diag.h" /* operating specific includes */
 #include "diag_l3.h" /* operating specific includes */
 
+#include "libcli.h"
+
 #include "scantool.h"
 #include "scantool_cli.h"
 
