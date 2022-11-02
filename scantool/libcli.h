@@ -84,12 +84,6 @@ char *basic_get_input(const char *prompt, FILE *instream);
 int cmd_up(int argc, char **argv);
 int cmd_exit(int argc, char **argv);
 
-/** execute commands read from filename;
- * 
- * ret CMD_OK if file was readable (command/parsing problems are OK)
- * ret CMD_FAILED if file was unreadable
- * forward CMD_EXIT if applicable */
-int command_file(const char *filename);
 int cmd_source(int argc, char **argv);
 
 int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);

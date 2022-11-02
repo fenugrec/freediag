@@ -289,7 +289,12 @@ void cli_set_callbacks(const struct cli_callbacks* new_callbacks) {
 }
 
 
-int command_file(const char *filename) {
+/** execute commands read from filename;
+ * 
+ * ret CMD_OK if file was readable (command/parsing problems are OK)
+ * ret CMD_FAILED if file was unreadable
+ * forward CMD_EXIT if applicable */
+static int command_file(const char *filename) {
 	int rv;
 	FILE *fstream;
 
