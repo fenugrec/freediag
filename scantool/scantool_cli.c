@@ -116,9 +116,8 @@ static const struct cmd_tbl_entry basic_cmd_table[] = {
 
 	{ "help", "help [command]", "Gives help for a command", cmd_help, 0, NULL },
 	{ "?", "? [command]", "Gives help for a command", cmd_help, FLAG_HIDDEN, NULL },
-	{ "exit", "exit", "Exits program", cmd_exit, 0, NULL},
-	{ "quit", "quit", "Exits program", cmd_exit, FLAG_HIDDEN, NULL},
-	{ NULL, NULL, NULL, NULL, 0, NULL}
+	CLI_TBL_BUILTINS,
+	CLI_TBL_END
 };
 
 

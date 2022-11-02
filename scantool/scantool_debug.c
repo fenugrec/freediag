@@ -105,14 +105,8 @@ const struct cmd_tbl_entry debug_cmd_table[] = {
 		cmd_debug_all, 0, NULL},
 	{ "l0test", "l0test [testnum]", "Dumb interface tests. Disconnect from vehicle first !",
 		cmd_debug_l0test, 0, NULL},
-	{ "up", "up", "Return to previous menu level",
-		cmd_up, 0, NULL},
-	{ "quit","quit", "Exit program",
-		cmd_exit, FLAG_HIDDEN, NULL},
-	{ "exit", "exit", "Exit program",
-		cmd_exit, 0, NULL},
-
-	{ NULL, NULL, NULL, NULL, 0, NULL}
+	CLI_TBL_BUILTINS,
+	CLI_TBL_END
 };
 
 static int

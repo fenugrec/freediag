@@ -519,6 +519,7 @@ const struct cmd_tbl_entry scantool_cmd_table[] = {
 		cmd_dumpdata, 0, NULL},
 	{ "pids", "pids", "Shows PIDs supported by ECU",
 		cmd_pids, 0, NULL},
-	{ NULL, NULL, NULL, NULL, 0, NULL}
+	//no builtins for now since this table is appended with the one in scantool_cli
+	CLI_TBL_END
 };
 

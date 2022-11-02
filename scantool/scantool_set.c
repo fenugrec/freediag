@@ -95,16 +95,12 @@ const struct cmd_tbl_entry set_cmd_table[] = {
 	{ "show", "show", "Shows all settable values, including L0-specific items",
 		cmd_set_show, 0, NULL},
 
-	{ "up", "up", "Return to previous menu level",
-		cmd_up, 0, NULL},
-	{ "quit","quit", "Exit program",
-		cmd_exit, FLAG_HIDDEN, NULL},
-	{ "exit", "exit", "Exit program",
-		cmd_exit, 0, NULL},
+	CLI_TBL_BUILTINS,
+
 	{ "", "", "",
 		cmd_set_custom, FLAG_CUSTOM | FLAG_HIDDEN, NULL},
 
-	{ NULL, NULL, NULL, NULL, 0, NULL}
+	CLI_TBL_END
 };
 
 const char *const l1_names[] = { //these MUST be in the same order as they are listed in diag_l1.h !!

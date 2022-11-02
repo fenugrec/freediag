@@ -91,14 +91,8 @@ const struct cmd_tbl_entry dyno_cmd_table[] = {
 	{ "save", "save [filename]", "Save measures and results in a file",
 		cmd_dyno_save, 0, NULL},
 
-	{ "up", "up", "Return to previous menu level",
-		cmd_up, 0, NULL},
-	{ "quit","quit", "Exit program",
-		cmd_exit, FLAG_HIDDEN, NULL},
-	{ "exit", "exit", "Exit program",
-		cmd_exit, 0, NULL},
-
-	{ NULL, NULL, NULL, NULL, 0, NULL}
+	CLI_TBL_BUILTINS,
+	CLI_TBL_END
 };
 
 

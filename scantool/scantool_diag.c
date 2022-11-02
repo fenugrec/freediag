@@ -89,14 +89,8 @@ const struct cmd_tbl_entry diag_cmd_table[] = {
 
 	{ "probe", "probe start_addr [stop_addr]", "Scan bus using ISO9141 5 baud init [slow!]", cmd_diag_probe, 0, NULL},
 	{ "fastprobe", "fastprobe start_addr [stop_addr [func]]", "Scan bus using ISO14230 fast init with physical or functional addressing", cmd_diag_fastprobe, 0, NULL},
-	{ "up", "up", "Return to previous menu level",
-		cmd_up, 0, NULL},
-	{ "quit","quit", "Exit program",
-		cmd_exit, FLAG_HIDDEN, NULL},
-	{ "exit", "exit", "Exit program",
-		cmd_exit, 0, NULL},
-
-	{ NULL, NULL, NULL, NULL, 0, NULL}
+	CLI_TBL_BUILTINS,
+	CLI_TBL_END
 };
 
 static int

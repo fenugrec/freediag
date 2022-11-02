@@ -483,9 +483,6 @@ static int do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE 
 	if (rv == CMD_UP) {
 		return CMD_OK;
 	}
-	if (rv == CMD_EXIT) {
-		//XXX call user atexit
-	}
 	return rv;
 }
 

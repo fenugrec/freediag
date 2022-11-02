@@ -22,17 +22,34 @@
 
 #include <stdio.h>		/* For FILE */
 
+/******* Command table definitions ********/
+
+/** Command descriptor
+ * 
+ * command table consists of an array of these
+ * */
 struct cmd_tbl_entry {
 	const char *command;		/* Command name */
 	const char *usage;		/* Usage info */
 	const char *help;		/* Help Text */
 	int	(*routine)(int argc, char **argv);	/* Command Routine */
-	const int flags;		/* Flag */
+	const int flags;		/* Flag, see below */
 
 	const struct cmd_tbl_entry *sub_cmd_tbl;		/* Next layer */
 
 };
 
+// optional : add built-in commands with default implementations
+#define CLI_TBL_BUILTINS \
+	{ "up", "up", "Return to previous menu level", cmd_up, 0, NULL}, \
+	{ "exit", "exit", "Exits program", cmd_exit, 0, NULL}, \
+	{ "quit", "quit", "Exits program", cmd_exit, FLAG_HIDDEN, NULL}
+
+#define CLI_TBL_END { NULL, NULL, NULL, NULL, 0, NULL}	//must be last element of every command table
+
+/** list of customizable callbacks.
+ * Unused entries can be set to NULL
+ */
 struct cli_callbacks {
 	void (*cli_logcmd)(int argc, char **argv);	// optional, called for each processed command
 	void (*cli_atexit)(void);	//optional, will be called after a CMD_EXIT
@@ -80,10 +97,8 @@ char *basic_get_input(const char *prompt, FILE *instream);
 
 
 // XXX todo : cleanup and doc these
-
 int cmd_up(int argc, char **argv);
 int cmd_exit(int argc, char **argv);
-
 int cmd_source(int argc, char **argv);
 
 int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);

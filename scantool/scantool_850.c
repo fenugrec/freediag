@@ -158,14 +158,8 @@ const struct cmd_tbl_entry v850_cmd_table[] = {
 	{ "test", "test <testname>", "Test vehicle components",
 		cmd_850_test, 0, NULL},
 
-	{ "up", "up", "Return to previous menu level",
-		cmd_up, 0, NULL},
-	{ "quit","quit", "Exit program",
-		cmd_exit, FLAG_HIDDEN, NULL},
-	{ "exit", "exit", "Exit program",
-		cmd_exit, 0, NULL},
-
-	{ NULL, NULL, NULL, NULL, 0, NULL}
+	CLI_TBL_BUILTINS,
+	CLI_TBL_END
 };
 
 static int
