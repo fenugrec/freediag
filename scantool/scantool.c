@@ -1770,7 +1770,9 @@ main(int argc, char **argv) {
 	printf("%s: **** IMPORTANT : this is beta software ! Use at your own risk.\n", SCANTOOL_PROGNAME);
 	printf("%s: **** Remember, \"debug all -1\" displays all debugging info.\n", SCANTOOL_PROGNAME);
 
+	set_init();
 	enter_cli(SCANTOOL_PROGNAME, startfile, scantool_cmd_table);
+	set_close();
 
 	/* Done */
 	exit(0);

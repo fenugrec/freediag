@@ -852,30 +852,55 @@ rc_file(void) {
 
 }
 
+
+static void enter_cli_backend(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable);
+
+/** temporary enter_cli() wrapper
+ * 
+ * combines basic_table with extra_cmdtable before calling enter_cli.
+ * Will become irrelevant after "libcli" split
+ * 
+ * TODO: Leaks memory because the concatenated table is never free'd.
+ */
+void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable) {
+
+	const struct cmd_tbl_entry *total_table = basic_cmd_table;
+
+	if (extra_cmdtable) {
+		// alloc a new table to append extra table
+		int i = 0;
+		const struct cmd_tbl_entry *ctp_iter;
+		struct cmd_tbl_entry *ctp;
+		for (ctp_iter = extra_cmdtable; ctp_iter && ctp_iter->command; ctp_iter++) {
+			i++;
+		}
+		assert(i); //need at least 1 entry...
+
+		diag_calloc(&ctp, i + ARRAY_SIZE(basic_cmd_table));
+		if (!ctp) {
+			return;
+		}
+		memcpy(ctp, extra_cmdtable, i * sizeof(struct cmd_tbl_entry));
+		memcpy(&ctp[i], basic_cmd_table, sizeof(basic_cmd_table));
+		total_table = ctp;
+	}
+
+	progname = name;
+	enter_cli_backend(name, initscript, total_table);
+	return;
+}
+
 /* start a cli with <name> as a prompt, and optionally run the <initscript> file */
-void
-enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable) {
+static void
+enter_cli_backend(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable) {
 	int rc_rv=CMD_OK;
 	global_logfp = NULL;
-	progname = name;
-	// alloc a new table combining extra table (if applicable) and basic table
-	int i = 0;
-	const struct cmd_tbl_entry *ctp_iter;
-	struct cmd_tbl_entry *ctp;
-	for (ctp_iter = extra_cmdtable; ctp_iter && ctp_iter->command; ctp_iter++) {
-		i++;
-	}
-	diag_calloc(&ctp, i + ARRAY_SIZE(basic_cmd_table));
-	if (!ctp) {
-		return;
-	}
-	memcpy(ctp, extra_cmdtable, i * sizeof(struct cmd_tbl_entry));
-	memcpy(&ctp[i], basic_cmd_table, sizeof(basic_cmd_table));
-	root_cmd_table = ctp;
 
+	assert(cmdtable);
 
-	readline_init(ctp);
-	set_init();
+	root_cmd_table = cmdtable;
+
+	readline_init(cmdtable);
 
 	if (initscript != NULL) {
 		printf("running commands from file %s...\n", initscript);
@@ -902,9 +927,7 @@ enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *
 		(void)do_cli(root_cmd_table, name, stdin, 0, NULL);
 	}
 exit_cleanup:
-	free(ctp);
 	root_cmd_table = NULL;
-	set_close();
 	return;
 
 }
