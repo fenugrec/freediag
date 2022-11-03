@@ -26,7 +26,7 @@
 
 
 //cmd_watch : this creates a diag_l3_conn
-static int cmd_watch(int argc, char **argv) {
+static enum cli_retval cmd_watch(int argc, char **argv) {
 	int rv;
 	struct diag_l2_conn *d_l2_conn;
 	struct diag_l3_conn *d_l3_conn=NULL;
@@ -242,7 +242,7 @@ static void log_current_data(void) {
 	}
 }
 
-static int cmd_monitor(int argc, char **argv) {
+static enum cli_retval cmd_monitor(int argc, char **argv) {
 	int rv;
 	bool english = 0;
 
@@ -296,7 +296,7 @@ static int cmd_monitor(int argc, char **argv) {
 
 // scan : use existing L3 J1979 connection, or establish a new one by trying all known protos.
 
-static int cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
 	int rv=DIAG_ERR_GENERAL;
 	if (argc > 1) {
 		return CMD_USAGE;
@@ -350,7 +350,7 @@ static int cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
 
 
 
-static int cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 	char *input;
 
 	if (global_state < STATE_CONNECTED) {
@@ -380,7 +380,7 @@ static int cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 
 
 
-static int cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
 	unsigned int i;
 
@@ -421,7 +421,7 @@ static void print_resp_info(UNUSED(int mode), response *data) {
 }
 
 
-static int cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
 	int i;
 
@@ -469,7 +469,7 @@ static void print_pidinfo(int mode, uint8_t *pid_data) {
 }
 
 
-static int cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
 	int i;
 

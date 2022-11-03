@@ -56,15 +56,15 @@
 dyno_result *dyno_results;
 int dyno_nb_results;
 
-static int cmd_dyno_help(int argc, char **argv);
-static int cmd_dyno_mass(int argc, char **argv);
-static int cmd_dyno_loss(int argc, char **argv);
-static int cmd_dyno_setloss(int argc, char **argv);
-static int cmd_dyno_run(int argc, char **argv);
-static int cmd_dyno_measures(int argc, char **argv);
-static int cmd_dyno_result(int argc, char **argv);
-static int cmd_dyno_graph(int argc, char **argv);
-static int cmd_dyno_save(int argc, char **argv);
+static enum cli_retval cmd_dyno_help(int argc, char **argv);
+static enum cli_retval cmd_dyno_mass(int argc, char **argv);
+static enum cli_retval cmd_dyno_loss(int argc, char **argv);
+static enum cli_retval cmd_dyno_setloss(int argc, char **argv);
+static enum cli_retval cmd_dyno_run(int argc, char **argv);
+static enum cli_retval cmd_dyno_measures(int argc, char **argv);
+static enum cli_retval cmd_dyno_result(int argc, char **argv);
+static enum cli_retval cmd_dyno_graph(int argc, char **argv);
+static enum cli_retval cmd_dyno_save(int argc, char **argv);
 
 void reset_results(void);
 
@@ -99,7 +99,7 @@ const struct cmd_tbl_entry dyno_cmd_table[] = {
 /*
  * Show/Sets the mass of the vehicle
  */
-static int cmd_dyno_mass(int argc, char **argv) {
+static enum cli_retval cmd_dyno_mass(int argc, char **argv) {
 	int mass=0;
 
 	if (argc > 1) {
@@ -229,7 +229,7 @@ int dyno_loss_done;
  * Determine power lost by aerodynamic and friction forces
  */
 
-static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
 
 	int speed;              /* measured speed */
@@ -337,7 +337,7 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv)) {
 /*
  * Manually enter aerodynamic and friction forces d and f parameters
  */
-static int cmd_dyno_setloss(int argc, char **argv) {
+static enum cli_retval cmd_dyno_setloss(int argc, char **argv) {
 	if (argc > 1) {
 		int assigned;
 		double d;
@@ -375,7 +375,7 @@ static int cmd_dyno_setloss(int argc, char **argv) {
  * Run dyno
  */
 
-static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
 
 	int speed;                                              /* measured speed */
@@ -523,7 +523,7 @@ static void display_measures(dyno_measure *measures, int nb_measures) {
 
 /* Display all measures */
 
-static int cmd_dyno_measures(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_dyno_measures(UNUSED(int argc), UNUSED(char **argv)) {
 	dyno_measure *measures = NULL;
 	int nb_measures = 0;
 
@@ -669,7 +669,7 @@ void reset_results(void) {
  * Display dyno results
  */
 
-static int cmd_dyno_result(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_dyno_result(UNUSED(int argc), UNUSED(char **argv)) {
 	get_results();
 
 	/* Check data */
@@ -686,7 +686,7 @@ static int cmd_dyno_result(UNUSED(int argc), UNUSED(char **argv)) {
  * Display dyno graphs
  */
 
-static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv)) {
 	get_results();
 
 	/* Check data */
@@ -707,7 +707,7 @@ static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv)) {
 /*
  * Save dyno measures and results to a file
  */
-static int cmd_dyno_save(int argc, char **argv) {
+static enum cli_retval cmd_dyno_save(int argc, char **argv) {
 	char *filename;
 	int rv;
 
@@ -757,6 +757,6 @@ static int cmd_dyno_save(int argc, char **argv) {
 
 
 /* Display help */
-static int cmd_dyno_help(int argc, char **argv) {
+static enum cli_retval cmd_dyno_help(int argc, char **argv) {
 	return help_common(argc, argv, dyno_cmd_table);
 }

@@ -40,11 +40,11 @@
 
 #include "utlist.h"
 
-static int cmd_test_help(int argc, char **argv);
-static int cmd_test_rvi(int argc, char **argv);
-static int cmd_test_cms(int argc, char **argv);
-static int cmd_test_ncms(int argc, char **argv);
-static int cmd_test_readiness(int argc, char **argv);
+static enum cli_retval cmd_test_help(int argc, char **argv);
+static enum cli_retval cmd_test_rvi(int argc, char **argv);
+static enum cli_retval cmd_test_cms(int argc, char **argv);
+static enum cli_retval cmd_test_ncms(int argc, char **argv);
+static enum cli_retval cmd_test_readiness(int argc, char **argv);
 
 const struct cmd_tbl_entry test_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
@@ -67,7 +67,7 @@ const struct cmd_tbl_entry test_cmd_table[] = {
 	CLI_TBL_END
 };
 
-static int cmd_test_help(int argc, char **argv) {
+static enum cli_retval cmd_test_help(int argc, char **argv) {
 	return help_common(argc, argv, test_cmd_table);
 }
 
@@ -111,7 +111,7 @@ static unsigned get_vit_info(struct diag_l3_conn *d_conn, uint8_t itype, uint8_t
 
 /* Request Vehicle Info */
 
-static int cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv)) {
 	struct diag_l3_conn *d_conn;
 
 	if (global_state < STATE_SCANDONE) {
@@ -170,7 +170,7 @@ static int cmd_test_rvi(UNUSED(int argc), UNUSED(char **argv)) {
 
 
 
-static int cmd_test_cms(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_test_cms(UNUSED(int argc), UNUSED(char **argv)) {
 	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
 		return CMD_OK;
@@ -180,7 +180,7 @@ static int cmd_test_cms(UNUSED(int argc), UNUSED(char **argv)) {
 }
 
 
-static int cmd_test_ncms(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_test_ncms(UNUSED(int argc), UNUSED(char **argv)) {
 	if (global_state < STATE_SCANDONE) {
 		printf("SCAN has not been done, please do a scan\n");
 		return CMD_OK;
@@ -190,7 +190,7 @@ static int cmd_test_ncms(UNUSED(int argc), UNUSED(char **argv)) {
 }
 
 
-static int cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv)) {
 	int rv;
 	struct diag_l3_conn *d_conn;
 	ecu_data *ep;

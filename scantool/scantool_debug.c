@@ -70,16 +70,16 @@ static const struct debugflags_descr debugflags[] = {
 	{NIL, NULL, NULL}
 };
 
-static int cmd_debug_help(int argc, char **argv);
-static int cmd_debug_show(int argc, char **argv);
+static enum cli_retval cmd_debug_help(int argc, char **argv);
+static enum cli_retval cmd_debug_show(int argc, char **argv);
 
-static int cmd_debug_cli(int argc, char **argv);
-static int cmd_debug_l0(int argc, char **argv);
-static int cmd_debug_l1(int argc, char **argv);
-static int cmd_debug_l2(int argc, char **argv);
-static int cmd_debug_l3(int argc, char **argv);
-static int cmd_debug_all(int argc, char **argv);
-static int cmd_debug_l0test(int argc, char **argv);
+static enum cli_retval cmd_debug_cli(int argc, char **argv);
+static enum cli_retval cmd_debug_l0(int argc, char **argv);
+static enum cli_retval cmd_debug_l1(int argc, char **argv);
+static enum cli_retval cmd_debug_l2(int argc, char **argv);
+static enum cli_retval cmd_debug_l3(int argc, char **argv);
+static enum cli_retval cmd_debug_all(int argc, char **argv);
+static enum cli_retval cmd_debug_l0test(int argc, char **argv);
 
 const struct cmd_tbl_entry debug_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
@@ -108,7 +108,7 @@ const struct cmd_tbl_entry debug_cmd_table[] = {
 	CLI_TBL_END
 };
 
-static int cmd_debug_help(int argc, char **argv) {
+static enum cli_retval cmd_debug_help(int argc, char **argv) {
 	if (argc<2) {
 		printf("Debugging flags are set per level according to the values set in diag.h\n");
 		printf("Setting [val] to -1 will enable all debug messages for that level.\n"
@@ -123,7 +123,7 @@ static int cmd_debug_help(int argc, char **argv) {
 
 
 
-static int cmd_debug_common( const char *txt, int *val, int argc, char **argv) {
+static enum cli_retval cmd_debug_common( const char *txt, int *val, int argc, char **argv) {
 	int r;
 	int i;
 
@@ -145,24 +145,24 @@ static int cmd_debug_common( const char *txt, int *val, int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_debug_l0(int argc, char **argv) {
+static enum cli_retval cmd_debug_l0(int argc, char **argv) {
 	return cmd_debug_common("L0", &diag_l0_debug, argc, argv);
 }
-static int cmd_debug_l1(int argc, char **argv) {
+static enum cli_retval cmd_debug_l1(int argc, char **argv) {
 	return cmd_debug_common("L1", &diag_l1_debug, argc, argv);
 }
-static int cmd_debug_l2(int argc, char **argv) {
+static enum cli_retval cmd_debug_l2(int argc, char **argv) {
 	return cmd_debug_common("L2", &diag_l2_debug, argc, argv);
 }
-static int cmd_debug_l3(int argc, char **argv) {
+static enum cli_retval cmd_debug_l3(int argc, char **argv) {
 	return cmd_debug_common("L3", &diag_l3_debug, argc, argv);
 }
-static int cmd_debug_cli(int argc, char **argv) {
+static enum cli_retval cmd_debug_cli(int argc, char **argv) {
 	return cmd_debug_common("CLI", &diag_cli_debug, argc, argv);
 	//for now, value > 0x80 will enable all debugging info.
 }
 
-static int cmd_debug_all(int argc, char **argv) {
+static enum cli_retval cmd_debug_all(int argc, char **argv) {
 	int val;
 
 	if (argc > 0) {
@@ -179,7 +179,7 @@ static int cmd_debug_all(int argc, char **argv) {
 }
 
 
-static int cmd_debug_show(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_debug_show(UNUSED(int argc), UNUSED(char **argv)) {
 /*	int layer, val; */
 
 	printf("Debug values: L0 0x%X, L1 0x%X, L2 0x%X L3 0x%X CLI 0x%X\n",
@@ -194,7 +194,7 @@ static int cmd_debug_show(UNUSED(int argc), UNUSED(char **argv)) {
 //to a vehicle: this sends garbage data on the K-line which
 //could interfere with ECUs, although very unlikely.
 
-static int cmd_debug_l0test(int argc, char **argv) {
+static enum cli_retval cmd_debug_l0test(int argc, char **argv) {
 #define MAX_L0TEST 14
 	struct diag_l0_device *dl0d = global_dl0d;
 	unsigned int testnum=0;

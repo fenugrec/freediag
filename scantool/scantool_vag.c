@@ -37,7 +37,7 @@
 #include "scantool_cli.h"
 
 
-static int cmd_vag_help(int argc, char **argv);
+static enum cli_retval cmd_vag_help(int argc, char **argv);
 const struct cmd_tbl_entry vag_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
 	  cmd_vag_help, 0, NULL},
@@ -66,6 +66,6 @@ const struct vw_id_info vw_ids[] = {
 	{0, NULL},
 };
 
-static int cmd_vag_help(int argc, char **argv) {
+static enum cli_retval cmd_vag_help(int argc, char **argv) {
 	return help_common(argc, argv, vag_cmd_table);
 }

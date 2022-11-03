@@ -522,7 +522,7 @@ exit_cleanup:
 
 /********* generic commands */
 
-int cmd_source(int argc, char **argv) {
+enum cli_retval cmd_source(int argc, char **argv) {
 	char *file;
 	int rv;
 
@@ -586,11 +586,11 @@ int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 	return CMD_OK;
 }
 
-int cmd_up(UNUSED(int argc), UNUSED(char **argv)) {
+enum cli_retval cmd_up(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_UP;
 }
 
 
-int cmd_exit(UNUSED(int argc), UNUSED(char **argv)) {
+enum cli_retval cmd_exit(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_EXIT;
 }

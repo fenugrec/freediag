@@ -22,6 +22,17 @@
 
 #include <stdio.h>              /* For FILE */
 
+
+/** Return values from the commands */
+enum cli_retval {
+	CMD_OK=0,       /* OK */
+	CMD_USAGE,      /* Bad usage, print usage info */
+	CMD_FAILED,     /* Cmd failed */
+	CMD_EXIT,       /* Exit called */
+	CMD_UP          /* Go up one level in command tree */
+};
+
+
 /******* Command table definitions ********/
 
 /** Command descriptor
@@ -32,11 +43,10 @@ struct cmd_tbl_entry {
 	const char *command;            /* Command name */
 	const char *usage;              /* Usage info */
 	const char *help;               /* Help Text */
-	int (*routine)(int argc, char **argv);          /* Command Routine */
+	enum cli_retval (*routine)(int argc, char **argv);          /* Command Routine */
 	const int flags;                /* Flag, see below */
 
-	const struct cmd_tbl_entry *sub_cmd_tbl;                /* Next layer */
-
+	const struct cmd_tbl_entry *sub_cmd_tbl;                /* If specified, command is a sub-table */
 };
 
 // optional : add built-in commands with default implementations
@@ -54,13 +64,6 @@ struct cli_callbacks {
 	void (*cli_logcmd)(int argc, char **argv);      // optional, called for each processed command
 	void (*cli_atexit)(void);       //optional, will be called after a CMD_EXIT
 };
-
-/* Return values from the commands */
-#define CMD_OK          0       /* OK */
-#define CMD_USAGE       1       /* Bad usage, print usage info */
-#define CMD_FAILED      2       /* Cmd failed */
-#define CMD_EXIT        3       /* Exit called */
-#define CMD_UP          4       /* Go up one level in command tree */
 
 #define CLI_CMD_HIDDEN  (1 << 0)        /* Hidden command */
 #define CLI_CMD_FILEARG (1 << 1) /* Command accepts a filename as an argument*/
@@ -97,9 +100,9 @@ char *basic_get_input(const char *prompt, FILE *instream);
 
 
 // XXX todo : cleanup and doc these
-int cmd_up(int argc, char **argv);
-int cmd_exit(int argc, char **argv);
-int cmd_source(int argc, char **argv);
+enum cli_retval cmd_up(int argc, char **argv);
+enum cli_retval cmd_exit(int argc, char **argv);
+enum cli_retval cmd_source(int argc, char **argv);
 
 int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
 

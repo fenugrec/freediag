@@ -48,18 +48,18 @@
 struct globcfg global_cfg;
 
 /* SET sub menu */
-static int cmd_set_custom(int argc, char **argv);
-static int cmd_set_help(int argc, char **argv);
-static int cmd_set_show(int argc, char **argv);
-static int cmd_set_speed(int argc, char **argv);
-static int cmd_set_testerid(int argc, char **argv);
-static int cmd_set_destaddr(int argc, char **argv);
-static int cmd_set_addrtype(int argc, char **argv);
-static int cmd_set_l1protocol(int argc, char **argv);
-static int cmd_set_l2protocol(int argc, char **argv);
-static int cmd_set_initmode(int argc, char **argv);
-static int cmd_set_display(int argc, char **argv);
-static int cmd_set_interface(int argc, char **argv);
+static enum cli_retval cmd_set_custom(int argc, char **argv);
+static enum cli_retval cmd_set_help(int argc, char **argv);
+static enum cli_retval cmd_set_show(int argc, char **argv);
+static enum cli_retval cmd_set_speed(int argc, char **argv);
+static enum cli_retval cmd_set_testerid(int argc, char **argv);
+static enum cli_retval cmd_set_destaddr(int argc, char **argv);
+static enum cli_retval cmd_set_addrtype(int argc, char **argv);
+static enum cli_retval cmd_set_l1protocol(int argc, char **argv);
+static enum cli_retval cmd_set_l2protocol(int argc, char **argv);
+static enum cli_retval cmd_set_initmode(int argc, char **argv);
+static enum cli_retval cmd_set_display(int argc, char **argv);
+static enum cli_retval cmd_set_interface(int argc, char **argv);
 
 const struct cmd_tbl_entry set_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
@@ -150,7 +150,7 @@ void set_close(void) {
 // handle dynamic options (L0-specific).
 // argv[0] is the config shortname, etc.
 // if argv[0] is '?' (special case), this prints available subcommands.
-static int cmd_set_custom(int argc, char **argv) {
+static enum cli_retval cmd_set_custom(int argc, char **argv) {
 	struct cfgi *cfgp;
 	char *setstr;
 	bool helping=0;
@@ -240,7 +240,7 @@ static int cmd_set_custom(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_show(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_set_show(UNUSED(int argc), UNUSED(char **argv)) {
 	/* Show stuff; calling the cmd_set_*() functions with argc=0 displays the current setting. */
 	cmd_set_interface(0,NULL);
 	cmd_set_speed(0, NULL);
@@ -271,7 +271,7 @@ static int cmd_set_show(UNUSED(int argc), UNUSED(char **argv)) {
 }
 
 
-static int cmd_set_interface(int argc, char **argv) {
+static enum cli_retval cmd_set_interface(int argc, char **argv) {
 	const struct diag_l0 *iter;
 
 	if (argc <= 1 || argv == NULL) {
@@ -336,7 +336,7 @@ static int cmd_set_interface(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_display(int argc, char **argv) {
+static enum cli_retval cmd_set_display(int argc, char **argv) {
 	if (argc > 1) {
 		if (strcasecmp(argv[1], "english") == 0) {
 			global_cfg.units = 1;
@@ -352,7 +352,7 @@ static int cmd_set_display(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_speed(int argc, char **argv) {
+static enum cli_retval cmd_set_speed(int argc, char **argv) {
 	if (argc > 1) {
 		if (strcmp(argv[1], "?") == 0) {
 			return CMD_USAGE;
@@ -365,7 +365,7 @@ static int cmd_set_speed(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_testerid(int argc, char **argv) {
+static enum cli_retval cmd_set_testerid(int argc, char **argv) {
 	if (argc > 1) {
 		int tmp;
 		if (strncmp(argv[1], "?", 1) == 0) {
@@ -383,7 +383,7 @@ static int cmd_set_testerid(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_destaddr(int argc, char **argv) {
+static enum cli_retval cmd_set_destaddr(int argc, char **argv) {
 	if (argc > 1) {
 		int tmp;
 		if (strncmp(argv[1], "?", 1) == 0) {
@@ -402,7 +402,7 @@ static int cmd_set_destaddr(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_addrtype(int argc, char **argv) {
+static enum cli_retval cmd_set_addrtype(int argc, char **argv) {
 	if (argc > 1) {
 		if (strncmp(argv[1], "func", 4) == 0) {
 			global_cfg.addrtype = 1;
@@ -419,7 +419,7 @@ static int cmd_set_addrtype(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_l2protocol(int argc, char **argv) {
+static enum cli_retval cmd_set_l2protocol(int argc, char **argv) {
 	if (argc > 1) {
 		int i, helping = 0, found = 0;
 		if (strcmp(argv[1], "?") == 0) {
@@ -454,7 +454,7 @@ static int cmd_set_l2protocol(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_l1protocol(int argc, char **argv) {
+static enum cli_retval cmd_set_l1protocol(int argc, char **argv) {
 	if (argc > 1) {
 		int i, helping = 0, found = 0;
 		if (strcmp(argv[1], "?") == 0) {
@@ -493,7 +493,7 @@ static int cmd_set_l1protocol(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_initmode(int argc, char **argv) {
+static enum cli_retval cmd_set_initmode(int argc, char **argv) {
 	if (argc > 1) {
 		int i, helping = 0, found = 0;
 		if (strcmp(argv[1], "?") == 0) {
@@ -526,6 +526,6 @@ static int cmd_set_initmode(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int cmd_set_help(int argc, char **argv) {
+static enum cli_retval cmd_set_help(int argc, char **argv) {
 	return help_common(argc, argv, set_cmd_table);
 }

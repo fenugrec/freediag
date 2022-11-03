@@ -104,22 +104,22 @@ static struct dtc_table_entry dtc_table[] = {
 static bool have_read_dtcs = false;
 static struct diag_msg *ecu_id = NULL;
 
-static int cmd_850_help(int argc, char **argv);
-static int cmd_850_connect(int argc, char **argv);
-static int cmd_850_disconnect(int argc, UNUSED(char **argv));
-static int cmd_850_ping(int argc, UNUSED(char **argv));
-static int cmd_850_sendreq(int argc, char **argv);
-static int cmd_850_peek(int argc, char **argv);
-static int cmd_850_dumpram(int argc, char **argv);
-static int cmd_850_read(int argc, char **argv);
-static int cmd_850_readnv(int argc, char **argv);
-static int cmd_850_adc(int argc, char **argv);
-static int cmd_850_id(int argc, UNUSED(char **argv));
-static int cmd_850_dtc(int argc, UNUSED(char **argv));
-static int cmd_850_cleardtc(int argc, UNUSED(char **argv));
-static int cmd_850_freeze(int argc, char **argv);
-static int cmd_850_scan_all(int argc, UNUSED(char **argv));
-static int cmd_850_test(int argc, char **argv);
+static enum cli_retval cmd_850_help(int argc, char **argv);
+static enum cli_retval cmd_850_connect(int argc, char **argv);
+static enum cli_retval cmd_850_disconnect(int argc, UNUSED(char **argv));
+static enum cli_retval cmd_850_ping(int argc, UNUSED(char **argv));
+static enum cli_retval cmd_850_sendreq(int argc, char **argv);
+static enum cli_retval cmd_850_peek(int argc, char **argv);
+static enum cli_retval cmd_850_dumpram(int argc, char **argv);
+static enum cli_retval cmd_850_read(int argc, char **argv);
+static enum cli_retval cmd_850_readnv(int argc, char **argv);
+static enum cli_retval cmd_850_adc(int argc, char **argv);
+static enum cli_retval cmd_850_id(int argc, UNUSED(char **argv));
+static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv));
+static enum cli_retval cmd_850_cleardtc(int argc, UNUSED(char **argv));
+static enum cli_retval cmd_850_freeze(int argc, char **argv);
+static enum cli_retval cmd_850_scan_all(int argc, UNUSED(char **argv));
+static enum cli_retval cmd_850_test(int argc, char **argv);
 
 const struct cmd_tbl_entry v850_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
@@ -162,7 +162,7 @@ const struct cmd_tbl_entry v850_cmd_table[] = {
 	CLI_TBL_END
 };
 
-static int cmd_850_help(int argc, char **argv) {
+static enum cli_retval cmd_850_help(int argc, char **argv) {
 	return help_common(argc, argv, v850_cmd_table);
 }
 
@@ -484,7 +484,7 @@ static void ecu_id_callback(void *handle, struct diag_msg *in) {
 /*
  * Connect to an ECU by name or address.
  */
-static int cmd_850_connect(int argc, char **argv) {
+static enum cli_retval cmd_850_connect(int argc, char **argv) {
 	int addr;
 	int rv;
 	struct diag_l0_device *dl0d;
@@ -591,7 +591,7 @@ static int cmd_850_connect(int argc, char **argv) {
 /*
  * Close the current connection.
  */
-static int cmd_850_disconnect(int argc, UNUSED(char **argv)) {
+static enum cli_retval cmd_850_disconnect(int argc, UNUSED(char **argv)) {
 	char *desc;
 
 	if (!valid_arg_count(1, argc, 1)) {
@@ -618,7 +618,7 @@ static int cmd_850_disconnect(int argc, UNUSED(char **argv)) {
 /*
  * Send a raw command and print the response.
  */
-static int cmd_850_sendreq(int argc, char **argv) {
+static enum cli_retval cmd_850_sendreq(int argc, char **argv) {
 	uint8_t data[MAXRBUF] = {0};
 	unsigned int len;
 	unsigned int i;
@@ -652,7 +652,7 @@ static int cmd_850_sendreq(int argc, char **argv) {
 /*
  * Verify communication with the ECU.
  */
-static int cmd_850_ping(int argc, UNUSED(char **argv)) {
+static enum cli_retval cmd_850_ping(int argc, UNUSED(char **argv)) {
 	int rv;
 
 	if (!valid_arg_count(1, argc, 1)) {
@@ -992,7 +992,7 @@ done:
  * The word "live" can be added at the end to continuously read and display
  * the requested addresses until interrupted.
  */
-static int cmd_850_peek(int argc, char **argv) {
+static enum cli_retval cmd_850_peek(int argc, char **argv) {
 	return read_family(argc, argv, NS_MEMORY);
 }
 
@@ -1007,7 +1007,7 @@ static int cmd_850_peek(int argc, char **argv) {
  * The word "live" can be added at the end to continuously read and display
  * the requested addresses until interrupted.
  */
-static int cmd_850_read(int argc, char **argv) {
+static enum cli_retval cmd_850_read(int argc, char **argv) {
 	if (!valid_connection_status(CONNECTED_D2)) {
 		return CMD_OK;
 	}
@@ -1023,7 +1023,7 @@ static int cmd_850_read(int argc, char **argv) {
  * The word "live" can be added at the end to continuously read and display
  * the requested readings until interrupted.
  */
-static int cmd_850_adc(int argc, char **argv) {
+static enum cli_retval cmd_850_adc(int argc, char **argv) {
 	if (!valid_connection_status(CONNECTED_KWP71)) {
 		return CMD_OK;
 	}
@@ -1037,7 +1037,7 @@ static int cmd_850_adc(int argc, char **argv) {
  *
  * Takes a list of one-byte identifier values.
  */
-static int cmd_850_readnv(int argc, char **argv) {
+static enum cli_retval cmd_850_readnv(int argc, char **argv) {
 	if (!valid_connection_status(CONNECTED_D2)) {
 		return CMD_OK;
 	}
@@ -1048,7 +1048,7 @@ static int cmd_850_readnv(int argc, char **argv) {
 /*
  * Read and display freeze frames for all stored DTCs.
  */
-static int cmd_850_freeze_all(void) {
+static enum cli_retval cmd_850_freeze_all(void) {
 	uint8_t dtcs[12];
 	int count;
 	char *argbuf;
@@ -1105,7 +1105,7 @@ static int cmd_850_freeze_all(void) {
  * stored DTCs. Each DTC can be specified either as a raw byte value or by its
  * EFI-xxx, AT-xxx, etc designation.
  */
-static int cmd_850_freeze(int argc, char **argv) {
+static enum cli_retval cmd_850_freeze(int argc, char **argv) {
 	if (!valid_connection_status(CONNECTED_D2)) {
 		return CMD_OK;
 	}
@@ -1119,7 +1119,7 @@ static int cmd_850_freeze(int argc, char **argv) {
 /*
  * Query the ECU for identification and print the result.
  */
-static int cmd_850_id_d2(void) {
+static enum cli_retval cmd_850_id_d2(void) {
 	uint8_t buf[15];
 	int rv;
 	int i;
@@ -1170,7 +1170,7 @@ static int cmd_850_id_d2(void) {
 /*
  * Print the ECU identification we received upon initial connection.
  */
-static int cmd_850_id_kwp71(void) {
+static enum cli_retval cmd_850_id_kwp71(void) {
 	int i;
 	struct diag_msg *msg;
 
@@ -1229,7 +1229,7 @@ static int cmd_850_id_kwp71(void) {
 /*
  * Display ECU identification.
  */
-static int cmd_850_id(int argc, UNUSED(char **argv)) {
+static enum cli_retval cmd_850_id(int argc, UNUSED(char **argv)) {
 	if (!valid_arg_count(1, argc, 1)) {
 		return CMD_USAGE;
 	}
@@ -1255,7 +1255,7 @@ static int cmd_850_id(int argc, UNUSED(char **argv)) {
  * If the "fast" option is specified on the command line, skip ahead to 0xF000
  * when a read attempt fails.
  */
-static int cmd_850_dumpram(int argc, char **argv) {
+static enum cli_retval cmd_850_dumpram(int argc, char **argv) {
 	uint16_t addr;
 	FILE *f;
 	bool happy;
@@ -1326,7 +1326,7 @@ static int cmd_850_dumpram(int argc, char **argv) {
 /*
  * Display list of stored DTCs.
  */
-static int cmd_850_dtc(int argc, UNUSED(char **argv)) {
+static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	uint8_t buf[12];
 	int rv;
 	int i;
@@ -1372,7 +1372,7 @@ static int cmd_850_dtc(int argc, UNUSED(char **argv)) {
 /*
  * Clear stored DTCs.
  */
-static int cmd_850_cleardtc(int argc, UNUSED(char **argv)) {
+static enum cli_retval cmd_850_cleardtc(int argc, UNUSED(char **argv)) {
 	char *input;
 	int rv;
 
@@ -1434,7 +1434,7 @@ done:
  * For example, MSA 15.7 and Motronic M4.4 will never both be present in the
  * same car.
  */
-static int cmd_850_scan_all(int argc, UNUSED(char **argv)) {
+static enum cli_retval cmd_850_scan_all(int argc, UNUSED(char **argv)) {
 	struct ecu_info *ecu;
 	char *argvout[2];
 	char buf[4];
@@ -1471,7 +1471,7 @@ static int cmd_850_scan_all(int argc, UNUSED(char **argv)) {
 /*
  * Test the specified vehicle component.
  */
-static int cmd_850_test(int argc, char **argv) {
+static enum cli_retval cmd_850_test(int argc, char **argv) {
 	if (!valid_connection_status(CONNECTED_D2)) {
 		return CMD_OK;
 	}

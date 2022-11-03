@@ -64,14 +64,14 @@ struct diag_l0_device *global_dl0d;
 
 /* Main menu commands */
 
-static int cmd_help(int argc, char **argv);
-static int cmd_log(int argc, char **argv);
-static int cmd_stoplog(int argc, char **argv);
+static enum cli_retval cmd_help(int argc, char **argv);
+static enum cli_retval cmd_log(int argc, char **argv);
+static enum cli_retval cmd_stoplog(int argc, char **argv);
 
-UNUSED(static int cmd_play(int argc, char **argv));
+UNUSED(static enum cli_retval cmd_play(int argc, char **argv));
 
-static int cmd_date(int argc, char **argv);
-static int cmd_rem(int argc, char **argv);
+static enum cli_retval cmd_date(int argc, char **argv);
+static enum cli_retval cmd_rem(int argc, char **argv);
 
 
 /* this table is appended to the "extra" cmdtable to construct the whole root cmd table */
@@ -123,12 +123,12 @@ static const struct cmd_tbl_entry basic_cmd_table[] = {
 
 struct cmd_tbl_entry *combined_table = NULL;
 
-static int cmd_help(int argc, char **argv) {
+static enum cli_retval cmd_help(int argc, char **argv) {
 	assert(combined_table);
 	return help_common(argc, argv, combined_table);
 }
 
-static int cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
 	struct tm *tm;
 	time_t now;
 	char str[256];
@@ -146,7 +146,7 @@ static int cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
 }
 
 
-static int cmd_rem(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_rem(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
@@ -178,7 +178,7 @@ static void log_command(int argc, char **argv) {
 	fprintf(global_logfp, "\n");
 }
 
-static int cmd_log(int argc, char **argv) {
+static enum cli_retval cmd_log(int argc, char **argv) {
 	char autofilename[20]="";
 	char *file;
 	time_t now;
@@ -235,7 +235,7 @@ static int cmd_log(int argc, char **argv) {
 }
 
 
-static int cmd_stoplog(UNUSED(int argc), UNUSED(char **argv)) {
+static enum cli_retval cmd_stoplog(UNUSED(int argc), UNUSED(char **argv)) {
 	/* Turn off logging */
 	if (global_logfp == NULL) {
 		printf("Logging was not on\n");
@@ -248,7 +248,7 @@ static int cmd_stoplog(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
-static int cmd_play(int argc, char **argv) {
+static enum cli_retval cmd_play(int argc, char **argv) {
 	FILE *fp;
 	//int linenr;
 
