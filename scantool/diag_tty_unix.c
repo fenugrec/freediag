@@ -47,9 +47,8 @@
 #include "diag_tty_unix.h"
 
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
-#define PT_REPEAT	1000	//after the nominal timeout period the timer will expire every PT_REPEAT us.
-static void
-diag_tty_rw_timeout_handler(UNUSED(int sig), siginfo_t *si, UNUSED(void *uc)) {
+#define PT_REPEAT       1000    //after the nominal timeout period the timer will expire every PT_REPEAT us.
+static void diag_tty_rw_timeout_handler(UNUSED(int sig), siginfo_t *si, UNUSED(void *uc)) {
 	assert(si->si_value.sival_ptr != NULL);
 	((struct unix_tty_int *)(si->si_value.sival_ptr))->pt_expired = 1;
 	return;
@@ -125,8 +124,8 @@ ttyp *diag_tty_open(const char *portname) {
 			errno = 0;
 			if ((fl = fcntl(uti->fd, F_GETFL, 0)) < 0) {
 				fprintf(stderr,
-					FLFMT "Can't get flags with fcntl on fd %d: %s.\n",
-					FL, uti->fd, strerror(errno));
+				        FLFMT "Can't get flags with fcntl on fd %d: %s.\n",
+				        FL, uti->fd, strerror(errno));
 				diag_tty_close(uti);
 				return diag_pseterr(DIAG_ERR_GENERAL);
 			}
@@ -134,8 +133,8 @@ ttyp *diag_tty_open(const char *portname) {
 			errno = 0;
 			if (fcntl(uti->fd, F_SETFL, fl) < 0) {
 				fprintf(stderr,
-					FLFMT "Can't set flags with fcntl on fd %d: %s.\n",
-					FL, uti->fd, strerror(errno));
+				        FLFMT "Can't set flags with fcntl on fd %d: %s.\n",
+				        FL, uti->fd, strerror(errno));
 				diag_tty_close(uti);
 				return diag_pseterr(DIAG_ERR_GENERAL);
 			}
@@ -151,14 +150,14 @@ ttyp *diag_tty_open(const char *portname) {
 
 	if (uti->fd >= 0) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			FLFMT "Device %s opened, fd %d\n",
-			FL, uti->name, uti->fd);
+		          FLFMT "Device %s opened, fd %d\n",
+		          FL, uti->name, uti->fd);
 	} else {
 		fprintf(stderr,
-			FLFMT "Could not open \"%s\" : %s. "
-			"Make sure the device specified corresponds to the "
-			"serial device your interface is connected to.\n",
-			FL, uti->name, strerror(errno));
+		        FLFMT "Could not open \"%s\" : %s. "
+		        "Make sure the device specified corresponds to the "
+		        "serial device your interface is connected to.\n",
+		        FL, uti->name, strerror(errno));
 		diag_tty_close(uti);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -172,7 +171,7 @@ ttyp *diag_tty_open(const char *portname) {
 #if defined(__linux__)
 	if (ioctl(uti->fd, TIOCGSERIAL, &uti->ss_orig) < 0) {
 		fprintf(stderr,
-			FLFMT "open: TIOCGSERIAL failed: %s\n", FL, strerror(errno));
+		        FLFMT "open: TIOCGSERIAL failed: %s\n", FL, strerror(errno));
 		uti->tioc_works = 0;
 	} else {
 		uti->ss_cur = uti->ss_orig;
@@ -182,19 +181,19 @@ ttyp *diag_tty_open(const char *portname) {
 
 	if (ioctl(uti->fd, TIOCMGET, &uti->modemflags) < 0) {
 		fprintf(stderr,
-			FLFMT "open: TIOCMGET failed: %s\n", FL, strerror(errno));
+		        FLFMT "open: TIOCMGET failed: %s\n", FL, strerror(errno));
 		diag_tty_close(uti);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
-#ifdef 	USE_TERMIOS2
+#ifdef  USE_TERMIOS2
 	rv = ioctl(uti->fd, TCGETS, &uti->st_orig);
 #else
 	rv = tcgetattr(uti->fd, &uti->st_orig);
 #endif
 	if (rv != 0) {
 		fprintf(stderr, FLFMT "open: could not get orig settings: %s\n",
-			FL, strerror(errno));
+		        FL, strerror(errno));
 		diag_tty_close(uti);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -204,28 +203,28 @@ ttyp *diag_tty_open(const char *portname) {
 
 	/* "stty raw"-like iflag settings: */
 	/* Clear a bunch of un-needed flags */
-	uti->st_cur.c_iflag &= ~ (IGNBRK | BRKINT | IGNPAR | PARMRK
-		| INPCK | ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXOFF
-		| IXANY | IMAXBEL);
+	uti->st_cur.c_iflag &= ~(IGNBRK | BRKINT | IGNPAR | PARMRK
+	                         | INPCK | ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXOFF
+	                         | IXANY | IMAXBEL);
 #ifdef __linux__
 	uti->st_cur.c_iflag  &= ~(IUCLC);   /* non-posix; disable ucase/lcase conversion */
 #endif
 
-	uti->st_cur.c_oflag &= ~(OPOST);	//disable impl-defined output processing
+	uti->st_cur.c_oflag &= ~(OPOST);        //disable impl-defined output processing
 
 	/* Disable canonical input and keyboard signals.
 	+* There is no need to also clear the many ECHOXX flags, both because
 	+* many systems have non-POSIX flags and also because the ECHO
 	+* flags don't don't matter when ICANON is clear.
-	 */
+	*/
 	/* CJH: However, taking 'man termios' at its word, the ECHO flag is
-	 *not* affected by ICANON, and it seems we do need to clear it  */
-	uti->st_cur.c_lflag &= ~( ICANON | ISIG | ECHO | IEXTEN);
+	 * not* affected by ICANON, and it seems we do need to clear it  */
+	uti->st_cur.c_lflag &= ~(ICANON | ISIG | ECHO | IEXTEN);
 
-	uti->st_cur.c_cflag &= ~( CRTSCTS );	//non-posix; disables hardware flow ctl
-	uti->st_cur.c_cflag |= (CLOCAL | CREAD);	//ignore modem control lines; enable read
+	uti->st_cur.c_cflag &= ~(CRTSCTS);      //non-posix; disables hardware flow ctl
+	uti->st_cur.c_cflag |= (CLOCAL | CREAD);        //ignore modem control lines; enable read
 
-	uti->st_cur.c_cc[VMIN] = 1;		//Minimum # of bytes before read() returns (default: 0!!!)
+	uti->st_cur.c_cc[VMIN] = 1;             //Minimum # of bytes before read() returns (default: 0!!!)
 
 	//and update termios with new flags.
 #ifdef USE_TERMIOS2
@@ -236,7 +235,7 @@ ttyp *diag_tty_open(const char *portname) {
 #endif
 	if (rv != 0) {
 		fprintf(stderr, FLFMT "open: can't set input flags: %s.\n",
-				FL, strerror(errno));
+		        FL, strerror(errno));
 		diag_tty_close(uti);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
@@ -282,26 +281,26 @@ void diag_tty_close(ttyp *tty_int) {
 
 
 /* Baud rate hell. Status in 2015 seems to be :
-	- termios2 struct + BOTHER flag + TCSETS2 ioctl; questionable availability
-	- ASYNC_SPD_CUST + B38400 + custom divisor trick is "deprecated",
-	 and needs the linux TIOCSSERIAL ioctl (far from ubiquitous)
-	- take a chance with cfsetispeed etc. with an integer argument, if
-	 B9600 == 9600 (non standard, shot in the dark except maybe on BSD??)
-	- use nearest standard speed + cfsetispeed
-	- OSX >10.4 : (unconfirmed, TODO)	: IOSSIOSPEED ioctl ?
-	- BSD ? (unconfirmed, TODO) : IOSSIOSPEED ioctl ?
-*/
+        - termios2 struct + BOTHER flag + TCSETS2 ioctl; questionable availability
+        - ASYNC_SPD_CUST + B38400 + custom divisor trick is "deprecated",
+         and needs the linux TIOCSSERIAL ioctl (far from ubiquitous)
+        - take a chance with cfsetispeed etc. with an integer argument, if
+         B9600 == 9600 (non standard, shot in the dark except maybe on BSD??)
+        - use nearest standard speed + cfsetispeed
+        - OSX >10.4 : (unconfirmed, TODO)	: IOSSIOSPEED ioctl ?
+        - BSD ? (unconfirmed, TODO) : IOSSIOSPEED ioctl ?
+ */
 /** internal use : _tty_setspeed, used inside diag_tty_setup.
-*
-* @return  actual new speed, or 0 if failed.
-* updates ->tty_int struct;
-* should probably called last (i.e. after setting other flags)
-*/
+ *
+ * @return  actual new speed, or 0 if failed.
+ * updates ->tty_int struct;
+ * should probably called last (i.e. after setting other flags)
+ */
 static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 	struct unix_tty_int *uti = tty_int;
-	unsigned int	spd_real;	//validate baud rate precision
+	unsigned int spd_real;          //validate baud rate precision
 	struct termios st_new;
-	int spd_done=0;	//flag success
+	int spd_done=0; //flag success
 	int rv = 1;
 	int fd;
 
@@ -326,10 +325,10 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 		B600, B1200, B1800, B2400,
 		B4800, B9600, B19200, B38400,
 		#ifdef B57600
-			B57600,
+		B57600,
 		#endif
 		#ifdef B115200
-			B115200
+		B115200
 		#endif
 	};
 
@@ -360,12 +359,12 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 		}
 
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-			FLFMT "Speed set using TCSETS + BOTHER.\n", FL);
+		          FLFMT "Speed set using TCSETS + BOTHER.\n", FL);
 		return spd_real;
 	}
 	if (rv != 0) {
 		fprintf(stderr, FLFMT "setspeed(BOTHER) ioctl failed: %s.\n",
-			FL, strerror(errno));
+		        FL, strerror(errno));
 	}
 
 #endif // BOTHER flag trick
@@ -400,7 +399,7 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 		/* And tell the kernel the new settings */
 		if (ioctl(fd, TIOCSSERIAL, &ss_new) < 0) {
 			fprintf(stderr,
-				FLFMT "setspeed(cust): ioctl failed: %s\n", FL, strerror(errno));
+			        FLFMT "setspeed(cust): ioctl failed: %s\n", FL, strerror(errno));
 			return 0;
 		}
 		//sucess : update current settings
@@ -414,9 +413,9 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 		st_new.c_cflag |= B38400;
 		spd_done = 1;
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-			FLFMT "Speed set using TIOCSSERIAL + ASYNC_SPD_CUST.\n", FL);
+		          FLFMT "Speed set using TIOCSSERIAL + ASYNC_SPD_CUST.\n", FL);
 	}
-#endif	//deprecated ASYNC_SPD_CUST trick
+#endif  //deprecated ASYNC_SPD_CUST trick
 
 	/* "POSIXY" version of setting non-standard baud rates.
 	 * This works at least for FreeBSD.
@@ -441,7 +440,7 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 
 	while (!spd_done) {
 		errno = 0;
-		int spd_nearest=0;	//index of nearest std value
+		int spd_nearest=0;      //index of nearest std value
 		int32_t besterror=1000;
 
 		for (size_t i=0; i< ARRAY_SIZE(std_table); i++) {
@@ -458,30 +457,30 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 	#if (B9600 == 9600) && (SEL_TTYBAUD==S_ALT3 || SEL_TTYBAUD==S_AUTO)
 		//try feeding the speed directly
 		if ( !cfsetispeed(&st_new, spd) &&
-				!cfsetospeed(&st_new, spd)) {
+		     !cfsetospeed(&st_new, spd)) {
 			spd_real = spd;
 			spd_done = 1;
 			DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-				FLFMT "Speed set with cfset*speed(uint).\n", FL);
+			          FLFMT "Speed set with cfset*speed(uint).\n", FL);
 
 			break;
 		}
 		fprintf(stderr,
-				"cfset*speed with direct speed failed: %s\n", strerror(errno));
+		        "cfset*speed with direct speed failed: %s\n", strerror(errno));
 	#endif
 		if ( !cfsetispeed(&st_new, std_names[spd_nearest]) &&
-				!cfsetospeed(&st_new, std_names[spd_nearest])) {
+		     !cfsetospeed(&st_new, std_names[spd_nearest])) {
 			//spd_real already ok
 			spd_done = 1;
 			DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-				FLFMT "Speed set with cfset*speed(B%u).\n",
-				FL, std_table[spd_nearest]);
+			          FLFMT "Speed set with cfset*speed(B%u).\n",
+			          FL, std_table[spd_nearest]);
 			break;
 		}
 		fprintf(stderr,
-				"cfset*speed with Bxxxx failed: %s\n", strerror(errno));
+		        "cfset*speed with Bxxxx failed: %s\n", strerror(errno));
 		break;
-	}	//while !spd_done for cfset*speed attempts
+	}       //while !spd_done for cfset*speed attempts
 
 	if (!spd_done) {
 		fprintf(stderr, "Error : all attempts at changing speed failed !\n");
@@ -495,7 +494,7 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 	errno = 0;
 	for (int retries=1; retries <=10; retries++) {
 		/* Apparently this sometimes failed with EINTR,
-		 so we retry.
+		   so we retry.
 		 */
 
 		rv=tcsetattr(fd, TCSAFLUSH, &st_new);
@@ -509,7 +508,7 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 
 	if (rv != 0) {
 		fprintf(stderr, FLFMT "Can't set baud rate to %u: %s.\n",
-			FL, spd, strerror(errno));
+		        FL, spd, strerror(errno));
 		return 0;
 	}
 #endif
@@ -519,8 +518,7 @@ static int _tty_setspeed(ttyp *tty_int, unsigned int spd) {
 /*
  * Set speed/parity etc, return 0 if ok
  */
-int
-diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset) {
+int diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset) {
 	int rv;
 	int fd;
 	struct unix_tty_int *uti = tty_int;
@@ -533,57 +531,57 @@ diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset) {
 	assert(fd != DL0D_INVALIDHANDLE);
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-		FLFMT "setup: fd=%d, %ubps, %d bits, %d stop, parity %d\n",
-		FL, fd, pset->speed, pset->databits, pset->stopbits, pset->parflag);
+	          FLFMT "setup: fd=%d, %ubps, %d bits, %d stop, parity %d\n",
+	          FL, fd, pset->speed, pset->databits, pset->stopbits, pset->parflag);
 
 	/* Copy current settings to working copy */
 	st_new = uti->st_cur;
 	st_new.c_cflag &= ~CSIZE;
 	switch (pset->databits) {
-		case diag_databits_8:
-			st_new.c_cflag |= CS8;
-			break;
-		case diag_databits_7:
-			st_new.c_cflag |= CS7;
-			break;
-		case diag_databits_6:
-			st_new.c_cflag |= CS6;
-			break;
-		case diag_databits_5:
-			st_new.c_cflag |= CS5;
-			break;
-		default:
-			fprintf(stderr, FLFMT "bad bit setting used (%d)\n", FL, pset->databits);
-			return diag_iseterr(DIAG_ERR_GENERAL);
+	case diag_databits_8:
+		st_new.c_cflag |= CS8;
+		break;
+	case diag_databits_7:
+		st_new.c_cflag |= CS7;
+		break;
+	case diag_databits_6:
+		st_new.c_cflag |= CS6;
+		break;
+	case diag_databits_5:
+		st_new.c_cflag |= CS5;
+		break;
+	default:
+		fprintf(stderr, FLFMT "bad bit setting used (%d)\n", FL, pset->databits);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	switch (pset->stopbits) {
-		case diag_stopbits_2:
-			st_new.c_cflag |= CSTOPB;
-			break;
-		case diag_stopbits_1:
-			st_new.c_cflag &= ~CSTOPB;
-			break;
-		default:
-			fprintf(stderr, FLFMT "bad stopbit setting used (%d)\n",
-				FL, pset->stopbits);
-			return diag_iseterr(DIAG_ERR_GENERAL);
+	case diag_stopbits_2:
+		st_new.c_cflag |= CSTOPB;
+		break;
+	case diag_stopbits_1:
+		st_new.c_cflag &= ~CSTOPB;
+		break;
+	default:
+		fprintf(stderr, FLFMT "bad stopbit setting used (%d)\n",
+		        FL, pset->stopbits);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	switch (pset->parflag) {
-		case diag_par_e:
-			st_new.c_cflag |= PARENB;
-			st_new.c_cflag &= ~PARODD;
-			break;
-		case diag_par_o:
-			st_new.c_cflag |= (PARENB | PARODD);
-			break;
-		case diag_par_n:
-			st_new.c_cflag &= ~PARENB;
-			break;
-		default:
-			fprintf(stderr,
-				FLFMT "bad parity setting used (%d)\n", FL, pset->parflag);
-			return diag_iseterr(DIAG_ERR_GENERAL);
+	case diag_par_e:
+		st_new.c_cflag |= PARENB;
+		st_new.c_cflag &= ~PARODD;
+		break;
+	case diag_par_o:
+		st_new.c_cflag |= (PARENB | PARODD);
+		break;
+	case diag_par_n:
+		st_new.c_cflag &= ~PARENB;
+		break;
+	default:
+		fprintf(stderr,
+		        FLFMT "bad parity setting used (%d)\n", FL, pset->parflag);
+		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	errno = 0;
@@ -595,11 +593,11 @@ diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset) {
 #endif
 	if (rv != 0) {
 		fprintf(stderr,
-			FLFMT
-			"Can't set input flags (databits %d, stop bits %d, parity %d).\n"
-			"tcsetattr returned \"%s\".\n",
-			FL, pset->databits, pset->stopbits, pset->parflag,
-			strerror(errno));
+		        FLFMT
+		        "Can't set input flags (databits %d, stop bits %d, parity %d).\n"
+		        "tcsetattr returned \"%s\".\n",
+		        FL, pset->databits, pset->stopbits, pset->parflag,
+		        strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -626,18 +624,17 @@ diag_tty_setup(ttyp *tty_int, const struct diag_serial_settings *pset) {
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-		FLFMT "Speed set to %u, error~%ld%%\n",
-		FL, spd_real, spd_err);
+	          FLFMT "Speed set to %u, error~%ld%%\n",
+	          FL, spd_real, spd_err);
 
 	return 0;
-}	//diag_tty_setup
+}       //diag_tty_setup
 
 /*
  * Set/Clear DTR and RTS lines, as specified
  */
-int
-diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts) {
-	int flags;	/* Current flag values. */
+int diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts) {
+	int flags;      /* Current flag values. */
 	struct unix_tty_int *uti = tty_int;
 	int setflags = 0, clearflags = 0;
 
@@ -656,7 +653,7 @@ diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts) {
 	errno = 0;
 	if (ioctl(uti->fd, TIOCMGET, &flags) < 0) {
 		fprintf(stderr,
-			FLFMT "open: Ioctl TIOCMGET failed %s\n", FL, strerror(errno));
+		        FLFMT "open: Ioctl TIOCMGET failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	flags |= setflags;
@@ -664,12 +661,12 @@ diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts) {
 
 	if (ioctl(uti->fd, TIOCMSET, &flags) < 0) {
 		fprintf(stderr,
-			FLFMT "open: Ioctl TIOCMSET failed %s\n", FL, strerror(errno));
+		        FLFMT "open: Ioctl TIOCMSET failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
-		FLFMT "%lu : DTR/RTS changed\n", FL, diag_os_getms());
+	          FLFMT "%lu : DTR/RTS changed\n", FL, diag_os_getms());
 
 	return 0;
 }
@@ -677,8 +674,7 @@ diag_tty_control(ttyp *tty_int,  unsigned int dtr, unsigned int rts) {
 // diag_tty_write: return # of bytes written; <0 if error.
 // In addition, this calculates + enforces a write timeout based on the number of bytes.
 // But write timeouts should be very rare, and are considered an error
-ssize_t
-diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
+ssize_t diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	assert(count > 0);
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 	ssize_t rv;
@@ -739,8 +735,8 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	//wait until the data is transmitted
 #ifdef USE_TERMIOS2
 	/* no exact equivalent ioctl for tcdrain,
-	  but TCSBRK with arg !=0 is "treated like tcdrain(fd)" according
-	  to info tty_ioctl */
+	   but TCSBRK with arg !=0 is "treated like tcdrain(fd)" according
+	   to info tty_ioctl */
 	if (ioctl(uti->fd, TCSBRK, 1) != 0) {
 		static int tcsb_warned=0;
 		if (!tcsb_warned) {
@@ -753,7 +749,7 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 #endif
 
 	return rv;
-}	//_POSIX_TIMERS tty_write()
+}       //_POSIX_TIMERS tty_write()
 
 #elif (SEL_TIMEOUT==S_LINUX || SEL_TIMEOUT==S_OTHER || SEL_TIMEOUT==S_AUTO)
 	/* No POSIX timers, this should be OK for everything else
@@ -769,7 +765,7 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	long unsigned int timeout = uti->byte_write_timeout_us * count + 10000ul;
 
 	t1 = diag_os_gethrt();
-	p = (const uint8_t *)buf;	/* For easy pointer I/O */
+	p = (const uint8_t *)buf;       /* For easy pointer I/O */
 	n = 0;
 	errno = 0;
 
@@ -797,7 +793,7 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 		//wait until the data is transmitted
 #ifdef USE_TERMIOS2
 		/* no exact equivalent ioctl for tcdrain, but
-		 "TCSBRK : [...] treat tcsendbreak(fd,arg) with nonzero arg like tcdrain(fd)."
+		   "TCSBRK : [...] treat tcsendbreak(fd,arg) with nonzero arg like tcdrain(fd)."
 		 */
 		ioctl(uti->fd, TCSBRK, 1);
 #else
@@ -807,19 +803,18 @@ diag_tty_write(ttyp *tty_int, const void *buf, const size_t count) {
 	}
 
 	fprintf(stderr, FLFMT "write to fd %d returned %s.\n",
-		FL, uti->fd, strerror(errno));
+	        FL, uti->fd, strerror(errno));
 
 	/* Unspecific Error */
 	return diag_iseterr(DIAG_ERR_GENERAL);
-}	//S_OTHER || S_LINUX write implem
+}       //S_OTHER || S_LINUX write implem
 #else
 	#error Fell in the cracks of implementation selectors !
-#endif	//tty_write() implementations
+#endif  //tty_write() implementations
 
 
-ssize_t
-diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
-	assert((count > 0) && ( timeout > 0) && (timeout < MAXTIMEOUT));
+ssize_t diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
+	assert((count > 0) && (timeout > 0) && (timeout < MAXTIMEOUT));
 #if defined(_POSIX_TIMERS) && (SEL_TIMEOUT==S_POSIX || SEL_TIMEOUT==S_AUTO)
 	ssize_t rv;
 	size_t n;
@@ -886,10 +881,10 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 
 	//Unspecified error
 	return diag_iseterr(DIAG_ERR_GENERAL);
-}	//POSIX read implem
+}       //POSIX read implem
 
 #elif (SEL_TIMEOUT==S_OTHER || SEL_TIMEOUT == S_AUTO)
- //no posix timers and it's not linux
+	//no posix timers and it's not linux
 	//Loop with { select() with a timeout;
 	// read() ; manually check timeout}
 
@@ -901,13 +896,13 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 
 	int expired = 0;
 	tstart=diag_os_gethrt();
-	incr = timeout * 1000;	//us
+	incr = timeout * 1000;  //us
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
-		"timeout=%u, start=%llu, delta=%llu\n", timeout, tstart, incr);
+	          "timeout=%u, start=%llu, delta=%llu\n", timeout, tstart, incr);
 
 	errno = 0;
-	p = (uint8_t *)buf;	/* For easy pointer I/O */
+	p = (uint8_t *)buf;     /* For easy pointer I/O */
 	n = 0;
 
 	while (count > 0 && expired == 0) {
@@ -925,7 +920,7 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 				rv=0;
 				goto finished;
 			}
-			rmn = timeout*1000 - tdone_us;	//remaining before timeout
+			rmn = timeout*1000 - tdone_us;  //remaining before timeout
 
 			FD_ZERO(&set);
 			FD_SET(uti->fd, &set);
@@ -952,7 +947,7 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 				fprintf(stderr, FLFMT "select() error: %s.\n", FL, strerror(errno));
 				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
-		}	//select loop
+		}       //select loop
 
 		rv = read(uti->fd,  &p[n], count);
 
@@ -969,7 +964,7 @@ diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeout) {
 
 		count -= rv;
 		n += rv;
-	}	//total read loop
+	}       //total read loop
 finished:
 	if (rv >= 0) {
 		if (n > 0)
@@ -979,11 +974,11 @@ finished:
 	}
 
 	fprintf(stderr, FLFMT "read() returned %s.\n",
-		FL, strerror(errno));
+	        FL, strerror(errno));
 
 	/* Unspecified Error */
 	return diag_iseterr(DIAG_ERR_GENERAL);
-}	//S_OTHER read implem
+}       //S_OTHER read implem
 
 #elif defined(__linux__) && (SEL_TIMEOUT==S_LINUX || SEL_TIMEOUT==S_AUTO)
 
@@ -1003,8 +998,8 @@ finished:
 	struct unix_tty_int *uti = tty_int;;
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "Entered diag_tty_read with count=%u, timeout=%ums\n",
-		FL, (unsigned int) count, timeout);
+	          FLFMT "Entered diag_tty_read with count=%u, timeout=%ums\n",
+	          FL, (unsigned int) count, timeout);
 
 	errno = 0;
 	time = 0;
@@ -1012,7 +1007,7 @@ finished:
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 
-	timeout = (int)((unsigned long) timeout * 2048/1000);		//watch for overflow !
+	timeout = (int)((unsigned long) timeout * 2048/1000);           //watch for overflow !
 
 	fd = open ("/dev/rtc", O_RDONLY);
 	if (fd <=0) {
@@ -1040,12 +1035,12 @@ finished:
 		FD_ZERO(&set);
 		FD_SET(uti->fd, &set);
 
-		rv = select ( uti->fd + 1,  &set, NULL, NULL, &tv ) ;
+		rv = select ( uti->fd + 1,  &set, NULL, NULL, &tv );
 
-		if ( rv > 0 ) break ;
+		if ( rv > 0 ) break;
 
 		if (errno != 0 && errno != EINTR) break;
-		errno = 0 ;
+		errno = 0;
 
 		read(fd, &data, sizeof(unsigned long));
 		data >>= 8;
@@ -1061,14 +1056,14 @@ finished:
 
 	if (time>=timeout) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-			FLFMT "timed out: %ums\n",FL,timeout*1000/2048);
+		          FLFMT "timed out: %ums\n",FL,timeout*1000/2048);
 	}
 
 	switch (rv) {
 	case 0:
 		/* Timeout */
-	//this doesn't require a diag_iseterr() call, as is the case when diag_tty_read
-	//is called to flush
+		//this doesn't require a diag_iseterr() call, as is the case when diag_tty_read
+		//is called to flush
 		return DIAG_ERR_TIMEOUT;
 	case 1:
 		/* Ready for read */
@@ -1080,18 +1075,18 @@ finished:
 		rv = read(uti->fd, buf, count);
 		if (rv <= 0) {
 			DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-				"read() returned %d?", rv);
+			          "read() returned %d?", rv);
 		}
 		return rv;
 
 	default:
 		fprintf(stderr, FLFMT "select on fd %d returned %s.\n",
-			FL, uti->fd, strerror(errno));
+		        FL, uti->fd, strerror(errno));
 
 		/* Unspecific Error */
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-}	//S_LINUX read implem
+}       //S_LINUX read implem
 
 #else
 	#error Fell in the cracks of implementation selectors !
@@ -1117,7 +1112,7 @@ int diag_tty_iflush(ttyp *tty_int) {
 #endif // USE_TERMIOS2
 	if ( rv != 0) {
 		fprintf(stderr, FLFMT "TCIFLUSH on fd %d returned %s.\n",
-			FL, uti->fd, strerror(errno));
+		        FL, uti->fd, strerror(errno));
 	}
 
 	/* Read any old data hanging about on the port */
@@ -1125,8 +1120,8 @@ int diag_tty_iflush(ttyp *tty_int) {
 	if (rv > 0) {
 		//not dumping data : could flood screen
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
-			FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n",
-			FL, rv, buf[0]);
+		          FLFMT "tty_iflush: >=%d junk bytes discarded: 0x%X...\n",
+		          FL, rv, buf[0]);
 	}
 
 	return 0;
@@ -1145,20 +1140,20 @@ int diag_tty_break(ttyp *tty_int, const unsigned int ms) {
 	struct unix_tty_int *uti = tty_int;
 #ifdef USE_TERMIOS2
 	/* no exact equivalent ioctl for tcdrain, but
-	 "TCSBRK : [...] treat tcsendbreak(fd,arg) with nonzero arg like tcdrain(fd)."
+	   "TCSBRK : [...] treat tcsendbreak(fd,arg) with nonzero arg like tcdrain(fd)."
 	 */
 	ioctl(uti->fd, TCSBRK, 1);
 #else
 	if (tcdrain(uti->fd)) {
 		fprintf(stderr, FLFMT "tcdrain returned %s.\n",
-			FL, strerror(errno));
+		        FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 #endif
 
 	if (ioctl(uti->fd, TIOCSBRK, 0) < 0) {
 		fprintf(stderr,
-			FLFMT "open: Ioctl TIOCSBRK failed %s\n", FL, strerror(errno));
+		        FLFMT "open: Ioctl TIOCSBRK failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -1166,7 +1161,7 @@ int diag_tty_break(ttyp *tty_int, const unsigned int ms) {
 
 	if (ioctl(uti->fd, TIOCCBRK, 0) < 0) {
 		fprintf(stderr,
-			FLFMT "open: Ioctl TIOCCBRK failed %s\n", FL, strerror(errno));
+		        FLFMT "open: Ioctl TIOCCBRK failed %s\n", FL, strerror(errno));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
@@ -1180,8 +1175,8 @@ int diag_tty_break(ttyp *tty_int, const unsigned int ms) {
 		return 0;
 
 	return diag_tty_fastbreak(uti, ms);
-#endif	//if .. for diag_tty_break
-}	//diag_tty_break
+#endif  //if .. for diag_tty_break
+}       //diag_tty_break
 
 
 
@@ -1223,7 +1218,7 @@ int diag_tty_fastbreak(ttyp *tty_int, const unsigned int ms) {
 
 	/*
 	 * And read back the single byte echo, which shows TX completes
- 	 */
+	 */
 	if (diag_tty_read(uti, &cbuf, 1, 1000) != 1) {
 		fprintf(stderr, FLFMT "tty_fastbreak: echo read error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -1239,7 +1234,7 @@ int diag_tty_fastbreak(ttyp *tty_int, const unsigned int ms) {
 
 	/* Now wait the requested number of ms */
 	tv2=diag_os_gethrt();
-	tvdiff = diag_os_hrtus(tv2 - tv1);	//us
+	tvdiff = diag_os_hrtus(tv2 - tv1);      //us
 
 	if (tvdiff >= (ms * 1000)) {
 		return 0; // already finished
@@ -1250,18 +1245,18 @@ int diag_tty_fastbreak(ttyp *tty_int, const unsigned int ms) {
 	diag_os_millisleep(msremain);
 
 	tv2=diag_os_gethrt();
-	tvdiff = diag_os_hrtus(tv2 - tv1);	//us
+	tvdiff = diag_os_hrtus(tv2 - tv1);      //us
 
 	//XXX this message may need to be removed if timing is impaired
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
-		FLFMT "Fast break finished : tWUP=%llu\n", FL, tvdiff);
+	          FLFMT "Fast break finished : tWUP=%llu\n", FL, tvdiff);
 
 	return 0;
 }
 
 //ret true if pname is a tty
 static bool test_ttyness(const char *pname) {
-	int testfd = -1;				// file descriptor for tested device files
+	int testfd = -1;                                // file descriptor for tested device files
 	bool yes=0;
 
 	testfd = open(pname, O_RDWR | O_NOCTTY | O_NDELAY);
@@ -1280,13 +1275,13 @@ static bool test_ttyness(const char *pname) {
  * https://github.com/Comer352L/FreeSSM
  */
 char **diag_tty_getportlist(int *numports) {
-	char ffn[256] = "";				// full filename incl. path
+	char ffn[256] = "";                             // full filename incl. path
 	const char *devroot="/dev/";
 	const char *devusbroot="/dev/usb";
 	DIR *dp = NULL;
 	struct dirent *fp = NULL;
 	char **portlist = NULL;
-	int elems;	//temp number of ports
+	int elems;      //temp number of ports
 
 	assert(numports != NULL);
 	*numports = 0;
@@ -1296,13 +1291,13 @@ char **diag_tty_getportlist(int *numports) {
 	dp = opendir (devroot);
 	if (dp != NULL) {
 		while (1) {
-			fp = readdir (dp);	// get next file in directory
+			fp = readdir (dp);      // get next file in directory
 			if (fp == NULL) {
 				break;
 			}
 			if ((!strncmp(fp->d_name,"ttyS",4)) ||
-					(!strncmp(fp->d_name,"ttyUSB",6)) ||
-					(!strncmp(fp->d_name,"ttyACM",6))) {
+			    (!strncmp(fp->d_name,"ttyUSB",6)) ||
+			    (!strncmp(fp->d_name,"ttyACM",6))) {
 				// CONSTRUCT FULL FILENAME:
 				strcpy(ffn, devroot);
 				strncat(ffn, fp->d_name, ARRAY_SIZE(ffn) - strlen(devroot) - 1);
@@ -1327,7 +1322,7 @@ char **diag_tty_getportlist(int *numports) {
 	dp = opendir (devusbroot);
 	if (dp != NULL) {
 		while (1) {
-			fp = readdir (dp);	// get next file in directory
+			fp = readdir (dp);      // get next file in directory
 			if (fp == NULL) {
 				break;
 			}
@@ -1348,11 +1343,10 @@ char **diag_tty_getportlist(int *numports) {
 				portlist = templist;
 				elems++;
 			}
-		}	//while
+		}       //while
 		closedir (dp);
 	}
 
 	*numports = elems;
 	return portlist;
 }
-

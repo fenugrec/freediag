@@ -71,8 +71,7 @@ enum {
 /*
  * Verify communication with the ECU.
  */
-int
-diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn) {
+int diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn) {
 	int errval = 0;
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;
@@ -96,8 +95,7 @@ diag_l7_kwp71_ping(struct diag_l2_conn *d_l2_conn) {
 
 #define KWP71_REQSIZE 3
 /* Fill the request message for reading memory */
-static int
-read_MEMORY_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr, uint8_t count) {
+static int read_MEMORY_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr, uint8_t count) {
 	uint8_t *data=msg->data;
 
 	msg->type = readMemoryByAddress;
@@ -110,9 +108,8 @@ read_MEMORY_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr, uint8_t 
 }
 
 /* Fill the request message for reading ROM */
-static int
-read_ROM_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr, uint8_t count) {
-    uint8_t *data=msg->data;
+static int read_ROM_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr, uint8_t count) {
+	uint8_t *data=msg->data;
 
 	msg->type = readROMByAddress;
 	msg->len = 3;
@@ -124,8 +121,7 @@ read_ROM_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr, uint8_t cou
 }
 
 /* The request message for taking ADC readings */
-static int
-read_ADC_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr) {
+static int read_ADC_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr) {
 	uint8_t *data=msg->data;
 
 	if (addr > 0xff) {
@@ -151,8 +147,7 @@ read_ADC_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr) {
  * For ADC reads, reads a single 2-byte value and copies up to the number of
  * bytes requested. Returns the actual byte count received.
  */
-int
-diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum l7_namespace ns, uint16_t addr, int buflen, uint8_t *out) {
+int diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum l7_namespace ns, uint16_t addr, int buflen, uint8_t *out) {
 	struct diag_msg req;    //build request message in this
 	uint8_t request_data[KWP71_REQSIZE];
 	struct diag_msg *resp = NULL;
@@ -211,8 +206,7 @@ diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum l7_namespace ns, uint16_
  * Returns the actual number of bytes read, even if the supplied buffer was too
  * small for the full response.
  */
-int
-diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) {
+int diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) {
 	int errval = 0;
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;
@@ -259,8 +253,7 @@ diag_l7_kwp71_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out) 
  * Returns 0 if there were no DTCs, 1 if there was at least one DTC and the
  * ECU returned positive acknowledgement for the clear request, <0 for errors.
  */
-int
-diag_l7_kwp71_cleardtc(struct diag_l2_conn *d_l2_conn) {
+int diag_l7_kwp71_cleardtc(struct diag_l2_conn *d_l2_conn) {
 	uint8_t buf[1];
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;

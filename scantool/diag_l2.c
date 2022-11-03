@@ -25,7 +25,7 @@
  *
  * This sits "under" the L2 per-protocol (such as ISO 14230, SAE J1979)
  *  - understands the protocol format,
-  *  - pads messages as needed,
+ *  - pads messages as needed,
  *  - and sends "tester present" messages at the correct intervals to keep
  *	the link to an ECU alive
  *
@@ -57,7 +57,7 @@ static struct {
 	bool init_done;
 } l2internal = {
 	.dl2conn_list = NULL,
-	.dl2l_list = NULL,	// linked-list of current L2-L0 links
+	.dl2l_list = NULL,      // linked-list of current L2-L0 links
 	.init_done = false
 };
 
@@ -65,8 +65,7 @@ static struct {
 /** Find an existing L2 link using the specified L0 device.
  * @return NULL if not found
  */
-static struct diag_l2_link *
-diag_l2_findlink(const struct diag_l0_device *dl0d) {
+static struct diag_l2_link *diag_l2_findlink(const struct diag_l0_device *dl0d) {
 	struct diag_l2_link *dl2l=NULL;
 
 	LL_FOREACH(l2internal.dl2l_list, dl2l) {
@@ -107,9 +106,8 @@ static int diag_l2_rmconn(struct diag_l2_conn *dl2c) {
  *
  * In order for this to work well, all L2
  */
-void
-diag_l2_timer(void) {
-	struct diag_l2_conn	*d_l2_conn;
+void diag_l2_timer(void) {
+	struct diag_l2_conn     *d_l2_conn;
 
 	unsigned long now;
 
@@ -127,8 +125,8 @@ diag_l2_timer(void) {
 		 * or L1 does the keepalive, do nothing
 		 */
 		if (((d_l2_conn->diag_l2_type & DIAG_L2_TYPE_INITMASK) ==DIAG_L2_TYPE_MONINIT) ||
-				(d_l2_conn->diag_l2_state != DIAG_L2_STATE_OPEN) ||
-				(d_l2_conn->diag_link->l1flags & DIAG_L1_DOESKEEPALIVE)) {
+		    (d_l2_conn->diag_l2_state != DIAG_L2_STATE_OPEN) ||
+		    (d_l2_conn->diag_link->l1flags & DIAG_L1_DOESKEEPALIVE)) {
 			continue;
 		}
 
@@ -136,7 +134,7 @@ diag_l2_timer(void) {
 
 		//we're subtracting unsigned values but since the clock is
 		//monotonic, the difference will always be >= 0
-		expired = ((now - d_l2_conn->tlast) > d_l2_conn->tinterval)? 1:0 ;
+		expired = ((now - d_l2_conn->tlast) > d_l2_conn->tinterval)? 1:0;
 
 		/* If expired, call the timeout routine */
 		if (expired && d_l2_conn->l2proto->diag_l2_proto_timeout) {
@@ -151,8 +149,7 @@ diag_l2_timer(void) {
  * Add a message to the message list on the L2 connection
  * (if msg was a chain of messages, they all get added so they don't get lost)
  */
-void
-diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
+void diag_l2_addmsg(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	LL_CONCAT(d_l2_conn->diag_msg, msg);
 	return;
 }
@@ -171,7 +168,7 @@ int diag_l2_init() {
 	}
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
-		FLFMT "entered diag_l2_init\n", FL);
+	          FLFMT "entered diag_l2_init\n", FL);
 
 	diag_os_initstaticmtx(&l2internal.connlist_mtx);
 
@@ -195,12 +192,11 @@ int diag_l2_end() {
  * This should only be called if we're sure the dl2l
  * is not used anymore...
  */
-static int
-diag_l2_closelink(struct diag_l2_link *dl2l) {
+static int diag_l2_closelink(struct diag_l2_link *dl2l) {
 	assert(dl2l != NULL);
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
-		FLFMT "l2_closelink %p called\n", FL, (void *)dl2l);
+	          FLFMT "l2_closelink %p called\n", FL, (void *)dl2l);
 
 	/* Remove from linked-list */
 	LL_DELETE(l2internal.dl2l_list, dl2l);
@@ -225,22 +221,21 @@ diag_l2_closelink(struct diag_l2_link *dl2l) {
  * interfaces are smart and can support multiple protocols, also L2 needs
  * to know later (and asks L1)
  */
-int
-diag_l2_open(struct diag_l0_device *dl0d, int L1protocol) {
+int diag_l2_open(struct diag_l0_device *dl0d, int L1protocol) {
 	int rv;
 	struct diag_l2_link *dl2l;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "l2_open %s on %p, L1proto=%d\n",
-		FL, dl0d->dl0->longname, (void *)dl0d, L1protocol);
+	          FLFMT "l2_open %s on %p, L1proto=%d\n",
+	          FL, dl0d->dl0->longname, (void *)dl0d, L1protocol);
 
 	/* try to find in linked list */
 	dl2l = diag_l2_findlink(dl0d);
 
 	if (dl2l) {
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			"\texisting L2 link \"%s\" found\n",
-			dl2l->l2_dl0d->dl0->shortname);
+		          "\texisting L2 link \"%s\" found\n",
+		          dl2l->l2_dl0d->dl0->shortname);
 
 		if (dl2l->l1proto != L1protocol) {
 			fprintf(stderr, "Problem : L0 open with wrong L1 proto...\n");
@@ -253,7 +248,7 @@ diag_l2_open(struct diag_l0_device *dl0d, int L1protocol) {
 
 	rv = diag_l1_open(dl0d, L1protocol);
 	if (rv) {
-		return diag_ifwderr(rv);	//forward error to next level
+		return diag_ifwderr(rv);        //forward error to next level
 	}
 
 	/* Create the L2 link */
@@ -287,16 +282,15 @@ diag_l2_open(struct diag_l0_device *dl0d, int L1protocol) {
  * If there's a dl2 link, we check if it's still used by parsing
  * through all the diag_l2_conns.
  */
-int
-diag_l2_close(struct diag_l0_device *dl0d) {
+int diag_l2_close(struct diag_l0_device *dl0d) {
 	struct diag_l2_conn *d_l2_conn;
 	struct diag_l2_link *dl2l;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
-		FLFMT "Entered diag_l2_close for dl0d=%p;\n",
-		FL, (void *)dl0d);
+	          FLFMT "Entered diag_l2_close for dl0d=%p;\n",
+	          FL, (void *)dl0d);
 
-	assert(dl0d !=NULL);	//crash if it's null. We need to fix these problems.
+	assert(dl0d !=NULL);    //crash if it's null. We need to fix these problems.
 
 	diag_os_lock(&l2internal.connlist_mtx);
 
@@ -304,17 +298,17 @@ diag_l2_close(struct diag_l0_device *dl0d) {
 	LL_FOREACH(l2internal.dl2conn_list, d_l2_conn) {
 		if (d_l2_conn->diag_link->l2_dl0d == dl0d) {
 			fprintf(stderr, FLFMT "Not closing dl0d: used by dl2conn %p!\n", FL,
-				(void *) d_l2_conn);
+			        (void *) d_l2_conn);
 			diag_os_unlock(&l2internal.connlist_mtx);
-			return diag_iseterr(DIAG_ERR_GENERAL);	//there's still a dl2conn using it !
+			return diag_iseterr(DIAG_ERR_GENERAL);  //there's still a dl2conn using it !
 		}
 	}
 
 	while ((dl2l = diag_l2_findlink(dl0d)) != NULL) {
 		/* can't just "LL_FOREACH" since we're removing stuff from the list as we go */
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
-			"\tclosing dl2link %p.\n", (void *) dl2l);
-		diag_l2_closelink(dl2l);	//closelink calls diag_l1_close() as required
+		          "\tclosing dl2link %p.\n", (void *) dl2l);
+		diag_l2_closelink(dl2l);        //closelink calls diag_l1_close() as required
 	}
 
 	diag_os_unlock(&l2internal.connlist_mtx);
@@ -329,10 +323,9 @@ diag_l2_close(struct diag_l0_device *dl0d) {
  * we just pass along the flags arg straight to the proto_startcomm()
  * L2protocol : matched with ->diag_l2_protocol constants
  */
-struct diag_l2_conn *
-diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_type flags,
-	unsigned int bitrate, target_type target, source_type source) {
-	struct diag_l2_conn	*d_l2_conn;
+struct diag_l2_conn *diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_type flags,
+                                                 unsigned int bitrate, target_type target, source_type source) {
+	struct diag_l2_conn     *d_l2_conn;
 	const struct diag_l2_proto *dl2p;
 
 	struct diag_l2_link *dl2l;
@@ -341,10 +334,10 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	assert(dl0d!=NULL);
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "_startCommunications dl0d=%p L2proto %d flags=0x%X "
-		"%ubps target=0x%X src=0x%X\n",
-		FL, (void *)dl0d, L2protocol, flags, bitrate,
-		target & 0xff, source & 0xff);
+	          FLFMT "_startCommunications dl0d=%p L2proto %d flags=0x%X "
+	          "%ubps target=0x%X src=0x%X\n",
+	          FL, (void *)dl0d, L2protocol, flags, bitrate,
+	          target & 0xff, source & 0xff);
 
 	/* there must be a dl2l with the desired dl0d. */
 	dl2l = diag_l2_findlink(dl0d);
@@ -391,16 +384,16 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 
 	if (d_l2_conn->l2proto == NULL) {
 		fprintf(stderr,
-			FLFMT "Protocol %d not installed.\n", FL, L2protocol);
+		        FLFMT "Protocol %d not installed.\n", FL, L2protocol);
 		free(d_l2_conn);
 		diag_os_unlock(&l2internal.connlist_mtx);
 		return diag_pseterr(DIAG_ERR_GENERAL);
 	}
 
 
-	d_l2_conn->diag_l2_type = flags ;
-	d_l2_conn->diag_l2_srcaddr = source ;
-	d_l2_conn->diag_l2_destaddr = target ;
+	d_l2_conn->diag_l2_type = flags;
+	d_l2_conn->diag_l2_srcaddr = source;
+	d_l2_conn->diag_l2_destaddr = target;
 
 	/*
 	 * We are going to assume that the ISO default timing values
@@ -417,19 +410,19 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	d_l2_conn->diag_l2_p4min = ISO_14230_TIM_MIN_P4;
 	d_l2_conn->diag_l2_p4max = ISO_14230_TIM_MAX_P4;
 
-	d_l2_conn->tinterval = (ISO_14230_TIM_MAX_P3 * 2/3);	//default keepalive interval.
+	d_l2_conn->tinterval = (ISO_14230_TIM_MAX_P3 * 2/3);    //default keepalive interval.
 
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSED;
 
 	/* Now do protocol version of StartCommunications */
 
 	rv = d_l2_conn->l2proto->diag_l2_proto_startcomms(d_l2_conn,
-	flags, bitrate, target, source);
+	                                                  flags, bitrate, target, source);
 
 	if (rv < 0) {
 		/* Something went wrong */
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			FLFMT "protocol startcomms returned %d\n", FL, rv);
+		          FLFMT "protocol startcomms returned %d\n", FL, rv);
 
 		free(d_l2_conn);
 		diag_os_unlock(&l2internal.connlist_mtx);
@@ -449,8 +442,8 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_OPEN;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_StartComms returns %p\n",
-		FL, (void *)d_l2_conn);
+	          FLFMT "diag_l2_StartComms returns %p\n",
+	          FL, (void *)d_l2_conn);
 
 	diag_os_unlock(&l2internal.connlist_mtx);
 	return d_l2_conn;
@@ -463,8 +456,7 @@ diag_l2_StartCommunications(struct diag_l0_device *dl0d, int L2protocol, flag_ty
  * this also free()s d_l2_conn (alloced in startcomm)
  * and removes it from l2internal.dl2conn_list
  */
-int
-diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn) {
+int diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn) {
 	assert(d_l2_conn != NULL);
 
 	d_l2_conn->diag_l2_state = DIAG_L2_STATE_CLOSING;
@@ -499,13 +491,12 @@ diag_l2_StopCommunications(struct diag_l2_conn *d_l2_conn) {
  * calls the appropriate l2_proto_send()
  * and updates the timestamps
  */
-int
-diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
+int diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_send %p msg %p msglen %u called\n",
-		FL, (void *)d_l2_conn, (void *)msg, msg->len);
+	          FLFMT "diag_l2_send %p msg %p msglen %u called\n",
+	          FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	/* Call protocol specific send routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_send(d_l2_conn, msg);
@@ -516,7 +507,7 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	}
 
 
-	return rv? diag_ifwderr(rv):0 ;
+	return rv? diag_ifwderr(rv):0;
 }
 
 /*
@@ -524,25 +515,24 @@ diag_l2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
  * that message or an error indicator
  * This is synchronous and sleeps and is meant too.
  */
-struct diag_msg *
-diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval) {
+struct diag_msg *diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval) {
 	struct diag_msg *rxmsg;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "_request dl2c=%p msg=%p called\n",
-		FL, (void *)d_l2_conn, (void *)msg);
+	          FLFMT "_request dl2c=%p msg=%p called\n",
+	          FL, (void *)d_l2_conn, (void *)msg);
 
 	/* Call protocol specific send routine */
 	rxmsg = d_l2_conn->l2proto->diag_l2_proto_request(d_l2_conn, msg, errval);
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "_request returns %p, err %d\n",
-		FL, (void *)rxmsg, *errval);
+	          FLFMT "_request returns %p, err %d\n",
+	          FL, (void *)rxmsg, *errval);
 
 	if (rxmsg==NULL) {
 		return diag_pfwderr(*errval);
 	}
-		//update timers
+	//update timers
 	d_l2_conn->tlast = diag_os_getms();
 
 	return rxmsg;
@@ -558,14 +548,13 @@ diag_l2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errva
  *
  * Timeout is in ms
  */
-int
-diag_l2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
+int diag_l2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+                 void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
 	int rv;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_recv %p timeout %u called\n",
-		FL, (void *)d_l2_conn, timeout);
+	          FLFMT "diag_l2_recv %p timeout %u called\n",
+	          FL, (void *)d_l2_conn, timeout);
 
 	/* Call protocol specific recv routine */
 	rv = d_l2_conn->l2proto->diag_l2_proto_recv(d_l2_conn, timeout, callback, handle);
@@ -575,7 +564,7 @@ diag_l2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 		d_l2_conn->tlast = diag_os_getms();
 	} else {
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-			FLFMT "diag_l2_recv returns %d\n", FL, rv);
+		          FLFMT "diag_l2_recv returns %d\n", FL, rv);
 	}
 
 	return rv;
@@ -593,12 +582,12 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data) 
 	struct diag_l2_link *dl2l;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_ioctl %p cmd 0x%X\n",
-		FL, (void *)d_l2_conn, cmd);
+	          FLFMT "diag_l2_ioctl %p cmd 0x%X\n",
+	          FL, (void *)d_l2_conn, cmd);
 
 
 	dl2l = d_l2_conn->diag_link;
-	dl0d = dl2l->l2_dl0d ;
+	dl0d = dl2l->l2_dl0d;
 
 	switch (cmd) {
 	case DIAG_IOCTL_GET_L1_TYPE:
@@ -635,12 +624,12 @@ int diag_l2_ioctl(struct diag_l2_conn *d_l2_conn, unsigned int cmd, void *data) 
 		rv = diag_l1_ioctl(dl0d, cmd, data);
 		break;
 	case DIAG_IOCTL_INITBUS:
-		//fall-through to L1
+	//fall-through to L1
 	default:
 		/* Not implemented by L2 : forward to L1 */
 		rv = diag_l1_ioctl(dl0d, cmd, data);
 		break;
 	}
 
-	return rv? diag_ifwderr(rv):0 ;
+	return rv? diag_ifwderr(rv):0;
 }

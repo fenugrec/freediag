@@ -47,11 +47,11 @@
 const char *progname;
 const char projname[]=PROJECT_NAME;
 
-int diag_cli_debug;	//debug level
+int diag_cli_debug;     //debug level
 
-FILE		*global_logfp;		/* Monitor log output file pointer */
+FILE            *global_logfp;          /* Monitor log output file pointer */
 unsigned long global_log_tstart;    /* timestamp datum (in ms) of beginning of log */
-#define LOG_FORMAT	"FREEDIAG log format 0.2"
+#define LOG_FORMAT      "FREEDIAG log format 0.2"
 
 
 //ugly, global data. Could be struct-ed together eventually
@@ -77,39 +77,39 @@ static int cmd_rem(int argc, char **argv);
 /* this table is appended to the "extra" cmdtable to construct the whole root cmd table */
 static const struct cmd_tbl_entry basic_cmd_table[] = {
 	{ "log", "log <filename>", "Log monitor data to <filename>",
-		cmd_log, CLI_CMD_FILEARG, NULL},
+	  cmd_log, CLI_CMD_FILEARG, NULL},
 	{ "stoplog", "stoplog", "Stop logging", cmd_stoplog, 0, NULL},
 
 	{ "play", "play filename", "Play back data from <filename>",
-		cmd_play, CLI_CMD_HIDDEN | CLI_CMD_FILEARG, NULL},
+	  cmd_play, CLI_CMD_HIDDEN | CLI_CMD_FILEARG, NULL},
 
 	{ "set", "set <parameter value>",
-		"Sets/displays parameters, \"set help\" for more info", NULL,
-		0, set_cmd_table},
+	  "Sets/displays parameters, \"set help\" for more info", NULL,
+	  0, set_cmd_table},
 
 	{ "test", "test <command [params]>",
-		"Perform various tests, \"test help\" for more info", NULL,
-		0, test_cmd_table},
+	  "Perform various tests, \"test help\" for more info", NULL,
+	  0, test_cmd_table},
 
 	{ "diag", "diag <command [params]>",
-		"Extended diagnostic functions, \"diag help\" for more info", NULL,
-		0, diag_cmd_table},
+	  "Extended diagnostic functions, \"diag help\" for more info", NULL,
+	  0, diag_cmd_table},
 
 	{ "vw", "vw <command [params]",
-		"VW diagnostic protocol functions, \"vw help\" for more info", NULL,
-		0, vag_cmd_table},
+	  "VW diagnostic protocol functions, \"vw help\" for more info", NULL,
+	  0, vag_cmd_table},
 
 	{ "850", "850 <command [params]>",
-		"'96-'98 Volvo 850/S70/V70/etc functions, \"850 help\" for more info", NULL,
-		0, v850_cmd_table},
+	  "'96-'98 Volvo 850/S70/V70/etc functions, \"850 help\" for more info", NULL,
+	  0, v850_cmd_table},
 
 	{ "dyno", "dyno <command [params]",
-		"Dyno functions, \"dyno help\" for more info", NULL,
-		0, dyno_cmd_table},
+	  "Dyno functions, \"dyno help\" for more info", NULL,
+	  0, dyno_cmd_table},
 
 	{ "debug", "debug [parameter = debug]",
-		"Sets/displays debug data and flags, \"debug help\" for available commands", NULL,
-		0, debug_cmd_table},
+	  "Sets/displays debug data and flags, \"debug help\" for available commands", NULL,
+	  0, debug_cmd_table},
 
 	{ "date", "date", "Prints date & time", cmd_date, CLI_CMD_HIDDEN, NULL},
 	{ "#", "#", "Does nothing", cmd_rem, CLI_CMD_HIDDEN, NULL},
@@ -128,8 +128,7 @@ static int cmd_help(int argc, char **argv) {
 	return help_common(argc, argv, combined_table);
 }
 
-static int
-cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
+static int cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
 	struct tm *tm;
 	time_t now;
 	char str[256];
@@ -138,8 +137,7 @@ cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
 	tm = localtime(&now);
 	if (strftime(str, sizeof(str), "%a %b %d %H:%M:%S %Y", tm) == 0) {
 		printf("unable to format timestamp");
-	}
-	else {
+	}else {
 		printf("%s", str);
 	}
 
@@ -148,14 +146,12 @@ cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
 }
 
 
-static int
-cmd_rem(UNUSED(int argc), UNUSED(char **argv)) {
+static int cmd_rem(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
 
-void
-log_timestamp(const char *prefix) {
+void log_timestamp(const char *prefix) {
 	unsigned long tv;
 
 	tv = diag_os_getms() - global_log_tstart;
@@ -182,8 +178,7 @@ static void log_command(int argc, char **argv) {
 	fprintf(global_logfp, "\n");
 }
 
-static int
-cmd_log(int argc, char **argv) {
+static int cmd_log(int argc, char **argv) {
 	char autofilename[20]="";
 	char *file;
 	time_t now;
@@ -198,7 +193,7 @@ cmd_log(int argc, char **argv) {
 
 	/* Turn on logging */
 	if (argc > 1) {
-			file = argv[1];	//if a file name was specified, use that
+		file = argv[1];         //if a file name was specified, use that
 	} else {
 		//else, generate an auto log file
 		for (i = 0; i < 100; i++) {
@@ -217,7 +212,7 @@ cmd_log(int argc, char **argv) {
 		}
 	}
 
-	global_logfp = fopen(file, "a");	//add to end of log or create file
+	global_logfp = fopen(file, "a");        //add to end of log or create file
 
 	if (global_logfp == NULL) {
 		printf("Failed to create log file %s\n", file);
@@ -226,14 +221,13 @@ cmd_log(int argc, char **argv) {
 
 	now = time(NULL);
 	//reset timestamp reference:
-    global_log_tstart=diag_os_getms();
+	global_log_tstart=diag_os_getms();
 
 	fprintf(global_logfp, "%s\n", LOG_FORMAT);
 	log_timestamp("#");
 	if (strftime(timestr, sizeof(timestr), "%a %b %d %H:%M:%S %Y", localtime(&now)) == 0) {
 		fprintf(global_logfp, "unable to format timestamp");
-	}
-	else {
+	}else {
 		fprintf(global_logfp, "logging started at %s", timestr);
 	}
 	printf("Logging to file %s\n", file);
@@ -241,8 +235,7 @@ cmd_log(int argc, char **argv) {
 }
 
 
-static int
-cmd_stoplog(UNUSED(int argc), UNUSED(char **argv)) {
+static int cmd_stoplog(UNUSED(int argc), UNUSED(char **argv)) {
 	/* Turn off logging */
 	if (global_logfp == NULL) {
 		printf("Logging was not on\n");
@@ -255,8 +248,7 @@ cmd_stoplog(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
-static int
-cmd_play(int argc, char **argv) {
+static int cmd_play(int argc, char **argv) {
 	FILE *fp;
 	//int linenr;
 
@@ -284,15 +276,15 @@ cmd_play(int argc, char **argv) {
 		printf("DATE:\t+/- to step, S/E to goto start or end, Q to quit\n");
 		ch = getc(stdin);
 		switch (ch) {
-			case '-':
-			case '+':
-			case 'E':
-			case 'e':
-			case 'S':
-			case 's':
-			case 'Q':
-			case 'q':
-				break;
+		case '-':
+		case '+':
+		case 'E':
+		case 'e':
+		case 'S':
+		case 's':
+		case 'Q':
+		case 'q':
+			break;
 		}
 
 	}
@@ -416,7 +408,7 @@ int htoi(char *buf) {
 	/* Hex text to int */
 	int rv = 0;
 	int base = 10;
-	int sign=0;	//1 = positive; 0 =neg
+	int sign=0;     //1 = positive; 0 =neg
 
 	if (*buf != '-') {
 		//change sign
@@ -457,7 +449,7 @@ int htoi(char *buf) {
 
 		buf++;
 	}
-	return sign? rv:-rv ;
+	return sign? rv:-rv;
 }
 
 /*

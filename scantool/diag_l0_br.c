@@ -26,7 +26,7 @@
  *	support ISO14230 (KWP2000). In ISO9141-2 mode, only supports the
  *	ISO9141-2 address (0x33h)
  *
-  *
+ *
  * Thank you to B. Roadman for donation of an interface to the prject
  *
  */
@@ -51,60 +51,59 @@ extern const struct diag_l0 diag_l0_br;
  * States
  */
 enum BR_STATE {BR_STATE_CLOSED, BR_STATE_KWP_SENDKB1,
-	BR_STATE_KWP_SENDKB2, BR_STATE_KWP_FASTINIT,
-	BR_STATE_OPEN };
+	       BR_STATE_KWP_SENDKB2, BR_STATE_KWP_FASTINIT,
+	       BR_STATE_OPEN };
 
 struct br_device {
 	int protocol;
-	int dev_features;	/* Device features */
-	enum BR_STATE dev_state;		/* State for 5 baud startup stuff */
-	uint8_t dev_kb1;	/* KB1/KB2 for 5 baud startup stuff */
+	int dev_features;       /* Device features */
+	enum BR_STATE dev_state;                /* State for 5 baud startup stuff */
+	uint8_t dev_kb1;        /* KB1/KB2 for 5 baud startup stuff */
 	uint8_t dev_kb2;
 
 
-	uint8_t	dev_rxbuf[MAXRBUF];	/* Receive buffer XXX need to be this big? */
-	int		dev_rxlen;	/* Length of data in buffer */
-	int		dev_rdoffset;	/* Offset to read from to */
+	uint8_t dev_rxbuf[MAXRBUF];     /* Receive buffer XXX need to be this big? */
+	int dev_rxlen;                  /* Length of data in buffer */
+	int dev_rdoffset;               /* Offset to read from to */
 
-	uint8_t	dev_txbuf[16];	/* Copy of last sent frame */
-	unsigned int		dev_txlen;	/* And length */
+	uint8_t dev_txbuf[16];  /* Copy of last sent frame */
+	unsigned int dev_txlen;                 /* And length */
 
-	uint8_t	dev_framenr;	/* Frame nr for vpw/pwm */
+	uint8_t dev_framenr;    /* Frame nr for vpw/pwm */
 
-	struct	cfgi port;
-	ttyp *tty_int;			/** handle for tty stuff */
+	struct  cfgi port;
+	ttyp *tty_int;                  /** handle for tty stuff */
 };
 
 /*
  * Device features (depends on s/w version on the BR-1 device)
  */
-#define BR_FEATURE_2BYTE	0x01	/* 2 byte initialisation responses */
-#define BR_FEATURE_SETADDR	0x02	/* User can specifiy ISO address */
-#define BR_FEATURE_FASTINIT	0x04	/* ISO14230 fast init supported */
+#define BR_FEATURE_2BYTE        0x01    /* 2 byte initialisation responses */
+#define BR_FEATURE_SETADDR      0x02    /* User can specifiy ISO address */
+#define BR_FEATURE_FASTINIT     0x04    /* ISO14230 fast init supported */
 
 
 static int br_getmsg(struct diag_l0_device *dl0d,
-	uint8_t *dp, unsigned int timeout);
+                     uint8_t *dp, unsigned int timeout);
 
 static int br_initialise(struct diag_l0_device *dl0d,
-	uint8_t type, uint8_t addr);
+                         uint8_t type, uint8_t addr);
 
 static int br_writemsg(struct diag_l0_device *dl0d,
-	uint8_t type, const void *dp, size_t txlen);
+                       uint8_t type, const void *dp, size_t txlen);
 
 static void br_close(struct diag_l0_device *dl0d);
 
 /* Types for writemsg - corresponds to top bit values for the control byte */
-#define BR_WRTYPE_DATA	0x00
-#define BR_WRTYPE_INIT	0x40
+#define BR_WRTYPE_DATA  0x00
+#define BR_WRTYPE_INIT  0x40
 
 /*
  * Init must be callable even if no physical interface is
  * present, it's just here for the code to initialise its
  * variables, etc.
  */
-static int
-br_init(void) {
+static int br_init(void) {
 	/* Global init flag */
 	static int br_initdone=0;
 
@@ -117,8 +116,7 @@ br_init(void) {
 	return 0;
 }
 
-static int
-br_new(struct diag_l0_device *dl0d) {
+static int br_new(struct diag_l0_device *dl0d) {
 	struct br_device *dev;
 	int rv;
 
@@ -167,8 +165,7 @@ static struct cfgi *br_getcfg(struct diag_l0_device *dl0d) {
 	return &dev->port;
 }
 
-static void
-br_close(struct diag_l0_device *dl0d) {
+static void br_close(struct diag_l0_device *dl0d) {
 	if (!dl0d) {
 		return;
 	}
@@ -176,7 +173,7 @@ br_close(struct diag_l0_device *dl0d) {
 	struct br_device *dev = dl0d->l0_int;
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
-		FLFMT "link %p closing\n", FL, (void *)dl0d);
+	          FLFMT "link %p closing\n", FL, (void *)dl0d);
 
 	diag_tty_close(dev->tty_int);
 	dev->tty_int = NULL;
@@ -185,8 +182,7 @@ br_close(struct diag_l0_device *dl0d) {
 	return;
 }
 
-static int
-br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
+static int br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 	struct br_device *dev = dl0d->l0_int;
 
 	if (txlen == 0) {
@@ -208,7 +204,7 @@ br_write(struct diag_l0_device *dl0d, const void *dp, size_t txlen) {
 static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	struct br_device *dev = dl0d->l0_int;
 	int rv;
-	uint8_t buf[4];	/* Was MAXRBUF. We only use 1! */
+	uint8_t buf[4]; /* Was MAXRBUF. We only use 1! */
 	struct diag_serial_settings set;
 
 	br_init();
@@ -227,7 +223,7 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "features 0x%X\n", FL, dev->dev_features);
+	          FLFMT "features 0x%X\n", FL, dev->dev_features);
 
 	/* Set serial line to 19200 baud , 8N1 */
 	set.speed = 19200;
@@ -241,7 +237,7 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	diag_tty_iflush(dev->tty_int);	/* Flush unread input data */
+	diag_tty_iflush(dev->tty_int);  /* Flush unread input data */
 
 	/*
 	 * Initialise the BR1 interface by sending the CHIP CONNECT
@@ -250,8 +246,8 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	buf[0] = 0x20;
 	if (br_write(dl0d, buf, 1)) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			FLFMT "CHIP CONNECT write failed link %p\n",
-			FL, (void *)dl0d);
+		          FLFMT "CHIP CONNECT write failed link %p\n",
+		          FL, (void *)dl0d);
 
 		br_close(dl0d);
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
@@ -259,16 +255,16 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	/* And expect 0xff as a response */
 	if (diag_tty_read(dev->tty_int, buf, 1, 100) != 1) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			FLFMT "CHIP CONNECT read failed link %p\n",
-			FL, (void *)dl0d);
+		          FLFMT "CHIP CONNECT read failed link %p\n",
+		          FL, (void *)dl0d);
 
 		br_close(dl0d);
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	if (buf[0] != 0xff) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			FLFMT "CHIP CONNECT rcvd 0x%X != 0xff, link %p\n",
-			FL, buf[0], (void *)dl0d);
+		          FLFMT "CHIP CONNECT rcvd 0x%X != 0xff, link %p\n",
+		          FL, buf[0], (void *)dl0d);
 
 		br_close(dl0d);
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
@@ -294,8 +290,8 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "open succeeded link %p features 0x%X\n",
-		FL, (void *)dl0d, dev->dev_features);
+	          FLFMT "open succeeded link %p features 0x%X\n",
+	          FL, (void *)dl0d, dev->dev_features);
 
 	dl0d->opened = 1;
 	return 0;
@@ -306,8 +302,7 @@ static int br_open(struct diag_l0_device *dl0d, int iProtocol) {
  * Do BR interface protocol initialisation,
  * returns -1 on error or the keybyte value
  */
-static int
-br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr) {
+static int br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr) {
 	struct br_device *dev =
 		(struct br_device *)dl0d->l0_int;
 
@@ -327,7 +322,7 @@ br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr) {
 	txbuf[2] = addr;
 
 	if (type == 0x02) {
-		timeout = 6000;		/* 5 baud init is slow */
+		timeout = 6000;         /* 5 baud init is slow */
 		if (dev->dev_features & BR_FEATURE_SETADDR) {
 			txbuf[0] = 0x42;
 			rv = br_write(dl0d, txbuf, 3);
@@ -383,15 +378,14 @@ br_initialise(struct diag_l0_device *dl0d, uint8_t type, uint8_t addr) {
  * a 1 byte message (i.e length byte of 01h followed by one of the
  * keybytes
  */
-static int
-br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
+static int br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	struct br_device *dev =
 		(struct br_device *)dl0d->l0_int;
 	/*
 	 * Slow init
 	 * Build message into send buffer, and calculate checksum
 	 */
-	uint8_t buf[16];	//limited by br_writemsg
+	uint8_t buf[16];        //limited by br_writemsg
 	int rv;
 
 	buf[0] = 0x02;
@@ -415,7 +409,7 @@ br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	/*
 	 * Now set the keybytes from what weve sent
 	 */
-	if (rv == 1) {	/* 1 byte response, old type interface */
+	if (rv == 1) {  /* 1 byte response, old type interface */
 		dev->dev_kb1 = buf[0];
 		dev->dev_kb2 = buf[0];
 	} else {
@@ -437,16 +431,15 @@ br_slowinit( struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
  * We do this by noting a wakeup needs to be done for the next packet for
  * fastinit, and doing slowinit now
  */
-static int
-br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
+static int br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	int rv = 0;
 	struct br_device *dev;
 
 	dev = (struct br_device *)dl0d->l0_int;
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-		FLFMT "device link %p info %p initbus type %d proto %d\n",
-		FL, (void *)dl0d, (void *)dev, in->type, dev ? dev->protocol : -1);
+	          FLFMT "device link %p info %p initbus type %d proto %d\n",
+	          FL, (void *)dl0d, (void *)dev, in->type, dev ? dev->protocol : -1);
 
 	if (!dev) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -472,7 +465,7 @@ br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 		rv = DIAG_ERR_INIT_NOTSUPP;
 		break;
 	}
-	return rv? diag_iseterr(rv):0 ;
+	return rv? diag_iseterr(rv):0;
 }
 
 /*
@@ -483,15 +476,14 @@ br_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
  * Returns length of received message, or TIMEOUT error, or BUSERROR
  * if the BR interface tells us theres a congested bus
  */
-static int
-br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
+static int br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 	uint8_t firstbyte;
 	size_t readlen;
 	int rv;
 	struct br_device *dev = dl0d->l0_int;
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-			FLFMT "link %p getmsg timeout %u\n", FL, (void *)dl0d, timeout);
+	          FLFMT "link %p getmsg timeout %u\n", FL, (void *)dl0d, timeout);
 
 	/*
 	 * First read the 1st byte, using the supplied timeout
@@ -499,7 +491,7 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 	rv = diag_tty_read(dev->tty_int, &firstbyte, 1, timeout);
 	if (rv != 1) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-			FLFMT "link %p getmsg 1st byte timed out\n", FL, (void *)dl0d);
+		          FLFMT "link %p getmsg 1st byte timed out\n", FL, (void *)dl0d);
 
 		return diag_ifwderr(rv);
 	}
@@ -521,8 +513,8 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
 	}
 
 	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V, dp, readlen,
-			FLFMT "link %p getmsg read ctl 0x%X data:",
-			FL, (void *)dl0d, firstbyte & 0xff);
+	              FLFMT "link %p getmsg read ctl 0x%X data:",
+	              FL, (void *)dl0d, firstbyte & 0xff);
 
 	/*
 	 * Message read complete, check error flag
@@ -553,17 +545,16 @@ br_getmsg(struct diag_l0_device *dl0d, uint8_t *dp, unsigned int timeout) {
  * Returns 0 on success, <0 on error
  * txlen must be <= 15
  */
-static int
-br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
-		 const void *dp, size_t txlen) {
+static int br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
+                       const void *dp, size_t txlen) {
 	struct br_device *dev =
 		(struct br_device *)dl0d->l0_int;
 	int rv, j1850mode;
 	uint8_t outb;
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "device %p link %p sending to BR1\n",
-		FL, (void *)dev, (void *)dl0d);
+	          FLFMT "device %p link %p sending to BR1\n",
+	          FL, (void *)dev, (void *)dl0d);
 
 
 	if (txlen > 15) {
@@ -571,7 +562,7 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 	}
 
 	if ((dev->protocol == DIAG_L1_J1850_VPW) ||
-		(dev->protocol == DIAG_L1_J1850_PWM)) {
+	    (dev->protocol == DIAG_L1_J1850_PWM)) {
 		j1850mode = 1;
 		outb = (uint8_t) txlen + 1; /* We also send a frame number */
 	} else {
@@ -579,7 +570,7 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 		outb = (uint8_t) txlen;
 	}
 
-	outb |= type;	/* Set the type bits on the control byte */
+	outb |= type;   /* Set the type bits on the control byte */
 
 	/* Send the length byte */
 	rv = br_write(dl0d, &outb, 1);
@@ -589,8 +580,8 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 
 	/* And now the data */
 	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, dp, txlen,
-		FLFMT "device %p writing data: 0x%X",
-		FL, (void *)dev, (unsigned) outb);
+	              FLFMT "device %p writing data: 0x%X",
+	              FL, (void *)dev, (unsigned) outb);
 
 	rv = br_write(dl0d, dp, txlen);
 	if (rv < 0) {
@@ -604,8 +595,8 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
 	 */
 	if (j1850mode) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-				FLFMT "device %p writing data: 0x%X\n",
-				FL, (void *)dev, (unsigned) dev->dev_framenr & 0xff);
+		          FLFMT "device %p writing data: 0x%X\n",
+		          FL, (void *)dev, (unsigned) dev->dev_framenr & 0xff);
 
 		rv = br_write(dl0d, &dev->dev_framenr, 1);
 		if (rv < 0) {
@@ -624,9 +615,8 @@ br_writemsg(struct diag_l0_device *dl0d, uint8_t type,
  * This routine will do a fastinit if needed, but all 5 baud inits
  * will have been done by the slowinit() code
  */
-static int
-br_send(struct diag_l0_device *dl0d,
-const void *data, size_t len) {
+static int br_send(struct diag_l0_device *dl0d,
+                   const void *data, size_t len) {
 	int rv = 0;
 
 	struct br_device *dev;
@@ -638,8 +628,8 @@ const void *data, size_t len) {
 	}
 
 	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, data, len,
-			FLFMT "device link %p send %ld bytes protocol %d state %d: ",
-			FL, (void *)dl0d, (long)len, dev->protocol, dev->dev_state);
+	              FLFMT "device link %p send %ld bytes protocol %d state %d: ",
+	              FL, (void *)dl0d, (long)len, dev->protocol, dev->dev_state);
 
 	/*
 	 * Special handling for fastinit, we need to collect up the
@@ -663,7 +653,7 @@ const void *data, size_t len) {
 			outbuf[0] = 0x03;
 			memcpy(&outbuf[1], dev->dev_txbuf, 5);
 			rv = br_writemsg(dl0d, BR_WRTYPE_INIT,
-				outbuf, 6);
+			                 outbuf, 6);
 			/* Stays in FASTINIT state until first read */
 		}
 	} else {
@@ -694,9 +684,8 @@ const void *data, size_t len) {
  * <control_byte><data ..>
  * If control byte is < 16, it's a length byte, else it's a error descriptor
  */
-static int
-br_recv(struct diag_l0_device *dl0d,
-void *data, size_t len, unsigned int timeout) {
+static int br_recv(struct diag_l0_device *dl0d,
+                   void *data, size_t len, unsigned int timeout) {
 	int xferd, rv, retrycnt;
 	uint8_t *pdata = (uint8_t *)data;
 
@@ -708,46 +697,46 @@ void *data, size_t len, unsigned int timeout) {
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT
-		"link %p recv upto %ld bytes timeout %u, rxlen %d "
-		"offset %d framenr %d protocol %d state %d\n",
-		FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
-		dev->dev_rdoffset, dev->dev_framenr, dev->protocol,
-		dev->dev_state);
+	          FLFMT
+	          "link %p recv upto %ld bytes timeout %u, rxlen %d "
+	          "offset %d framenr %d protocol %d state %d\n",
+	          FL, (void *)dl0d, (long)len, timeout, dev->dev_rxlen,
+	          dev->dev_rdoffset, dev->dev_framenr, dev->protocol,
+	          dev->dev_state);
 
 	switch (dev->dev_state) {
-		case BR_STATE_KWP_FASTINIT:
-			/* Extend timeouts */
-			timeout = 300;
+	case BR_STATE_KWP_FASTINIT:
+		/* Extend timeouts */
+		timeout = 300;
+		dev->dev_state = BR_STATE_OPEN;
+		break;
+	case BR_STATE_KWP_SENDKB1:
+		if (len >= 2) {
+			pdata[0] = dev->dev_kb1;
+			pdata[1] = dev->dev_kb2;
 			dev->dev_state = BR_STATE_OPEN;
-			break;
-		case BR_STATE_KWP_SENDKB1:
-			if (len >= 2) {
-				pdata[0] = dev->dev_kb1;
-				pdata[1] = dev->dev_kb2;
-				dev->dev_state = BR_STATE_OPEN;
-				return 2;
-			} else if (len == 1) {
-				*pdata = dev->dev_kb1;
-				dev->dev_state = BR_STATE_KWP_SENDKB2;
-				return 1;
-			}
-			return 0;	/* Strange, user asked for 0 bytes */
-			break;
-		case BR_STATE_KWP_SENDKB2:
-			if (len >= 1) {
-				*pdata = dev->dev_kb2;
-				dev->dev_state = BR_STATE_OPEN;
-				return 1;
-			}
-			return 0;	/* Strange, user asked for 0 bytes */
-			break;
-		default:
-			//So BR_STATE_CLOSED and BR_STATE_OPEN.
-			// I don't know what's supposed to happen here, so
-			fprintf(stderr, FLFMT "Warning : landed in a strange place. Report this please !\n", FL);
-			return 0;
-			break;
+			return 2;
+		} else if (len == 1) {
+			*pdata = dev->dev_kb1;
+			dev->dev_state = BR_STATE_KWP_SENDKB2;
+			return 1;
+		}
+		return 0;               /* Strange, user asked for 0 bytes */
+		break;
+	case BR_STATE_KWP_SENDKB2:
+		if (len >= 1) {
+			*pdata = dev->dev_kb2;
+			dev->dev_state = BR_STATE_OPEN;
+			return 1;
+		}
+		return 0;               /* Strange, user asked for 0 bytes */
+		break;
+	default:
+		//So BR_STATE_CLOSED and BR_STATE_OPEN.
+		// I don't know what's supposed to happen here, so
+		fprintf(stderr, FLFMT "Warning : landed in a strange place. Report this please !\n", FL);
+		return 0;
+		break;
 	}
 
 	switch (dev->protocol) {
@@ -780,8 +769,8 @@ void *data, size_t len, unsigned int timeout) {
 			 */
 			if (dev->dev_framenr > 1) {
 				rv = br_writemsg(dl0d,
-					BR_WRTYPE_DATA,
-					dev->dev_txbuf, (size_t)dev->dev_txlen);
+				                 BR_WRTYPE_DATA,
+				                 dev->dev_txbuf, (size_t)dev->dev_txlen);
 				if (rv < 0) {
 					return rv;
 				}
@@ -797,14 +786,14 @@ void *data, size_t len, unsigned int timeout) {
 					break;
 				}
 				if ((rv != DIAG_ERR_BUSERROR) ||
-					(retrycnt >= 30)) {
+				    (retrycnt >= 30)) {
 					dev->dev_rxlen = 0;
 					return rv;
 				}
 				/* Need to resend and try again */
 				rv = br_writemsg(dl0d,
-					BR_WRTYPE_DATA, dev->dev_txbuf,
-					(size_t)dev->dev_txlen);
+				                 BR_WRTYPE_DATA, dev->dev_txbuf,
+				                 (size_t)dev->dev_txlen);
 				if (rv < 0) {
 					return rv;
 				}
@@ -829,15 +818,14 @@ void *data, size_t len, unsigned int timeout) {
 
 	/* OK, got whole message */
 	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		data, (size_t) xferd,
-		FLFMT "link %p received from BR1: ", FL, (void *)dl0d);
+	              data, (size_t) xferd,
+	              FLFMT "link %p received from BR1: ", FL, (void *)dl0d);
 
 	return xferd;
 }
 
 
-static uint32_t
-br_getflags(struct diag_l0_device *dl0d) {
+static uint32_t br_getflags(struct diag_l0_device *dl0d) {
 	/*
 	 * ISO14230/J1850 protocol does L2 framing, ISO9141 is just
 	 * raw, once initialised
@@ -851,21 +839,21 @@ br_getflags(struct diag_l0_device *dl0d) {
 	switch (dev->protocol) {
 	case DIAG_L1_J1850_VPW:
 	case DIAG_L1_J1850_PWM:
-			flags = DIAG_L1_DOESL2FRAME;
-			break;
+		flags = DIAG_L1_DOESL2FRAME;
+		break;
 	case DIAG_L1_ISO9141:
-			flags = DIAG_L1_SLOW;
-			flags |= DIAG_L1_DOESP4WAIT;
-			break;
+		flags = DIAG_L1_SLOW;
+		flags |= DIAG_L1_DOESP4WAIT;
+		break;
 	case DIAG_L1_ISO14230:
-			flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
-			flags |= DIAG_L1_DOESP4WAIT;
-			break;
+		flags = DIAG_L1_SLOW | DIAG_L1_FAST | DIAG_L1_PREFFAST;
+		flags |= DIAG_L1_DOESP4WAIT;
+		break;
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-		FLFMT "getflags link %p proto %d flags 0x%X\n",
-		FL, (void *)dl0d, dev->protocol, flags);
+	          FLFMT "getflags link %p proto %d flags 0x%X\n",
+	          FL, (void *)dl0d, dev->protocol, flags);
 
 	return flags;
 }
@@ -894,7 +882,7 @@ const struct diag_l0 diag_l0_br = {
 	"B. Roadman BR-1 interface",
 	"BR1",
 	DIAG_L1_J1850_VPW | DIAG_L1_J1850_PWM |
-		DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
+	DIAG_L1_ISO9141 | DIAG_L1_ISO14230,
 	br_init,
 	br_new,
 	br_getcfg,
@@ -906,4 +894,3 @@ const struct diag_l0 diag_l0_br = {
 	br_send,
 	br_ioctl
 };
-

@@ -52,8 +52,7 @@
 #include "diag_l2_d2.h"
 
 /* replace a byte's msb with a parity bit */
-static uint8_t
-with_parity(uint8_t c, enum diag_parity eo) {
+static uint8_t with_parity(uint8_t c, enum diag_parity eo) {
 	uint8_t p;
 	int i;
 
@@ -69,8 +68,7 @@ with_parity(uint8_t c, enum diag_parity eo) {
 	return((c&0x7f)|(p&0x80));
 }
 
-static int
-dl2p_d2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
+static int dl2p_d2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 	uint8_t buf[3 + 62 + 1];
 	struct diag_l2_d2 *dp;
@@ -90,21 +88,20 @@ dl2p_d2_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	diag_os_millisleep(d_l2_conn->diag_l2_p3min);
 
 	rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, buf,
-		msg->len + 3, d_l2_conn->diag_l2_p4min);
+	                  msg->len + 3, d_l2_conn->diag_l2_p4min);
 
 	return rv?diag_ifwderr(rv):0;
 }
 
-static int
-dl2p_d2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	void (*callback)(void *handle, struct diag_msg *msg),
-	void *handle) {
+static int dl2p_d2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+                        void (*callback)(void *handle, struct diag_msg *msg),
+                        void *handle) {
 	int rv;
 	uint8_t buf[3 + 62 + 1];
 	struct diag_msg *msg;
 
 	rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, buf,
-		sizeof(buf), timeout + 100);
+	                  sizeof(buf), timeout + 100);
 	if (rv < 0) {
 		return rv;
 	}
@@ -132,15 +129,13 @@ dl2p_d2_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	return 0;
 }
 
-static void
-dl2p_d2_request_callback(void *handle, struct diag_msg *in) {
+static void dl2p_d2_request_callback(void *handle, struct diag_msg *in) {
 	struct diag_msg **out = (struct diag_msg **)handle;
 	*out = diag_dupsinglemsg(in);
 }
 
-static struct diag_msg *
-dl2p_d2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-                int *errval) {
+static struct diag_msg *dl2p_d2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+                                        int *errval) {
 	int rv;
 	struct diag_msg *rmsg = NULL;
 
@@ -164,9 +159,8 @@ dl2p_d2_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	return rmsg;
 }
 
-static int
-dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
-	unsigned int bitrate, target_type target, source_type source) {
+static int dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
+                              unsigned int bitrate, target_type target, source_type source) {
 	struct diag_serial_settings set;
 	struct diag_l2_d2 *dp;
 	int rv;
@@ -192,9 +186,9 @@ dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 
 	if (source != 0x13) {
 		fprintf(stderr,
-			"Warning : Using tester address %02X. Some ECUs "
-			"require tester address to be 13.\n",
-			source);
+		        "Warning : Using tester address %02X. Some ECUs "
+		        "require tester address to be 13.\n",
+		        source);
 	}
 
 	dp->srcaddr = source;
@@ -211,7 +205,7 @@ dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 	set.parflag = diag_par_n;
 
 	if ((rv = diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_SETSPEED,
-				(void *)&set))) {
+	                        (void *)&set))) {
 		goto err;
 	}
 
@@ -247,7 +241,7 @@ dl2p_d2_startcomms(struct diag_l2_conn *d_l2_conn, flag_type flags,
 
 	if ((d_l2_conn->diag_l2_kb1 != 0xd3) || (d_l2_conn->diag_l2_kb2 != 0xb0)) {
 		fprintf(stderr, FLFMT "_startcomms : wrong keybytes %02X%02X, expecting D3B0\n",
-			FL, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
+		        FL, d_l2_conn->diag_l2_kb1, d_l2_conn->diag_l2_kb2);
 		rv = DIAG_ERR_WRONGKB;
 		goto err;
 	}
@@ -260,15 +254,14 @@ err:
 	return diag_iseterr(rv);
 }
 
-static int
-dl2p_d2_stopcomms(struct diag_l2_conn *pX) {
+static int dl2p_d2_stopcomms(struct diag_l2_conn *pX) {
 	struct diag_msg msg = {0};
 	uint8_t data[] = { 0xa0 };
 	int errval = 0;
 	static struct diag_msg *rxmsg;
 
 	msg.len = 1;
-	msg.dest = 0; msg.src = 0;	/* use default addresses */
+	msg.dest = 0; msg.src = 0;      /* use default addresses */
 	msg.data = data;
 
 	rxmsg = dl2p_d2_request(pX, &msg, &errval);
@@ -290,15 +283,14 @@ dl2p_d2_stopcomms(struct diag_l2_conn *pX) {
 	return 0;
 }
 
-static void
-dl2p_d2_timeout(struct diag_l2_conn *d_l2_conn) {
+static void dl2p_d2_timeout(struct diag_l2_conn *d_l2_conn) {
 	struct diag_msg msg = {0};
 	uint8_t data[] = { 0xa1 };
 	int errval = 0;
 	static struct diag_msg *rxmsg;
 
 	msg.len = 1;
-	msg.dest = 0; msg.src = 0;	/* use default addresses */
+	msg.dest = 0; msg.src = 0;      /* use default addresses */
 	msg.data = data;
 
 	rxmsg = dl2p_d2_request(d_l2_conn, &msg, &errval);

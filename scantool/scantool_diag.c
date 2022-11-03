@@ -63,29 +63,29 @@ static int cmd_diag_fastprobe(int argc, char **argv);
 
 const struct cmd_tbl_entry diag_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
-		cmd_diag_help, 0, NULL},
+	  cmd_diag_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
-		cmd_diag_help, CLI_CMD_HIDDEN, NULL},
+	  cmd_diag_help, CLI_CMD_HIDDEN, NULL},
 
 	{ "connect", "connect", "Connect to ECU", cmd_diag_connect, 0, NULL},
 
 	{ "disconnect", "disconnect", "Disconnect from ECU", cmd_diag_disconnect,
-		0, NULL},
+	  0, NULL},
 
 	{ "sendreq", "sendreq [byte0 [byte1 [...]]]", "Send raw data to the ECU and print response",
-		cmd_diag_sendreq, 0, NULL},
+	  cmd_diag_sendreq, 0, NULL},
 	{ "sr", "sendreq [byte0 [byte1 [...]]]", "Send a command to the ECU and print response",
-		cmd_diag_sendreq, CLI_CMD_HIDDEN, NULL},
+	  cmd_diag_sendreq, CLI_CMD_HIDDEN, NULL},
 	{ "read", "read [waittime]",
-		"Receive some data from the ECU waiting waittime seconds",
-		cmd_diag_read, 0, NULL},
+	  "Receive some data from the ECU waiting waittime seconds",
+	  cmd_diag_read, 0, NULL},
 	{ "rx", "read [waittime]", "Receive some data from the ECU",
-		cmd_diag_read, CLI_CMD_HIDDEN, NULL},
+	  cmd_diag_read, CLI_CMD_HIDDEN, NULL},
 
 	{ "addl3", "addl3 [protocol]", "Add (start) a L3 protocol",
-		cmd_diag_addl3, 0, NULL},
+	  cmd_diag_addl3, 0, NULL},
 	{ "reml3", "reml3", "Remove (stop) an L3 protocol",
-		cmd_diag_reml3, 0, NULL},
+	  cmd_diag_reml3, 0, NULL},
 
 	{ "probe", "probe start_addr [stop_addr]", "Scan bus using ISO9141 5 baud init [slow!]", cmd_diag_probe, 0, NULL},
 	{ "fastprobe", "fastprobe start_addr [stop_addr [func]]", "Scan bus using ISO14230 fast init with physical or functional addressing", cmd_diag_fastprobe, 0, NULL},
@@ -93,13 +93,11 @@ const struct cmd_tbl_entry diag_cmd_table[] = {
 	CLI_TBL_END
 };
 
-static int
-cmd_diag_help(int argc, char **argv) {
+static int cmd_diag_help(int argc, char **argv) {
 	return help_common(argc, argv, diag_cmd_table);
 }
 
-static int
-cmd_diag_addl3(int argc, char **argv) {
+static int cmd_diag_addl3(int argc, char **argv) {
 	int i;
 	const char *proto;
 
@@ -142,7 +140,7 @@ cmd_diag_addl3(int argc, char **argv) {
 
 	if (proto == NULL) {
 		printf("No such protocol, use %s ? for list of protocols\n",
-			argv[0]);
+		       argv[0]);
 		return CMD_OK;
 	}
 
@@ -150,7 +148,7 @@ cmd_diag_addl3(int argc, char **argv) {
 	global_l3_conn = diag_l3_start(proto, global_l2_conn);
 
 	if (global_l3_conn !=NULL) {
-		global_state = STATE_L3ADDED ;
+		global_state = STATE_L3ADDED;
 		printf("Done\n");
 	} else {
 		printf("Failed to add L3 protocol\n");
@@ -175,13 +173,13 @@ static int cmd_diag_reml3(UNUSED(int argc), UNUSED(char **argv)) {
 		return CMD_FAILED;
 	}
 
-	global_l3_conn = global_l3_conn->next;	//in case there was more than 1
+	global_l3_conn = global_l3_conn->next;  //in case there was more than 1
 
 	rv=diag_l3_stop(old_dl3c);
 
 	if (global_l3_conn == NULL) {
 		global_state = STATE_CONNECTED; // we probably still have an L2
-						// hanging there
+		                                // hanging there
 	}
 
 	return rv? diag_ifwderr(rv):0;
@@ -191,8 +189,7 @@ static int cmd_diag_reml3(UNUSED(int argc), UNUSED(char **argv)) {
 //cmd_diag_prob_common [startaddr] [stopaddr]
 //This should stop searching at the first succesful init
 //and update the global connection
-static int
-cmd_diag_probe_common(int argc, char **argv, int fastflag) {
+static int cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 	unsigned int start, end, i;
 	int rv;
 	struct diag_l0_device *dl0d = global_dl0d;
@@ -257,13 +254,13 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 	printf("Scanning:\n");
 	for (i=start; i<=end; i++) {
 		printf("\t0x%X ", i);
-		fflush(stdout) ;
+		fflush(stdout);
 
 		if (fastflag) {
 			d_conn = diag_l2_StartCommunications(dl0d,
-				DIAG_L2_PROT_ISO14230,
-				DIAG_L2_TYPE_FASTINIT | funcmode,
-				global_cfg.speed, (target_type) i, global_cfg.src);
+			                                     DIAG_L2_PROT_ISO14230,
+			                                     DIAG_L2_TYPE_FASTINIT | funcmode,
+			                                     global_cfg.speed, (target_type) i, global_cfg.src);
 		} else {
 			d_conn = diag_l2_StartCommunications(
 				dl0d, DIAG_L2_PROT_ISO9141,
@@ -308,20 +305,18 @@ cmd_diag_probe_common(int argc, char **argv, int fastflag) {
 		}
 
 		return CMD_OK;
-	}	//for addresses
+	}       //for addresses
 	//Failed => clean up
 	diag_l2_close(dl0d);
 	printf("\n");
 	return CMD_OK;
 }
 
-static int
-cmd_diag_probe(int argc, char **argv) {
+static int cmd_diag_probe(int argc, char **argv) {
 	return cmd_diag_probe_common(argc, argv, 0);
 }
 
-static int
-cmd_diag_fastprobe(int argc, char **argv) {
+static int cmd_diag_fastprobe(int argc, char **argv) {
 	return cmd_diag_probe_common(argc, argv, 1);
 }
 
@@ -330,8 +325,7 @@ cmd_diag_fastprobe(int argc, char **argv) {
  * Generic init, using parameters set by user.
  * Currently only called from cmd_diag_connect;
  */
-static int
-do_l2_generic_start(void) {
+static int do_l2_generic_start(void) {
 	struct diag_l2_conn *d_conn;
 	struct diag_l0_device *dl0d = global_dl0d;
 	int rv;
@@ -346,7 +340,7 @@ do_l2_generic_start(void) {
 	rv = diag_l2_open(dl0d, global_cfg.L1proto);
 	if (rv) {
 		fprintf(stderr, "l2_generic_start: open failed for protocol %d on %s\n",
-			global_cfg.L1proto, dl0d->dl0->shortname);
+		        global_cfg.L1proto, dl0d->dl0->shortname);
 		return diag_ifwderr(rv);
 	}
 
@@ -356,13 +350,13 @@ do_l2_generic_start(void) {
 		flags = 0;
 	}
 
-	flags |= (global_cfg.initmode & DIAG_L2_TYPE_INITMASK) ;
+	flags |= (global_cfg.initmode & DIAG_L2_TYPE_INITMASK);
 
 	d_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
-		flags, global_cfg.speed, global_cfg.tgt, global_cfg.src);
+	                                     flags, global_cfg.speed, global_cfg.tgt, global_cfg.src);
 
 	if (d_conn == NULL) {
-	rv=diag_geterr();
+		rv=diag_geterr();
 		diag_l2_close(dl0d);
 		return diag_iseterr(rv);
 	}
@@ -378,8 +372,7 @@ do_l2_generic_start(void) {
 
 //cmd_diag_connect : attempt to connect to ECU
 //using the current global l2proto, l1proto, etc.
-static int
-cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv)) {
+static int cmd_diag_connect(UNUSED(int argc), UNUSED(char **argv)) {
 	int rv;
 
 	if (argc > 1) {
@@ -431,7 +424,7 @@ int cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv)) {
 		global_state = STATE_IDLE;
 	} else {
 		printf("There is another active L3 connection : %p\n : %s",
-			(void *) global_l3_conn, global_l3_conn->d_l3_proto->proto_name);
+		       (void *) global_l3_conn, global_l3_conn->d_l3_proto->proto_name);
 		printf("Run disconnect again to close it.\n");
 		return CMD_OK;
 	}
@@ -440,8 +433,7 @@ int cmd_diag_disconnect(UNUSED(int argc), UNUSED(char **argv)) {
 }
 
 
-static int
-cmd_diag_read(int argc, char **argv) {
+static int cmd_diag_read(int argc, char **argv) {
 	unsigned int timeout = 0;
 
 	if (global_state < STATE_CONNECTED) {
@@ -456,11 +448,11 @@ cmd_diag_read(int argc, char **argv) {
 	if (global_state < STATE_L3ADDED) {
 		/* No L3 protocol, do L2 stuff */
 		(void)diag_l2_recv(global_l2_conn, timeout, l2raw_data_rcv,
-			NULL);
+		                   NULL);
 
 	} else {
 		(void)diag_l3_recv(global_l3_conn, timeout, j1979_data_rcv,
-			(void *)&_RQST_HANDLE_WATCH);
+		                   (void *)&_RQST_HANDLE_WATCH);
 	}
 	return CMD_OK;
 }
@@ -468,11 +460,10 @@ cmd_diag_read(int argc, char **argv) {
 /*
  * Send some data, and wait for a response
  */
-static int
-cmd_diag_sendreq(int argc, char **argv) {
-	uint8_t	data[MAXRBUF];
-	unsigned int	i,j,len;
-	int	rv;
+static int cmd_diag_sendreq(int argc, char **argv) {
+	uint8_t data[MAXRBUF];
+	unsigned int i,j,len;
+	int rv;
 
 	if (argc < 2) {
 		printf("Too few arguments\n");
@@ -493,16 +484,16 @@ cmd_diag_sendreq(int argc, char **argv) {
 	for (i=1, j=0; (i < (unsigned int) argc) && (i < sizeof(data)); i++, j++) {
 		data[j] = (uint8_t) htoi(argv[i]);
 	}
-	len = j ;
+	len = j;
 
 
 	if (global_state < STATE_L3ADDED) {
 		rv = l2_do_send( global_l2_conn, data, len,
-			(void *)&_RQST_HANDLE_DECODE);
+		                 (void *)&_RQST_HANDLE_DECODE);
 	} else {
 		/* Send data with handle to tell callback to print results */
 		rv = l3_do_send( global_l3_conn, data, len,
-			(void *)&_RQST_HANDLE_DECODE);
+		                 (void *)&_RQST_HANDLE_DECODE);
 	}
 
 	if (rv != 0) {

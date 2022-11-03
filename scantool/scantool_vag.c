@@ -40,9 +40,9 @@
 static int cmd_vag_help(int argc, char **argv);
 const struct cmd_tbl_entry vag_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
-		cmd_vag_help, 0, NULL},
+	  cmd_vag_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
-		cmd_vag_help, 0, NULL},
+	  cmd_vag_help, 0, NULL},
 
 	CLI_TBL_BUILTINS,
 	CLI_TBL_END
@@ -55,7 +55,7 @@ const struct cmd_tbl_entry vag_cmd_table[] = {
 struct vw_id_info {
 	const int id;
 	const char *command;
-} ;
+};
 
 const struct vw_id_info vw_ids[] = {
 	{DIAG_VAG_ECU_ENGINE, "Engine" },
@@ -66,7 +66,6 @@ const struct vw_id_info vw_ids[] = {
 	{0, NULL},
 };
 
-static int
-cmd_vag_help(int argc, char **argv) {
+static int cmd_vag_help(int argc, char **argv) {
 	return help_common(argc, argv, vag_cmd_table);
 }

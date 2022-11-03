@@ -12,7 +12,7 @@
 #include "diag.h"
 #include "diag_l0.h"
 
-int diag_l0_debug;	//debug flags for l0
+int diag_l0_debug;      //debug flags for l0
 
 int diag_l0_open(struct diag_l0_device *dl0d, int l1proto) {
 	return dl0d->dl0->_open(dl0d, l1proto);
@@ -90,7 +90,7 @@ int diag_l0_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned i
 	return dl0d->dl0->_recv(dl0d, data, len, timeout);
 }
 
-int	diag_l0_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
+int     diag_l0_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 	assert(dl0d);
 	return dl0d->dl0->_send(dl0d, data, len);
 }
@@ -100,4 +100,3 @@ int diag_l0_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 
 	return dl0d->dl0->_ioctl(dl0d, cmd, data);
 }
-

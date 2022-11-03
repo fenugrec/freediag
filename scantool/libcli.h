@@ -20,7 +20,7 @@
  */
 
 
-#include <stdio.h>		/* For FILE */
+#include <stdio.h>              /* For FILE */
 
 /******* Command table definitions ********/
 
@@ -29,13 +29,13 @@
  * command table consists of an array of these
  * */
 struct cmd_tbl_entry {
-	const char *command;		/* Command name */
-	const char *usage;		/* Usage info */
-	const char *help;		/* Help Text */
-	int	(*routine)(int argc, char **argv);	/* Command Routine */
-	const int flags;		/* Flag, see below */
+	const char *command;            /* Command name */
+	const char *usage;              /* Usage info */
+	const char *help;               /* Help Text */
+	int (*routine)(int argc, char **argv);          /* Command Routine */
+	const int flags;                /* Flag, see below */
 
-	const struct cmd_tbl_entry *sub_cmd_tbl;		/* Next layer */
+	const struct cmd_tbl_entry *sub_cmd_tbl;                /* Next layer */
 
 };
 
@@ -45,26 +45,26 @@ struct cmd_tbl_entry {
 	{ "exit", "exit", "Exits program", cmd_exit, 0, NULL}, \
 	{ "quit", "quit", "Exits program", cmd_exit, CLI_CMD_HIDDEN, NULL}
 
-#define CLI_TBL_END { NULL, NULL, NULL, NULL, 0, NULL}	//must be last element of every command table
+#define CLI_TBL_END { NULL, NULL, NULL, NULL, 0, NULL}  //must be last element of every command table
 
 /** list of customizable callbacks.
  * Unused entries can be set to NULL
  */
 struct cli_callbacks {
-	void (*cli_logcmd)(int argc, char **argv);	// optional, called for each processed command
-	void (*cli_atexit)(void);	//optional, will be called after a CMD_EXIT
+	void (*cli_logcmd)(int argc, char **argv);      // optional, called for each processed command
+	void (*cli_atexit)(void);       //optional, will be called after a CMD_EXIT
 };
 
 /* Return values from the commands */
-#define CMD_OK		0	/* OK */
-#define CMD_USAGE	1	/* Bad usage, print usage info */
-#define CMD_FAILED	2	/* Cmd failed */
-#define CMD_EXIT	3	/* Exit called */
-#define CMD_UP		4	/* Go up one level in command tree */
+#define CMD_OK          0       /* OK */
+#define CMD_USAGE       1       /* Bad usage, print usage info */
+#define CMD_FAILED      2       /* Cmd failed */
+#define CMD_EXIT        3       /* Exit called */
+#define CMD_UP          4       /* Go up one level in command tree */
 
-#define CLI_CMD_HIDDEN	(1 << 0)	/* Hidden command */
+#define CLI_CMD_HIDDEN  (1 << 0)        /* Hidden command */
 #define CLI_CMD_FILEARG (1 << 1) /* Command accepts a filename as an argument*/
-#define CLI_CMD_CUSTOM (1 << 2)	/* Command handles other subcommands not in the subtable, max 1 per table */
+#define CLI_CMD_CUSTOM (1 << 2) /* Command handles other subcommands not in the subtable, max 1 per table */
 
 
 
@@ -72,7 +72,7 @@ struct cli_callbacks {
 
 /** Change default callbacks
  */
-void cli_set_callbacks(const struct cli_callbacks*);
+void cli_set_callbacks(const struct cli_callbacks *);
 
 /** Start an interactive CLI session
  *

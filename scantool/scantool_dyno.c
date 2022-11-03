@@ -48,7 +48,7 @@
 
 
 #ifdef DYNO_DEBUG
-	#include <math.h>	//for fake_loss_measure_data()
+	#include <math.h>       //for fake_loss_measure_data()
 #endif
 
 
@@ -70,26 +70,26 @@ void reset_results(void);
 
 const struct cmd_tbl_entry dyno_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
-		cmd_dyno_help, 0, NULL},
+	  cmd_dyno_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
-		cmd_dyno_help, CLI_CMD_HIDDEN, NULL},
+	  cmd_dyno_help, CLI_CMD_HIDDEN, NULL},
 
 	{ "mass", "mass [mass]", "Step 1 : Shows/Sets the mass of the vehicle",
-		cmd_dyno_mass, 0, NULL},
+	  cmd_dyno_mass, 0, NULL},
 	{ "loss", "loss", "Step 2 : Determines power lost by aerodynamic and friction forces",
-		cmd_dyno_loss, 0, NULL},
+	  cmd_dyno_loss, 0, NULL},
 	{ "setloss", "setloss [d] [f]", "Manually enter aerodynamic and friction forces parameters",
-		cmd_dyno_setloss, 0, NULL},
+	  cmd_dyno_setloss, 0, NULL},
 	{ "run", "run", "Step 3 : Run dyno",
-		cmd_dyno_run, 0, NULL},
+	  cmd_dyno_run, 0, NULL},
 	{ "measures", "measures", "Display run measures",
-		cmd_dyno_measures, 0, NULL},
+	  cmd_dyno_measures, 0, NULL},
 	{ "result", "result", "Display run results",
-		cmd_dyno_result, 0, NULL},
+	  cmd_dyno_result, 0, NULL},
 	{ "graph", "graph", "Display run graphs",
-		cmd_dyno_graph, 0, NULL},
+	  cmd_dyno_graph, 0, NULL},
 	{ "save", "save [filename]", "Save measures and results in a file",
-		cmd_dyno_save, 0, NULL},
+	  cmd_dyno_save, 0, NULL},
 
 	CLI_TBL_BUILTINS,
 	CLI_TBL_END
@@ -116,11 +116,11 @@ static int cmd_dyno_mass(int argc, char **argv) {
 }
 
 /******************************************************************************
- * Functions to measure data                                                  *
- ******************************************************************************/
+* Functions to measure data                                                  *
+******************************************************************************/
 
-#define DYNDATA_1(p, n, d)	(d[p].data[n])
-#define DYNDATA_2(p, n, d)	(DYNDATA_1(p, n, d) * 256 + DYNDATA_1(p, n+1, d))
+#define DYNDATA_1(p, n, d)      (d[p].data[n])
+#define DYNDATA_2(p, n, d)      (DYNDATA_1(p, n, d) * 256 + DYNDATA_1(p, n+1, d))
 #define RPM_PID           (0x0c)
 #define RPM_DATA(d)       (DYNDATA_2(RPM_PID, 2, d)*0.25)
 #define SPEED_PID         (0x0d)
@@ -139,7 +139,7 @@ static int measure_data(uint8_t data_pid, ecu_data *ep) {
 	}
 	/* measure */
 	rv = l3_do_j1979_rqst(global_l3_conn, 0x1, data_pid, 0x00,
-	  0x00, 0x00, 0x00, 0x00, (void *)&_RQST_HANDLE_NORMAL);
+	                      0x00, 0x00, 0x00, 0x00, (void *)&_RQST_HANDLE_NORMAL);
 	if (rv < 0) {
 		return rv;
 	}
@@ -157,7 +157,7 @@ static int measure_data(uint8_t data_pid, ecu_data *ep) {
 
 #ifdef DYNO_DEBUG
 int counter;
-unsigned long tv0d;	/* measuring time */
+unsigned long tv0d;     /* measuring time */
 
 /* fake loss measures */
 int fake_loss_measure_data() {
@@ -189,20 +189,20 @@ int fake_loss_measure_data() {
 int counter2;
 /* fake run measures */
 int fake_run_measure_data(int data_pid) {
-  int rpm;
+	int rpm;
 
-  diag_os_millisleep(250);
+	diag_os_millisleep(250);
 
-  rpm = 1000 + counter2 * 200;
-  if (counter2 < 5500/200)
-    counter2++;
-  else
-    counter2--;
+	rpm = 1000 + counter2 * 200;
+	if (counter2 < 5500/200)
+		counter2++;
+	else
+		counter2--;
 
-  if (data_pid == RPM_PID)
-    return rpm;
-  else if (data_pid == SPEED_PID)
-    return rpm * (9000*100/6000) / 36;
+	if (data_pid == RPM_PID)
+		return rpm;
+	else if (data_pid == SPEED_PID)
+		return rpm * (9000*100/6000) / 36;
 
 	return 0;
 }
@@ -217,8 +217,8 @@ int fake_run_measure_data(int data_pid) {
 
 
 /*****************************************************************************
- * Measuring loss function                                                   *
- *****************************************************************************/
+* Measuring loss function                                                   *
+*****************************************************************************/
 
 /* Indicate whether loss determination has been done */
 int dyno_loss_done;
@@ -312,7 +312,7 @@ static int cmd_dyno_loss(UNUSED(int argc), UNUSED(char **argv)) {
 
 			/* Display new measure */
 			length = printf("%d (speed=%d km/h, d=%5.5f, f=%4.2f)\t ",
-			nb, SPEED_ISO_TO_KMH(speed), dyno_loss_get_d(), dyno_loss_get_f());
+			                nb, SPEED_ISO_TO_KMH(speed), dyno_loss_get_d(), dyno_loss_get_f());
 			fflush(stdout); /* force displaying now (may slow down dyno...) */
 		}
 	}
@@ -366,8 +366,8 @@ static int cmd_dyno_setloss(int argc, char **argv) {
 }
 
 /*****************************************************************************
- * Dyno functions                                                            *
- *****************************************************************************/
+* Dyno functions                                                            *
+*****************************************************************************/
 
 /*
  * Run dyno
@@ -376,11 +376,11 @@ static int cmd_dyno_setloss(int argc, char **argv) {
 static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
 
-	int speed;						/* measured speed */
-	int rpm;							/* measured rpm */
+	int speed;                                              /* measured speed */
+	int rpm;                                                        /* measured rpm */
 	int rpm_previous = 0; /* previous rpm */
 
-	unsigned long tv0, tv;	/* measuring time */
+	unsigned long tv0, tv;  /* measuring time */
 	int elapsed; /* elapsed time (ms) */
 
 	int i, length = 0; /* length of printed string */
@@ -416,7 +416,7 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
 	dyno_reset(); /* dyno data */
 	reset_results();
 
-	tv0=diag_os_getms();	/* initial time */
+	tv0=diag_os_getms();    /* initial time */
 	ep = ecu_info; /* ECU data */
 
 	/* Measures */
@@ -464,7 +464,7 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
 	/* measure gear ratio */
 	rpm_previous = rpm;
 	speed = RUN_MEASURE_DATA(SPEED_PID, ep); /* m/s * 1000 */
-	rpm	 = RUN_MEASURE_DATA(RPM_PID, ep);
+	rpm      = RUN_MEASURE_DATA(RPM_PID, ep);
 
 	if ((speed < 0) || (rpm < 0)) {
 		printf("invalid RUN_MEASURE_DATA result !\n");
@@ -484,8 +484,8 @@ static int cmd_dyno_run(UNUSED(int argc), UNUSED(char **argv)) {
 
 
 /*****************************************************************************
- * Displaying measures and results functions                                 *
- *****************************************************************************/
+* Displaying measures and results functions                                 *
+*****************************************************************************/
 
 /* Get measures for specified type */
 static void get_measures(dyno_measure **measures, int *nb_measures) {
@@ -508,10 +508,10 @@ static void display_measures(dyno_measure *measures, int nb_measures) {
 
 	for (i=0; i<nb_measures; i++) {
 		printf("measure %d:\t%3.3f s. \tRPM: %d\t%3.3f m/s\t%3.2f km/h\n", (i+1),
-			measures[i].millis/1000.0,
-			measures[i].rpm,
-			dyno_get_speed_from_rpm(measures[i].rpm)/1000.0,
-			dyno_get_speed_from_rpm(measures[i].rpm)*3.6/1000.0);
+		       measures[i].millis/1000.0,
+		       measures[i].rpm,
+		       dyno_get_speed_from_rpm(measures[i].rpm)/1000.0,
+		       dyno_get_speed_from_rpm(measures[i].rpm)*3.6/1000.0);
 
 		if (((i+1) % 22) == 0) {
 			wait_enter("Press ENTER to continue... ");
@@ -548,7 +548,7 @@ static void display_results(dyno_result *results, int nb) {
 
 	for (i=0; i<nb; i++) {
 		printf("%d:\tRPM=%d\t\tpower=%d W (%d ch)\ttorque=%d Nm\n", i,
-			results[i].rpm, results[i].power, results[i].power_ch, results[i].torque);
+		       results[i].rpm, results[i].power, results[i].power_ch, results[i].torque);
 
 		if (results[i].power > max_power) {
 			max_power = results[i].power;
@@ -565,9 +565,9 @@ static void display_results(dyno_result *results, int nb) {
 	}
 	printf("\n");
 	printf("Max power : %d ch (at %d RPM)\n",
-				 results[max_power_i].power_ch, results[max_power_i].rpm);
+	       results[max_power_i].power_ch, results[max_power_i].rpm);
 	printf("Max torque : %d Nm (at %d RPM)\n",
-				 results[max_torque_i].torque, results[max_torque_i].rpm);
+	       results[max_torque_i].torque, results[max_torque_i].rpm);
 	printf("\n");
 }
 
@@ -699,8 +699,8 @@ static int cmd_dyno_graph(UNUSED(int argc), UNUSED(char **argv)) {
 
 
 /*****************************************************************************
- * Saving functions                                                          *
- *****************************************************************************/
+* Saving functions                                                          *
+*****************************************************************************/
 
 /*
  * Save dyno measures and results to a file
@@ -741,7 +741,7 @@ static int cmd_dyno_save(int argc, char **argv) {
 
 		/* Remove pending "\n" and "\r", if any */
 		while ((filename[strlen(filename)-1] == '\n') ||
-					 (filename[strlen(filename)-1] == '\r')) {
+		       (filename[strlen(filename)-1] == '\r')) {
 			filename[strlen(filename)-1] = '\0';
 		}
 	}
@@ -755,7 +755,6 @@ static int cmd_dyno_save(int argc, char **argv) {
 
 
 /* Display help */
-static int
-cmd_dyno_help(int argc, char **argv) {
+static int cmd_dyno_help(int argc, char **argv) {
 	return help_common(argc, argv, dyno_cmd_table);
 }

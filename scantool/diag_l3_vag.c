@@ -48,8 +48,7 @@
  * Insert the L3 layer on top of the layer 2 connection
  *
  */
-static int
-diag_l3_vag_start(struct diag_l3_conn *d_l3_conn) {
+static int diag_l3_vag_start(struct diag_l3_conn *d_l3_conn) {
 	struct diag_l2_data l2data;
 	struct diag_l2_conn *d_l2_conn;
 
@@ -59,8 +58,8 @@ diag_l3_vag_start(struct diag_l3_conn *d_l3_conn) {
 	(void)diag_l2_ioctl(d_l2_conn, DIAG_IOCTL_GET_L2_DATA, (void *)&l2data);
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
-		FLFMT "start L3 KB 0x%X 0x%X need 0x01 0x8A\n",
-		FL, l2data.kb1, l2data.kb2);
+	          FLFMT "start L3 KB 0x%X 0x%X need 0x01 0x8A\n",
+	          FL, l2data.kb1, l2data.kb2);
 
 	if (l2data.kb1 != 0x01) {
 		return diag_iseterr(DIAG_ERR_WRONGKB);
@@ -81,9 +80,8 @@ diag_l3_vag_start(struct diag_l3_conn *d_l3_conn) {
  * This is called without just the VW protocol data
  */
 
-void
-diag_l3_vag_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
-struct diag_msg *msg, char *buf, size_t bufsize) {
+void diag_l3_vag_decode(UNUSED(struct diag_l3_conn *d_l3_conn),
+                        struct diag_msg *msg, char *buf, size_t bufsize) {
 	char buf2[128];
 	char buf3[16];
 	const char *s;
@@ -135,8 +133,8 @@ const struct diag_l3_proto diag_l3_vag = {
 	diag_l3_base_stop,
 	diag_l3_base_send,
 	diag_l3_base_recv,
-	NULL,	//ioctl
+	NULL,   //ioctl
 	diag_l3_base_request,
 	diag_l3_vag_decode,
-	NULL	//timer
+	NULL    //timer
 };

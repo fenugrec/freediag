@@ -36,12 +36,12 @@ extern "C" {
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 	#include <windows.h>
-	typedef DWORD OS_ERRTYPE;
+typedef DWORD OS_ERRTYPE;
 #else
-	typedef int OS_ERRTYPE;
+typedef int OS_ERRTYPE;
 #endif
 
-#define ALARM_TIMEOUT 300	// ms interval timeout for timer callbacks (keepalive etc)
+#define ALARM_TIMEOUT 300       // ms interval timeout for timer callbacks (keepalive etc)
 
 /* Common prototypes but note that the source
  * is different and defined in OS specific
@@ -118,11 +118,11 @@ unsigned long long diag_os_hrtus(unsigned long long hrdelta);
  */
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 	#include <windows.h>
-	// No static mutex initialization on Windows ( CRITICAL_SECTION is an opaque type)
-	typedef CRITICAL_SECTION diag_mtx;
+// No static mutex initialization on Windows ( CRITICAL_SECTION is an opaque type)
+typedef CRITICAL_SECTION diag_mtx;
 #elif defined(__unix__)
 	#include <pthread.h>
-	typedef pthread_mutex_t diag_mtx;
+typedef pthread_mutex_t diag_mtx;
 #else
 	#error Weird compilation environment, report this!
 #endif

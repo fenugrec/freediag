@@ -32,31 +32,31 @@ extern "C" {
 
 //Note : update diag_general.c when modifying error codes
 //Values should be <0, as many functions return a positive int on success
-#define DIAG_ERR_GENERAL	-1	/* Unspecified Error */
-#define DIAG_ERR_BADFD	-2	/* Invalid FileDescriptor passed to routine */
-#define DIAG_ERR_NOMEM	-3	/* Malloc/Calloc/Strdup/etc failed - ran out of memory */
+#define DIAG_ERR_GENERAL        -1      /* Unspecified Error */
+#define DIAG_ERR_BADFD  -2      /* Invalid FileDescriptor passed to routine */
+#define DIAG_ERR_NOMEM  -3      /* Malloc/Calloc/Strdup/etc failed - ran out of memory */
 
-#define DIAG_ERR_INIT_NOTSUPP	-4	/* Initbus type not supported by H/W */
-#define DIAG_ERR_PROTO_NOTSUPP	-5	/* Protocol not supported by H/W */
-#define DIAG_ERR_IOCTL_NOTSUPP	-6	/* Ioctl type not supported */
-#define DIAG_ERR_BADIFADAPTER	-7	/* L0 adapter comms failed */
+#define DIAG_ERR_INIT_NOTSUPP   -4      /* Initbus type not supported by H/W */
+#define DIAG_ERR_PROTO_NOTSUPP  -5      /* Protocol not supported by H/W */
+#define DIAG_ERR_IOCTL_NOTSUPP  -6      /* Ioctl type not supported */
+#define DIAG_ERR_BADIFADAPTER   -7      /* L0 adapter comms failed */
 
-#define DIAG_ERR_TIMEOUT	-8	/* Read/Write timeout */
+#define DIAG_ERR_TIMEOUT        -8      /* Read/Write timeout */
 
-#define DIAG_ERR_BUSERROR	-16	/* We detected write error on diag bus */
-#define DIAG_ERR_BADLEN		-17	/* Bad length for this i/f */
-#define DIAG_ERR_BADDATA	-18	/* Cant decode msg (ever) */
-#define DIAG_ERR_BADCSUM	-19	/* Bad checksum in recvd message */
-#define DIAG_ERR_INCDATA	-20	/* Incomplete data, need to receive more */
-#define DIAG_ERR_WRONGKB	-21	/* Wrong KeyBytes received */
-#define DIAG_ERR_BADRATE	-22	/* Bit rate specified doesn't match ECU */
+#define DIAG_ERR_BUSERROR       -16     /* We detected write error on diag bus */
+#define DIAG_ERR_BADLEN         -17     /* Bad length for this i/f */
+#define DIAG_ERR_BADDATA        -18     /* Cant decode msg (ever) */
+#define DIAG_ERR_BADCSUM        -19     /* Bad checksum in recvd message */
+#define DIAG_ERR_INCDATA        -20     /* Incomplete data, need to receive more */
+#define DIAG_ERR_WRONGKB        -21     /* Wrong KeyBytes received */
+#define DIAG_ERR_BADRATE        -22     /* Bit rate specified doesn't match ECU */
 
-#define DIAG_ERR_ECUSAIDNO	-32	/* Ecu returned negative */
-#define DIAG_ERR_RCFILE -40	/* trouble with rc/ini file */
-#define DIAG_ERR_CMDFILE -41	/* trouble with sourcing commands */
+#define DIAG_ERR_ECUSAIDNO      -32     /* Ecu returned negative */
+#define DIAG_ERR_RCFILE -40     /* trouble with rc/ini file */
+#define DIAG_ERR_CMDFILE -41    /* trouble with sourcing commands */
 
-#define DIAG_ERR_BADVAL -43	/* Invalid value passed to routine */
-#define DIAG_ERR_BADCFG	-44	/* Bad config param */
+#define DIAG_ERR_BADVAL -43     /* Invalid value passed to routine */
+#define DIAG_ERR_BADCFG -44     /* Bad config param */
 
 #if defined(__cplusplus)
 }

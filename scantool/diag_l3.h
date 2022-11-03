@@ -40,25 +40,25 @@ struct diag_msg;
 /** Layer 3 connection info
  */
 struct diag_l3_conn {
-	struct diag_l2_conn	*d_l3l2_conn;
-	int d_l3l2_flags;		/* Flags from L2 */
-	uint32_t d_l3l1_flags;		/* Flags from L1 */
+	struct diag_l2_conn     *d_l3l2_conn;
+	int d_l3l2_flags;               /* Flags from L2 */
+	uint32_t d_l3l1_flags;          /* Flags from L1 */
 
 	const struct diag_l3_proto *d_l3_proto;
-	void *l3_int;	// internal (private) data for each connection instance
+	void *l3_int;   // internal (private) data for each connection instance
 
 	/* Callback into next layer (which passed us the handle) */
 	void (*callback)(void *handle, struct diag_msg *msg);
 	void *handle;
 
 	/* Received messages */
-	struct diag_msg	*msg;
+	struct diag_msg *msg;
 
 	/* time (in ms since an arbitrary reference) of last tx/rx , for managing periodic timers */
 	unsigned long timer;
 
 	/* Linked list held by main L3 code */
-	struct diag_l3_conn	*next;
+	struct diag_l3_conn     *next;
 
 };
 
@@ -82,20 +82,20 @@ struct diag_l3_proto {
 
 	//proto_recv: ret 0 if ok
 	int (*diag_l3_proto_recv)(struct diag_l3_conn *, unsigned int,
-		void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *);
+	                          void (*rcv_call_back)(void *handle,struct diag_msg *), void *);
 
 	//proto_ioctl (optional). ret 0 if ok; if not defined the ioctl is passed to L2.
 	int (*diag_l3_proto_ioctl)(struct diag_l3_conn *, int cmd, void *data);
 
 	//proto_request : send request and return a new message with the reply, and error in *errval (0 if ok)
 	struct diag_msg *(*diag_l3_proto_request)(struct diag_l3_conn *,
-		struct diag_msg *txmsg, int *errval);
+	                                          struct diag_msg *txmsg, int *errval);
 
 	/* Decode msg to printable text in *buf */
 	void (*diag_l3_proto_decode)(struct diag_l3_conn *,
-		struct diag_msg *msg,
-		char *buf,
-		const size_t bufsize);
+	                             struct diag_msg *msg,
+	                             char *buf,
+	                             const size_t bufsize);
 
 	/* Timer (optional)
 	 * If defined, this is called from diag_l3_timer()
@@ -130,33 +130,33 @@ struct diag_l3_conn *diag_l3_start(const char *protocol, struct diag_l2_conn *d_
  * must free() everything diag_l3_start alloc'd
  * and remove from diag_l3_list
  */
-int	diag_l3_stop(struct diag_l3_conn *d_l3_conn);
+int     diag_l3_stop(struct diag_l3_conn *d_l3_conn);
 
 /** Send message
  *
  * @return 0 if ok
  */
-int	diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg);
+int     diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg);
 
 /** Receive message
  *
  * @return 0 if ok
  */
-int	diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
-	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle);
+int     diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
+                     void (* rcv_call_back)(void *handle,struct diag_msg *), void *handle);
 
 /** Format given message as text
  *
  */
 void diag_l3_decode(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg,
-	char *buf, const size_t bufsize);
+                    char *buf, const size_t bufsize);
 
 /** Send a request and return a new msg with the response.
  *
  * Caller must free that msg
  */
 struct diag_msg *diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg,
-		int *errval);
+                                 int *errval);
 
 /** Send ioctl to the specified
  * L3
@@ -181,11 +181,11 @@ int diag_l3_base_start(struct diag_l3_conn *);
 int diag_l3_base_stop(struct diag_l3_conn *);
 int diag_l3_base_send(struct diag_l3_conn *, struct diag_msg *);
 int diag_l3_base_recv(struct diag_l3_conn *, unsigned int,
-	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *);
+                      void (* rcv_call_back)(void *handle,struct diag_msg *), void *);
 //XXX diag_l3_base_ioctl : there's no code for this one ?
 //int diag_l3_base_ioctl(struct diag_l3_conn *, int cmd, void *data);
 struct diag_msg *diag_l3_base_request(struct diag_l3_conn *dl3c,
-	struct diag_msg *txmsg, int *errval);
+                                      struct diag_msg *txmsg, int *errval);
 
 
 

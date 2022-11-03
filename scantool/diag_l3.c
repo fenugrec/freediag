@@ -44,14 +44,13 @@ static diag_mtx connlist_mtx;
 static struct diag_l3_conn *diag_l3_list;
 static bool init_done;
 
-void
-diag_l3_init(void) {
+void diag_l3_init(void) {
 	if (init_done) {
 		return;
 	}
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
-		FLFMT "entered diag_l3_init\n", FL);
+	          FLFMT "entered diag_l3_init\n", FL);
 
 	diag_os_initstaticmtx(&connlist_mtx);
 
@@ -59,15 +58,13 @@ diag_l3_init(void) {
 	return;
 }
 
-void
-diag_l3_end(void) {
+void diag_l3_end(void) {
 	diag_os_delmtx(&connlist_mtx);
 	init_done = false;
 	return;
 }
 
-struct diag_l3_conn *
-diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
+struct diag_l3_conn *diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 	struct diag_l3_conn *d_l3_conn = NULL;
 	unsigned int i;
 	int rv;
@@ -76,21 +73,21 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 	assert(d_l2_conn != NULL);
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "start protocol %s l2 %p\n",
-		FL, protocol, (void *)d_l2_conn);
+	          FLFMT "start protocol %s l2 %p\n",
+	          FL, protocol, (void *)d_l2_conn);
 
 	/* Find the protocol */
 	dp = NULL;
 	for (i=0; diag_l3_protocols[i]; i++) {
 		if (strcasecmp(protocol, diag_l3_protocols[i]->proto_name) == 0) {
-			dp = diag_l3_protocols[i];	/* Found. */
+			dp = diag_l3_protocols[i];      /* Found. */
 			break;
 		}
 	}
 
 	if (dp) {
 		DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			FLFMT "start protocol %s found\n", FL, dp->proto_name);
+		          FLFMT "start protocol %s found\n", FL, dp->proto_name);
 		/*
 		 * Malloc us a L3
 		 */
@@ -104,13 +101,13 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 
 		/* Get L2 flags */
 		(void)diag_l2_ioctl(d_l2_conn,
-			DIAG_IOCTL_GET_L2_FLAGS,
-			&d_l3_conn->d_l3l2_flags);
+		                    DIAG_IOCTL_GET_L2_FLAGS,
+		                    &d_l3_conn->d_l3l2_flags);
 
 		/* Get L1 flags */
 		(void)diag_l2_ioctl(d_l2_conn,
-			DIAG_IOCTL_GET_L1_FLAGS,
-			&d_l3_conn->d_l3l1_flags);
+		                    DIAG_IOCTL_GET_L1_FLAGS,
+		                    &d_l3_conn->d_l3l1_flags);
 
 		/* Call the proto routine */
 		rv = dp->diag_l3_proto_start(d_l3_conn);
@@ -132,7 +129,7 @@ diag_l3_start(const char *protocol, struct diag_l2_conn *d_l2_conn) {
 	}
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "start returns %p\n", FL, (void *)d_l3_conn);
+	          FLFMT "start returns %p\n", FL, (void *)d_l3_conn);
 
 	return d_l3_conn;
 }
@@ -174,12 +171,12 @@ int diag_l3_send(struct diag_l3_conn *d_l3_conn, struct diag_msg *msg) {
 }
 
 int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
-	void (* rcv_call_back)(void *handle ,struct diag_msg *) , void *handle) {
+                 void (* rcv_call_back)(void *handle,struct diag_msg *), void *handle) {
 	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 	int rv;
 
 	rv=dp->diag_l3_proto_recv(d_l3_conn, timeout,
-		rcv_call_back, handle);
+	                          rcv_call_back, handle);
 
 	if (rv == 0) {
 		d_l3_conn->timer = diag_os_getms();
@@ -193,7 +190,7 @@ int diag_l3_recv(struct diag_l3_conn *d_l3_conn, unsigned int timeout,
 
 
 void diag_l3_decode(struct diag_l3_conn *d_l3_conn,
-	struct diag_msg *msg, char *buf, const size_t bufsize) {
+                    struct diag_msg *msg, char *buf, const size_t bufsize) {
 	const struct diag_l3_proto *dp = d_l3_conn->d_l3_proto;
 
 	dp->diag_l3_proto_decode(d_l3_conn, msg, buf, bufsize);
@@ -214,14 +211,13 @@ int diag_l3_ioctl(struct diag_l3_conn *d_l3_conn, unsigned int cmd, void *data) 
 }
 
 
-struct diag_msg *
-diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) {
+struct diag_msg *diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) {
 	struct diag_msg *rxmsg;
 	const struct diag_l3_proto *dl3p = dl3c->d_l3_proto;
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "_request dl3c=%p msg=%p called\n",
-		FL, (void *)dl3c, (void *)txmsg);
+	          FLFMT "_request dl3c=%p msg=%p called\n",
+	          FL, (void *)dl3c, (void *)txmsg);
 
 	/* Call protocol specific send routine */
 	if (dl3p->diag_l3_proto_request) {
@@ -231,13 +227,13 @@ diag_l3_request(struct diag_l3_conn *dl3c, struct diag_msg *txmsg, int *errval) 
 	}
 
 	DIAG_DBGM(diag_l3_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "_request returns %p, err %d\n",
-		FL, (void *)rxmsg, *errval);
+	          FLFMT "_request returns %p, err %d\n",
+	          FL, (void *)rxmsg, *errval);
 
 	if (rxmsg==NULL) {
 		return diag_pfwderr(*errval);
 	}
-		//update timers
+	//update timers
 	dl3c->timer = diag_os_getms();
 
 	return rxmsg;
@@ -294,17 +290,16 @@ int diag_l3_base_stop(UNUSED(struct diag_l3_conn *d_l3_conn)) {
 }
 
 int diag_l3_base_send(struct diag_l3_conn *d_l3_conn,
-	UNUSED(struct diag_msg *msg)) {
+                      UNUSED(struct diag_msg *msg)) {
 	d_l3_conn->timer=diag_os_getms();
 	return 0;
 }
 
 
-int
-diag_l3_base_recv(struct diag_l3_conn *d_l3_conn,
-	UNUSED(unsigned int timeout),
-	UNUSED(void (* rcv_call_back)(void *handle ,struct diag_msg *)),
-	UNUSED(void *handle)) {
+int diag_l3_base_recv(struct diag_l3_conn *d_l3_conn,
+                      UNUSED(unsigned int timeout),
+                      UNUSED(void (* rcv_call_back)(void *handle,struct diag_msg *)),
+                      UNUSED(void *handle)) {
 	d_l3_conn->timer=diag_os_getms();
 	return 0;
 }
@@ -313,7 +308,7 @@ diag_l3_base_recv(struct diag_l3_conn *d_l3_conn,
 //txmsg straight to the L2 request function and returns the response msg
 //as-is.
 struct diag_msg *diag_l3_base_request(struct diag_l3_conn *dl3c,
-	struct diag_msg *txmsg, int *errval) {
+                                      struct diag_msg *txmsg, int *errval) {
 
 	struct diag_msg *rxmsg = NULL;
 

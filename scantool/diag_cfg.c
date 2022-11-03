@@ -11,7 +11,7 @@
 #include "diag.h"
 #include "diag_cfg.h"
 #include "diag_err.h"
-#include "diag_tty.h"	//for diag_tty_getportlist()
+#include "diag_tty.h"   //for diag_tty_getportlist()
 
 #include <assert.h>
 #include <stdio.h>
@@ -19,8 +19,8 @@
 #include <string.h>
 
 static const char tty_descr[]="Serial/tty port, such as \"/dev/ttyS0\" or \"\\\\.\\COM11\"";
-static const char tty_sn[]="port";		/** tty cfg shortname */
-static const char tty_def[]="/dev/null";	/** last resort fallback */
+static const char tty_sn[]="port";              /** tty cfg shortname */
+static const char tty_def[]="/dev/null";        /** last resort fallback */
 
 /* top decls */
 void optarray_clear(struct cfgi *cfgp);
@@ -60,7 +60,7 @@ int diag_cfg_setstr(struct cfgi *cfgp, const char *str) {
 	if (rv != 0) {
 		return diag_ifwderr(rv);
 	}
-	cfgp->dyn_val = 1;	//need to free
+	cfgp->dyn_val = 1;      //need to free
 	strcpy(cfgp->val.str, str);
 	return 0;
 
@@ -108,7 +108,7 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid) {
 	case CFGT_INT:
 		cfgp->val.i = optid;
 		break;
-	case CFGT_U8:	//these don't really make sense
+	case CFGT_U8:   //these don't really make sense
 	case CFGT_BOOL:
 		break;
 	default:
@@ -254,7 +254,7 @@ void tty_refresh(struct cfgi *cfgp) {
 		optarray_clear(cfgp);
 		return;
 	}
-	strcpy(cfgp->dval.str, cfgp->opt[0]);	//we just used strlen; strcpy is just as dangerous...
+	strcpy(cfgp->dval.str, cfgp->opt[0]);   //we just used strlen; strcpy is just as dangerous...
 	cfgp->dyn_opt = 1;
 
 	return;
@@ -278,7 +278,7 @@ int diag_cfgn_tty(struct cfgi *cfgp) {
 //ordinary int param using caller's val, and def as default value for reset().
 //Doesn't fill descr and shortname
 int diag_cfgn_int(struct cfgi *cfgp, int val, int def) {
-	cfgp->dyn_val = 0;	//caller-supplied
+	cfgp->dyn_val = 0;      //caller-supplied
 	cfgp->dyn_dval = 0;
 	cfgp->type = CFGT_INT;
 	cfgp->numopts=0;
@@ -292,7 +292,7 @@ int diag_cfgn_int(struct cfgi *cfgp, int val, int def) {
 //ordinary u8 param (copy of _int code) using caller's &val, and *dev as default value for reset().
 //Doesn't fill descr and shortname
 int diag_cfgn_u8(struct cfgi *cfgp, uint8_t val, uint8_t def) {
-	cfgp->dyn_val = 0;	//managed by caller
+	cfgp->dyn_val = 0;      //managed by caller
 	cfgp->dyn_dval = 0;
 	cfgp->type = CFGT_U8;
 	cfgp->numopts=0;
@@ -305,7 +305,7 @@ int diag_cfgn_u8(struct cfgi *cfgp, uint8_t val, uint8_t def) {
 
 //ordinary bool (copy of _int code)
 int diag_cfgn_bool(struct cfgi *cfgp, bool val, bool def) {
-	cfgp->dyn_val = 0;	//managed by caller
+	cfgp->dyn_val = 0;      //managed by caller
 	cfgp->dyn_dval = 0;
 	cfgp->type = CFGT_BOOL;
 	cfgp->numopts=0;
@@ -336,11 +336,11 @@ int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const c
 
 	cfgp->dval.str = dval;
 	cfgp->dyn_dval = 1;
-	strcpy(dval, def);	//danger
+	strcpy(dval, def);      //danger
 
 	cfgp->val.str = val;
 	cfgp->dyn_val = 1;
-	strcpy(val, def);	//danger
+	strcpy(val, def);       //danger
 
 	cfgp->descr = descr;
 	cfgp->shortname = sn;
@@ -349,4 +349,3 @@ int diag_cfgn_str(struct cfgi *cfgp, const char *def, const char *descr, const c
 	cfgp->reset = &std_reset;
 	return 0;
 }
-

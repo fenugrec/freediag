@@ -26,8 +26,7 @@
 
 
 //cmd_watch : this creates a diag_l3_conn
-static int
-cmd_watch(int argc, char **argv) {
+static int cmd_watch(int argc, char **argv) {
 	int rv;
 	struct diag_l2_conn *d_l2_conn;
 	struct diag_l3_conn *d_l3_conn=NULL;
@@ -73,12 +72,12 @@ cmd_watch(int argc, char **argv) {
 	}
 	if (rawmode) {
 		d_l2_conn = diag_l2_StartCommunications(dl0d, DIAG_L2_PROT_RAW,
-			0, global_cfg.speed,
-			global_cfg.tgt,
-			global_cfg.src);
+		                                        0, global_cfg.speed,
+		                                        global_cfg.tgt,
+		                                        global_cfg.src);
 	} else {
 		d_l2_conn = diag_l2_StartCommunications(dl0d, global_cfg.L2proto,
-			DIAG_L2_TYPE_MONINIT, global_cfg.speed, global_cfg.tgt, global_cfg.src);
+		                                        DIAG_L2_TYPE_MONINIT, global_cfg.speed, global_cfg.tgt, global_cfg.src);
 	}
 
 	if (d_l2_conn == NULL) {
@@ -112,11 +111,11 @@ cmd_watch(int argc, char **argv) {
 
 			if (d_l3_conn != NULL) {
 				rv = diag_l3_recv(d_l3_conn, 10000,
-					j1979_watch_rcv,
-					(nodecode) ? NULL:(void *)d_l3_conn);
+				                  j1979_watch_rcv,
+				                  (nodecode) ? NULL:(void *)d_l3_conn);
 			} else {
 				rv = diag_l2_recv(d_l2_conn, 10000,
-					j1979_watch_rcv, NULL);
+				                  j1979_watch_rcv, NULL);
 			}
 			if (rv == 0) {
 				continue;
@@ -137,7 +136,7 @@ cmd_watch(int argc, char **argv) {
 			}
 
 			rv = diag_l2_recv(d_l2_conn, 10000,
-				j1979_data_rcv, (void *)&_RQST_HANDLE_WATCH);
+			                  j1979_data_rcv, (void *)&_RQST_HANDLE_WATCH);
 			if (rv == 0) {
 				continue;
 			}
@@ -163,27 +162,26 @@ cmd_watch(int argc, char **argv) {
  * Print the monitorable data out, use SI units by default, or "english"
  * units
  */
-static void
-print_current_data(bool english) {
+static void print_current_data(bool english) {
 	char buf[24];
 	ecu_data *ep;
 	unsigned int i;
 	unsigned int j;
 
 	printf("%-30.30s %-15.15s FreezeFrame\n",
-		"Parameter", "Current");
+	       "Parameter", "Current");
 
 	for (j = 0 ; get_pid(j) != NULL ; j++) {
-		const struct pid *p = get_pid(j) ;
+		const struct pid *p = get_pid(j);
 
 		for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 			if (DATA_VALID(p, ep->mode1_data) ||
-				DATA_VALID(p, ep->mode2_data)) {
+			    DATA_VALID(p, ep->mode2_data)) {
 				printf("%-30.30s ", p->desc);
 
 				if (DATA_VALID(p, ep->mode1_data)) {
 					p->cust_snprintf(buf, sizeof(buf), english, p,
-						ep->mode1_data, 2);
+					                 ep->mode1_data, 2);
 				} else {
 					snprintf(buf, sizeof(buf), "-----");
 				}
@@ -192,7 +190,7 @@ print_current_data(bool english) {
 
 				if (DATA_VALID(p, ep->mode2_data)) {
 					p->cust_snprintf(buf, sizeof(buf), english, p,
-						ep->mode2_data, 3);
+					                 ep->mode2_data, 3);
 				} else {
 					snprintf(buf, sizeof(buf), "-----");
 				}
@@ -203,8 +201,7 @@ print_current_data(bool english) {
 	}
 }
 
-static void
-log_response(int ecu, response *r) {
+static void log_response(int ecu, response *r) {
 	assert(global_logfp != NULL);
 
 	/* Only print good records */
@@ -217,8 +214,7 @@ log_response(int ecu, response *r) {
 	fprintf(global_logfp, "\n");
 }
 
-static void
-log_current_data(void) {
+static void log_current_data(void) {
 	response *r;
 	ecu_data *ep;
 	unsigned int i;
@@ -231,8 +227,8 @@ log_current_data(void) {
 	fprintf(global_logfp, "MODE 1 DATA\n");
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		for (r = ep->mode1_data;
-			r < &ep->mode1_data[ARRAY_SIZE(ep->mode1_data)]; r++) {
-				log_response((int)i, r);
+		     r < &ep->mode1_data[ARRAY_SIZE(ep->mode1_data)]; r++) {
+			log_response((int)i, r);
 		}
 	}
 
@@ -240,14 +236,13 @@ log_current_data(void) {
 	fprintf(global_logfp, "MODE 2 DATA\n");
 	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
 		for (r = ep->mode2_data;
-			r < &ep->mode2_data[ARRAY_SIZE(ep->mode2_data)]; r++) {
+		     r < &ep->mode2_data[ARRAY_SIZE(ep->mode2_data)]; r++) {
 			log_response((int)i, r);
 		}
 	}
 }
 
-static int
-cmd_monitor(int argc, char **argv) {
+static int cmd_monitor(int argc, char **argv) {
 	int rv;
 	bool english = 0;
 
@@ -301,8 +296,7 @@ cmd_monitor(int argc, char **argv) {
 
 // scan : use existing L3 J1979 connection, or establish a new one by trying all known protos.
 
-static int
-cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
+static int cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
 	int rv=DIAG_ERR_GENERAL;
 	if (argc > 1) {
 		return CMD_USAGE;
@@ -356,8 +350,7 @@ cmd_scan(UNUSED(int argc), UNUSED(char **argv)) {
 
 
 
-static int
-cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
+static int cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 	char *input;
 
 	if (global_state < STATE_CONNECTED) {
@@ -366,7 +359,7 @@ cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 	}
 
 	input = basic_get_input("Are you sure you wish to clear the Diagnostic "
-			"Trouble Codes (y/n) ? ", stdin);
+	                        "Trouble Codes (y/n) ? ", stdin);
 	if (!input) {
 		return CMD_OK;
 	}
@@ -387,8 +380,7 @@ cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 
 
 
-static int
-cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
+static int cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
 	unsigned int i;
 
@@ -410,8 +402,7 @@ cmd_ecus(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
-static void
-print_resp_info(UNUSED(int mode), response *data) {
+static void print_resp_info(UNUSED(int mode), response *data) {
 
 	int i;
 	for (i=0; i<256; i++) {
@@ -422,7 +413,7 @@ print_resp_info(UNUSED(int mode), response *data) {
 				printf("\n");
 			} else {
 				printf("0x%02X: Failed 0x%X\n",
-					i, data->data[1]);
+				       i, data->data[1]);
 			}
 		}
 		data++;
@@ -430,8 +421,7 @@ print_resp_info(UNUSED(int mode), response *data) {
 }
 
 
-static int
-cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
+static int cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
 	ecu_data *ep;
 	int i;
 
@@ -458,9 +448,8 @@ cmd_dumpdata(UNUSED(int argc), UNUSED(char **argv)) {
 
 
 /*print_pidinfo() : print supported PIDs (0 to 0x60) */
-static void
-print_pidinfo(int mode, uint8_t *pid_data) {
-	int i,j;	/* j : # pid per line */
+static void print_pidinfo(int mode, uint8_t *pid_data) {
+	int i,j;        /* j : # pid per line */
 
 	printf(" Mode %d:", mode);
 	for (i=0, j=0; i<=0x60; i++) {
@@ -492,7 +481,7 @@ static int cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
 	for (i=0,ep=ecu_info; i<MAX_ECU; i++,ep++) {
 		if (ep->valid) {
 			printf("ECU %d address 0x%02X: Supported PIDs:\n",
-				i, ep->ecu_addr & 0xff);
+			       i, ep->ecu_addr & 0xff);
 			print_pidinfo(1, ep->mode1_info);
 			print_pidinfo(2, ep->mode2_info);
 			print_pidinfo(5, ep->mode5_info);
@@ -509,17 +498,16 @@ static int cmd_pids(UNUSED(int argc), UNUSED(char **argv)) {
 const struct cmd_tbl_entry scantool_cmd_table[] = {
 	{ "scan", "scan", "Start SCAN process", cmd_scan, 0, NULL},
 	{ "monitor", "monitor [english/metric]", "Continuously monitor rpm etc",
-		cmd_monitor, 0, NULL},
+	  cmd_monitor, 0, NULL},
 	{ "cleardtc", "cleardtc", "Clear DTCs from ECU", cmd_cleardtc, 0, NULL},
 	{ "ecus", "ecus", "Show ECU information", cmd_ecus, 0, NULL},
 	{ "watch", "watch [raw/nodecode/nol3]",
-		"Watch the diagnostic bus and, if not in raw/nol3 mode, decode data",
-		cmd_watch, 0, NULL},
+	  "Watch the diagnostic bus and, if not in raw/nol3 mode, decode data",
+	  cmd_watch, 0, NULL},
 	{ "dumpdata", "dumpdata", "Show Mode1 Pid1/2 responses",
-		cmd_dumpdata, 0, NULL},
+	  cmd_dumpdata, 0, NULL},
 	{ "pids", "pids", "Shows PIDs supported by ECU",
-		cmd_pids, 0, NULL},
+	  cmd_pids, 0, NULL},
 	//no builtins for now since this table is appended with the one in scantool_cli
 	CLI_TBL_END
 };
-

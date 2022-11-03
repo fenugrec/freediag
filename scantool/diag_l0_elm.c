@@ -3,26 +3,26 @@
  *
  * (c) 2011-2016 fenugrec
  * Diag, Layer 0, interface for Scantool.net's ELM32x Interface
-  *
- *This is meant to support ELM323 & 327 devices; clones and originals.
+ *
+ * This is meant to support ELM323 & 327 devices; clones and originals.
  * COM speed is "autodetected" (it tries 38400, 9600 and 115200bps) but can also be
  * manually specified.
  *
- *ELM interfaces are particular in that they handle the header bytes + checksum internally.
- *Data is transferred in ASCII hex format, i.e. 0x46 0xFE is sent and received as "46FE"
- *This could be modified by enabling the "packed data" mode but I think ELM327 devices
- *don't support that, and clones are equally hopeless.
+ * ELM interfaces are particular in that they handle the header bytes + checksum internally.
+ * Data is transferred in ASCII hex format, i.e. 0x46 0xFE is sent and received as "46FE"
+ * This could be modified by enabling the "packed data" mode but I think ELM327 devices
+ * don't support that, and clones are equally hopeless.
  *
- *The ELM327 has non-volatile settings; this will require special treatment. Not
+ * The ELM327 has non-volatile settings; this will require special treatment. Not
  * completely implemented at the moment.
 
- *Note concerning non-volatile settings : it appears only these are stored to the EEPROM:
+ * Note concerning non-volatile settings : it appears only these are stored to the EEPROM:
  * -327: AT SP (set protocol)
  * -327: PP 0C (custom baudrate)
  * -323: these have no EEPROM so "ATZ" should really reset all to default
  *
  *
- *Problems :
+ * Problems :
  * * _recv() doesn't check if a good prompt '>' was received at the end
  * * every time _open() is called it goes through the whole (long) init sequence
  * * responses from multiple ECUs probably won't work
@@ -45,24 +45,24 @@
 #include "diag_l1.h"
 
 
-#define ELM_BUFSIZE 1000	//fit even max-length iso14230 frames, at 3 ASCII chars per byte.
-#define ELM_SLOWNESS	100	//Add this many ms to read timeouts, because ELMs are sloooow
-#define ELM_PURGETIME	400	//Time to wait (ms) for a response to "ATI" command
+#define ELM_BUFSIZE 1000        //fit even max-length iso14230 frames, at 3 ASCII chars per byte.
+#define ELM_SLOWNESS    100     //Add this many ms to read timeouts, because ELMs are sloooow
+#define ELM_PURGETIME   400     //Time to wait (ms) for a response to "ATI" command
 
 struct elm_device {
-	int protocol;		//current L1 protocol
+	int protocol;           //current L1 protocol
 
-	int elmflags; 	//see defines below
+	int elmflags;   //see defines below
 
-	struct	cfgi port;
-	struct	cfgi speed;	//Host <-> ELM comms
+	struct  cfgi port;
+	struct  cfgi speed;     //Host <-> ELM comms
 
 	struct diag_serial_settings serial;
-	ttyp *tty_int;			/** handle for tty stuff */
+	ttyp *tty_int;                  /** handle for tty stuff */
 
-	uint8_t kb1, kb2;	// key bytes from 5 baud init
-	uint8_t atsh[3];	// current header setting for ISO9141
-	struct diag_msg *wm;	// custom wakeup message, if set
+	uint8_t kb1, kb2;       // key bytes from 5 baud init
+	uint8_t atsh[3];        // current header setting for ISO9141
+	struct diag_msg *wm;    // custom wakeup message, if set
 };
 
 #define CFGSPEED_DESCR "Host <-> ELM comm speed (bps)"
@@ -71,23 +71,23 @@ struct elm_device {
 
 //flags for elmflags; set either 323_BASIC or 327_BASIC but not both;
 // _CLONE can be set in addition to the basic type
-#define ELM_323_BASIC	1	//device type is 323
-#define ELM_327_BASIC	2	//device type is 327
-#define ELM_32x_CLONE	4	//device is a clone; some commands will not be supported
-#define ELM_INITDONE	0x10	//set when "BUS INIT" has happened. This is important for clones.
+#define ELM_323_BASIC   1       //device type is 323
+#define ELM_327_BASIC   2       //device type is 327
+#define ELM_32x_CLONE   4       //device is a clone; some commands will not be supported
+#define ELM_INITDONE    0x10    //set when "BUS INIT" has happened. This is important for clones.
 
 
 // possible error messages returned by the ELM IC
 static const char *elm323_errors[] = {"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?", NULL};
 
 static const char *elm327_errors[] = {"BUS BUSY", "FB ERROR", "DATA ERROR", "<DATA ERROR", "NO DATA", "?",
-						"ACT ALERT", "BUFFER FULL", "BUS ERROR", "CAN ERROR", "LP ALERT",
-						"LV RESET", "<RX ERROR", "STOPPED", "UNABLE TO CONNECT", "ERR", NULL};
+	                              "ACT ALERT", "BUFFER FULL", "BUS ERROR", "CAN ERROR", "LP ALERT",
+	                              "LV RESET", "<RX ERROR", "STOPPED", "UNABLE TO CONNECT", "ERR", NULL};
 
 // authentic VS clone identification strings.
 // I know of no elm323 clones. 327 clones may not support some commands (atfi, atsi, atkw) and thus need fallback methods
-static const char *elm323_official[] = {"2.0",NULL};	//authentic 323 firmware versions, possibly incomplete list
-static const char *elm323_clones[] = {NULL};	//known cloned versions
+static const char *elm323_official[] = {"2.0",NULL};    //authentic 323 firmware versions, possibly incomplete list
+static const char *elm323_clones[] = {NULL};    //known cloned versions
 static const char *elm327_official[] = {"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3a", "1.3", "1.4b", "2.0", NULL};
 static const char *elm327_clones[] = {"1.4", "1.4a", "1.5a", "1.5", "2.1", NULL};
 
@@ -101,11 +101,11 @@ extern const struct diag_l0 diag_l0_elm;
 static int elm_send(struct diag_l0_device *dl0d, const void *data, size_t len);
 
 static int elm_sendcmd(struct diag_l0_device *dl0d,
-	const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp);
+                       const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp);
 
 static int elm_purge(struct diag_l0_device *dl0d);
 
-static void elm_parse_cr(uint8_t *data, int len);	//change 0x0A to 0x0D
+static void elm_parse_cr(uint8_t *data, int len);       //change 0x0A to 0x0D
 static void elm_close(struct diag_l0_device *dl0d);
 
 /*
@@ -113,8 +113,7 @@ static void elm_close(struct diag_l0_device *dl0d);
  * present, it's just here for the code here to initialise its
  * variables etc
  */
-static int
-elm_init(void) {
+static int elm_init(void) {
 	static int elm_initdone=0;
 
 	if (elm_initdone) {
@@ -189,22 +188,21 @@ void elm_del(struct diag_l0_device *dl0d) {
 }
 
 
-static void
-elm_close(struct diag_l0_device *dl0d) {
+static void elm_close(struct diag_l0_device *dl0d) {
 	uint8_t buf[]="ATPC\x0D";
 	struct elm_device *dev;
 
 	assert(dl0d != NULL);
 
 	if (dl0d->opened) {
-		elm_sendcmd(dl0d, buf, 5, 500, NULL);	//close protocol. So clean !
+		elm_sendcmd(dl0d, buf, 5, 500, NULL);   //close protocol. So clean !
 	}
 
 	dev = (struct elm_device *)dl0d->l0_int;
 
 	/* If debugging, print to stderr */
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
-		FLFMT "link %p closing\n", FL, (void *)dl0d);
+	          FLFMT "link %p closing\n", FL, (void *)dl0d);
 
 	diag_tty_close(dev->tty_int);
 	dev->tty_int = NULL;
@@ -219,7 +217,7 @@ elm_close(struct diag_l0_device *dl0d) {
 // data[] must be \0-terminated !
 static const char *elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) {
 	struct elm_device *dev;
-	const char **elm_errors;	//just used to select between the 2 error lists
+	const char **elm_errors;        //just used to select between the 2 error lists
 	int i;
 
 	dev = (struct elm_device *) dl0d->l0_int;
@@ -235,8 +233,8 @@ static const char *elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) 
 
 	for (i=0; elm_errors[i]; i++) {
 		if (strstr((char *)data, elm_errors[i])) {
-				//we found an error msg, return it.
-				return elm_errors[i];
+			//we found an error msg, return it.
+			return elm_errors[i];
 		}
 	}
 	return NULL;
@@ -251,22 +249,21 @@ static const char *elm_parse_errors(struct diag_l0_device *dl0d, uint8_t *data) 
 //returns 0 if (prompt_good) && ("OK" found anywhere in the response) && (no known error message was present) ||
 //		(prompt_good && ATZ or ATKW command was sent) , since response doesn't contain "OK" for ATZ or ATKW.
 //elm_sendcmd should not be called from outside diag_l0_elm.c.
-static int
-elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp) {
+static int elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsigned int timeout, uint8_t *resp) {
 	//note : we better not request (len == (size_t) -1) bytes ! The casts between ssize_t and size_t are
 	// "muddy" in here
 	//ssize_t xferd;
 	int rv;
-	uint8_t ebuf[ELM_BUFSIZE];	//local buffer if caller provides none.
+	uint8_t ebuf[ELM_BUFSIZE];      //local buffer if caller provides none.
 	uint8_t *buf;
 	struct elm_device *dev;
-	const char *err_str;	//hold a possible error message
+	const char *err_str;    //hold a possible error message
 
 	dev = (struct elm_device *)dl0d->l0_int;
 	//we need access to elm_device to access .elmflags
 
 	if (resp == NULL) {
-		buf=ebuf;	//use local buffer
+		buf=ebuf;       //use local buffer
 	} else {
 		buf = resp; // or caller-provided buffer
 	}
@@ -284,35 +281,35 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsign
 		//the %.*s is pure magic : limits the string length to len, even if the string is not null-terminated.
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	diag_tty_iflush(dev->tty_int);	//currently the code often "forgets" data in the input buffer, especially if the previous
-					//transaction failed. Flushing the input increases the odds of not crashing soon
+	diag_tty_iflush(dev->tty_int);  //currently the code often "forgets" data in the input buffer, especially if the previous
+	                                //transaction failed. Flushing the input increases the odds of not crashing soon
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "elm_sendcmd: %.*s\n", FL, (int) len-1, (char *)data);
+	          FLFMT "elm_sendcmd: %.*s\n", FL, (int) len-1, (char *)data);
 
 	rv = diag_tty_write(dev->tty_int, data, len);
-	if (rv != (int) len) {	//XXX danger ! evil cast
+	if (rv != (int) len) {  //XXX danger ! evil cast
 		fprintf(stderr, FLFMT "elm_sendcmd: write error\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
 	//next, receive ELM response, within {ms} delay.
 
-	rv=diag_tty_read(dev->tty_int, buf, ELM_BUFSIZE-1, timeout);	//rv=# bytes read
+	rv=diag_tty_read(dev->tty_int, buf, ELM_BUFSIZE-1, timeout);    //rv=# bytes read
 
 	if (rv<1) {
 		//no data or error
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-			FLFMT "ELM did not respond\n", FL);
+		          FLFMT "ELM did not respond\n", FL);
 
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	elm_parse_cr(buf, rv);	//debug output is prettier with this
+	elm_parse_cr(buf, rv);  //debug output is prettier with this
 	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V, buf, rv,
-		FLFMT "received %d bytes (%.*s\n); hex: ", FL, rv, rv, (char *)buf);
+	              FLFMT "received %d bytes (%.*s\n); hex: ", FL, rv, rv, (char *)buf);
 
-	buf[rv]=0;	//terminate string
+	buf[rv]=0;      //terminate string
 	if (buf[rv-1] != '>') {
 		//if last character isn't the input prompt, there is a problem
 		fprintf(stderr, FLFMT "ELM not ready (no prompt received): %s\nhex: ", FL, buf);
@@ -341,8 +338,8 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsign
 	//check if we either 1)got a positive response "OK"
 	//2)were sending ATZ (special case hack, it doesn't answer "OK")
 	if ((strstr((char *)buf, "OK") != NULL) ||
-		(strstr((char *)data, "ATKW") != NULL) ||
-		(strstr((char *)data, "ATZ") != NULL)) {
+	    (strstr((char *)data, "ATKW") != NULL) ||
+	    (strstr((char *)data, "ATZ") != NULL)) {
 		return 0;
 	}
 
@@ -356,8 +353,7 @@ elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t len, unsign
  * Open the diagnostic device
  * ELM settings used : no echo (E0), headers on (H1), linefeeds off (L0), mem off (M0)
  */
-static int
-elm_open(struct diag_l0_device *dl0d, int iProtocol) {
+static int elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	int i,rv;
 	struct elm_device *dev;
 	struct diag_serial_settings sset;
@@ -365,14 +361,14 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	uint8_t rxbuf[ELM_BUFSIZE];
 
 	const char **elm_official;
-	const char **elm_clones;	//point to elm323_ or elm327_ clone and official version string lists
+	const char **elm_clones;        //point to elm323_ or elm327_ clone and official version string lists
 
 	assert(dl0d);
 	dev = dl0d->l0_int;
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "open port %s L1proto %d\n",
-		FL, dev->port.val.str, iProtocol);
+	          FLFMT "open port %s L1proto %d\n",
+	          FL, dev->port.val.str, iProtocol);
 
 	elm_init();
 
@@ -414,18 +410,18 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 
 		if ((rv=diag_tty_setup(dev->tty_int, &sset))) {
 			fprintf(stderr, FLFMT "Error setting %u;8N1 on %s\n",
-				FL, sset.speed, dev->port.val.str);
+			        FL, sset.speed, dev->port.val.str);
 			elm_close(dl0d);
 			return diag_ifwderr(rv);
 		}
 
-		diag_tty_iflush(dev->tty_int);	/* Flush unread input */
+		diag_tty_iflush(dev->tty_int);  /* Flush unread input */
 
 		//At this stage, the ELM has possibly been powered up for a while;
 		//it may have an unfinished command / garbage in its input buffer. We
 		//need to clear that before sending the real ATZ ==> ATI is quick and safe; elm_purge does this.
 
-		dev->elmflags=0;	//we know nothing yet
+		dev->elmflags=0;        //we know nothing yet
 
 		rv=elm_purge(dl0d);
 		//if rv=0, we got a prompt so we know speed is set properly.
@@ -440,7 +436,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "elm_open : sending ATZ...\n", FL);
+	          FLFMT "elm_open : sending ATZ...\n", FL);
 
 	//the command "ATZ" causes a full reset and the ELM replies with
 	//a string like "ELM32x vX.Xx\n>"
@@ -470,7 +466,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 	}
 	// 2) identify valid VS clone devices.
-	rv=0;	// temp "device identified" flag
+	rv=0;   // temp "device identified" flag
 	for (i=0; elm_clones[i]; i++) {
 		if (strstr((char *)rxbuf, elm_clones[i])) {
 			printf("Clone ELM found, v%s. Expect inferior performance\n", elm_clones[i]);
@@ -482,7 +478,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 
 	if (rv==0) {
 		for (i=0; elm_official[i]; i++) {
-				if (strstr((char *)rxbuf, elm_official[i])) {
+			if (strstr((char *)rxbuf, elm_official[i])) {
 				printf("Official ELM found, v%s\n", elm_official[i]);
 				rv=1;
 				break;
@@ -502,15 +498,15 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "ELM reset success, elmflags=%#x\n", FL, dev->elmflags);
+	          FLFMT "ELM reset success, elmflags=%#x\n", FL, dev->elmflags);
 
-	dl0d->opened = 1;		//TODO : use this flag to skip the clone detection next time
+	dl0d->opened = 1;               //TODO : use this flag to skip the clone detection next time
 
 	//now send "ATE0\n" command to disable echo.
 	buf=(uint8_t *)"ATE0\x0D";
 	if (elm_sendcmd(dl0d, buf, 5, 500, NULL)) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			FLFMT "sending \"ATE0\" failed\n", FL);
+		          FLFMT "sending \"ATE0\" failed\n", FL);
 
 		elm_close(dl0d);
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
@@ -520,7 +516,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	buf=(uint8_t *)"ATL0\x0D";
 	if (elm_sendcmd(dl0d, buf, 5, 500, NULL)) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			FLFMT "sending \"ATL0\" failed\n", FL);
+		          FLFMT "sending \"ATL0\" failed\n", FL);
 
 		elm_close(dl0d);
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
@@ -530,7 +526,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	buf=(uint8_t *)"ATH1\x0D";
 	if (elm_sendcmd(dl0d, buf, 5, 500, NULL)) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-			FLFMT "sending \"ATH1\" failed\n", FL);
+		          FLFMT "sending \"ATH1\" failed\n", FL);
 
 		elm_close(dl0d);
 		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
@@ -541,7 +537,7 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 		buf=(uint8_t *)"ATM0\x0D";
 		if (elm_sendcmd(dl0d, buf, 5, 500, NULL)) {
 			DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-				FLFMT "sending \"ATM0\" failed\n", FL);
+			          FLFMT "sending \"ATM0\" failed\n", FL);
 
 			elm_close(dl0d);
 			return diag_iseterr(DIAG_ERR_BADIFADAPTER);
@@ -550,8 +546,8 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 
 	//check if proto is really supported (323 supports only 9141 and 14230)
 	if ((dev->elmflags & ELM_323_BASIC) &&
-		((iProtocol != DIAG_L1_ISO9141) &&
-		(iProtocol != DIAG_L1_ISO14230))) {
+	    ((iProtocol != DIAG_L1_ISO9141) &&
+	     (iProtocol != DIAG_L1_ISO14230))) {
 		return diag_iseterr(DIAG_ERR_PROTO_NOTSUPP);
 	}
 
@@ -577,17 +573,17 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	if (buf != NULL) {
 		if (elm_sendcmd(dl0d, buf, 6, 500, NULL)) {
 			DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-				FLFMT "sending \"ATTPx\" failed\n", FL);
+			          FLFMT "sending \"ATTPx\" failed\n", FL);
 
-		elm_close(dl0d);
-		return diag_iseterr(DIAG_ERR_BADIFADAPTER);
+			elm_close(dl0d);
+			return diag_iseterr(DIAG_ERR_BADIFADAPTER);
 		}
 	}
 
 
 	//at this point : ELM is ready for further ops
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "ELM ready.\n", FL);
+	          FLFMT "ELM ready.\n", FL);
 
 	return 0;
 }
@@ -600,12 +596,11 @@ elm_open(struct diag_l0_device *dl0d, int iProtocol) {
  * Only callable internally. Not for export !!
  * Unsupported by some (all?) clones !! (they handle the init internally, on demand)
  */
-static int
-elm_fastinit(struct diag_l0_device *dl0d) {
+static int elm_fastinit(struct diag_l0_device *dl0d) {
 	uint8_t *cmds= (uint8_t *) "ATFI\x0D";
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-		FLFMT "ELM forced fastinit...\n", FL);
+	          FLFMT "ELM forced fastinit...\n", FL);
 
 	//send command with 1000ms timeout (guessing)
 	if (elm_sendcmd(dl0d, cmds, 5, 1000, NULL)) {
@@ -616,12 +611,11 @@ elm_fastinit(struct diag_l0_device *dl0d) {
 }
 
 
-static int
-elm_slowinit(struct diag_l0_device *dl0d) {
+static int elm_slowinit(struct diag_l0_device *dl0d) {
 	uint8_t *cmds=(uint8_t *)"ATSI\x0D";
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-		FLFMT "ELM forced slowinit...\n", FL);
+	          FLFMT "ELM forced slowinit...\n", FL);
 
 	//huge timeout of 2.8s. Not sure if this is adequate
 	if (elm_sendcmd(dl0d, cmds, 5, 2800, NULL)) {
@@ -636,8 +630,7 @@ elm_slowinit(struct diag_l0_device *dl0d) {
 //Only used to force clones to establish a connection... hack-grade because it assumes all ECUs support this.
 // non-OBD ECUs may not work with this. ELM clones suck...
 // TODO : add argument to allow either a 01 00 request (SID1 PID0, J1979) or 3E (iso14230 TesterPresent) request to force init.
-static int
-elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout) {
+static int elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout) {
 	int rv;
 	struct elm_device *dev;
 	uint8_t buf[MAXRBUF];
@@ -656,20 +649,20 @@ elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout) {
 	}
 
 	// receive everything; we're hoping for a prompt at the end and no error message.
-	rv=diag_tty_read(dev->tty_int, buf, MAXRBUF-5, timeout);	//rv=# bytes read
+	rv=diag_tty_read(dev->tty_int, buf, MAXRBUF-5, timeout);        //rv=# bytes read
 	elm_parse_cr(buf, rv);
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "received %d bytes: %.*s: ",
-		FL, rv, rv, buf);
+	          FLFMT "received %d bytes: %.*s: ",
+	          FL, rv, rv, buf);
 
 	if (rv<1) {
 		//no data or error
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-			FLFMT "ELM did not respond\n", FL);
+		          FLFMT "ELM did not respond\n", FL);
 
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	buf[rv]=0;	//terminate string
+	buf[rv]=0;      //terminate string
 	if (buf[rv-1] != '>') {
 		//if last character isn't the input prompt, there is a problem
 		fprintf(stderr, FLFMT "ELM not ready (no prompt received): %s\n", FL, buf);
@@ -688,8 +681,7 @@ elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout) {
 }
 
 // set wakeup message
-static int
-elm_updatewm(struct diag_l0_device *dl0d) {
+static int elm_updatewm(struct diag_l0_device *dl0d) {
 	struct elm_device *dev;
 	uint8_t wm[18];
 
@@ -706,16 +698,15 @@ elm_updatewm(struct diag_l0_device *dl0d) {
  * Do manual wakeup on the bus, if supported
  * ret 0 if ok
  */
-static int
-elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
+static int elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	const uint8_t *buf;
 	int rv = DIAG_ERR_INIT_NOTSUPP;
-	unsigned int timeout=0;	//for bogus init
+	unsigned int timeout=0; //for bogus init
 
 	struct elm_device *dev;
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "ELM initbus type %d\n", FL, in->type);
+	          FLFMT "ELM initbus type %d\n", FL, in->type);
 
 	dev = (struct elm_device *)dl0d->l0_int;
 
@@ -725,152 +716,152 @@ elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 
 	if (dev->elmflags & ELM_32x_CLONE) {
 		printf("Note : explicit bus init not available on clones. Errors here are ignored.\n");
-		dev->elmflags &= ~ELM_INITDONE;	//clear flag
+		dev->elmflags &= ~ELM_INITDONE; //clear flag
 	}
 
 	switch (in->type) {
-		case DIAG_L1_INITBUS_FAST: {
-			uint8_t fmt, src, tgt;
-			uint8_t setproto[]="ATTP5\x0D";
-			uint8_t sethdr[15];	//format: "ATSH xx yy zz\x0D"
+	case DIAG_L1_INITBUS_FAST: {
+		uint8_t fmt, src, tgt;
+		uint8_t setproto[]="ATTP5\x0D";
+		uint8_t sethdr[15];             //format: "ATSH xx yy zz\x0D"
 
-			fmt=(in->physaddr)? 0x81:0xC1;
-			src=in->testerid;
-			tgt=in->addr;
-			if (dev->elmflags & ELM_327_BASIC) {
-				//only needed for 327s (ATTP not available on ELM323)
-				//set proto; We assume iso14230 since it's a fast init
-				rv=elm_sendcmd(dl0d, setproto, 6, 500, NULL);
-				if (rv < 0) {
-					break;
-				}
+		fmt=(in->physaddr)? 0x81:0xC1;
+		src=in->testerid;
+		tgt=in->addr;
+		if (dev->elmflags & ELM_327_BASIC) {
+			//only needed for 327s (ATTP not available on ELM323)
+			//set proto; We assume iso14230 since it's a fast init
+			rv=elm_sendcmd(dl0d, setproto, 6, 500, NULL);
+			if (rv < 0) {
+				break;
+			}
+		}
+
+		// set wakeup message if applicable
+		if (dev->wm != NULL) {
+			rv=elm_updatewm(dl0d);
+			if (rv < 0) {
+				return rv;
+			}
+		}
+
+		sprintf((char *) sethdr, "ATSH %02X %02X %02X\x0D", fmt, tgt, src);
+		rv=elm_sendcmd(dl0d, sethdr, 14, 500, NULL);
+
+		//explicit init is not supported by clones, they wait for the first OBD request...
+		if ((dev->elmflags & ELM_32x_CLONE)==0) {
+			rv = elm_fastinit(dl0d);
+			if (!rv) {
+				dev->elmflags |= ELM_INITDONE;
+			}
+		}               //if explicit init failed we'll try a bogus init anyway
+		timeout=1500;
+	}                       //case fastinit
+	break;                  //case fastinit
+	case DIAG_L1_INITBUS_5BAUD:
+		//if 327 : set proto first
+		if (dev->elmflags & ELM_327_BASIC) {
+			if (dev->protocol & DIAG_L1_ISO9141) {
+				buf=(uint8_t *) "ATTP3\x0D";
+			} else if (dev->protocol & DIAG_L1_ISO14230) {
+				buf=(uint8_t *) "ATTP4\x0D";
+			} else {         // illegal combination !
+				return diag_iseterr(
+					DIAG_ERR_INIT_NOTSUPP);
 			}
 
-			// set wakeup message if applicable
-			if (dev->wm != NULL) {
-				rv=elm_updatewm(dl0d);
-				if (rv < 0) {
-					return rv;
-				}
+			rv=elm_sendcmd(dl0d, buf, 6, 500, NULL);
+			if (rv < 0) {
+				break;
 			}
+		}
 
-			sprintf((char *) sethdr, "ATSH %02X %02X %02X\x0D", fmt, tgt, src);
-			rv=elm_sendcmd(dl0d, sethdr, 14, 500, NULL);
-
-			//explicit init is not supported by clones, they wait for the first OBD request...
-			if ((dev->elmflags & ELM_32x_CLONE)==0) {
-				rv = elm_fastinit(dl0d);
-				if (!rv) {
-					dev->elmflags |= ELM_INITDONE;
-				}
-			}	//if explicit init failed we'll try a bogus init anyway
-			timeout=1500;
-			}	//case fastinit
-			break;	//case fastinit
-		case DIAG_L1_INITBUS_5BAUD:
-			//if 327 : set proto first
-			if (dev->elmflags & ELM_327_BASIC) {
-				if (dev->protocol & DIAG_L1_ISO9141) {
-					buf=(uint8_t *) "ATTP3\x0D";
-				} else if (dev->protocol & DIAG_L1_ISO14230) {
-					buf=(uint8_t *) "ATTP4\x0D";
-				} else { // illegal combination !
-					return diag_iseterr(
-						DIAG_ERR_INIT_NOTSUPP);
-				}
-
-				rv=elm_sendcmd(dl0d, buf, 6, 500, NULL);
-				if (rv < 0) {
-					break;
-				}
+		// set wakeup message if applicable
+		if (dev->wm != NULL) {
+			rv=elm_updatewm(dl0d);
+			if (rv < 0) {
+				return rv;
 			}
+		}
 
-			// set wakeup message if applicable
-			if (dev->wm != NULL) {
-				rv=elm_updatewm(dl0d);
-				if (rv < 0) {
-					return rv;
-				}
-			}
-
-			//set init address
-			if ((dev->elmflags & ELM_323_BASIC) && (in->addr != 0x33)) {
-				fprintf(stderr, FLFMT "elm_initbus: ELM323 doesn't support target address %02X", FL, in->addr);
+		//set init address
+		if ((dev->elmflags & ELM_323_BASIC) && (in->addr != 0x33)) {
+			fprintf(stderr, FLFMT "elm_initbus: ELM323 doesn't support target address %02X", FL, in->addr);
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
+		if (in->addr != 0x33) {
+			uint8_t iia[15];
+			sprintf((char *) iia, "ATIIA %02X\x0D", in->addr);
+			rv=elm_sendcmd(dl0d, iia, 9, 500, NULL);
+			if (rv < 0) {
+				fprintf(stderr, FLFMT "elm_initbus: ATIIA %02X failed\n", FL, in->addr);
 				return diag_iseterr(DIAG_ERR_GENERAL);
 			}
-			if (in->addr != 0x33) {
-				uint8_t iia[15];
-				sprintf((char *) iia, "ATIIA %02X\x0D", in->addr);
-				rv=elm_sendcmd(dl0d, iia, 9, 500, NULL);
-				if (rv < 0) {
-					fprintf(stderr, FLFMT "elm_initbus: ATIIA %02X failed\n", FL, in->addr);
-					return diag_iseterr(DIAG_ERR_GENERAL);
-				}
+		}
+
+		//accept nonstandard keybytes during init
+		if (dev->elmflags & ELM_327_BASIC) {
+			buf=(uint8_t *) "ATKW0\x0D";
+			rv=elm_sendcmd(dl0d, buf, 6, 500, NULL);
+			if (rv < 0) {
+				fprintf(stderr,
+				        FLFMT
+				        "elm_initbus: ATKW0 failed, "
+				        "continuing anyway\n",
+				        FL);
 			}
+		}
 
-			//accept nonstandard keybytes during init
-			if (dev->elmflags & ELM_327_BASIC) {
-				buf=(uint8_t *) "ATKW0\x0D";
-				rv=elm_sendcmd(dl0d, buf, 6, 500, NULL);
-				if (rv < 0) {
-					fprintf(stderr,
-						FLFMT
-						"elm_initbus: ATKW0 failed, "
-						"continuing anyway\n",
-						FL);
-				}
+		//explicit init is not supported by clones
+		if ((dev->elmflags & ELM_32x_CLONE)==0) {
+			rv = elm_slowinit(dl0d);
+			if (!rv) {
+				dev->elmflags |= ELM_INITDONE;
 			}
+		}
+		timeout=4200;           //slow init is slow !
 
-			//explicit init is not supported by clones
-			if ((dev->elmflags & ELM_32x_CLONE)==0) {
-				rv = elm_slowinit(dl0d);
-				if (!rv) {
-					dev->elmflags |= ELM_INITDONE;
-				}
+		//query elm for keybytes
+		dev->kb1 = 0; dev->kb2 = 0;
+		if (dev->elmflags & ELM_INITDONE) {
+			uint8_t rxbuf[ELM_BUFSIZE];
+			unsigned int kb1, kb2;
+
+			buf=(uint8_t *) "ATKW\x0D";
+			rv=elm_sendcmd(dl0d, buf, 5, 500, rxbuf);
+			if (rv < 0) {
+				fprintf(stderr, FLFMT "elm_initbus: ATKW failed, continuing anyway\n", FL);
+				// TODO: for clones without ATKW, can
+				// fall back to ATBD. If ATBD response
+				// starts with 06 addr 55 xx yy aa bb
+				// and aa=yy^0xff and bb=addr^0xff then
+				// xx and yy should be key bytes
+				rv = 0;
+			} else if (sscanf((char *)rxbuf, "1:%02X 2:%02X", &kb1, &kb2) == 2) {
+				dev->kb1 = kb1;
+				dev->kb2 = kb2;
+				in->kb1 = kb1;
+				in->kb2 = kb2;
+			} else {
+				fprintf(stderr, FLFMT "elm_initbus: ATKW failed, continuing anyway\n", FL);
+				rv = 0;
 			}
-			timeout=4200;	//slow init is slow !
+		}
 
-			//query elm for keybytes
-			dev->kb1 = 0; dev->kb2 = 0;
-			if (dev->elmflags & ELM_INITDONE) {
-				uint8_t rxbuf[ELM_BUFSIZE];
-				unsigned int kb1, kb2;
-
-				buf=(uint8_t *) "ATKW\x0D";
-				rv=elm_sendcmd(dl0d, buf, 5, 500, rxbuf);
-				if (rv < 0) {
-					fprintf(stderr, FLFMT "elm_initbus: ATKW failed, continuing anyway\n", FL);
-					// TODO: for clones without ATKW, can
-					// fall back to ATBD. If ATBD response
-					// starts with 06 addr 55 xx yy aa bb
-					// and aa=yy^0xff and bb=addr^0xff then
-					// xx and yy should be key bytes
-					rv = 0;
-				} else if (sscanf((char *)rxbuf, "1:%02X 2:%02X", &kb1, &kb2) == 2) {
-					dev->kb1 = kb1;
-					dev->kb2 = kb2;
-					in->kb1 = kb1;
-					in->kb2 = kb2;
-				} else {
-					fprintf(stderr, FLFMT "elm_initbus: ATKW failed, continuing anyway\n", FL);
-					rv = 0;
-				}
+		// enable receipt of >7 byte messages, if possible
+		if (dev->elmflags & ELM_INITDONE) {
+			buf=(uint8_t *) "ATAL\x0D";
+			rv=elm_sendcmd(dl0d, buf, 5, 500, NULL);
+			if (rv < 0) {
+				fprintf(stderr, FLFMT "elm_initbus: ATAL failed, continuing anyway\n", FL);
+				rv = 0;
 			}
+		}
 
-			// enable receipt of >7 byte messages, if possible
-			if (dev->elmflags & ELM_INITDONE) {
-				buf=(uint8_t *) "ATAL\x0D";
-				rv=elm_sendcmd(dl0d, buf, 5, 500, NULL);
-				if (rv < 0) {
-					fprintf(stderr, FLFMT "elm_initbus: ATAL failed, continuing anyway\n", FL);
-					rv = 0;
-				}
-			}
-
-			break;
-		default:
-			rv = DIAG_ERR_INIT_NOTSUPP;
-			break;
+		break;
+	default:
+		rv = DIAG_ERR_INIT_NOTSUPP;
+		break;
 	}
 
 	if ((dev->elmflags & ELM_INITDONE)==0) {
@@ -911,7 +902,7 @@ static int elm_purge(struct diag_l0_device *dl0d) {
 
 	if (buf[rv-1] != '>') {
 		DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
-			buf, rv, FLFMT "elm_purge: got ", FL);
+		              buf, rv, FLFMT "elm_purge: got ", FL);
 
 		return DIAG_ERR_GENERAL;
 	}
@@ -927,8 +918,7 @@ static int elm_purge(struct diag_l0_device *dl0d) {
  * Returns 0 on success
  */
 
-static int
-elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
+static int elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 	uint8_t buf[ELM_BUFSIZE];
 	struct elm_device *dev = dl0d->l0_int;
 	//ssize_t xferd;
@@ -950,13 +940,13 @@ elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "ELM: sending %d bytes\n", FL, (int) len);
+	          FLFMT "ELM: sending %d bytes\n", FL, (int) len);
 
 	if ((dev->protocol & DIAG_L1_ISO9141) && memcmp(dev->atsh, data, 3)) {
 		sprintf((char *)buf, "ATSH %02X %02X %02X\x0D",
-			(unsigned int)((uint8_t *)data)[0],
-			(unsigned int)((uint8_t *)data)[1],
-			(unsigned int)((uint8_t *)data)[2]);
+		        (unsigned int)((uint8_t *)data)[0],
+		        (unsigned int)((uint8_t *)data)[1],
+		        (unsigned int)((uint8_t *)data)[2]);
 		rv=elm_sendcmd(dl0d, buf, 14, 500, NULL);
 		if (rv < 0) {
 			fprintf(stderr, FLFMT "elm_send: ATSH failed\n",FL);
@@ -966,11 +956,11 @@ elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 		// if ISO9141 protocol setting with KWP message format,
 		// adjust receive filter
 		if ((dev->atsh[0] & 0x80) &&
-			(dev->atsh[2] == (unsigned int)((uint8_t *)data)[2])) {
+		    (dev->atsh[2] == (unsigned int)((uint8_t *)data)[2])) {
 			// already sent ATSR for this address
 		} else if ((unsigned int)((uint8_t *)data)[0] & 0x80) {
 			sprintf((char *)buf, "ATSR %02X\x0D",
-				(unsigned int)((uint8_t *)data)[2]);
+			        (unsigned int)((uint8_t *)data)[2]);
 			rv=elm_sendcmd(dl0d, buf, 8, 500, NULL);
 			if (rv < 0) {
 				fprintf(stderr, FLFMT "elm_send: ATSR failed\n",FL);
@@ -987,10 +977,10 @@ elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 	}
 	i=2*len;
 	buf[i]=0x0D;
-	buf[i+1]=0x00;	//terminate string
+	buf[i+1]=0x00;  //terminate string
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "ELM: (sending string %s)\n", FL, (char *) buf);
+	          FLFMT "ELM: (sending string %s)\n", FL, (char *) buf);
 
 	if (dev->protocol & DIAG_L1_ISO9141) {
 		i -= 6;
@@ -998,7 +988,7 @@ elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 	} else {
 		rv=diag_tty_write(dev->tty_int, buf, i+1);
 	}
-	if (rv != (int) (i+1)) {	//XXX danger ! evil cast !
+	if (rv != (int) (i+1)) {        //XXX danger ! evil cast !
 		fprintf(stderr, FLFMT "elm_send:write error\n",FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -1007,7 +997,7 @@ elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
 
 /*
  * Get data (blocking), returns number of bytes read, between 1 and len
-  * ELM returns a string with format "%02X %02X %02X[...]\n" . But it's slow so we add ELM_SLOWNESS ms to the specified timeout.
+ * ELM returns a string with format "%02X %02X %02X[...]\n" . But it's slow so we add ELM_SLOWNESS ms to the specified timeout.
  * We convert this received ascii string to hex before returning.
  * note : "len" is the number of bytes read on the OBD bus, *NOT* the number of ASCII chars received on the serial link !
  * TODO decode possible error strings ! Essential because ELM can reply
@@ -1021,16 +1011,15 @@ elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
  * TODO: improve "len" semantics for L0 interfaces that do framing, such as this. Currently this returns max 1 message, to
  * let L2 do another call to get further messages (typical case of multiple responses)
  */
-static int
-elm_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeout) {
+static int elm_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeout) {
 	int rv, xferd;
 	struct elm_device *dev = dl0d->l0_int;
-	uint8_t rxbuf[3*MAXRBUF +1];	//I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
-				//the +1 is to \0-terminate the buffer for elm_parse_errors() to work
+	uint8_t rxbuf[3*MAXRBUF +1];    //I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
+	//the +1 is to \0-terminate the buffer for elm_parse_errors() to work
 
-	unsigned long t0,tf;	//manual timeout control
-	int steplen;	/* bytes per read */
-	int wp, rp;	/* write & read indexes in rxbuf; a type of FIFO */
+	unsigned long t0,tf;    //manual timeout control
+	int steplen;    /* bytes per read */
+	int wp, rp;     /* write & read indexes in rxbuf; a type of FIFO */
 	const char *err;
 
 	if ((!len) || (len > MAXRBUF)) {
@@ -1038,17 +1027,17 @@ elm_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeo
 	}
 
 	t0=diag_os_getms();
-	tf=t0+timeout + ELM_SLOWNESS;	//timeout when tf is reached
+	tf=t0+timeout + ELM_SLOWNESS;   //timeout when tf is reached
 
 	steplen=2;
 	wp=0;
 	rp=0;
 	xferd=0;
-	rxbuf[0] = 0x00;	//null-terminate
+	rxbuf[0] = 0x00;        //null-terminate
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "Expecting 3*%d bytes from ELM, %u ms timeout(+400)...",
-		FL, (int)len, timeout);
+	          FLFMT "Expecting 3*%d bytes from ELM, %u ms timeout(+400)...",
+	          FL, (int)len, timeout);
 
 	while (1) {
 		unsigned long tcur;
@@ -1072,12 +1061,12 @@ elm_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeo
 			return diag_iseterr(DIAG_ERR_GENERAL);
 		}
 
-		wp += rv;	/* position for next tty_read */
-		rxbuf[wp]=0;		// '\0'-terminate "string"
+		wp += rv;       /* position for next tty_read */
+		rxbuf[wp]=0;            // '\0'-terminate "string"
 
-		int skipc;	/* chars to skip */
+		int skipc;      /* chars to skip */
 
-		skipc = strspn((char *)(&rxbuf[rp]), " ");	/* skip contig spaces */
+		skipc = strspn((char *)(&rxbuf[rp]), " ");      /* skip contig spaces */
 		rp += skipc;
 		/* line end ? */
 		skipc=strspn((char *)(&rxbuf[rp]), "\r\n>");
@@ -1123,18 +1112,18 @@ elm_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeo
 		 */
 		rp += 2;
 		steplen=1;
-	}	// while (1)
+	}       // while (1)
 
 pre_exit:
-		err = elm_parse_errors(dl0d, rxbuf);
-		if (err) {
-			if (strcmp(err, "NO DATA") == 0) {
-				return DIAG_ERR_TIMEOUT;
-			}
-			fprintf(stderr, FLFMT "ELM error %s\n", FL, err);
-			return diag_iseterr(DIAG_ERR_GENERAL);
+	err = elm_parse_errors(dl0d, rxbuf);
+	if (err) {
+		if (strcmp(err, "NO DATA") == 0) {
+			return DIAG_ERR_TIMEOUT;
 		}
-		return (xferd>0)? xferd:DIAG_ERR_TIMEOUT;
+		fprintf(stderr, FLFMT "ELM error %s\n", FL, err);
+		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
+	return (xferd>0)? xferd:DIAG_ERR_TIMEOUT;
 }
 
 
@@ -1174,8 +1163,7 @@ static int elm_setwm(struct diag_l0_device *dl0d, struct diag_msg *pmsg) {
 }
 
 
-static uint32_t
-elm_getflags(struct diag_l0_device *dl0d) {
+static uint32_t elm_getflags(struct diag_l0_device *dl0d) {
 
 	struct elm_device *dev;
 	uint32_t flags=0;
@@ -1183,7 +1171,7 @@ elm_getflags(struct diag_l0_device *dl0d) {
 	dev = (struct elm_device *)dl0d->l0_int;
 
 	flags = DIAG_L1_DATAONLY | DIAG_L1_AUTOSPEED | DIAG_L1_DOESP4WAIT |
-		DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM | DIAG_L1_DOESFULLINIT | DIAG_L1_DOESKEEPALIVE;
+	        DIAG_L1_DOESL2FRAME | DIAG_L1_DOESL2CKSUM | DIAG_L1_DOESFULLINIT | DIAG_L1_DOESKEEPALIVE;
 
 	switch (dev->protocol) {
 	case DIAG_L1_ISO9141:
@@ -1200,8 +1188,8 @@ elm_getflags(struct diag_l0_device *dl0d) {
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-		FLFMT "getflags link %p proto %d flags 0x%X\n",
-		FL, (void *)dl0d, dev->protocol, flags);
+	          FLFMT "getflags link %p proto %d flags 0x%X\n",
+	          FL, (void *)dl0d, dev->protocol, flags);
 
 	return flags;
 
@@ -1210,7 +1198,7 @@ elm_getflags(struct diag_l0_device *dl0d) {
 //elm_parse_cr : change 0x0A to 0x0D in datastream.
 static void elm_parse_cr(uint8_t *data, int len) {
 	int i=0;
-	for (;i<len; i++) {
+	for (; i<len; i++) {
 		if (*data == 0x0D) {
 			*data = 0x0A;
 		}

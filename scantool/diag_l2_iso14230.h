@@ -37,26 +37,26 @@
  * ISO 14230 specific data
  */
 struct diag_l2_14230 {
-	uint8_t initype;		/* init type : FAST/SLOW/CARB */
+	uint8_t initype;                /* init type : FAST/SLOW/CARB */
 
-	uint8_t srcaddr;	/* Src address used */
-	uint8_t dstaddr;	/* Dest address used (for connect) */
-	int modeflags;	/* 14230-specific Flags; see below */
+	uint8_t srcaddr;        /* Src address used */
+	uint8_t dstaddr;        /* Dest address used (for connect) */
+	int modeflags;  /* 14230-specific Flags; see below */
 
 	enum {
-		STATE_CLOSED=0,		/* Established comms */
-		STATE_CONNECTING=1,		/* Connecting */
-		STATE_ESTABLISHED=2,	/* Established */
+		STATE_CLOSED=0,         /* Established comms */
+		STATE_CONNECTING=1,             /* Connecting */
+		STATE_ESTABLISHED=2,    /* Established */
 	} state;
 
-	bool first_frame;	/* First frame flag, used mainly for
-					monitor mode when we need to find
-					out whether we see a CARB or normal
-					init */
-	bool monitor_mode;	/* if set, expect possible spurious 0x00 bytes caused by fastinit break */
+	bool first_frame;       /* First frame flag, used mainly for
+	                                monitor mode when we need to find
+	                                out whether we see a CARB or normal
+	                                init */
+	bool monitor_mode;      /* if set, expect possible spurious 0x00 bytes caused by fastinit break */
 
-	uint8_t rxbuf[MAXRBUF];	/* Receive buffer, for building message in */
-	int rxoffset;		/* Offset to write into buffer */
+	uint8_t rxbuf[MAXRBUF]; /* Receive buffer, for building message in */
+	int rxoffset;           /* Offset to write into buffer */
 };
 
 // ******* flags for ->modeflags :

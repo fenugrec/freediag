@@ -86,8 +86,7 @@ struct diag_l2_vag {
  *
  * Returns 0 on success, errorcode<0 on errors
  */
-static struct diag_msg *
-diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_timeout) {
+static struct diag_msg *diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_timeout) {
 	int rv;
 	struct diag_l2_vag *dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
 	//prepare a No Acknowledge message - we may need one
@@ -109,7 +108,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 			//for framed L0, must read the whole frame at once
 			rv = diag_l1_recv(d_l2_conn->diag_link->l2_dl0d, dp->rxbuf, MAXRBUF, timeout);
 			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-				FLFMT "after recv, rv=%d\n", FL, rv);
+			          FLFMT "after recv, rv=%d\n", FL, rv);
 
 			if (rv < 0) {
 				*errval = rv;
@@ -128,8 +127,8 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 		timeout = KWP1281_T_R8;
 
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-			FLFMT "after recv, rv=%d rxoffset=%d\n",
-			FL, rv, dp->rxoffset);
+		          FLFMT "after recv, rv=%d rxoffset=%d\n",
+		          FL, rv, dp->rxoffset);
 
 		if (rv < 0) {
 			if (rv == DIAG_ERR_TIMEOUT) {
@@ -184,9 +183,9 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 			dp->msg_finish_time = diag_os_gethrt();
 			//check whether the last byte is correct
 			if (byte != KWP1281_END_BYTE ||
-			   //check also whether the sequence number present in the message is correct
-			   //(should be odd and be greater than our sequence number by 1)
-			   ((dp->rxbuf[1] % 2) == 0 || dp->rxbuf[1] != dp->seq_nr+1)) {
+			    //check also whether the sequence number present in the message is correct
+			    //(should be odd and be greater than our sequence number by 1)
+			    ((dp->rxbuf[1] % 2) == 0 || dp->rxbuf[1] != dp->seq_nr+1)) {
 				//arbitrarily set our sequence number -  we could get here because of an incorrect
 				//sequence number sent by the ECU
 				dp->seq_nr += 2;
@@ -232,7 +231,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
 		rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, &byte, 1, 0);
 
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-			FLFMT "after send, rv=%d\n", FL, rv);
+		          FLFMT "after send, rv=%d\n", FL, rv);
 
 		if (rv < 0) {
 			*errval = rv;
@@ -277,8 +276,7 @@ diag_l2_vag_block_recv(struct diag_l2_conn *d_l2_conn, int *errval, int msg_time
  *
  * Will store the received telegram in the d_l2_conn->diag_msg.
  */
-int
-diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
+int diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	struct diag_l2_vag *dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
 	struct diag_msg ack;
 	unsigned long long elapsed_time, msg_timeout;
@@ -319,8 +317,8 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 		if (d_l2_conn->diag_msg == NULL && (tmsg->type == KWP1281_SID_ACK || tmsg->type == KWP1281_SID_NO_ACK)) {
 			diag_l2_addmsg(d_l2_conn, tmsg);
 			DIAG_DBGMDATA(diag_l2_debug, (DIAG_DEBUG_PROTO | DIAG_DEBUG_DATA),
-				DIAG_DBGLEVEL_V, tmsg->data, tmsg->len,
-				FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
+			              DIAG_DBGLEVEL_V, tmsg->data, tmsg->len,
+			              FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
 			break;
 		}
 
@@ -338,25 +336,25 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 			//check if it is NO_ACK Retry
 			if (tmsg->data[0] == dp->seq_nr-2) {
 				DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-					FLFMT
-					"Received No Acknowledge - Retry message\n",
-					FL);
+				          FLFMT
+				          "Received No Acknowledge - Retry message\n",
+				          FL);
 
 				//accept at most KWP1281_NA_RETRIES of No Ack Retry messages in a row
 				if (++na_retry_cnt == KWP1281_NA_RETRIES) {
 					DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-						FLFMT
-						"\tbut too many Retry "
-						"messages in a row "
-						"already - aborting\n",
-						FL);
+					          FLFMT
+					          "\tbut too many Retry "
+					          "messages in a row "
+					          "already - aborting\n",
+					          FL);
 
 					diag_freemsg(d_l2_conn->diag_msg);
 					d_l2_conn->diag_msg = NULL;
 					return diag_iseterr(DIAG_ERR_ECUSAIDNO);
 				}
 				DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-						FLFMT "\tso will retry\n", FL);
+				          FLFMT "\tso will retry\n", FL);
 
 				//re-send with the previous sequence number
 				//NOTE: SAE J2818 says that "The Message number is NOT incremented by the transmitter for a repeated block."
@@ -374,8 +372,8 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 			diag_l2_addmsg(d_l2_conn, tmsg);
 			if (d_l2_conn->diag_msg == tmsg) {
 				DIAG_DBGMDATA(diag_l2_debug, (DIAG_DEBUG_PROTO | DIAG_DEBUG_DATA),
-					DIAG_DBGLEVEL_V, tmsg->data, tmsg->len,
-					FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
+				              DIAG_DBGLEVEL_V, tmsg->data, tmsg->len,
+				              FLFMT "Copying %u bytes to data: ", FL, tmsg->len);
 			}
 			//reset the counter of No Ack Retry messages received in a row
 			na_retry_cnt = 0;
@@ -407,9 +405,8 @@ diag_l2_vag_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
  * which is done in the ISO9141 code
  */
 
-static int
-dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
-                             unsigned int bitrate, target_type target, UNUSED(source_type source)) {
+static int dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
+                               unsigned int bitrate, target_type target, UNUSED(source_type source)) {
 	struct diag_serial_settings set;
 	struct diag_l2_vag *dp;
 	int rv;
@@ -477,9 +474,9 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 	}
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-			FLFMT
-			"Received KeyWord bytes: KB1: 0x%.2X\tKB2: 0x%.2X\n",
-			FL, cbuf[0], cbuf[1]);
+	          FLFMT
+	          "Received KeyWord bytes: KB1: 0x%.2X\tKB2: 0x%.2X\n",
+	          FL, cbuf[0], cbuf[1]);
 
 	//Note down the bytes
 	d_l2_conn->diag_l2_kb1 = cbuf[0];
@@ -493,7 +490,7 @@ dl2p_vag_startcomms(struct diag_l2_conn *d_l2_conn, UNUSED(flag_type flags),
 		//so that the ECU has time to switch to receive mode
 		diag_os_millisleep(KWP1281_T_R4_MIN);
 		//Now transmit KB2 inverted
-		cbuf[0] = ~ d_l2_conn->diag_l2_kb2;
+		cbuf[0] = ~d_l2_conn->diag_l2_kb2;
 		rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, cbuf, 1, d_l2_conn->diag_l2_p4min);
 		if (rv < 0) {
 			free(dp);
@@ -556,12 +553,11 @@ static int dl2p_vag_stopcomms(struct diag_l2_conn *d_l2_conn) {
 /*
  * Sends a single Block (message) to the ECU
  */
-static int
-dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
+static int dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_vag_send %p msg %p len %u called\n",
-		FL, (void *)d_l2_conn, (void *)msg, msg->len);
+	          FLFMT "diag_l2_vag_send %p msg %p len %u called\n",
+	          FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	struct diag_l2_vag *dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
 	//if this function is called right after receiving the first ECU telegram,
@@ -598,7 +594,7 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 			//for framed L0, must send the whole block at once
 			rv = diag_l1_send(d_l2_conn->diag_link->l2_dl0d, dp->rxbuf, dp->rxbuf[0]+1, d_l2_conn->diag_l2_p4min);
 			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-				FLFMT "after send, rv=%d\n", FL, rv);
+			          FLFMT "after send, rv=%d\n", FL, rv);
 
 			if (rv < 0) {
 				return diag_ifwderr(rv);
@@ -613,8 +609,8 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		unsigned long long byte_sent_time = diag_os_gethrt();
 
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-			FLFMT "after send, rv=%d rtoffset=%d\n",
-			FL, rv, dp->rxoffset);
+		          FLFMT "after send, rv=%d rtoffset=%d\n",
+		          FL, rv, dp->rxoffset);
 
 		if (rv < 0) {
 			return diag_ifwderr(rv);
@@ -632,7 +628,7 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		unsigned long long complement_recv_time = diag_os_gethrt();
 
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-			FLFMT "after recv, rv=%d\n", FL, rv);
+		          FLFMT "after recv, rv=%d\n", FL, rv);
 
 		if (rv < 0) {
 			//finish communication if exceeded the max number of retries or if some other error than timeout
@@ -653,10 +649,10 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 		uint8_t complement = ~dp->rxbuf[dp->rxoffset];
 		if (recv_byte != complement) {
 			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-					FLFMT
-					"Received incorrect inverted byte: "
-					"0x%.2X (expected 0x%.2X)\n",
-					FL, (int)recv_byte, (int)complement);
+			          FLFMT
+			          "Received incorrect inverted byte: "
+			          "0x%.2X (expected 0x%.2X)\n",
+			          FL, (int)recv_byte, (int)complement);
 			//finish communication if exceeded the max number of retries
 			if (++retries > KWP1281_TO_RETRIES) {
 				return diag_iseterr(DIAG_ERR_BADCSUM);
@@ -686,17 +682,16 @@ dl2p_vag_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 /*
  * Protocol receive routine
  */
-static int
-dl2p_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-                       void (*callback)(void *handle, struct diag_msg *msg),
-                       void *handle) {
+static int dl2p_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+                         void (*callback)(void *handle, struct diag_msg *msg),
+                         void *handle) {
 	int rv;
 
 	if (timeout != 0) {
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-			FLFMT
-			"WARNING! l2_vag will ignore the given timeout! (%u msec)\n",
-			FL, timeout);
+		          FLFMT
+		          "WARNING! l2_vag will ignore the given timeout! (%u msec)\n",
+		          FL, timeout);
 	}
 
 	//if it is the first call to the recv() function since startcomms, then
@@ -722,8 +717,8 @@ dl2p_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	}
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "calling rcv callback, handle=%p\n",
-		FL, handle);
+	          FLFMT "calling rcv callback, handle=%p\n",
+	          FL, handle);
 
 	//Call user callback routine
 	//NOTE: if ECU returned NO_ACK, then the caller won't know what type it was (retry or unknown)
@@ -736,13 +731,12 @@ dl2p_vag_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	d_l2_conn->diag_msg = NULL;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "rcv callback completed\n", FL);
+	          FLFMT "rcv callback completed\n", FL);
 
 	return 0;
 }
 
-static struct diag_msg *
-dl2p_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval) {
+static struct diag_msg *dl2p_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval) {
 	int rv, na_retry_cnt = 0;
 	struct diag_msg *rmsg;
 	struct diag_l2_vag *dp = (struct diag_l2_vag *)d_l2_conn->diag_l2_proto_data;
@@ -770,23 +764,23 @@ dl2p_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errv
 
 		//but if it is, then we will repeat the request
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-			FLFMT
-			"Received No Acknowledge - Retry message\n",
-			FL);
+		          FLFMT
+		          "Received No Acknowledge - Retry message\n",
+		          FL);
 
 		//accept at most KWP1281_NA_RETRIES of No Ack Retry messages in a row
 		if (++na_retry_cnt == KWP1281_NA_RETRIES) {
 			DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-				FLFMT
-				"\tbut too many Retry messages in a "
-				"row already - aborting\n",
-				FL);
+			          FLFMT
+			          "\tbut too many Retry messages in a "
+			          "row already - aborting\n",
+			          FL);
 
 			*errval = DIAG_ERR_ECUSAIDNO;
 			return diag_pseterr(*errval);
 		}
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_PROTO, DIAG_DBGLEVEL_V,
-			FLFMT "\tso will retry\n", FL);
+		          FLFMT "\tso will retry\n", FL);
 
 		//re-send with the previous sequence number
 		//NOTE: SAE J2818 says that "The Message number is NOT incremented by the transmitter for a repeated block."
@@ -811,15 +805,14 @@ dl2p_vag_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errv
  * Timeout, - if we don't send something to the ECU it will timeout soon,
  * so send it a keepalive message now.
  */
-static void
-dl2p_vag_timeout(struct diag_l2_conn *d_l2_conn) {
+static void dl2p_vag_timeout(struct diag_l2_conn *d_l2_conn) {
 	struct diag_msg ack;
 	memset(&ack, 0, sizeof(ack));
 	ack.type = KWP1281_SID_ACK;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
-		FLFMT "timeout impending for %p\n",
-		FL, (void *)d_l2_conn);
+	          FLFMT "timeout impending for %p\n",
+	          FL, (void *)d_l2_conn);
 
 	//store the ECU ID address, so that the telegram won't get deleted by send()
 	//(we don't want it to happen because of the keep-alive exchange)
@@ -831,10 +824,10 @@ dl2p_vag_timeout(struct diag_l2_conn *d_l2_conn) {
 	int rv = diag_l2_send(d_l2_conn, &ack);
 	if (rv < 0) {
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
-			FLFMT
-			"KW1281 send keep-alive failed with the "
-			"following error:\n\t%s\n",
-			FL, diag_errlookup(rv));
+		          FLFMT
+		          "KW1281 send keep-alive failed with the "
+		          "following error:\n\t%s\n",
+		          FL, diag_errlookup(rv));
 		return;
 	}
 
@@ -843,10 +836,10 @@ dl2p_vag_timeout(struct diag_l2_conn *d_l2_conn) {
 	rv = diag_l2_recv(d_l2_conn, 0, NULL, NULL);
 	if (rv < 0) {
 		DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_TIMER, DIAG_DBGLEVEL_V,
-			FLFMT
-			"KW1281 receive keep-alive failed with the following "
-			"error:\n\t%s\n",
-			FL, diag_errlookup(rv));
+		          FLFMT
+		          "KW1281 receive keep-alive failed with the following "
+		          "error:\n\t%s\n",
+		          FL, diag_errlookup(rv));
 	}
 
 	//copy the ECU ID telegram address back where it belongs

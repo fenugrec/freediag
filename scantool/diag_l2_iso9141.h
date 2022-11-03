@@ -65,8 +65,8 @@ extern "C" {
  * ISO9141 specific data
  */
 struct diag_l2_iso9141 {
-	uint8_t srcaddr;	// Src address used, normally 0xF1 (tester)
-	uint8_t target;	// Target address used, normally 0x33 (ISO9141)
+	uint8_t srcaddr;        // Src address used, normally 0xF1 (tester)
+	uint8_t target; // Target address used, normally 0x33 (ISO9141)
 
 	// These should be only in specific protocol structs, but
 	// someone put them in the generic L2 struct, and there seem to be

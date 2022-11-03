@@ -30,7 +30,7 @@
  */
 
 /*
-*/
+ */
 
 #if defined(__cplusplus)
 extern "C" {
@@ -39,31 +39,26 @@ extern "C" {
 #include "diag.h"
 struct diag_l2_conn;
 
-int
-dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn, flag_type flags,
-	unsigned int bitrate, target_type target, source_type source);
+int dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn, flag_type flags,
+                         unsigned int bitrate, target_type target, source_type source);
 
 /*
-*/
-int
-dl2p_raw_stopcomms(struct diag_l2_conn *pX);
+ */
+int dl2p_raw_stopcomms(struct diag_l2_conn *pX);
 
 /*
  * Just send the data, with no processing etc
  */
-int
-dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
+int dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg);
 
 /*
-*/
-int
-dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	void (*callback)(void *handle, struct diag_msg *msg), void *handle);
+ */
+int dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+                  void (*callback)(void *handle, struct diag_msg *msg), void *handle);
 
 /*
-*/
-struct diag_msg *
-dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval);
+ */
+struct diag_msg *dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg, int *errval);
 
 
 #if defined(__cplusplus)

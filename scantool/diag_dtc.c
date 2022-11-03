@@ -51,9 +51,9 @@ void diag_dtc_init(void) {
  */
 
 char *diag_dtc_decode(const uint8_t *data, int len,
-	UNUSED(const char *vehicle), UNUSED(const char *ecu),
-	enum diag_dtc_protocol protocol,
-	char *buf, const size_t bufsize) {
+                      UNUSED(const char *vehicle), UNUSED(const char *ecu),
+                      enum diag_dtc_protocol protocol,
+                      char *buf, const size_t bufsize) {
 	char area;
 
 	switch (protocol) {
@@ -63,7 +63,7 @@ char *diag_dtc_decode(const uint8_t *data, int len,
 			return buf;
 		}
 
-		switch ((data[0] >> 6) & 0x03) {	/* Top 2 bits are area */
+		switch ((data[0] >> 6) & 0x03) {        /* Top 2 bits are area */
 		case 0:
 			area = 'P';
 			break;

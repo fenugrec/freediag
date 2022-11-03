@@ -34,7 +34,7 @@
 #include <string.h>
 
 #include "diag.h"
-#include "diag_cfg.h"	//for cfgi
+#include "diag_cfg.h"   //for cfgi
 #include "diag_l0.h"
 #include "diag_l1.h"
 #include "diag_l2.h"
@@ -63,42 +63,42 @@ static int cmd_set_interface(int argc, char **argv);
 
 const struct cmd_tbl_entry set_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
-		cmd_set_help, 0, NULL},
+	  cmd_set_help, 0, NULL},
 	{ "?", "help [command]", "Gives help for a command",
-		cmd_set_help, CLI_CMD_HIDDEN, NULL},
+	  cmd_set_help, CLI_CMD_HIDDEN, NULL},
 
 	{ "interface", "interface [NAME]", "Interface to use. Use set interface ? to get a list of names",
-		cmd_set_interface, 0, NULL},
+	  cmd_set_interface, 0, NULL},
 
 	{ "display", "display [english/metric]", "English or metric display",
-		cmd_set_display, 0, NULL},
+	  cmd_set_display, 0, NULL},
 
 	{ "speed", "speed [speed]", "ECU communications speed",
-		cmd_set_speed, 0, NULL},
+	  cmd_set_speed, 0, NULL},
 	{ "testerid", "testerid [testerid]", "Source ID/address",
-		cmd_set_testerid, 0, NULL},
+	  cmd_set_testerid, 0, NULL},
 	{ "destaddr", "destaddr [destaddr]","Destination ID/address",
-		cmd_set_destaddr, 0, NULL},
+	  cmd_set_destaddr, 0, NULL},
 
 	{ "addrtype", "addrtype [func/phys]", "Address type, physical or functional.",
-		cmd_set_addrtype, 0, NULL},
+	  cmd_set_addrtype, 0, NULL},
 
 	{ "l1protocol", "l1protocol [protocolname]", "Hardware (L1) protocol to use. Use 'set l1protocol ?' to show valid choices.",
-		cmd_set_l1protocol, 0, NULL},
+	  cmd_set_l1protocol, 0, NULL},
 
 	{ "l2protocol", "l2protocol [protocolname]", "Software (L2) protocol to use. Use 'set l2protocol ?' to show valid choices.",
-		cmd_set_l2protocol, 0, NULL},
+	  cmd_set_l2protocol, 0, NULL},
 
 	{ "initmode", "initmode [modename]", "Bus initialisation mode to use. Use 'set initmode ?' to show valid choices.",
-		cmd_set_initmode, 0, NULL},
+	  cmd_set_initmode, 0, NULL},
 
 	{ "show", "show", "Shows all settable values, including L0-specific items",
-		cmd_set_show, 0, NULL},
+	  cmd_set_show, 0, NULL},
 
 	CLI_TBL_BUILTINS,
 
 	{ "", "", "",
-		cmd_set_custom, CLI_CMD_CUSTOM | CLI_CMD_HIDDEN, NULL},
+	  cmd_set_custom, CLI_CMD_CUSTOM | CLI_CMD_HIDDEN, NULL},
 
 	CLI_TBL_END
 };
@@ -122,20 +122,20 @@ static char *default_iface = "DUMB";
 int set_init(void) {
 	/* Reset parameters to defaults. */
 
-	global_cfg.speed = 10400;	/* Comms speed; ECUs will probably send at 10416 bps (96us per bit) */
+	global_cfg.speed = 10400;       /* Comms speed; ECUs will probably send at 10416 bps (96us per bit) */
 
-	global_cfg.src = 0xf1;	/* Our tester ID */
-	global_cfg.addrtype = 1;	/* Use functional addressing */
-	global_cfg.tgt = 0x33;	/* Dest ECU address */
+	global_cfg.src = 0xf1;  /* Our tester ID */
+	global_cfg.addrtype = 1;        /* Use functional addressing */
+	global_cfg.tgt = 0x33;  /* Dest ECU address */
 
-	global_cfg.L1proto = DIAG_L1_ISO9141;	/* L1 protocol type */
+	global_cfg.L1proto = DIAG_L1_ISO9141;   /* L1 protocol type */
 
 	global_cfg.L2idx = 0;
 	global_cfg.L2proto = l2proto_list[0]->diag_l2_protocol; /* cannot guarantee 9141 was compiled... DIAG_L2_PROT_ISO9141; */
 
-	global_cfg.initmode = DIAG_L2_TYPE_FASTINIT ;
+	global_cfg.initmode = DIAG_L2_TYPE_FASTINIT;
 
-	global_cfg.units = 0;		/* English (1), or Metric (0) */
+	global_cfg.units = 0;           /* English (1), or Metric (0) */
 
 	char *garbage_args[] = {default_cmd, default_iface};
 	cmd_set_interface(2, garbage_args); /* Default H/w interface to use */
@@ -180,7 +180,7 @@ static int cmd_set_custom(int argc, char **argv) {
 		}
 	} else {
 		// no args: display current settings
-		 show_current = 1;
+		show_current = 1;
 	}
 
 	/* find the config item */
@@ -240,8 +240,7 @@ static int cmd_set_custom(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int
-cmd_set_show(UNUSED(int argc), UNUSED(char **argv)) {
+static int cmd_set_show(UNUSED(int argc), UNUSED(char **argv)) {
 	/* Show stuff; calling the cmd_set_*() functions with argc=0 displays the current setting. */
 	cmd_set_interface(0,NULL);
 	cmd_set_speed(0, NULL);
@@ -277,7 +276,7 @@ static int cmd_set_interface(int argc, char **argv) {
 
 	if (argc <= 1 || argv == NULL) {
 		printf("interface: using %s\n",
-			global_cfg.l0name);
+		       global_cfg.l0name);
 		return CMD_OK;
 	}
 	if (argc > 2) {
@@ -306,7 +305,7 @@ static int cmd_set_interface(int argc, char **argv) {
 			global_cfg.l0name = iter->shortname;
 			found = 1;
 			break; // no use in continuing
-			}
+		}
 	}
 
 	if (helping) {
@@ -337,8 +336,7 @@ static int cmd_set_interface(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int
-cmd_set_display(int argc, char **argv) {
+static int cmd_set_display(int argc, char **argv) {
 	if (argc > 1) {
 		if (strcasecmp(argv[1], "english") == 0) {
 			global_cfg.units = 1;
@@ -354,8 +352,7 @@ cmd_set_display(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int
-cmd_set_speed(int argc, char **argv) {
+static int cmd_set_speed(int argc, char **argv) {
 	if (argc > 1) {
 		if (strcmp(argv[1], "?") == 0) {
 			return CMD_USAGE;
@@ -368,8 +365,7 @@ cmd_set_speed(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int
-cmd_set_testerid(int argc, char **argv) {
+static int cmd_set_testerid(int argc, char **argv) {
 	if (argc > 1) {
 		int tmp;
 		if (strncmp(argv[1], "?", 1) == 0) {
@@ -387,8 +383,7 @@ cmd_set_testerid(int argc, char **argv) {
 	return CMD_OK;
 }
 
-static int
-cmd_set_destaddr(int argc, char **argv) {
+static int cmd_set_destaddr(int argc, char **argv) {
 	if (argc > 1) {
 		int tmp;
 		if (strncmp(argv[1], "?", 1) == 0) {
@@ -402,13 +397,12 @@ cmd_set_destaddr(int argc, char **argv) {
 		global_cfg.tgt = (uint8_t) tmp;
 	}
 	printf("destaddr: using 0x%02X\n",
-			(unsigned) global_cfg.tgt);
+	       (unsigned) global_cfg.tgt);
 
 	return CMD_OK;
 }
 
-static int
-cmd_set_addrtype(int argc, char **argv) {
+static int cmd_set_addrtype(int argc, char **argv) {
 	if (argc > 1) {
 		if (strncmp(argv[1], "func", 4) == 0) {
 			global_cfg.addrtype = 1;
@@ -419,7 +413,7 @@ cmd_set_addrtype(int argc, char **argv) {
 		}
 	} else {
 		printf("addrtype: %s addressing\n",
-			global_cfg.addrtype ? "functional" : "physical");
+		       global_cfg.addrtype ? "functional" : "physical");
 	}
 
 	return CMD_OK;
@@ -435,8 +429,8 @@ static int cmd_set_l2protocol(int argc, char **argv) {
 		for (i=0; l2proto_list[i] != NULL; i++) {
 			const struct diag_l2_proto *d2p=l2proto_list[i];
 			if (helping) {
-					printf("%s ", d2p->shortname);
-					continue;
+				printf("%s ", d2p->shortname);
+				continue;
 			}
 			if (strcasecmp(argv[1], d2p->shortname) == 0) {
 				found = 1;
@@ -449,13 +443,13 @@ static int cmd_set_l2protocol(int argc, char **argv) {
 			printf("\n");
 			return CMD_USAGE;
 		}
-		if (! found) {
+		if (!found) {
 			printf("l2protocol: invalid protocol %s\n", argv[1]);
 			printf("l2protocol: use \"set l2protocol ?\" to see list of protocols\n");
 		}
 	} else {
 		printf("l2protocol: Layer 2 protocol to use %s\n",
-			l2proto_list[global_cfg.L2idx]->shortname);
+		       l2proto_list[global_cfg.L2idx]->shortname);
 	}
 	return CMD_OK;
 }
@@ -473,13 +467,13 @@ static int cmd_set_l1protocol(int argc, char **argv) {
 			} else if (strcasecmp(argv[1], l1_names[i]) == 0) {
 				global_cfg.L1proto = 1 << i;
 				found = 1;
-				}
+			}
 		}
 		if (helping) {
 			printf("\n");
 			return CMD_USAGE;
 		}
-		if (! found) {
+		if (!found) {
 			printf("L1protocol: invalid protocol %s\n", argv[1]);
 			printf("l1protocol: use \"set l1protocol ?\" to see list of protocols\n");
 		}
@@ -494,7 +488,7 @@ static int cmd_set_l1protocol(int argc, char **argv) {
 		}
 	}
 	printf("l1protocol: Layer 1 (H/W) protocol to use %s\n",
-		l1_names[offset]);
+	       l1_names[offset]);
 
 	return CMD_OK;
 }
@@ -519,7 +513,7 @@ static int cmd_set_initmode(int argc, char **argv) {
 			printf("\n");
 			return CMD_USAGE;
 		}
-		if (! found) {
+		if (!found) {
 			printf("initmode: invalid mode %s\n", argv[1]);
 			printf("initmode: use \"set initmode ?\" to see list of initmodes\n");
 		}
@@ -527,12 +521,11 @@ static int cmd_set_initmode(int argc, char **argv) {
 	}
 
 	printf("initmode: Initmode to use with above protocol is %s\n",
-		l2_initmodes[global_cfg.initmode]);
+	       l2_initmodes[global_cfg.initmode]);
 
 	return CMD_OK;
 }
 
-static int
-cmd_set_help(int argc, char **argv) {
+static int cmd_set_help(int argc, char **argv) {
 	return help_common(argc, argv, set_cmd_table);
 }

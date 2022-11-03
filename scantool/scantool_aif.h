@@ -29,5 +29,4 @@
  */
 
 
-void enter_aif ( const char *name ) ;
-
+void enter_aif ( const char *name );

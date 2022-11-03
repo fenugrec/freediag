@@ -36,19 +36,19 @@ extern "C" {
 #include <stdint.h>
 
 enum diag_dtc_protocol {
-	dtc_proto_j2012	=	1,	/* SAE J2012 */
-	dtc_proto_int8	=	2,	/* 8 bit integer */
-	dtc_proto_int16	=	3,	/* 16 bit integer */
-	dtc_proto_int32	=	4,	/* 32 bit integer */
-	dtc_proto_text	=	5	/* Text String */
+	dtc_proto_j2012 =       1,      /* SAE J2012 */
+	dtc_proto_int8  =       2,      /* 8 bit integer */
+	dtc_proto_int16 =       3,      /* 16 bit integer */
+	dtc_proto_int32 =       4,      /* 32 bit integer */
+	dtc_proto_text  =       5       /* Text String */
 };
 
 //do not use *allocs or open handles in diag_dtc_init !
 void diag_dtc_init(void);
 
 char *diag_dtc_decode(const uint8_t *data, int len,
-	const char *vehicle, const char *ecu, enum diag_dtc_protocol protocol,
-	char *buf, const size_t bufsize);
+                      const char *vehicle, const char *ecu, enum diag_dtc_protocol protocol,
+                      char *buf, const size_t bufsize);
 
 #if defined(__cplusplus)
 }

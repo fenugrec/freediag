@@ -9,19 +9,19 @@
 
 
 #include "diag.h"
-#include "diag_l0.h"	//needed for diag_l0_debug
+#include "diag_l0.h"    //needed for diag_l0_debug
 
-#define IFLUSH_TIMEOUT 30	//timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX buffer.
-		//must not be too long or diag_l0_dumb:slowinit() will not work
-#define MAXTIMEOUT	10000	//ms; for diag_tty_read()
+#define IFLUSH_TIMEOUT 30       //timeout to use when calling diag_tty_read from diag_tty_iflush to purge RX buffer.
+//must not be too long or diag_l0_dumb:slowinit() will not work
+#define MAXTIMEOUT      10000   //ms; for diag_tty_read()
 
 /*
  * Parity settings
  */
 enum diag_parity {
-	diag_par_e = 1,	/* Even parity */
-	diag_par_o = 2,	/* Odd parity */
-	diag_par_n = 3	/* No parity */
+	diag_par_e = 1, /* Even parity */
+	diag_par_o = 2, /* Odd parity */
+	diag_par_n = 3  /* No parity */
 };
 
 enum diag_databits {
@@ -37,7 +37,7 @@ enum diag_stopbits {
 };
 
 struct diag_serial_settings {
-	unsigned int speed;	//in bps of course
+	unsigned int speed;     //in bps of course
 	enum diag_databits databits;
 	enum diag_stopbits stopbits;
 	enum diag_parity parflag;
@@ -45,7 +45,7 @@ struct diag_serial_settings {
 
 
 /*** Public functions ***/
-typedef void ttyp;	//used as "(tty_internal_struct *) ttyp" in tty code
+typedef void ttyp;      //used as "(tty_internal_struct *) ttyp" in tty code
 
 /** Get available serial ports
  *
@@ -73,7 +73,7 @@ void diag_tty_close(ttyp *tty_int);
  * @return 0 if ok.
  */
 int diag_tty_setup(ttyp *tty_int,
-	const struct diag_serial_settings *pss);
+                   const struct diag_serial_settings *pss);
 
 /** Set DTR and RTS lines.
  *
@@ -99,7 +99,7 @@ int diag_tty_iflush(ttyp *tty_int);
 //	d) never return 0
 //	TODO : clarify if calling with timeout==0 is useful (probably not, nobody does).
 ssize_t diag_tty_read(ttyp *tty_int,
-	void *buf, size_t count, unsigned int timeout);
+                      void *buf, size_t count, unsigned int timeout);
 
 /** Write bytes to tty (blocking).
  *
@@ -111,7 +111,7 @@ ssize_t diag_tty_read(ttyp *tty_int,
  * to a UART / device driver buffer.
  */
 ssize_t diag_tty_write(ttyp *tty_int,
-	const void *buf, const size_t count);
+                       const void *buf, const size_t count);
 
 
 /** Send a break on TXD.

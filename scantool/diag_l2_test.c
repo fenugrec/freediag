@@ -1,7 +1,7 @@
 /*
  *	freediag - Vehicle Diagnostic Utility
  *
-  * Copyright (C) 2017-2018 fenugrec
+ * Copyright (C) 2017-2018 fenugrec
  *
  * Test L2 driver. Only intended for use by diag_test.c
  * to exercise low-level libdiag code paths.
@@ -14,11 +14,11 @@
 #include "diag_err.h"
 #include "diag_os.h"
 
-#define TEST_TIMER_DURATION 500	/** time (ms) before returning from timer callback func */
+#define TEST_TIMER_DURATION 500 /** time (ms) before returning from timer callback func */
 
 
 int dl2p_test_startcomms( struct diag_l2_conn *dl2c, flag_type flags,
-						unsigned int bitrate, target_type target, source_type source) {
+                          unsigned int bitrate, target_type target, source_type source) {
 	(void) dl2c;
 	(void) flags;
 	(void) bitrate;
@@ -28,7 +28,7 @@ int dl2p_test_startcomms( struct diag_l2_conn *dl2c, flag_type flags,
 }
 
 /*
-*/
+ */
 
 int dl2p_test_stopcomms(struct diag_l2_conn *pX) {
 	(void) pX;
@@ -42,7 +42,7 @@ int dl2p_test_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 }
 
 int dl2p_test_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-			void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
+                   void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
 	(void) d_l2_conn;
 	(void) timeout;
 	(void) callback;
@@ -51,7 +51,7 @@ int dl2p_test_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 }
 
 struct diag_msg * dl2p_test_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-			int *errval) {
+                                    int *errval) {
 	(void) d_l2_conn;
 	(void) msg;
 	*errval = DIAG_ERR_GENERAL;

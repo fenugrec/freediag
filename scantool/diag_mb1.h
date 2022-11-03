@@ -30,14 +30,14 @@
 extern "C" {
 #endif
 
-#define	DIAG_MB1_GETDTC		0x05	/* Get Diagnostic Trouble Codes */
-#define	DIAG_MB1_GETID		0x0f	/* Ask for controller/hw/sw version */
-#define	DIAG_MB1_UNKNOWN1	0x10	/* Dunno yet */
-#define	DIAG_MB1_UNKNOWN2	0x30	/* Dunno yet */
-#define	DIAG_MB1_UNKNOWN3	0x38	/* Dunno yet */
-#define	DIAG_MB1_IDLE		0x50	/* Idle message */
+#define DIAG_MB1_GETDTC         0x05    /* Get Diagnostic Trouble Codes */
+#define DIAG_MB1_GETID          0x0f    /* Ask for controller/hw/sw version */
+#define DIAG_MB1_UNKNOWN1       0x10    /* Dunno yet */
+#define DIAG_MB1_UNKNOWN2       0x30    /* Dunno yet */
+#define DIAG_MB1_UNKNOWN3       0x38    /* Dunno yet */
+#define DIAG_MB1_IDLE           0x50    /* Idle message */
 
-#define DIAG_MB1_ANSWER_MASK	0x80	/* Bit set for answers */
+#define DIAG_MB1_ANSWER_MASK    0x80    /* Bit set for answers */
 
 #if defined(__cplusplus)
 }

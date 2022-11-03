@@ -48,20 +48,20 @@
  * SAEJ1850 specific data
  */
 struct diag_l2_j1850 {
-	uint8_t type;		/* FAST/SLOW/CARB */
+	uint8_t type;           /* FAST/SLOW/CARB */
 
-	uint8_t srcaddr;	/* Src address used */
-	uint8_t dstaddr;	/* Dest address used */
+	uint8_t srcaddr;        /* Src address used */
+	uint8_t dstaddr;        /* Dest address used */
 	//uint16_t modeflags;	/* Flags XXXunused ! */
 
 	uint8_t state;
-	uint8_t rxbuf[MAXRBUF];	/* Receive buffer, for building message in */
-	int rxoffset;		/* Offset to write into buffer */
+	uint8_t rxbuf[MAXRBUF]; /* Receive buffer, for building message in */
+	int rxoffset;           /* Offset to write into buffer */
 };
 
-#define STATE_CLOSED	  0	/* Established comms */
-#define STATE_CONNECTING  1	/* Connecting */
-#define STATE_ESTABLISHED 2	/* Established */
+#define STATE_CLOSED      0     /* Established comms */
+#define STATE_CONNECTING  1     /* Connecting */
+#define STATE_ESTABLISHED 2     /* Established */
 
 /* Prototypes */
 uint8_t dl2p_j1850_crc(uint8_t *msg_buf, int nbytes);
@@ -72,17 +72,16 @@ uint8_t dl2p_j1850_crc(uint8_t *msg_buf, int nbytes);
  * The complex initialisation routine for SAEJ1850
  */
 
-static int
-dl2p_j1850_startcomms(struct diag_l2_conn	*d_l2_conn,
-UNUSED(flag_type flags),
-UNUSED(unsigned int bitrate),
-target_type target, source_type source) {
+static int dl2p_j1850_startcomms(struct diag_l2_conn       *d_l2_conn,
+                                 UNUSED(flag_type flags),
+                                 UNUSED(unsigned int bitrate),
+                                 target_type target, source_type source) {
 	struct diag_l2_j1850 *dp;
 	int rv;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_j1850_startcomms dl2conn %p\n",
-		FL, (void *)d_l2_conn);
+	          FLFMT "diag_l2_j1850_startcomms dl2conn %p\n",
+	          FL, (void *)d_l2_conn);
 
 	rv = diag_calloc(&dp, 1);
 	if (rv != 0) {
@@ -107,9 +106,8 @@ target_type target, source_type source) {
 }
 
 /*
-*/
-static int
-dl2p_j1850_stopcomms(struct diag_l2_conn *d_l2_conn) {
+ */
+static int dl2p_j1850_stopcomms(struct diag_l2_conn *d_l2_conn) {
 	struct diag_l2_j1850 *dp;
 
 	dp = (struct diag_l2_j1850 *)d_l2_conn->diag_l2_proto_data;
@@ -125,22 +123,21 @@ dl2p_j1850_stopcomms(struct diag_l2_conn *d_l2_conn) {
 
 
 /* Thanks to B. Roadman's web site for this CRC code */
-uint8_t
-dl2p_j1850_crc(uint8_t *msg_buf, int nbytes) {
+uint8_t dl2p_j1850_crc(uint8_t *msg_buf, int nbytes) {
 	uint8_t crc_reg=0xff,poly,i,j;
 	uint8_t *byte_point;
 	uint8_t bit_point;
 
 	for (i=0, byte_point=msg_buf; i<nbytes; ++i, ++byte_point) {
 		for (j=0, bit_point=0x80 ; j<8; ++j, bit_point>>=1) {
-			if (bit_point & *byte_point) {	// case for new bit = 1
+			if (bit_point & *byte_point) {  // case for new bit = 1
 				if (crc_reg & 0x80) {
-					poly=1;	// define the polynomial
+					poly=1; // define the polynomial
 				} else {
 					poly = 0x1c;
 				}
 				crc_reg= ( (crc_reg << 1) | 1) ^ poly;
-			} else {		// case for new bit = 0
+			} else {                // case for new bit = 0
 				poly=0;
 				if (crc_reg & 0x80) {
 					poly = 0x1d;
@@ -149,7 +146,7 @@ dl2p_j1850_crc(uint8_t *msg_buf, int nbytes) {
 			}
 		}
 	}
-	return ~crc_reg;	// Return CRC
+	return ~crc_reg;        // Return CRC
 }
 
 /*
@@ -158,8 +155,7 @@ dl2p_j1850_crc(uint8_t *msg_buf, int nbytes) {
  * We add the header and checksums here as appropriate
  * ret 0 if ok
  */
-static int
-dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
+static int dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int l1flags, rv, l1protocol;
 	struct diag_l2_j1850 *dp;
 
@@ -167,8 +163,8 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int offset = 0;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_j1850_send %p msg %p len %u called\n",
-		FL, (void *)d_l2_conn, (void *)msg, msg->len);
+	          FLFMT "diag_l2_j1850_send %p msg %p len %u called\n",
+	          FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	if ((msg->len + 4) >= MAXRBUF) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
@@ -199,21 +195,21 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	offset += msg->len;
 
 	if (((l1flags & DIAG_L1_DOESL2CKSUM) == 0) &&
-		((l1flags & DIAG_L1_DATAONLY) == 0)) {
+	    ((l1flags & DIAG_L1_DATAONLY) == 0)) {
 		// Add in J1850 CRC
 		int curoff = offset;
 		buf[offset++] = dl2p_j1850_crc(buf, curoff);
 	}
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_j1850_send sending %d bytes to L1\n",
-		FL, offset);
+	          FLFMT "diag_l2_j1850_send sending %d bytes to L1\n",
+	          FL, offset);
 
 	// And send data to Layer 1
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d,
-				buf, (size_t)offset, 0);
+	                   buf, (size_t)offset, 0);
 
-	return rv? diag_ifwderr(rv):0 ;
+	return rv? diag_ifwderr(rv):0;
 }
 
 /*
@@ -225,13 +221,12 @@ dl2p_j1850_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
  *
  * Ret 0 if ok, whether or not there were any messages.
  */
-static int
-dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
+static int dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	int rv;
 	struct diag_l2_j1850 *dp;
-	unsigned long long t_done;	//time elapsed
-	unsigned long long t_us;	//total timeout, in us
-	unsigned long long t0;	//start time
+	unsigned long long t_done;      //time elapsed
+	unsigned long long t_us;        //total timeout, in us
+	unsigned long long t0;  //start time
 
 	int l1flags = d_l2_conn->diag_link->l1flags;
 
@@ -241,9 +236,9 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	diag_freemsg(d_l2_conn->diag_msg);
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_j1850_int_recv offset 0x%X, "
-			  "timeout=%u\n",
-		FL, dp->rxoffset, timeout);
+	          FLFMT "diag_l2_j1850_int_recv offset 0x%X, "
+	          "timeout=%u\n",
+	          FL, dp->rxoffset, timeout);
 
 	// No support for non framing L2 interfaces yet ...
 	if (!(l1flags & DIAG_L1_DOESL2FRAME)) {
@@ -261,16 +256,16 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 	while (t_done < t_us) {
 		//loop while there's time left
 		unsigned long tout;
-		struct diag_msg	*tmsg;
+		struct diag_msg *tmsg;
 		unsigned datalen;
 
 		tout = timeout - (t_done / 1000);
 
 		//Unofficially, smart L0s (like ME,SIM) return max 1 response per call to l1_recv()
 		rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
-				&dp->rxbuf[dp->rxoffset],
-				sizeof(dp->rxbuf) - dp->rxoffset,
-				tout);
+		                   &dp->rxbuf[dp->rxoffset],
+		                   sizeof(dp->rxbuf) - dp->rxoffset,
+		                   tout);
 
 		if (rv == DIAG_ERR_TIMEOUT) {
 			break;
@@ -330,12 +325,12 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 			uint8_t tcrc=dl2p_j1850_crc(dp->rxbuf, dp->rxoffset - 1);
 			if (dp->rxbuf[dp->rxoffset - 1] != tcrc) {
 				fprintf(stderr, "Bad checksum detected: needed %02X got %02X\n",
-						tcrc, dp->rxbuf[dp->rxoffset - 1]);
+				        tcrc, dp->rxbuf[dp->rxoffset - 1]);
 				tmsg->fmt |= DIAG_FMT_BADCS;
 			}
 		}
 
-		tmsg->fmt |= DIAG_FMT_CKSUMMED;	//either L1 did it or we just did
+		tmsg->fmt |= DIAG_FMT_CKSUMMED; //either L1 did it or we just did
 		tmsg->fmt |= DIAG_FMT_FRAMED;
 
 		tmsg->rxtime = diag_os_getms();
@@ -343,19 +338,18 @@ dl2p_j1850_int_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout) {
 
 		diag_l2_addmsg(d_l2_conn, tmsg);
 
-	}	//while !timed out
+	}       //while !timed out
 
 	dp->state = STATE_ESTABLISHED;
 	return 0;
 }
 
 
-static int
-dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	void (*callback)(void *handle, struct diag_msg *msg),
-	void *handle) {
+static int dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+                           void (*callback)(void *handle, struct diag_msg *msg),
+                           void *handle) {
 	int rv;
-	struct diag_msg	*tmsg;
+	struct diag_msg *tmsg;
 
 	rv = dl2p_j1850_int_recv(d_l2_conn, timeout);
 
@@ -372,8 +366,8 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	 * We now have data stored on the L2 descriptor
 	 */
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "calling rcv msg=%p callback, handle=%p\n",
-		FL, (void *)d_l2_conn->diag_msg, handle);
+	          FLFMT "calling rcv msg=%p callback, handle=%p\n",
+	          FL, (void *)d_l2_conn->diag_msg, handle);
 
 	tmsg = d_l2_conn->diag_msg;
 	d_l2_conn->diag_msg = NULL;
@@ -387,7 +381,7 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	diag_freemsg(tmsg);
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "rcv callback completed\n", FL);
+	          FLFMT "rcv callback completed\n", FL);
 
 	return 0;
 }
@@ -395,9 +389,8 @@ dl2p_j1850_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 /*
  * Send a request and wait for a response
  */
-static struct diag_msg *
-dl2p_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-		int *errval) {
+static struct diag_msg *dl2p_j1850_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+                                           int *errval) {
 	int rv;
 	struct diag_msg *rmsg = NULL;
 

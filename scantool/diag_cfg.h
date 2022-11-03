@@ -19,28 +19,28 @@
  * Typically an L0 driver will alloc a linked-list of (struct cfgi) items
  */
 struct cfgi {
-	const char *descr;		//description; not mallocd
-	const char *shortname;		//for CLI use, must be unique in any array of cfgi. Not mallocd.
-	int type;		//indicate type of *val
-		#define CFGT_U8		1	//uint8_t, *val is a static buf
-		#define CFGT_INT	2	//int, *val is a static buf
-		#define CFGT_STR	3	//const char *; generic string; re-alloc/manage *val every time
-		//#define CFGT_TTY	4	//const char *; special string ?
-		//#define CFGT_ENUM	5	//redundant with ((type==CFGT_INT) && (numopts >0) )?
-		#define CFGT_BOOL	6
+	const char *descr;              //description; not mallocd
+	const char *shortname;          //for CLI use, must be unique in any array of cfgi. Not mallocd.
+	int type;               //indicate type of *val
+		#define CFGT_U8         1       //uint8_t, *val is a static buf
+		#define CFGT_INT        2       //int, *val is a static buf
+		#define CFGT_STR        3       //const char *; generic string; re-alloc/manage *val every time
+	//#define CFGT_TTY	4	//const char *; special string ?
+	//#define CFGT_ENUM	5	//redundant with ((type==CFGT_INT) && (numopts >0) )?
+		#define CFGT_BOOL       6
 	union uval {
-		bool	b;
+		bool b;
 		uint8_t u8;
-		int	i;
+		int i;
 		char *str;
-	} val;		//Actual value of parameter
+	} val;          //Actual value of parameter
 
 	union udval {
-		bool	b;
+		bool b;
 		uint8_t u8;
-		int	i;
+		int i;
 		char *str;
-	} dval;		//default value;  used for reset()
+	} dval;         //default value;  used for reset()
 
 	/* these flags determine who owns & manages *val.str and *dval.str :
 	 * if set, diag_cfg_* functions take care of alloc / free calls.
@@ -50,20 +50,20 @@ struct cfgi {
 	bool dyn_val;
 	bool dyn_dval;
 
-	int numopts;		//if > 0 : number of predefined string options / enum values. If ==0 : value set directly.
-	char **opt;	//description for each predefined option, i.e. numopts==1 means
-							// *opt[0]=="option_id 0 descr", etc.
-							// given { const char opt0_descr[]="option_id 0 descr"; const char *opt0_table[]={opt0_descr, opt1_descr}; }
-							// use { cfg_param->opt = opt0_table; }
-	bool dyn_opt;	//if *opt[] must be free'd (recursively)
+	int numopts;            //if > 0 : number of predefined string options / enum values. If ==0 : value set directly.
+	char **opt;     //description for each predefined option, i.e. numopts==1 means
+	// *opt[0]=="option_id 0 descr", etc.
+	// given { const char opt0_descr[]="option_id 0 descr"; const char *opt0_table[]={opt0_descr, opt1_descr}; }
+	// use { cfg_param->opt = opt0_table; }
+	bool dyn_opt;   //if *opt[] must be free'd (recursively)
 
 
-	struct cfgi *next;	//single-linked list
+	struct cfgi *next;      //single-linked list
 
 	/* do not call these directly */
-	void (*refresh)(struct cfgi *_this);	//called by diag_cfg_refresh()
-		//  Possible problem with refresh() if numopts>0; and refresh() makes *val invalid / illegal !
-	void (*reset)(struct cfgi *_this);	//called by diag_cfg_reset()
+	void (*refresh)(struct cfgi *_this);    //called by diag_cfg_refresh()
+	//  Possible problem with refresh() if numopts>0; and refresh() makes *val invalid / illegal !
+	void (*reset)(struct cfgi *_this);      //called by diag_cfg_reset()
 };
 
 /** Refresh opt[] and numopts (for tty, J2534, etc)
@@ -104,7 +104,7 @@ int diag_cfg_setopt(struct cfgi *cfgp, int optid);
 //void diag_cfg_setraw(struct cfgi *cfgp, void *val);
 
 /** get param value: generates new string to be free'd by caller
-*/
+ */
 char *diag_cfg_getstr(struct cfgi *cfgp);
 
 /** free contents of *cfgp but not the struct itself

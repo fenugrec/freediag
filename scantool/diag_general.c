@@ -61,13 +61,11 @@ const char *dbg_prefixes[] = {
 
 static diag_atomic_bool periodic_done_wrapper;
 
-static void
-set_periodic_done(void) {
+static void set_periodic_done(void) {
 	diag_atomic_store_bool(&periodic_done_wrapper, true);
 }
 
-bool
-periodic_done(void) {
+bool periodic_done(void) {
 	return diag_atomic_load_bool(&periodic_done_wrapper);
 }
 
@@ -141,8 +139,7 @@ int diag_end(void) {
 
 /** Message handling **/
 
-struct diag_msg *
-diag_allocmsg(size_t datalen) {
+struct diag_msg *diag_allocmsg(size_t datalen) {
 	struct diag_msg *newmsg;
 	int rv;
 
@@ -170,7 +167,7 @@ diag_allocmsg(size_t datalen) {
 
 	newmsg->len=datalen;
 	newmsg->next=NULL;
-	newmsg->data = newmsg->idata;	/* Keep tab as users change newmsg->data */
+	newmsg->data = newmsg->idata;   /* Keep tab as users change newmsg->data */
 	// i.e. some functions do (diagmsg->data += skiplen) which would prevent us
 	// from doing free(diagmsg->data)  (the pointer was changed).
 	// so ->idata is the original alloc'ed pointer, that should never be modified
@@ -180,8 +177,7 @@ diag_allocmsg(size_t datalen) {
 }
 
 /* Duplicate a message, and its contents including all chained messages. XXX nobody uses this !? */
-struct diag_msg *
-diag_dupmsg(struct diag_msg *msg) {
+struct diag_msg *diag_dupmsg(struct diag_msg *msg) {
 	struct diag_msg *newchain, *chain_last, *tmsg;
 
 	assert(msg != NULL);
@@ -200,9 +196,9 @@ diag_dupmsg(struct diag_msg *msg) {
 	chain_last = newchain;
 
 	LL_FOREACH(msg->next, msg) {
-		tmsg = diag_dupsinglemsg(msg);	//copy
+		tmsg = diag_dupsinglemsg(msg);  //copy
 		if (tmsg == NULL) {
-			diag_freemsg(newchain);	//undo what we have so far
+			diag_freemsg(newchain); //undo what we have so far
 			return diag_pseterr(DIAG_ERR_NOMEM);
 		}
 
@@ -217,8 +213,7 @@ diag_dupmsg(struct diag_msg *msg) {
 
 /* Duplicate a single message, don't follow the chain */
 // (leave ->next undefined)
-struct diag_msg *
-diag_dupsinglemsg(struct diag_msg *msg) {
+struct diag_msg *diag_dupsinglemsg(struct diag_msg *msg) {
 	struct diag_msg *newmsg;
 
 	assert(msg != NULL);
@@ -246,20 +241,19 @@ diag_dupsinglemsg(struct diag_msg *msg) {
 // it doesn't absolutely need to be recursive but in case of trouble
 // it's easier to see the whole call stack leading to the failure.
 // Of course, not async safe.
-void
-diag_freemsg(struct diag_msg *msg) {
+void diag_freemsg(struct diag_msg *msg) {
 	if (msg == NULL) {
 		return;
 	}
 
 	if (msg->next != NULL) {
-		diag_freemsg(msg->next);	//recurse
+		diag_freemsg(msg->next);        //recurse
 	}
 
 	if ( (msg->iflags & DIAG_MSG_IFLAG_MALLOC) == 0 ) {
 		fprintf(stderr,
-			FLFMT "diag_freemsg free-ing a non diag_allocmsg()'d message %p!\n",
-			FL, (void *)msg);
+		        FLFMT "diag_freemsg free-ing a non diag_allocmsg()'d message %p!\n",
+		        FL, (void *)msg);
 		free(msg);
 		return;
 	}
@@ -287,22 +281,21 @@ uint8_t diag_cks1(const uint8_t *data, unsigned int len) {
 
 //diag_data_dump : print (len) bytes of uint8_t *data
 //to the specified FILE (stderr, etc.)
-void
-diag_data_dump(FILE *out, const void *data, size_t len) {
+void diag_data_dump(FILE *out, const void *data, size_t len) {
 	const uint8_t *p = (const uint8_t *)data;
 	size_t i;
 	for (i = 0; i < len; i++) {
 		fprintf(out, "0x%02X ", p[i]); // the formatter %#02X gives
-					       // silly "0X6A" formatting. %#02x
-					       // gives "0x6a", not perfect
-					       // either...
+		                               // silly "0X6A" formatting. %#02x
+		                               // gives "0x6a", not perfect
+		                               // either...
 	}
 }
 
 //smartcat() : make sure s1 is not too large, then strncat
 //it does NOT verify if *p1 is large enough !
 void smartcat(char *p1, const size_t s1, const char *p2 ) {
-	assert ( s1 > strlen(p1) + strlen (p2) + 1 ) ;
+	assert ( s1 > strlen(p1) + strlen (p2) + 1 );
 	strncat(p1, p2, s1);
 }
 
@@ -345,8 +338,7 @@ static const struct {
 
 #define DIAG_ILLEGAL_ERR "Illegal error code: 0x%.2X\n"
 
-const char *
-diag_errlookup(const int code) {
+const char *diag_errlookup(const int code) {
 	unsigned i;
 	static char ill_str[sizeof(DIAG_ILLEGAL_ERR) + 2 * sizeof(int)];
 
@@ -392,8 +384,7 @@ int diag_p_ifwderr(const char *name, const int line, const int code) {
 /*
  * Return and clear the error.
  */
-int
-diag_geterr(void) {
+int diag_geterr(void) {
 	int oldCode = latchedCode;
 	latchedCode = 0;
 	return oldCode;
@@ -405,7 +396,7 @@ diag_geterr(void) {
 // Also takes filename and line to report for debugging purposes.
 // Returns 0 in the absence of errors.
 int diag_fl_alloc(const char *fName, const int line,
-	void **pp, size_t n, size_t s, bool allocIsCalloc) {
+                  void **pp, size_t n, size_t s, bool allocIsCalloc) {
 	char allocator;
 	const char *errMsg = "%s:%d: %calloc(%zu, %zu) failed: %s\n";
 
@@ -421,7 +412,7 @@ int diag_fl_alloc(const char *fName, const int line,
 			*pp = NULL;
 		}
 		fprintf(stderr, errMsg, fName, line, allocator,
-			n, s, "Invalid arguments");
+		        n, s, "Invalid arguments");
 		return diag_iseterr(DIAG_ERR_BADVAL);
 	}
 
@@ -432,14 +423,14 @@ int diag_fl_alloc(const char *fName, const int line,
 	}
 	if (*pp == NULL) {
 		fprintf(stderr, errMsg, fName, line, allocator,
-			n, s, strerror(errno));
+		        n, s, strerror(errno));
 		return diag_iseterr(DIAG_ERR_NOMEM);
 	}
 	return 0;
 }
 
 /* Add a string to array-of-strings (argv style)
-*/
+ */
 char **strlist_add(char **list, const char *news, int elems) {
 	char **templist;
 	char *temp;
@@ -480,18 +471,16 @@ void strlist_free(char **list, int elems) {
 /*
  * Message print out / debug routines
  */
-void
-diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum) {
+void diag_printmsg_header(FILE *fp, struct diag_msg *msg, bool timestamp, int msgnum) {
 	if (timestamp) {
 		fprintf(fp, "%lu.%03lu: ", msg->rxtime / 1000,
-			msg->rxtime % 1000);
+		        msg->rxtime % 1000);
 	}
 	fprintf(fp, "msg %02d src=0x%02X dest=0x%02X\n", msgnum, msg->src, msg->dest);
 	fprintf(fp, "msg %02d data: ", msgnum);
 }
 
-void
-diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp) {
+void diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp) {
 	struct diag_msg *tmsg;
 	int i=0;
 
@@ -509,22 +498,19 @@ diag_printmsg(FILE *fp, struct diag_msg *msg, bool timestamp) {
 
 // Atomic access functions.
 
-void
-diag_atomic_store_bool(diag_atomic_bool *a, bool d) {
+void diag_atomic_store_bool(diag_atomic_bool *a, bool d) {
 	diag_os_lock(&a->mtx);
 	a->v = d;
 	diag_os_unlock(&a->mtx);
 }
 
-void
-diag_atomic_store_int(diag_atomic_int *a, int d) {
+void diag_atomic_store_int(diag_atomic_int *a, int d) {
 	diag_os_lock(&a->mtx);
 	a->v = d;
 	diag_os_unlock(&a->mtx);
 }
 
-bool
-diag_atomic_load_bool(diag_atomic_bool *a) {
+bool diag_atomic_load_bool(diag_atomic_bool *a) {
 	bool r;
 	diag_os_lock(&a->mtx);
 	r = a->v;
@@ -532,8 +518,7 @@ diag_atomic_load_bool(diag_atomic_bool *a) {
 	return r;
 }
 
-int
-diag_atomic_load_int(diag_atomic_int *a) {
+int diag_atomic_load_int(diag_atomic_int *a) {
 	int r;
 	diag_os_lock(&a->mtx);
 	r = a->v;

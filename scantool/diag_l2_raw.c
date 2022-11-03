@@ -42,12 +42,11 @@
 
 
 
-int
-dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn,
-UNUSED(flag_type flags),
-unsigned int bitrate,
-target_type target,
-source_type source) {
+int dl2p_raw_startcomms( struct diag_l2_conn *d_l2_conn,
+                         UNUSED(flag_type flags),
+                         unsigned int bitrate,
+                         target_type target,
+                         source_type source) {
 	int rv;
 	struct diag_serial_settings set;
 
@@ -71,10 +70,9 @@ source_type source) {
 }
 
 /*
-*/
+ */
 
-int
-dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn *pX)) {
+int dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn *pX)) {
 	return 0;
 }
 
@@ -82,34 +80,32 @@ dl2p_raw_stopcomms(UNUSED(struct diag_l2_conn *pX)) {
  * Just send the data, with no processing etc
  * ret 0 if ok
  */
-int
-dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
+int dl2p_raw_send(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg) {
 	int rv;
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT "diag_l2_send %p, msg %p len %u called\n",
-		FL, (void *)d_l2_conn, (void *)msg, msg->len);
+	          FLFMT "diag_l2_send %p, msg %p len %u called\n",
+	          FL, (void *)d_l2_conn, (void *)msg, msg->len);
 
 	rv = diag_l1_send (d_l2_conn->diag_link->l2_dl0d,
-		msg->data, msg->len, d_l2_conn->diag_l2_p4min);
+	                   msg->data, msg->len, d_l2_conn->diag_l2_p4min);
 
-	return rv? diag_ifwderr(rv):0 ;
+	return rv? diag_ifwderr(rv):0;
 }
 
 /*
-*/
-int
-dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
-	void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
+ */
+int dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
+                  void (*callback)(void *handle, struct diag_msg *msg), void *handle) {
 	uint8_t rxbuf[MAXRBUF];
-	struct diag_msg msg = {0};	//local message structure that will disappear when we return
+	struct diag_msg msg = {0};      //local message structure that will disappear when we return
 	int rv;
 
 	/*
- 	 * Read data from fd
+	 * Read data from fd
 	 */
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
-		rxbuf, sizeof(rxbuf), timeout);
+	                   rxbuf, sizeof(rxbuf), timeout);
 
 	if (rv <= 0) { /* Failure, or 0 bytes (which cant happen) */
 		return rv;
@@ -123,7 +119,7 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 	msg.rxtime = diag_os_getms();
 
 	DIAG_DBGM(diag_l2_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "l2_proto_raw_recv: handle=%p\n", FL,	handle);
+	          FLFMT "l2_proto_raw_recv: handle=%p\n", FL,     handle);
 
 	/*
 	 * Call user callback routine
@@ -136,10 +132,9 @@ dl2p_raw_recv(struct diag_l2_conn *d_l2_conn, unsigned int timeout,
 }
 
 /*
-*/
-struct diag_msg *
-dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
-		int *errval) {
+ */
+struct diag_msg *dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
+                                  int *errval) {
 	int rv;
 	struct diag_msg *rmsg = NULL;
 	uint8_t rxbuf[MAXRBUF];
@@ -152,7 +147,7 @@ dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 
 	/* And wait for response */
 	rv = diag_l1_recv (d_l2_conn->diag_link->l2_dl0d,
-		rxbuf, sizeof(rxbuf), 1000);
+	                   rxbuf, sizeof(rxbuf), 1000);
 
 	if (rv <= 0) {
 		*errval = rv;
@@ -166,7 +161,7 @@ dl2p_raw_request(struct diag_l2_conn *d_l2_conn, struct diag_msg *msg,
 	if (rmsg == NULL) {
 		return diag_pseterr(DIAG_ERR_NOMEM);
 	}
-	memcpy(&rmsg->data, rxbuf, (size_t)rv);	/* Data */
+	memcpy(&rmsg->data, rxbuf, (size_t)rv); /* Data */
 	rmsg->fmt = 0;
 	rmsg->rxtime = diag_os_getms();
 

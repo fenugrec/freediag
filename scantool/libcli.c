@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cconf.h"	//XXX hax for HAVE_LIBREADLINE, need to move that to libcli.h
+#include "cconf.h"      //XXX hax for HAVE_LIBREADLINE, need to move that to libcli.h
 
 #include "libcli.h"
 
@@ -33,26 +33,26 @@
 
 
 /************** misc defs */
-#define PROMPTBUFSIZE 80		//Length of prompt before the '>' character.
+#define PROMPTBUFSIZE 80                //Length of prompt before the '>' character.
 #define CLI_MAXARGS 300
-#define INPUT_MAX 1400	//big enough to fit long "diag sendreq..." commands
+#define INPUT_MAX 1400  //big enough to fit long "diag sendreq..." commands
 
-#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+#define ARRAY_SIZE(x)   (sizeof(x) / sizeof((x)[0]))
 
 
 /****** compiler-specific tweaks ******/
 #ifdef __GNUC__
-	#define UNUSED(X) 	X __attribute__((unused))	//magic !
+	#define UNUSED(X)       X __attribute__((unused))       //magic !
 #else
-	#define UNUSED(X)	X	//how can we suppress "unused parameter" warnings on other compilers?
+	#define UNUSED(X)       X       //how can we suppress "unused parameter" warnings on other compilers?
 #endif // __GNUC__
 
 //hacks for MS Visual studio / visual C
 #if defined(_MSC_VER)
 	#if _MSC_VER < 1910 /* anything older than Visual Studio 2017 */
-		#define snprintf _snprintf	//danger : _snprintf doesn't guarantee zero-termination !?
-									//as of Visual Studio 2015 the snprintf function is c99 compatible.
-									//https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/snprintf-snprintf-snprintf-l-snwprintf-snwprintf-l?view=msvc-160
+		#define snprintf _snprintf      //danger : _snprintf doesn't guarantee zero-termination !?
+//as of Visual Studio 2015 the snprintf function is c99 compatible.
+//https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/snprintf-snprintf-snprintf-l-snwprintf-snwprintf-l?view=msvc-160
 		#pragma message("Warning: MSVC _sprintf() may be dangerous ! Please ask your compiler vendor to supply a C99-compliant snprintf()...")
 	#endif /* _MSC_VER < 1910  Visual Studio 2017 */
 #endif /* _MSC_VER Visual Studio */
@@ -61,7 +61,7 @@
 
 
 /************ private data **********/
-static const struct cmd_tbl_entry *root_cmd_table;	/* point to current root table */
+static const struct cmd_tbl_entry *root_cmd_table;      /* point to current root table */
 static struct cli_callbacks callbacks = {0};
 
 #ifdef HAVE_LIBREADLINE
@@ -112,8 +112,7 @@ char *basic_get_input(const char *prompt, FILE *instream) {
 #ifdef HAVE_LIBREADLINE
 
 /* Caller must free returned buffer */
-static char *
-get_input(const char *prompt) {
+static char *get_input(const char *prompt) {
 	char *input;
 	/* XXX Does readline change the prompt? */
 	char localprompt[128];
@@ -126,8 +125,7 @@ get_input(const char *prompt) {
 	return input;
 }
 
-char *
-command_generator(const char *text, int state) {
+char *command_generator(const char *text, int state) {
 	static int list_index, length;
 	const struct cmd_tbl_entry *cmd_entry;
 
@@ -155,8 +153,7 @@ command_generator(const char *text, int state) {
 	return (char *)NULL;
 }
 
-char **
-scantool_completion(const char *text, int start, UNUSED(int end)) {
+char **scantool_completion(const char *text, int start, UNUSED(int end)) {
 	char **matches;
 
 	//start == 0 is when the command line is either empty or contains only whitespaces
@@ -185,8 +182,8 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 			for (int i = 0; parsed_level[i].command != NULL; i++) {
 				//if found the command on the current level
 				if (!(parsed_level[i].flags & CLI_CMD_HIDDEN) &&
-				   strlen(parsed_level[i].command) == cmd_length &&
-				   strncmp(parsed_level[i].command, cmd, cmd_length) == 0) {
+				    strlen(parsed_level[i].command) == cmd_length &&
+				    strncmp(parsed_level[i].command, cmd, cmd_length) == 0) {
 					//does it have sub-commands?
 					if (parsed_level[i].sub_cmd_tbl != NULL) {
 						//go deeper
@@ -233,8 +230,7 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 	return matches;
 }
 
-static void
-readline_init(const struct cmd_tbl_entry *curtable) {
+static void readline_init(const struct cmd_tbl_entry *curtable) {
 	//preset levels for current table
 	current_cmd_level = curtable;
 	completion_cmd_level = curtable;
@@ -243,25 +239,24 @@ readline_init(const struct cmd_tbl_entry *curtable) {
 	rl_attempted_completion_function = scantool_completion;
 }
 
-#else	// so no libreadline
+#else   // so no libreadline
 
-static char *
-get_input(const char *prompt) {
+static char *get_input(const char *prompt) {
 	return basic_get_input(prompt, stdin);
 }
 
-static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {}
+static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {
+}
 
-#endif	//HAVE_LIBREADLINE
+#endif  //HAVE_LIBREADLINE
 
 
 /** get input from user or file
-*
-* @instream either stdin or file
-* @return NULL if no more input
-*/
-static char *
-command_line_input(const char *prompt, FILE *instream) {
+ *
+ * @instream either stdin or file
+ * @return NULL if no more input
+ */
+static char *command_line_input(const char *prompt, FILE *instream) {
 	if (instream == stdin) {
 		return get_input(prompt);
 	}
@@ -339,7 +334,7 @@ static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, co
 
 
 
-static char nullstr[2] = {0,0};	//can't be const char because it goes into argv
+static char nullstr[2] = {0,0}; //can't be const char because it goes into argv
 
 /** CLI processor
  *
@@ -358,14 +353,14 @@ static int do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE 
 	char *cmd_argv[CLI_MAXARGS];
 	char *input = NULL;
 	int rv;
-	bool done;	//when set, sub-command processing is ended and returns to upper level
+	bool done;      //when set, sub-command processing is ended and returns to upper level
 	int i;
 
 	if (!prompt) {
 		prompt = "";
 	}
 
-	char promptbuf[PROMPTBUFSIZE];	/* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
+	char promptbuf[PROMPTBUFSIZE];  /* Was 1024, who needs that long a prompt? (the part before user input up to '>') */
 
 #ifdef HAVE_LIBREADLINE
 	//set the current command level for command completion
@@ -390,11 +385,11 @@ static int do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE 
 
 			/* Parse it */
 			inptr = input;
-			if (*inptr == '@') {	//printing comment
+			if (*inptr == '@') {    //printing comment
 				printf("%s\n", inptr);
 				continue;
 			}
-			if (*inptr == '#') {		//non-printing comment
+			if (*inptr == '#') {            //non-printing comment
 				continue;
 			}
 			cmd_argc = 0;
@@ -435,19 +430,19 @@ static int do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE 
 			/* has sub-commands */
 			libcli_logcmd(1, cmd_argv);
 			snprintf(promptbuf, PROMPTBUFSIZE,"%s/%s",
-				prompt, ctp->command);
+			         prompt, ctp->command);
 			/* Sub menu */
 			rv = do_cli(ctp->sub_cmd_tbl,
-				promptbuf,
-				instream,
-				cmd_argc-1,
-				&cmd_argv[1]);
+			            promptbuf,
+			            instream,
+			            cmd_argc-1,
+			            &cmd_argv[1]);
 #ifdef HAVE_LIBREADLINE
 			//went out of the sub-menu, so update the command level for command completion
 			current_cmd_level = cmd_tbl;
 #endif
 			if (rv == CMD_EXIT) { // allow exiting prog. from a
-					      // submenu
+				              // submenu
 				done = 1;
 			}
 			snprintf(promptbuf, PROMPTBUFSIZE, "%s> ", prompt);
@@ -456,18 +451,18 @@ static int do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE 
 			libcli_logcmd(cmd_argc, cmd_argv);
 			rv = ctp->routine(cmd_argc, cmd_argv);
 			switch (rv) {
-				case CMD_USAGE:
-					printf("Usage: %s\n%s\n", ctp->usage, ctp->help);
+			case CMD_USAGE:
+				printf("Usage: %s\n%s\n", ctp->usage, ctp->help);
+				break;
+			case CMD_UP:
+				if (cmd_tbl == root_cmd_table) {
+					//ignore cmd_up here
 					break;
-				case CMD_UP:
-					if (cmd_tbl == root_cmd_table) {
-						//ignore cmd_up here
-						break;
-					}
-					// fallthrough
-				case CMD_EXIT:
-					done = 1;
-					break;
+				}
+			// fallthrough
+			case CMD_EXIT:
+				done = 1;
+				break;
 			}
 		}
 
@@ -475,7 +470,7 @@ static int do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE 
 			/* Single command */
 			break;
 		}
-	}	//while !done
+	}       //while !done
 
 	if (input) {
 		free(input);
@@ -498,15 +493,15 @@ void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_en
 	if (initscript != NULL) {
 		int rv=command_file(initscript);
 		switch (rv) {
-			case CMD_OK:
-				/* script was succesful, start a normal CLI afterwards */
-				break;
-			case CMD_FAILED:
-				printf("Problem with file %s\n", initscript);
-				// fallthrough, yes
-			default:
-			case CMD_EXIT:
-				goto exit_cleanup;
+		case CMD_OK:
+			/* script was succesful, start a normal CLI afterwards */
+			break;
+		case CMD_FAILED:
+			printf("Problem with file %s\n", initscript);
+		// fallthrough, yes
+		default:
+		case CMD_EXIT:
+			goto exit_cleanup;
 		}
 	}
 
@@ -532,14 +527,14 @@ int cmd_source(int argc, char **argv) {
 	int rv;
 
 	if (argc < 2) {
-			printf("No filename\n");
+		printf("No filename\n");
 		return CMD_USAGE;
 	}
 
 	file = argv[1];
 	rv=command_file(file);
 	if (rv == CMD_FAILED) {
-			printf("Couldn't read %s\n", file);
+		printf("Couldn't read %s\n", file);
 	}
 
 	return rv;
@@ -591,13 +586,11 @@ int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 	return CMD_OK;
 }
 
-int
-cmd_up(UNUSED(int argc), UNUSED(char **argv)) {
+int cmd_up(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_UP;
 }
 
 
-int
-cmd_exit(UNUSED(int argc), UNUSED(char **argv)) {
+int cmd_exit(UNUSED(int argc), UNUSED(char **argv)) {
 	return CMD_EXIT;
 }

@@ -65,9 +65,9 @@
 
 extern const struct diag_l0 diag_l0_sim;
 
-static const char *simfile_default=DB_FILE;	//default filename
+static const char *simfile_default=DB_FILE;     //default filename
 
-#define MAX_RESP_LEN 260	//iso14230 can be 4bytes header + 255 bytes payload, + 1 checksum
+#define MAX_RESP_LEN 260        //iso14230 can be 4bytes header + 255 bytes payload, + 1 checksum
 
 // ECU responses linked list:
 struct sim_ecu_response {
@@ -87,17 +87,17 @@ struct sim_device {
 	// or not the L2 framing and CRC/Checksums.
 	// These boolean flags are to be programmed with values
 	// from the DB file in use.
-	bool	dataonly;	/* messages are sent/received without headers or checksums; required for J1850 */
-	bool	nocksum;	/* messages are sent/received without checksums */
-	bool	framed;		/* responses must be considered as complete frames; dataonly and nocksum imply this */
-	bool	fullinit;	/* indicate that l0 does full init */
+	bool dataonly;          /* messages are sent/received without headers or checksums; required for J1850 */
+	bool nocksum;           /* messages are sent/received without checksums */
+	bool framed;            /* responses must be considered as complete frames; dataonly and nocksum imply this */
+	bool fullinit;          /* indicate that l0 does full init */
 
-	int	proto_restrict;	/* (optional) only accept connections matching this proto */
+	int proto_restrict;     /* (optional) only accept connections matching this proto */
 
 	struct cfgi simfile;
 
-	uint8_t sim_last_ecu_request[MAX_RESP_LEN];	// Copy of most recent request.
-	struct sim_ecu_response *sim_last_ecu_responses;	// For keeping all the responses to the last request.
+	uint8_t sim_last_ecu_request[MAX_RESP_LEN];     // Copy of most recent request.
+	struct sim_ecu_response *sim_last_ecu_responses;        // For keeping all the responses to the last request.
 };
 
 
@@ -108,10 +108,10 @@ struct sim_device {
 
 
 int sim_send(struct diag_l0_device *dl0d,
-		 const void *data, const size_t len);
+             const void *data, const size_t len);
 
 int sim_recv(struct diag_l0_device *dl0d,
-		 void *data, size_t len, unsigned int timeout);
+             void *data, size_t len, unsigned int timeout);
 
 void sim_close(struct diag_l0_device *dl0d);
 
@@ -140,7 +140,7 @@ static struct sim_ecu_response *sim_new_ecu_response_txt(const char *text) {
 			return diag_pfwderr(rv);
 		}
 
-		strncpy(resp->text, text, strlen(text));	//using strlen() defeats the purpose of strncpy ...
+		strncpy(resp->text, text, strlen(text));        //using strlen() defeats the purpose of strncpy ...
 	}
 
 	return resp;
@@ -187,7 +187,7 @@ static void sim_free_ecu_responses(struct sim_ecu_response **resp_pp) {
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V,
-		FLFMT " %d responses freed from queue.\n", FL, count);
+	          FLFMT " %d responses freed from queue.\n", FL, count);
 
 	return;
 }
@@ -199,12 +199,12 @@ static void sim_dump_ecu_responses(struct sim_ecu_response *resp_p) {
 
 	LL_FOREACH(resp_p, tresp) {
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
-			FLFMT "response #%d: %s", FL, count, tresp->text);
+		          FLFMT "response #%d: %s", FL, count, tresp->text);
 		count++;
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_DATA, DIAG_DBGLEVEL_V,
-		FLFMT "%d responses in queue.\n", FL, count);
+	          FLFMT "%d responses in queue.\n", FL, count);
 	return;
 }
 
@@ -214,7 +214,7 @@ static void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, cons
 #define TAG_REQUEST "RQ"
 #define TAG_RESPONSE "RP"
 #define VALUE_DONTCARE "XXXX"
-#define REQBYTES	MAX_RESP_LEN	//number of request bytes analyzed
+#define REQBYTES        MAX_RESP_LEN    //number of request bytes analyzed
 
 	uint8_t resp_count = 0;
 	uint8_t new_resp_count = 0;
@@ -288,7 +288,7 @@ static void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, cons
 					// if it's another request, then end the list.
 					if (strncmp(line_buf, TAG_REQUEST, strlen(TAG_REQUEST)) == 0) {
 						end_responses = 1;
- 						break;
+						break;
 					}
 					continue;
 				}
@@ -315,8 +315,8 @@ static void sim_find_responses(struct sim_ecu_response **resp_pp, FILE *fp, cons
 	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "%d responses queued for receive, %d new.\n",
-		FL, resp_count + new_resp_count, new_resp_count);
+	          FLFMT "%d responses queued for receive, %d new.\n",
+	          FL, resp_count + new_resp_count, new_resp_count);
 	return;
 }
 
@@ -373,15 +373,15 @@ static uint8_t requestbyten(UNUSED(uint8_t *data), char *s, const uint8_t req[])
 // Parses a response's text to data.
 // Replaces special tokens with function results. This mangles resp_p->text, which shouldn't be a problem
 static void sim_parse_response(struct sim_ecu_response *resp_p, uint8_t req[]) {
-#define TOKEN_SINE1	 "sin1"
+#define TOKEN_SINE1      "sin1"
 #define TOKEN_SAWTOOTH1 "swt1"
 #define TOKEN_ISO9141CS "cks1"
 #define TOKEN_REQUESTBYTE "req"
 #define SRESP_SIZE MAX_RESP_LEN
 
-	uint8_t synth_resp[SRESP_SIZE];	// response bytes.
-	char *cur_tok = NULL;		//current token
-	char *rptr = resp_p->text;	//working copy of the ptr. We will mangle resp_p->text
+	uint8_t synth_resp[SRESP_SIZE]; // response bytes.
+	char *cur_tok = NULL;           //current token
+	char *rptr = resp_p->text;      //working copy of the ptr. We will mangle resp_p->text
 	int ret;
 	int pos = 0;
 
@@ -399,12 +399,12 @@ static void sim_parse_response(struct sim_ecu_response *resp_p, uint8_t req[]) {
 		} else if (strcmp(cur_tok, TOKEN_ISO9141CS) == 0) {
 			synth_resp[pos] = diag_cks1(synth_resp, pos);
 		} else if (strncmp(cur_tok, TOKEN_REQUESTBYTE,
-				   strlen(TOKEN_REQUESTBYTE)) == 0) {
+		                   strlen(TOKEN_REQUESTBYTE)) == 0) {
 			synth_resp[pos] = requestbyten(synth_resp, cur_tok + strlen(TOKEN_REQUESTBYTE), req);
 		} else {
 			// failed. try scanning element as an Hex byte.
 			unsigned int tempbyte;
-			ret = sscanf(cur_tok, "%X", &tempbyte);	//can't scan direct to uint8 !
+			ret = sscanf(cur_tok, "%X", &tempbyte); //can't scan direct to uint8 !
 			if (ret != 1) {
 				fprintf(stderr, FLFMT "Error parsing line: %s at position %d.\n", FL, resp_p->text, pos*5);
 				break;
@@ -412,7 +412,7 @@ static void sim_parse_response(struct sim_ecu_response *resp_p, uint8_t req[]) {
 			synth_resp[pos] = (uint8_t) tempbyte;
 		}
 		pos++;
-		rptr = NULL;	//strtok: continue parsing
+		rptr = NULL;    //strtok: continue parsing
 	}
 
 	// copy to user.
@@ -436,12 +436,12 @@ static void sim_read_cfg(struct sim_device *dev) {
 #define CFG_NOL2CKSUM "NOL2CKSUM"
 #define CFG_FRAMED "FRAMED"
 #define CFG_FULLINIT "FULLINIT"
-#define CFG_P9141	"P_9141"
-#define CFG_P14230	"P_14230"
-#define CFG_P1850P	"P_J1850P"
-#define CFG_P1850V	"P_J1850V"
-#define CFG_PCAN	"P_CAN"
-#define CFG_PRAW	"P_RAW"
+#define CFG_P9141       "P_9141"
+#define CFG_P14230      "P_14230"
+#define CFG_P1850P      "P_J1850P"
+#define CFG_P1850V      "P_J1850V"
+#define CFG_PCAN        "P_CAN"
+#define CFG_PRAW        "P_RAW"
 
 	dev->dataonly = 0;
 	dev->nocksum = 0;
@@ -520,11 +520,11 @@ int sim_new(struct diag_l0_device *dl0d) {
 
 	//init configurable params:
 	if (diag_cfgn_str(&dev->simfile, simfile_default,
-						"Simulation file to use as data input", "simfile")) {
+	                  "Simulation file to use as data input", "simfile")) {
 		free(dev);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	dev->simfile.next = NULL;	//mark as first/only/last item in the list
+	dev->simfile.next = NULL;       //mark as first/only/last item in the list
 	return 0;
 }
 
@@ -557,7 +557,7 @@ int sim_open(struct diag_l0_device *dl0d, int iProtocol) {
 	simfile = dev->simfile.val.str;
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_OPEN, DIAG_DBGLEVEL_V,
-		FLFMT "open simfile %s proto=%d\n", FL, simfile, iProtocol);
+	          FLFMT "open simfile %s proto=%d\n", FL, simfile, iProtocol);
 
 	dev->protocol = iProtocol;
 	dev->sim_last_ecu_responses = NULL;
@@ -596,7 +596,7 @@ void sim_close(struct diag_l0_device *dl0d) {
 
 	// If debugging, print to stderr.
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_CLOSE, DIAG_DBGLEVEL_V,
-		FLFMT "dl0d=%p closing simfile\n", FL, (void *)dl0d);
+	          FLFMT "dl0d=%p closing simfile\n", FL, (void *)dl0d);
 
 	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
@@ -612,8 +612,7 @@ void sim_close(struct diag_l0_device *dl0d) {
 
 
 // Simulates the bus initialization.
-static int
-sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
+static int sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	struct sim_device *dev;
 	uint8_t synch_patt[1];
 	const uint8_t sim_break = 0x00;
@@ -623,8 +622,8 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	sim_free_ecu_responses(&dev->sim_last_ecu_responses);
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_IOCTL, DIAG_DBGLEVEL_V,
-		FLFMT "device link %p info %p initbus type %d\n",
-		FL, (void *)dl0d, (void *)dev, in->type);
+	          FLFMT "device link %p info %p initbus type %d\n",
+	          FL, (void *)dl0d, (void *)dev, in->type);
 
 	if (!dev) {
 		return diag_iseterr(DIAG_ERR_INIT_NOTSUPP);
@@ -639,7 +638,7 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 		// Send break.
 		// We simulate a break with a single "0x00" char.
 		DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_INIT, DIAG_DBGLEVEL_V,
-			FLFMT "Sending: BREAK!\n", FL);
+		          FLFMT "Sending: BREAK!\n", FL);
 		sim_send(dl0d, &sim_break, 1);
 		break;
 	case DIAG_L1_INITBUS_5BAUD:
@@ -663,7 +662,7 @@ sim_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 // CARSIM behaves like a smart interface (does P4).
 // Gets the list of responses from the DB file for the given request.
 int sim_send(struct diag_l0_device *dl0d,
-		 const void *data, const size_t len) {
+             const void *data, const size_t len) {
 	struct sim_device *dev = dl0d->l0_int;
 
 	if (len == 0) {
@@ -681,7 +680,7 @@ int sim_send(struct diag_l0_device *dl0d,
 	}
 
 	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_WRITE, DIAG_DBGLEVEL_V, data, len,
-		FLFMT "dl0d=%p sending %u bytes; ", FL, (void *)dl0d, (unsigned int)len);
+	              FLFMT "dl0d=%p sending %u bytes; ", FL, (void *)dl0d, (unsigned int)len);
 
 	// Store a copy of this request for use by req* function tokens.
 	memcpy(dev->sim_last_ecu_request, data, len);
@@ -699,7 +698,7 @@ int sim_send(struct diag_l0_device *dl0d,
 // Returns ECU response with parsed data (if applicable).
 // Returns number of bytes read.
 int sim_recv(struct diag_l0_device *dl0d,
-		void *data, size_t len, unsigned int timeout) {
+             void *data, size_t len, unsigned int timeout) {
 	size_t xferd;
 	struct sim_ecu_response *resp_p = NULL;
 	struct sim_device *dev = dl0d->l0_int;
@@ -708,8 +707,8 @@ int sim_recv(struct diag_l0_device *dl0d,
 		return diag_iseterr(DIAG_ERR_BADLEN);
 	}
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
-		FLFMT "link %p recv upto %ld bytes timeout %u\n",
-		FL, (void *)dl0d, (long)len, timeout);
+	          FLFMT "link %p recv upto %ld bytes timeout %u\n",
+	          FL, (void *)dl0d, (long)len, timeout);
 
 	// "Receive from the ECU" a response.
 	resp_p = dev->sim_last_ecu_responses;
@@ -728,7 +727,7 @@ int sim_recv(struct diag_l0_device *dl0d,
 	}
 
 	DIAG_DBGMDATA(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V, data, xferd,
-		FLFMT "dl0d=%p recv %d bytes; ", FL, (void *)dl0d, (int) len);
+	              FLFMT "dl0d=%p recv %d bytes; ", FL, (void *)dl0d, (int) len);
 
 	return (xferd == 0 ? DIAG_ERR_TIMEOUT : (int) xferd);
 }
@@ -743,11 +742,11 @@ uint32_t sim_getflags(struct diag_l0_device *dl0d) {
 	int ret;
 
 	ret = DIAG_L1_SLOW |
-		DIAG_L1_FAST |
-		DIAG_L1_PREFFAST |
-		DIAG_L1_DOESP4WAIT |
-		DIAG_L1_AUTOSPEED |
-		DIAG_L1_NOTTY;
+	      DIAG_L1_FAST |
+	      DIAG_L1_PREFFAST |
+	      DIAG_L1_DOESP4WAIT |
+	      DIAG_L1_AUTOSPEED |
+	      DIAG_L1_NOTTY;
 
 	/* both "no checksum" and "dataonly" modes take care of checksums, and imply framing. */
 	if (dev->nocksum || dev->dataonly) {

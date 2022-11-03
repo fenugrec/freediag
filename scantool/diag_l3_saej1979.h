@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#define J1979_KEEPALIVE 3500		//ms timeout between keepalive messages on OBD bus
+#define J1979_KEEPALIVE 3500            //ms timeout between keepalive messages on OBD bus
 
 #if defined(__cplusplus)
 }
