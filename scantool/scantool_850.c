@@ -853,7 +853,7 @@ static int parse_freeze_arg(char *arg, struct read_or_peek_item *item) {
 /*
  * Execute a read, peek or readnv command.
  */
-static int read_family(int argc, char **argv, enum l7_namespace ns) {
+static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) {
 	int count;
 	int i, rv;
 	bool continuous;

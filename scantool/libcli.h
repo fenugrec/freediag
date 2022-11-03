@@ -104,6 +104,6 @@ enum cli_retval cmd_up(int argc, char **argv);
 enum cli_retval cmd_exit(int argc, char **argv);
 enum cli_retval cmd_source(int argc, char **argv);
 
-int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
+enum cli_retval help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
 
 #endif

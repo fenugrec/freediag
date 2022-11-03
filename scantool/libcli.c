@@ -74,7 +74,7 @@ static const struct cmd_tbl_entry *completion_cmd_level;
 
 
 /************* fwd decls */
-static int do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv);
+static enum cli_retval do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv);
 
 
 char *basic_get_input(const char *prompt, FILE *instream) {
@@ -289,7 +289,7 @@ void cli_set_callbacks(const struct cli_callbacks* new_callbacks) {
  * ret CMD_OK if file was readable (command/parsing problems are OK)
  * ret CMD_FAILED if file was unreadable
  * forward CMD_EXIT if applicable */
-static int command_file(const char *filename) {
+static enum cli_retval command_file(const char *filename) {
 	int rv;
 	FILE *fstream;
 
@@ -346,7 +346,7 @@ static char nullstr[2] = {0,0}; //can't be const char because it goes into argv
  *
  * prints *prompt,
  */
-static int do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv) {
+static enum cli_retval do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv) {
 	/* Build up argc/argv */
 	const struct cmd_tbl_entry *ctp;
 	int cmd_argc;
@@ -541,7 +541,7 @@ enum cli_retval cmd_source(int argc, char **argv) {
 }
 
 
-int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
+enum cli_retval help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 /*	int i;*/
 	const struct cmd_tbl_entry *ctp;
 
