@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- note : this file is ignored when running cppcheck via cmake ! -->
 <project version="1">
     <platform>win32A</platform>
     <analyze-all-vs-configs>false</analyze-all-vs-configs>

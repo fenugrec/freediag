@@ -42,16 +42,18 @@ if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
 			"--enable=performance"
 			"--enable=information"
 			"--suppress=constParameter"
-            "--suppress=missingInclude"
-			"--suppress=missingSystemInclude"
+			"--suppress=missingInclude"
+			"--suppress=missingIncludeSystem"
 			"--suppress=unmatchedSuppression"
 			"--suppress=variableScope"
             "--error-exitcode=1"
             "--inline-suppr"
+            "-I${CMAKE_BINARY_DIR}"
+            "-D__cppcheck__"
        )
 	   if (WIN32)
 	      list (
-             APPEND CMAKE_C_CPPCHECK 
+             APPEND CMAKE_C_CPPCHECK
              "--platform=win32A"
 			 "-D_WIN32"
 			 #
