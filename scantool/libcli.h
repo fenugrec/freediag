@@ -16,7 +16,8 @@
  * ******************************************
  *
  * Generic CLI processor library
- * Split out from freediag code
+ *
+ * Split out from freediag code 2022/10
  */
 
 
@@ -26,9 +27,10 @@
  */
 #include "libcli_conf.h"
 
-/** Macros that have an effect on libcli :
+/** Macros that have an effect on libcli and can be defined in libcli_conf.h :
 */
 // #define HAVE_LIBREADLINE 	//self-explanatory
+// #define ASSERT_FAIL(x) custom_assert(x)
 
 
 /** Return values from the commands */

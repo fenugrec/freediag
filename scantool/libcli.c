@@ -12,7 +12,6 @@
  */
 
 
-#include <assert.h>
 #include <stdbool.h>
 
 #include <time.h>
@@ -36,6 +35,33 @@
 #define INPUT_MAX 1400  //big enough to fit long "diag sendreq..." commands
 
 #define ARRAY_SIZE(x)   (sizeof(x) / sizeof((x)[0]))
+
+
+/* currently (2022/10), cppcheck has trouble with assert() and flow control:
+ * https://trac.cppcheck.net/ticket/10333
+ * So, we define an alternate assert() that is sure to be analyzed properly.
+ */
+#ifdef __cppcheck__
+	#undef ASSERT_FAIL
+	#define ASSERT_FAIL() exit(1)
+#endif // __cppcheck__
+
+#ifndef ASSERT_FAIL
+	#include <assert.h>
+	#define ASSERT_FAIL(x) assert(0)
+#endif // ASSERT_FAIL
+
+
+/************** assert handling */
+/** we don't necessarily use default assert() implementation.
+ * (by defaut it invokes fprintf __FILE__ __LINE__ etc which may pull in undesired stuff)
+ * See https://barrgroup.com/embedded-systems/how-to/define-assert-macro
+ *
+ */
+#define CLI_ASSERT(expr)         \
+	if (expr) { \
+	} else \
+	    ASSERT_FAIL(expr)
 
 
 /****** compiler-specific tweaks ******/
@@ -78,6 +104,8 @@ static enum cli_retval do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *p
 char *cli_basic_get_input(const char *prompt, FILE *instream) {
 	char *input;
 	bool do_prompt;
+
+	CLI_ASSERT(instream);
 
 	input = malloc(INPUT_MAX);
 	if (!input) {
@@ -127,6 +155,8 @@ char *command_generator(const char *text, int state) {
 	static int list_index, length;
 	const struct cmd_tbl_entry *cmd_entry;
 
+	CLI_ASSERT(text);
+
 	//a new word to complete
 	if (state == 0) {
 		list_index = 0;
@@ -153,6 +183,8 @@ char *command_generator(const char *text, int state) {
 
 char **scantool_completion(const char *text, int start, UNUSED(int end)) {
 	char **matches;
+
+	CLI_ASSERT(text);
 
 	//start == 0 is when the command line is either empty or contains only whitespaces
 	if (start == 0) {
@@ -229,6 +261,8 @@ char **scantool_completion(const char *text, int start, UNUSED(int end)) {
 }
 
 static void readline_init(const struct cmd_tbl_entry *curtable) {
+	CLI_ASSERT(curtable);
+
 	//preset levels for current table
 	current_cmd_level = curtable;
 	completion_cmd_level = curtable;
@@ -255,6 +289,8 @@ static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {
  * @return NULL if no more input
  */
 static char *command_line_input(const char *prompt, FILE *instream) {
+	CLI_ASSERT(instream);
+
 	if (instream == stdin) {
 		return get_input(prompt);
 	}
@@ -291,6 +327,8 @@ static enum cli_retval command_file(const char *filename) {
 	int rv;
 	FILE *fstream;
 
+	CLI_ASSERT(filename);
+
 	if ( (fstream=fopen(filename, "r"))) {
 		printf("running commands from file %s...\n", filename);
 		rv=do_cli(root_cmd_table, NULL, fstream, 0, NULL);
@@ -309,7 +347,7 @@ static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, co
 	const struct cmd_tbl_entry *ctp;
 	const struct cmd_tbl_entry *custom_cmd;
 
-	assert(cmdt != NULL);
+	CLI_ASSERT(cmdt && cmd);
 
 	ctp = cmdt;
 	custom_cmd = NULL;
@@ -351,6 +389,8 @@ static enum cli_retval do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *p
 	int rv;
 	bool done;      //when set, sub-command processing is ended and returns to upper level
 	int i;
+
+	CLI_ASSERT(cmd_tbl && instream);
 
 	if (!prompt) {
 		prompt = "";
@@ -480,7 +520,7 @@ static enum cli_retval do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *p
 
 /* start a cli with <name> as a prompt, and optionally run the <initscript> file */
 void cli_enter(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable) {
-	assert(cmdtable);
+	CLI_ASSERT(name && cmdtable);
 
 	root_cmd_table = cmdtable;
 
@@ -539,6 +579,8 @@ enum cli_retval cmd_source(int argc, char **argv) {
 
 enum cli_retval cli_help_basic(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 	const struct cmd_tbl_entry *ctp;
+
+	CLI_ASSERT(cmd_table);
 
 	if (argc > 1) {
 		/* Single command help */
