@@ -181,57 +181,9 @@ int fake_loss_measure_data() {
 	float a= -62810;
 	float b= 25027;
 
+	counter++;
+
 	return (int) (b * exp(elapsed / a));
-
-
-	elapsed += 11000;
-
-	//XXX This was a most interesting lookup table!! Can be deleted soon.
-  if      (elapsed < 11983) speed = 89*10000/36;
-  else if (elapsed < 12723) speed = 88*10000/36;
-  else if (elapsed < 13473) speed = 87*10000/36;
-  else if (elapsed < 14713) speed = 85*10000/36;
-  else if (elapsed < 15713) speed = 84*10000/36;
-  else if (elapsed < 16213) speed = 83*10000/36;
-  else if (elapsed < 16963) speed = 82*10000/36;
-  else if (elapsed < 17463) speed = 81*10000/36;
-  else if (elapsed < 18463) speed = 80*10000/36;
-  else if (elapsed < 19463) speed = 79*10000/36;
-  else if (elapsed < 20213) speed = 78*10000/36;
-  else if (elapsed < 20963) speed = 77*10000/36;
-  else if (elapsed < 22463) speed = 76*10000/36;
-  else if (elapsed < 22963) speed = 75*10000/36;
-  else if (elapsed < 23713) speed = 74*10000/36;
-  else if (elapsed < 25213) speed = 73*10000/36;
-  else if (elapsed < 26453) speed = 72*10000/36;
-  else if (elapsed < 27203) speed = 71*10000/36;
-  else if (elapsed < 27953) speed = 70*10000/36;
-  else if (elapsed < 29193) speed = 69*10000/36;
-  else if (elapsed < 29943) speed = 68*10000/36;
-  else if (elapsed < 30693) speed = 67*10000/36;
-  else if (elapsed < 32183) speed = 66*10000/36;
-  else if (elapsed < 32933) speed = 65*10000/36;
-  else if (elapsed < 33683) speed = 64*10000/36;
-  else if (elapsed < 34683) speed = 63*10000/36;
-  else if (elapsed < 35433) speed = 62*10000/36;
-  else if (elapsed < 36433) speed = 61*10000/36;
-  else if (elapsed < 37183) speed = 60*10000/36;
-  else if (elapsed < 38433) speed = 59*10000/36;
-  else if (elapsed < 39433) speed = 58*10000/36;
-  else if (elapsed < 40183) speed = 57*10000/36;
-  else if (elapsed < 40683) speed = 56*10000/36;
-  else if (elapsed < 42183) speed = 55*10000/36;
-  else if (elapsed < 43183) speed = 54*10000/36;
-  else if (elapsed < 44683) speed = 53*10000/36;
-  else if (elapsed < 45933) speed = 52*10000/36;
-  else if (elapsed < 47183) speed = 51*10000/36;
-  else if (elapsed < 48183) speed = 50*10000/36;
-  else if (elapsed < 49433) speed = 49*10000/36;
-  else                      speed = 48*10000/36;
-
-  counter++;
-
-  return speed;
 }
 
 int counter2;
