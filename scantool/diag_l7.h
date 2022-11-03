@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-enum namespace {
+enum l7_namespace {
 	NS_MEMORY,
 	NS_ROM,
 	NS_ADC,

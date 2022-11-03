@@ -39,7 +39,7 @@ extern "C" {
 struct diag_l2_conn;
 
 int diag_l7_d2_ping(struct diag_l2_conn *d_l2_conn);
-int diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out);
+int diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum l7_namespace ns, uint16_t addr, int buflen, uint8_t *out);
 int diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out);
 int diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn);
 int diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps);

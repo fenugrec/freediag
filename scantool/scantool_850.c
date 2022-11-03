@@ -700,7 +700,7 @@ cmd_850_ping(int argc, UNUSED(char **argv)) {
  * scaled value.
  */
 static void
-interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf) {
+interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf) {
 	if (ns==NS_LIVEDATA && addr==0x0200) {
 		printf("Engine Coolant Temperature: %dC (%dF)\n", buf[1]-80, (buf[1]-80)*9/5+32);
 	} else if (ns==NS_LIVEDATA && addr==0x0300) {
@@ -718,7 +718,7 @@ interpret_value(enum namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf)
  * Try to interpret all the live data values in the buffer.
  */
 static void
-interpret_block(enum namespace ns, uint16_t addr, int len, uint8_t *buf) {
+interpret_block(enum l7_namespace ns, uint16_t addr, int len, uint8_t *buf) {
 	int i;
 
 	if (ns != NS_MEMORY) {
@@ -753,7 +753,7 @@ print_hexdump_line(FILE *f, uint16_t addr, int addr_chars, uint8_t *buf, uint16_
 struct read_or_peek_item {
 	uint16_t start;		/* starting address or identifier */
 	uint16_t end;		/* ending address - for peeks only */
-	enum namespace ns;
+	enum l7_namespace ns;
 };
 
 /*
@@ -879,7 +879,7 @@ parse_freeze_arg(char *arg, struct read_or_peek_item *item) {
  * Execute a read, peek or readnv command.
  */
 static int
-read_family(int argc, char **argv, enum namespace ns) {
+read_family(int argc, char **argv, enum l7_namespace ns) {
 	int count;
 	int i, rv;
 	bool continuous;

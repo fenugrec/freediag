@@ -152,7 +152,7 @@ read_ADC_req(struct diag_msg *msg, uint8_t *wantresp, uint16_t addr) {
  * bytes requested. Returns the actual byte count received.
  */
 int
-diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out) {
+diag_l7_kwp71_read(struct diag_l2_conn *d_l2_conn, enum l7_namespace ns, uint16_t addr, int buflen, uint8_t *out) {
 	struct diag_msg req;    //build request message in this
 	uint8_t request_data[KWP71_REQSIZE];
 	struct diag_msg *resp = NULL;

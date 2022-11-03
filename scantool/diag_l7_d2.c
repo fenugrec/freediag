@@ -197,7 +197,7 @@ read_FREEZE_req(uint8_t **msgout, unsigned int *msglen, uint16_t addr, UNUSED(ui
  * be more or less than the number of bytes requested.
  */
 int
-diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum namespace ns, uint16_t addr, int buflen, uint8_t *out) {
+diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum l7_namespace ns, uint16_t addr, int buflen, uint8_t *out) {
 	struct diag_msg req = {0};
 	struct diag_msg *resp = NULL;
 	int datalen;
