@@ -3,7 +3,7 @@
 
 /* OBDII-specific (SAE J1979) scantool functions */
 
-#include "scantool_cli.h"
+#include "libcli.h"
 
 extern const struct cmd_tbl_entry scantool_cmd_table[];
 

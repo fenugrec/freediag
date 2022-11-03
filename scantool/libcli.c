@@ -22,8 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cconf.h"      //XXX hax for HAVE_LIBREADLINE, need to move that to libcli.h
-
 #include "libcli.h"
 
 #ifdef HAVE_LIBREADLINE
@@ -341,8 +339,6 @@ static char nullstr[2] = {0,0}; //can't be const char because it goes into argv
  * @prompt Optional. Will be prompted only if argc==0
  * @argc  If supplied, then this is one shot cli, ie run the command
  * @instream stdin or file to source commands
- *
- * @return results as CMD_xxx (such as CMD_EXIT)
  *
  * prints *prompt,
  */

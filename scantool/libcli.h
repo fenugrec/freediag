@@ -22,6 +22,14 @@
 
 #include <stdio.h>              /* For FILE */
 
+/** Extra configs should go in this external header
+ */
+#include "libcli_conf.h"
+
+/** Macros that have an effect on libcli :
+*/
+// #define HAVE_LIBREADLINE 	//self-explanatory
+
 
 /** Return values from the commands */
 enum cli_retval {

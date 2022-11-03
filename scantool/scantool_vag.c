@@ -34,8 +34,6 @@
 #include "libcli.h"
 
 #include "diag_vag.h"
-#include "scantool_cli.h"
-
 
 static enum cli_retval cmd_vag_help(int argc, char **argv);
 const struct cmd_tbl_entry vag_cmd_table[] = {
