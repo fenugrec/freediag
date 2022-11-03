@@ -86,7 +86,7 @@ const struct cmd_tbl_entry debug_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_debug_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
-		cmd_debug_help, FLAG_HIDDEN, NULL},
+		cmd_debug_help, CLI_CMD_HIDDEN, NULL},
 
 	{ "show", "show", "Shows current debug levels",
 		cmd_debug_show, 0, NULL},

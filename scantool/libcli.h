@@ -7,14 +7,14 @@
  * Copyright (C) 2015 Tomasz Kaźmierczak (tomek-k@wp.eu)
  *                    - added command completion
  * (c) fenugrec 2014-2022
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * ******************************************
- * 
+ *
  * Generic CLI processor library
  * Split out from freediag code
  */
@@ -25,7 +25,7 @@
 /******* Command table definitions ********/
 
 /** Command descriptor
- * 
+ *
  * command table consists of an array of these
  * */
 struct cmd_tbl_entry {
@@ -43,7 +43,7 @@ struct cmd_tbl_entry {
 #define CLI_TBL_BUILTINS \
 	{ "up", "up", "Return to previous menu level", cmd_up, 0, NULL}, \
 	{ "exit", "exit", "Exits program", cmd_exit, 0, NULL}, \
-	{ "quit", "quit", "Exits program", cmd_exit, FLAG_HIDDEN, NULL}
+	{ "quit", "quit", "Exits program", cmd_exit, CLI_CMD_HIDDEN, NULL}
 
 #define CLI_TBL_END { NULL, NULL, NULL, NULL, 0, NULL}	//must be last element of every command table
 
@@ -62,9 +62,9 @@ struct cli_callbacks {
 #define CMD_EXIT	3	/* Exit called */
 #define CMD_UP		4	/* Go up one level in command tree */
 
-#define FLAG_HIDDEN	(1 << 0)	/* Hidden command */
-#define FLAG_FILE_ARG (1 << 1) /* Command accepts a filename as an argument*/
-#define FLAG_CUSTOM (1 << 2)	/* Command handles other subcommands not in the subtable, max 1 per table */
+#define CLI_CMD_HIDDEN	(1 << 0)	/* Hidden command */
+#define CLI_CMD_FILEARG (1 << 1) /* Command accepts a filename as an argument*/
+#define CLI_CMD_CUSTOM (1 << 2)	/* Command handles other subcommands not in the subtable, max 1 per table */
 
 
 
@@ -75,7 +75,7 @@ struct cli_callbacks {
 void cli_set_callbacks(const struct cli_callbacks*);
 
 /** Start an interactive CLI session
- * 
+ *
  * @param name prompt string
  * @param initscript optional; file to source commands from on init
  * @param cmdtable
@@ -85,7 +85,7 @@ void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_en
 
 
 /** Prompt for some input.
- * 
+ *
  * @param prompt : optional
  * @return a new 0-terminated string with trailing CR/LF stripped, NULL if no more input
  *

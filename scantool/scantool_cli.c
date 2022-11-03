@@ -77,11 +77,11 @@ static int cmd_rem(int argc, char **argv);
 /* this table is appended to the "extra" cmdtable to construct the whole root cmd table */
 static const struct cmd_tbl_entry basic_cmd_table[] = {
 	{ "log", "log <filename>", "Log monitor data to <filename>",
-		cmd_log, FLAG_FILE_ARG, NULL},
+		cmd_log, CLI_CMD_FILEARG, NULL},
 	{ "stoplog", "stoplog", "Stop logging", cmd_stoplog, 0, NULL},
 
 	{ "play", "play filename", "Play back data from <filename>",
-		cmd_play, FLAG_HIDDEN | FLAG_FILE_ARG, NULL},
+		cmd_play, CLI_CMD_HIDDEN | CLI_CMD_FILEARG, NULL},
 
 	{ "set", "set <parameter value>",
 		"Sets/displays parameters, \"set help\" for more info", NULL,
@@ -111,12 +111,12 @@ static const struct cmd_tbl_entry basic_cmd_table[] = {
 		"Sets/displays debug data and flags, \"debug help\" for available commands", NULL,
 		0, debug_cmd_table},
 
-	{ "date", "date", "Prints date & time", cmd_date, FLAG_HIDDEN, NULL},
-	{ "#", "#", "Does nothing", cmd_rem, FLAG_HIDDEN, NULL},
-	{ "source", "source <file>", "Read commands from a file", cmd_source, FLAG_FILE_ARG, NULL},
+	{ "date", "date", "Prints date & time", cmd_date, CLI_CMD_HIDDEN, NULL},
+	{ "#", "#", "Does nothing", cmd_rem, CLI_CMD_HIDDEN, NULL},
+	{ "source", "source <file>", "Read commands from a file", cmd_source, CLI_CMD_FILEARG, NULL},
 
 	{ "help", "help [command]", "Gives help for a command", cmd_help, 0, NULL },
-	{ "?", "? [command]", "Gives help for a command", cmd_help, FLAG_HIDDEN, NULL },
+	{ "?", "? [command]", "Gives help for a command", cmd_help, CLI_CMD_HIDDEN, NULL },
 	CLI_TBL_BUILTINS,
 	CLI_TBL_END
 };
@@ -358,9 +358,9 @@ char *find_rcfile(void) {
 
 
 /** temporary enter_cli() wrapper
- * 
+ *
  * combines basic_table with extra_cmdtable before calling enter_cli.
- * 
+ *
  */
 void scantool_cli(const char *prompt, const char *initscript, const struct cmd_tbl_entry *extra_cmdtable) {
 

@@ -65,7 +65,7 @@ const struct cmd_tbl_entry set_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_set_help, 0, NULL},
 	{ "?", "help [command]", "Gives help for a command",
-		cmd_set_help, FLAG_HIDDEN, NULL},
+		cmd_set_help, CLI_CMD_HIDDEN, NULL},
 
 	{ "interface", "interface [NAME]", "Interface to use. Use set interface ? to get a list of names",
 		cmd_set_interface, 0, NULL},
@@ -98,7 +98,7 @@ const struct cmd_tbl_entry set_cmd_table[] = {
 	CLI_TBL_BUILTINS,
 
 	{ "", "", "",
-		cmd_set_custom, FLAG_CUSTOM | FLAG_HIDDEN, NULL},
+		cmd_set_custom, CLI_CMD_CUSTOM | CLI_CMD_HIDDEN, NULL},
 
 	CLI_TBL_END
 };

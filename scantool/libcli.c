@@ -4,7 +4,7 @@
  * Copyright (C) 2015 Tomasz Kaźmierczak (tomek-k@wp.eu)
  *                    - added command completion
  * (c) fenugrec 2014-2022
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -141,7 +141,7 @@ command_generator(const char *text, int state) {
 	while (completion_cmd_level[list_index].command != NULL) {
 		cmd_entry = &completion_cmd_level[list_index];
 		list_index++;
-		if (strncmp(cmd_entry->command, text, length) == 0 && !(cmd_entry->flags & FLAG_HIDDEN)) {
+		if (strncmp(cmd_entry->command, text, length) == 0 && !(cmd_entry->flags & CLI_CMD_HIDDEN)) {
 			char *ret_name;
 			//we must return a copy of the string; libreadline frees it for us
 			ret_name = malloc(strlen(cmd_entry->command) + 1);
@@ -184,7 +184,7 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 			bool found = 0;
 			for (int i = 0; parsed_level[i].command != NULL; i++) {
 				//if found the command on the current level
-				if (!(parsed_level[i].flags & FLAG_HIDDEN) &&
+				if (!(parsed_level[i].flags & CLI_CMD_HIDDEN) &&
 				   strlen(parsed_level[i].command) == cmd_length &&
 				   strncmp(parsed_level[i].command, cmd, cmd_length) == 0) {
 					//does it have sub-commands?
@@ -193,7 +193,7 @@ scantool_completion(const char *text, int start, UNUSED(int end)) {
 						parsed_level = parsed_level[i].sub_cmd_tbl;
 						rl_attempted_completion_over = 0;
 						found = 1;
-					} else if (parsed_level[i].flags & FLAG_FILE_ARG) {
+					} else if (parsed_level[i].flags & CLI_CMD_FILEARG) {
 						//the command accepts a filename as an argument, so use the libreadline's filename completion
 						rl_attempted_completion_over = 0;
 						return NULL;
@@ -290,7 +290,7 @@ void cli_set_callbacks(const struct cli_callbacks* new_callbacks) {
 
 
 /** execute commands read from filename;
- * 
+ *
  * ret CMD_OK if file was readable (command/parsing problems are OK)
  * ret CMD_FAILED if file was unreadable
  * forward CMD_EXIT if applicable */
@@ -322,7 +322,7 @@ static const struct cmd_tbl_entry *find_cmd(const struct cmd_tbl_entry *cmdt, co
 	custom_cmd = NULL;
 
 	while (ctp->command) {
-		if (ctp->flags & FLAG_CUSTOM) {
+		if (ctp->flags & CLI_CMD_CUSTOM) {
 			// found a custom handler; save it
 			custom_cmd = ctp;
 		}
@@ -573,10 +573,10 @@ int help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 	printf("Available commands are :\n");
 	ctp = cmd_table;
 	while (ctp->command) {
-		if ((ctp->flags & FLAG_HIDDEN) == 0) {
+		if ((ctp->flags & CLI_CMD_HIDDEN) == 0) {
 			printf("\t%s\n", ctp->usage);
 		}
-		if (ctp->flags & FLAG_CUSTOM) {
+		if (ctp->flags & CLI_CMD_CUSTOM) {
 			/* list custom subcommands too */
 			printf("Custom commands for the current level:\n");
 			char *cust_special[]= { "?", NULL };

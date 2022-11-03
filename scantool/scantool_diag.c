@@ -65,7 +65,7 @@ const struct cmd_tbl_entry diag_cmd_table[] = {
 	{ "help", "help [command]", "Gives help for a command",
 		cmd_diag_help, 0, NULL},
 	{ "?", "? [command]", "Gives help for a command",
-		cmd_diag_help, FLAG_HIDDEN, NULL},
+		cmd_diag_help, CLI_CMD_HIDDEN, NULL},
 
 	{ "connect", "connect", "Connect to ECU", cmd_diag_connect, 0, NULL},
 
@@ -75,12 +75,12 @@ const struct cmd_tbl_entry diag_cmd_table[] = {
 	{ "sendreq", "sendreq [byte0 [byte1 [...]]]", "Send raw data to the ECU and print response",
 		cmd_diag_sendreq, 0, NULL},
 	{ "sr", "sendreq [byte0 [byte1 [...]]]", "Send a command to the ECU and print response",
-		cmd_diag_sendreq, FLAG_HIDDEN, NULL},
+		cmd_diag_sendreq, CLI_CMD_HIDDEN, NULL},
 	{ "read", "read [waittime]",
 		"Receive some data from the ECU waiting waittime seconds",
 		cmd_diag_read, 0, NULL},
 	{ "rx", "read [waittime]", "Receive some data from the ECU",
-		cmd_diag_read, FLAG_HIDDEN, NULL},
+		cmd_diag_read, CLI_CMD_HIDDEN, NULL},
 
 	{ "addl3", "addl3 [protocol]", "Add (start) a L3 protocol",
 		cmd_diag_addl3, 0, NULL},
