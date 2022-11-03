@@ -287,7 +287,9 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
 			if (desc != NULL) {
 				*desc = dtc_entry->desc;
 			}
-			if (suffix > 999) suffix = 999;
+			if (suffix > 999) {
+				suffix = 999;
+			}
 			snprintf(printable, PRINTABLE_LEN, "%s-%03d", prefix, suffix);
 			return printable;
 		}

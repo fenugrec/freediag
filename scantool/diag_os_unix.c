@@ -302,8 +302,9 @@ void diag_os_millisleep(unsigned int ms) {
 
 	ms = (unsigned int)((unsigned long) ms* 2048/1000);     //avoid overflow
 
-	if (ms > 2)     //Bias delay -1ms to avoid overshoot ?
+	if (ms > 2) {   //Bias delay -1ms to avoid overshoot ?
 		ms-=2;
+	}
 
 	fd = open ("/dev/rtc", O_RDONLY);
 
@@ -345,8 +346,9 @@ void diag_os_millisleep(unsigned int ms) {
 		}
 		data >>= 8;
 		i += (unsigned int) data;
-		if (i>=(ms*2))
+		if (i>=(ms*2)) {
 			break;
+		}
 	}
 
 	/* Disable periodic interrupts */

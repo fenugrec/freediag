@@ -67,7 +67,9 @@ CRITICAL_SECTION periodic_lock;
 
 VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
 
-	if (!TryEnterCriticalSection(&periodic_lock)) return;
+	if (!TryEnterCriticalSection(&periodic_lock)) {
+		return;
+	}
 
 	if (!timedout) {
 		//this should never happen.
@@ -88,8 +90,9 @@ VOID CALLBACK timercallback(UNUSED(PVOID lpParam), BOOLEAN timedout) {
 int diag_os_init(void) {
 	unsigned long tmo=ALARM_TIMEOUT;
 
-	if (diag_os_init_done)
+	if (diag_os_init_done) {
 		return 0;
+	}
 
 	tweak_timing(1);
 
@@ -208,7 +211,9 @@ void diag_os_millisleep(unsigned int ms) {
 			real_t = (long) (pf_conv * (tdiff-reqt));       //in us
 			if (real_t > 1000) {
 				correction += real_t;
-				if (correction > 4000) correction = 4000;
+				if (correction > 4000) {
+					correction = 4000;
+				}
 			}
 			return;
 		}
@@ -256,7 +261,9 @@ static void tweak_timing(bool change_interval) {
 		fprintf(stderr, FLFMT "Warning : could not increase thread priority. Timing may be impaired.\n", FL);
 	}
 
-	if (!change_interval) return;
+	if (!change_interval) {
+		return;
+	}
 
 	// workaround to increase Sleep() routine accuracy by decreasing PerformanceTimer time period to minimum possible
 	// not fatal if any of this fails
@@ -294,7 +301,9 @@ static void reset_timing(void) {
 		fprintf(stderr, FLFMT "Warning : could not reset thread priority.\n", FL);
 	}
 
-	if (!timer_period_changed) return;
+	if (!timer_period_changed) {
+		return;
+	}
 
 	// restore multimedia timer
 	if (timeEndPeriod(timer_period) != TIMERR_NOERROR) {
@@ -316,8 +325,9 @@ const char *diag_os_geterr(OS_ERRTYPE os_errno) {
 
 	LPVOID errstr;
 
-	if (os_errno == 0)
+	if (os_errno == 0) {
 		os_errno=GetLastError();
+	}
 
 	if (os_errno !=0 ) {
 		DWORD elen = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
@@ -357,8 +367,9 @@ void diag_os_calibrate(void) {
 
 	assert(pfconv_valid);
 
-	if (calibrate_done)
+	if (calibrate_done) {
 		return;
+	}
 
 	//test _gethrt()
 	resol=0;
@@ -368,7 +379,9 @@ void diag_os_calibrate(void) {
 		tl1=diag_os_gethrt();
 		while ((tl2=diag_os_gethrt()) == tl1) {}
 		tr = (tl2-tl1);
-		if (tr > maxres) maxres = tr;
+		if (tr > maxres) {
+			maxres = tr;
+		}
 		resol += tr;
 	}
 	printf("diag_os_gethrt() resolution <= %luus, avg ~%luus\n",
@@ -401,21 +414,25 @@ void diag_os_calibrate(void) {
 			timediff=(qpc2.QuadPart-qpc1.QuadPart);
 			tsum += timediff;
 			//update extreme records if required:
-			if (timediff < min)
+			if (timediff < min) {
 				min = timediff;
-			if (timediff > max)
+			}
+			if (timediff > max) {
 				max = timediff;
+			}
 		}
 		avgerr= (LONGLONG) (((tsum/CAL_ITERS)-counts) * pf_conv);       //average error in us
 		//a high spread (max-min) indicates initbus with dumb interfaces will be
 		//fragile. We just print it out; there's not much we can do to fix this.
-		if ((min < counts) || (avgerr > 900))
+		if ((min < counts) || (avgerr > 900)) {
 			printf("diag_os_millisleep(%d) off by %+" PRId64 "%% (%+" PRId64 "us)"
 			       "; spread=%" PRId64 "%%\n", testval, (avgerr*100/1000)/testval, avgerr, ((max-min)*100)/counts);
+		}
 
 
-		if (testval>=30)
+		if (testval>=30) {
 			testval -= 8;
+		}
 	}       //for testvals
 
 	printf("Calibration done.\n");
@@ -467,8 +484,9 @@ void diag_os_lock(diag_mtx *mtx) {
 }
 
 bool diag_os_trylock(diag_mtx *mtx) {
-	if (!TryEnterCriticalSection((CRITICAL_SECTION *)mtx))
+	if (!TryEnterCriticalSection((CRITICAL_SECTION *)mtx)) {
 		return 0;
+	}
 	return 1;
 }
 

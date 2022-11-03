@@ -967,10 +967,11 @@ ssize_t diag_tty_read(ttyp *tty_int, void *buf, size_t count, unsigned int timeo
 	}       //total read loop
 finished:
 	if (rv >= 0) {
-		if (n > 0)
+		if (n > 0) {
 			return n;
-		else if (expired)
+		} else if (expired) {
 			return DIAG_ERR_TIMEOUT;
+		}
 	}
 
 	fprintf(stderr, FLFMT "read() returned %s.\n",
@@ -1019,8 +1020,9 @@ finished:
 	/* Read periodic IRQ rate */
 	retval = ioctl(fd, RTC_IRQP_READ, &data);
 
-	if (retval != 2048)
+	if (retval != 2048) {
 		ioctl(fd, RTC_IRQP_SET, 2048);
+	}
 
 	/* Enable periodic interrupts */
 	ioctl(fd, RTC_PIE_ON, 0);
@@ -1037,16 +1039,21 @@ finished:
 
 		rv = select ( uti->fd + 1,  &set, NULL, NULL, &tv );
 
-		if ( rv > 0 ) break;
+		if ( rv > 0 ) {
+			break;
+		}
 
-		if (errno != 0 && errno != EINTR) break;
+		if (errno != 0 && errno != EINTR) {
+			break;
+		}
 		errno = 0;
 
 		read(fd, &data, sizeof(unsigned long));
 		data >>= 8;
 		time+=data;
-		if (time>=timeout)
+		if (time>=timeout) {
 			break;
+		}
 	}
 
 	/* Disable periodic interrupts */
@@ -1171,8 +1178,9 @@ int diag_tty_break(ttyp *tty_int, const unsigned int ms) {
 #warning ******* Dont know how to implement diag_tty_break() on your OS !
 #warning ******* Compiling diag_tty_break with a fixed 25ms setbreak !
 #warning ******* DUMB interfaces may not work properly !!
-	if (ms<25)
+	if (ms<25) {
 		return 0;
+	}
 
 	return diag_tty_fastbreak(uti, ms);
 #endif  //if .. for diag_tty_break

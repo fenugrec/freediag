@@ -194,15 +194,17 @@ int fake_run_measure_data(int data_pid) {
 	diag_os_millisleep(250);
 
 	rpm = 1000 + counter2 * 200;
-	if (counter2 < 5500/200)
+	if (counter2 < 5500/200) {
 		counter2++;
-	else
+	} else {
 		counter2--;
+	}
 
-	if (data_pid == RPM_PID)
+	if (data_pid == RPM_PID) {
 		return rpm;
-	else if (data_pid == SPEED_PID)
+	} else if (data_pid == SPEED_PID) {
 		return rpm * (9000*100/6000) / 36;
+	}
 
 	return 0;
 }

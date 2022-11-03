@@ -137,7 +137,7 @@ static int cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
 	tm = localtime(&now);
 	if (strftime(str, sizeof(str), "%a %b %d %H:%M:%S %Y", tm) == 0) {
 		printf("unable to format timestamp");
-	}else {
+	} else {
 		printf("%s", str);
 	}
 
@@ -227,7 +227,7 @@ static int cmd_log(int argc, char **argv) {
 	log_timestamp("#");
 	if (strftime(timestr, sizeof(timestr), "%a %b %d %H:%M:%S %Y", localtime(&now)) == 0) {
 		fprintf(global_logfp, "unable to format timestamp");
-	}else {
+	} else {
 		fprintf(global_logfp, "logging started at %s", timestr);
 	}
 	printf("Logging to file %s\n", file);

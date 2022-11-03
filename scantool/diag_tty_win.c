@@ -105,7 +105,9 @@ ttyp *diag_tty_open(const char *portname) {
 void diag_tty_close(ttyp *ttyh) {
 	struct tty_int *wti = ttyh;
 
-	if (!wti) return;
+	if (!wti) {
+		return;
+	}
 
 	if (wti->name) {
 		free(wti->name);
@@ -152,8 +154,9 @@ int diag_tty_setup(ttyp *ttyh,
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 	//simple test : only check if custom baud rates are supported, but don't abort if they aren't. Just notify user.
-	if ( !(supportedprops.dwMaxBaud & BAUD_USER))
+	if ( !(supportedprops.dwMaxBaud & BAUD_USER)) {
 		fprintf(stderr, FLFMT "warning : device does not support custom baud rates !\n", FL);
+	}
 
 
 
@@ -255,20 +258,22 @@ int diag_tty_control(ttyp *ttyh, unsigned int dtr, unsigned int rts) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (dtr)
+	if (dtr) {
 		escapefunc=SETDTR;
-	else
+	} else {
 		escapefunc=CLRDTR;
+	}
 
 	if (!EscapeCommFunction(wti->fd,escapefunc)) {
 		fprintf(stderr, FLFMT "Could not change DTR: %s\n", FL, diag_os_geterr(0));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (rts)
+	if (rts) {
 		escapefunc=SETRTS;
-	else
+	} else {
 		escapefunc=CLRRTS;
+	}
 
 	if (!EscapeCommFunction(wti->fd,escapefunc)) {
 		fprintf(stderr, FLFMT "Could not change RTS: %s\n", FL, diag_os_geterr(0));
@@ -298,8 +303,9 @@ ssize_t diag_tty_write(ttyp *ttyh, const void *buf, const size_t count) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (count == 0)
+	if (count == 0) {
 		return diag_iseterr(DIAG_ERR_BADLEN);
+	}
 
 	if (!WriteFile(wti->fd, buf, count, &byteswritten, pOverlap)) {
 		fprintf(stderr, FLFMT "WriteFile error:%s. %u bytes written, %u requested\n", FL, diag_os_geterr(0), (unsigned int) byteswritten, (unsigned) count);
@@ -330,7 +336,9 @@ ssize_t diag_tty_read(ttyp *ttyh, void *buf, size_t count, unsigned int timeout)
 	pOverlap=NULL;
 	COMMTIMEOUTS devtimeouts;
 
-	if ((count == 0) || (timeout == 0)) return DIAG_ERR_BADLEN;
+	if ((count == 0) || (timeout == 0)) {
+		return DIAG_ERR_BADLEN;
+	}
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
 	          FLFMT "tty_read: ttyh=%p, fd=%p, len=%zu, t=%u\n",
@@ -357,8 +365,9 @@ ssize_t diag_tty_read(ttyp *ttyh, void *buf, size_t count, unsigned int timeout)
 		fprintf(stderr, FLFMT "ReadFile error: %s\n",FL, diag_os_geterr(0));
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
-	if (bytesread > 0)
+	if (bytesread > 0) {
 		rv=bytesread;
+	}
 	return rv;
 
 }
@@ -404,8 +413,9 @@ int diag_tty_break(ttyp *ttyh, const unsigned int ms) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
 
-	if (ms <= 1)
+	if (ms <= 1) {
 		return diag_iseterr(DIAG_ERR_GENERAL);
+	}
 
 	QueryPerformanceCounter(&qpc1);
 	errval = !SetCommBreak(wti->fd);
@@ -414,7 +424,9 @@ int diag_tty_break(ttyp *ttyh, const unsigned int ms) {
 	//It's still impossible to know (from here) when exactly TXD goes low (beginning or end of the call)
 	real_t=(long) (pf_conv * (qpc2.QuadPart-qpc1.QuadPart)) / 1000L;
 	real_t = (long) ms - real_t;    //time remaining
-	if (real_t <= 0) real_t = 0;
+	if (real_t <= 0) {
+		real_t = 0;
+	}
 	diag_os_millisleep((unsigned int ) real_t);
 
 	errval |= !ClearCommBreak(wti->fd);
@@ -449,8 +461,9 @@ int diag_tty_fastbreak(ttyp *ttyh, const unsigned int ms) {
 	DWORD byteswritten;
 
 	dh = wti->fd;
-	if (ms<25)              //very funny
+	if (ms<25) {            //very funny
 		return diag_iseterr(DIAG_ERR_TIMEOUT);
+	}
 
 	if (dh == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, FLFMT "Error. Is the port open ?\n", FL);
@@ -505,8 +518,9 @@ int diag_tty_fastbreak(ttyp *ttyh, const unsigned int ms) {
 
 	//Not getting the echo byte doesn't mean fastbreak has necessarily
 	// failed. But we really should be getting an echo back...
-	if (xferd < 0)
+	if (xferd < 0) {
 		return diag_iseterr(xferd);
+	}
 	if ((xferd == 0) || (cbuf != 0)) {
 		/* Error, EOF or bad echo */
 		fprintf(stderr, FLFMT "Did not get fastbreak echo!\n", FL);
@@ -518,8 +532,9 @@ int diag_tty_fastbreak(ttyp *ttyh, const unsigned int ms) {
 	timediff=qpc2.QuadPart-qpc1.QuadPart;   //elapsed counts since diag_tty_write
 	counts=(ms*perfo_freq.QuadPart)/1000;           //total # of counts for requested tWUP
 	tremain=counts-timediff;        //counts remaining
-	if (tremain<=0)
+	if (tremain<=0) {
 		return 0;
+	}
 
 	tremain = ((LONGLONG) tremain*1000)/perfo_freq.QuadPart;        //convert to ms; imprecise but that should be OK.
 	diag_os_millisleep((unsigned int) tremain);
@@ -528,8 +543,9 @@ int diag_tty_fastbreak(ttyp *ttyh, const unsigned int ms) {
 	timediff=qpc3.QuadPart-qpc1.QuadPart;   //total cycle time.
 	break_error= (long) timediff - counts;  //real - requested
 	break_error= (long) (break_error * pf_conv);    //convert to us !
-	if (break_error > 1000 || break_error < -1000)
+	if (break_error > 1000 || break_error < -1000) {
 		fprintf(stderr, FLFMT "tty_fastbreak: tWUP out of spec by %ldus!\n", FL, break_error);
+	}
 
 
 	return 0;

@@ -208,6 +208,8 @@ int main(int argc,  char **argv) {
 
 	(void) diag_end();
 
-	if (!rv) return -1;
+	if (!rv) {
+		return -1;
+	}
 	return 0;
 }
