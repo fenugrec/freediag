@@ -83,7 +83,7 @@ void cli_set_callbacks(const struct cli_callbacks *);
  * @param initscript optional; file to source commands from on init
  * @param cmdtable
  */
-void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable);
+void cli_enter(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable);
 
 
 
@@ -96,14 +96,21 @@ void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_en
  * have readline, and when reading init or command files.
  * No line editing or history.
  */
-char *basic_get_input(const char *prompt, FILE *instream);
+char *cli_basic_get_input(const char *prompt, FILE *instream);
 
 
-// XXX todo : cleanup and doc these
+/** builtin command to move up a level */
 enum cli_retval cmd_up(int argc, char **argv);
+
+/** builtin command to exit CLI entirely from any level */
 enum cli_retval cmd_exit(int argc, char **argv);
+
+/** builtin command to run commands from an external file */
 enum cli_retval cmd_source(int argc, char **argv);
 
-enum cli_retval help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
+/** builtin help : print list of commands in given table,
+ * or give detailed help about specified command
+ */
+enum cli_retval cli_help_basic(int argc, char **argv, const struct cmd_tbl_entry *cmd_table);
 
 #endif

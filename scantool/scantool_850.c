@@ -163,7 +163,7 @@ const struct cmd_tbl_entry v850_cmd_table[] = {
 };
 
 static enum cli_retval cmd_850_help(int argc, char **argv) {
-	return help_common(argc, argv, v850_cmd_table);
+	return cli_help_basic(argc, argv, v850_cmd_table);
 }
 
 /*
@@ -1384,7 +1384,7 @@ static enum cli_retval cmd_850_cleardtc(int argc, UNUSED(char **argv)) {
 		return CMD_OK;
 	}
 
-	input = basic_get_input("Are you sure you wish to clear the Diagnostic Trouble Codes (y/n) ? ", stdin);
+	input = cli_basic_get_input("Are you sure you wish to clear the Diagnostic Trouble Codes (y/n) ? ", stdin);
 	if (!input) {
 		return CMD_OK;
 	}
@@ -1396,7 +1396,7 @@ static enum cli_retval cmd_850_cleardtc(int argc, UNUSED(char **argv)) {
 
 	if (!have_read_dtcs) {
 		free(input);
-		input = basic_get_input("You haven't read the DTCs yet. Are you sure you wish to clear them (y/n) ? ", stdin);
+		input = cli_basic_get_input("You haven't read the DTCs yet. Are you sure you wish to clear them (y/n) ? ", stdin);
 		if (!input) {
 			return CMD_OK;
 		}

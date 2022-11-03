@@ -77,7 +77,7 @@ static const struct cmd_tbl_entry *completion_cmd_level;
 static enum cli_retval do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *prompt, FILE *instream, int argc, char **argv);
 
 
-char *basic_get_input(const char *prompt, FILE *instream) {
+char *cli_basic_get_input(const char *prompt, FILE *instream) {
 	char *input;
 	bool do_prompt;
 
@@ -242,7 +242,7 @@ static void readline_init(const struct cmd_tbl_entry *curtable) {
 #else   // so no libreadline
 
 static char *get_input(const char *prompt) {
-	return basic_get_input(prompt, stdin);
+	return cli_basic_get_input(prompt, stdin);
 }
 
 static void readline_init(UNUSED(const struct cmd_tbl_entry *cmd_table)) {
@@ -262,7 +262,7 @@ static char *command_line_input(const char *prompt, FILE *instream) {
 	}
 
 	/* Reading from init or command file; no prompting or history */
-	return basic_get_input(NULL, instream);
+	return cli_basic_get_input(NULL, instream);
 }
 
 
@@ -483,7 +483,7 @@ static enum cli_retval do_cli(const struct cmd_tbl_entry *cmd_tbl, const char *p
 
 
 /* start a cli with <name> as a prompt, and optionally run the <initscript> file */
-void enter_cli(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable) {
+void cli_enter(const char *name, const char *initscript, const struct cmd_tbl_entry *cmdtable) {
 	assert(cmdtable);
 
 	root_cmd_table = cmdtable;
@@ -541,8 +541,7 @@ enum cli_retval cmd_source(int argc, char **argv) {
 }
 
 
-enum cli_retval help_common(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
-/*	int i;*/
+enum cli_retval cli_help_basic(int argc, char **argv, const struct cmd_tbl_entry *cmd_table) {
 	const struct cmd_tbl_entry *ctp;
 
 	if (argc > 1) {

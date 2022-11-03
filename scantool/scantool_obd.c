@@ -358,8 +358,8 @@ static enum cli_retval cmd_cleardtc(UNUSED(int argc), UNUSED(char **argv)) {
 		return CMD_OK;
 	}
 
-	input = basic_get_input("Are you sure you wish to clear the Diagnostic "
-	                        "Trouble Codes (y/n) ? ", stdin);
+	input = cli_basic_get_input("Are you sure you wish to clear the Diagnostic "
+	                            "Trouble Codes (y/n) ? ", stdin);
 	if (!input) {
 		return CMD_OK;
 	}

@@ -125,7 +125,7 @@ struct cmd_tbl_entry *combined_table = NULL;
 
 static enum cli_retval cmd_help(int argc, char **argv) {
 	assert(combined_table);
-	return help_common(argc, argv, combined_table);
+	return cli_help_basic(argc, argv, combined_table);
 }
 
 static enum cli_retval cmd_date(UNUSED(int argc), UNUSED(char **argv)) {
@@ -382,7 +382,7 @@ void scantool_cli(const char *prompt, const char *initscript, const struct cmd_t
 		.cli_atexit = scantool_atexit,
 	};
 	cli_set_callbacks(&cbs);
-	enter_cli(prompt, initscript, combined_table);
+	cli_enter(prompt, initscript, combined_table);
 	free(combined_table);
 	combined_table = NULL;
 	return;

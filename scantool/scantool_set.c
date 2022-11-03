@@ -527,5 +527,5 @@ static enum cli_retval cmd_set_initmode(int argc, char **argv) {
 }
 
 static enum cli_retval cmd_set_help(int argc, char **argv) {
-	return help_common(argc, argv, set_cmd_table);
+	return cli_help_basic(argc, argv, set_cmd_table);
 }

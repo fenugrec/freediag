@@ -67,5 +67,5 @@ const struct vw_id_info vw_ids[] = {
 };
 
 static enum cli_retval cmd_vag_help(int argc, char **argv) {
-	return help_common(argc, argv, vag_cmd_table);
+	return cli_help_basic(argc, argv, vag_cmd_table);
 }

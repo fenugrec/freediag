@@ -68,7 +68,7 @@ const struct cmd_tbl_entry test_cmd_table[] = {
 };
 
 static enum cli_retval cmd_test_help(int argc, char **argv) {
-	return help_common(argc, argv, test_cmd_table);
+	return cli_help_basic(argc, argv, test_cmd_table);
 }
 
 

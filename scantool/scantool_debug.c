@@ -118,7 +118,7 @@ static enum cli_retval cmd_debug_help(int argc, char **argv) {
 			printf("\t0x%4X: %s\n", debugflags[i].mask, debugflags[i].descr);
 		}
 	}
-	return help_common(argc, argv, debug_cmd_table);
+	return cli_help_basic(argc, argv, debug_cmd_table);
 }
 
 

@@ -94,7 +94,7 @@ const struct cmd_tbl_entry diag_cmd_table[] = {
 };
 
 static enum cli_retval cmd_diag_help(int argc, char **argv) {
-	return help_common(argc, argv, diag_cmd_table);
+	return cli_help_basic(argc, argv, diag_cmd_table);
 }
 
 static enum cli_retval cmd_diag_addl3(int argc, char **argv) {
