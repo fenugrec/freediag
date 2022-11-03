@@ -8,6 +8,7 @@
     <max-template-recursion>100</max-template-recursion>
     <defines>
         <define name="_WIN32"/>
+		<define name="__cppcheck__"/>
 		<define name="USE_INIFILE"/>
     </defines>
     <paths>
