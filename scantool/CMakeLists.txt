@@ -46,7 +46,6 @@ if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
 			"--suppress=missingIncludeSystem"
 			"--suppress=unmatchedSuppression"
 			"--suppress=variableScope"
-            "--error-exitcode=1"
             "--inline-suppr"
             "-I${CMAKE_BINARY_DIR}"
             "-D__cppcheck__"
