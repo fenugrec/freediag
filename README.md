@@ -8,14 +8,14 @@ The backend library `libdiag` can also be used without the CLI.
 
 Under this directory are the following sub-directories:
 
-* doc      -- Documentation that applies to the package as a whole.
-* doc_interfaces -- some interface-specific notes and specifications
-* scantool -- Source code for the 'freediag' core package (libdiag and freediag CLI)
-* schedSetter -- a linux utility to allow freediag to run as a high-priority but unpriviledged process.
+* `doc/`      -- Documentation that applies to the package as a whole.
+* `doc_interfaces/` -- some interface-specific notes and specifications
+* `scantool/` -- Source code for the 'freediag' core package (libdiag and freediag CLI)
+* `schedSetter/` -- a linux utility to allow freediag to run as a high-priority but unpriviledged process.
 
 
 ## Licensing
-freediag and its backend library `libdiag` are licensed under GPL.
+`freediag` and its backend library `libdiag` are licensed under GPL.
 
 ## Authors
 Each package contains a list of its contributors.
@@ -46,10 +46,11 @@ To use freediag, you'll need an appropriate interface to connect a laptop comput
 See doc/Scantool-Manual.html for instructions to use the freediag CLI.
 
 ## Support/Contribution
-https://github.com/fenugrec/freediag
-https://freediag.sourceforge.io
+- https://github.com/fenugrec/freediag
+- https://freediag.sourceforge.io
 
 Issues should be reported on the github project page.
 There is also an IRC channel on freenode (irc.freenode.net), #freediag
+
 The current maintainer (fenugrec) can be reached directly @ fenugrec
 at users.sourceforge .net.
