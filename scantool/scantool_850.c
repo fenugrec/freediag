@@ -678,21 +678,58 @@ static enum cli_retval cmd_850_ping(int argc, UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
+#define CLAMPED_LOOKUP(table,index) table[MIN(ARRAY_SIZE(table)-1,(unsigned)(index))]
+
 /*
  * If we know how to interpret a live data value, print out the description and
  * scaled value.
  */
 static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf) {
-	if (ns==NS_LIVEDATA && addr==0x0200) {
+#if 0
+	/* Bench tested, but not verified on vehicle */
+	static const char *mode_selector_positions[]={"Open","S","E","W","Unknown"};
+	static const char *driving_modes[]={"Economy","Sport","Winter","Unknown"};
+#endif
+	float volts;
+	int16_t deg_c;
+	uint8_t ecu = global_l2_conn->diag_l2_destaddr;
+
+	if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0200) {
 		printf("Engine Coolant Temperature: %dC (%dF)\n", buf[1]-80, (buf[1]-80)*9/5+32);
-	} else if (ns==NS_LIVEDATA && addr==0x0300) {
+	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0300) {
 		/*ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref*/
 		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
-	} else if (ns==NS_MEMORY && addr==0x36 && global_l2_conn->diag_l2_destaddr==0x10) {
+	} else if (ns==NS_MEMORY && ecu==0x10 && addr==0x36) {
 		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
-	} else if (ns==NS_LIVEDATA && addr==0x1000) {
+	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1000) {
 		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
 		printf("MAF sensor signal: %.2f V\n", (float)buf[0]*9460/8250*5/256);
+	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1800) {
+		printf("Short term fuel trim: %+.1f%%\n", (float)buf[0]*100/128-100);
+	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1900) {
+		/* possibly in units of 0.004 milliseconds (injection time) */
+		printf("Long term fuel trim, additive (unscaled): %+d\n", (signed int)buf[0]-128);
+	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1A00) {
+		printf("Long term fuel trim, multiplicative: %+.1f%%\n", (float)buf[0]*100/128-100);
+	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0500) {
+#if 0
+		/* Bench tested, but not verified on vehicle */
+		printf("Mode selector: MS1 %s, MS2 %s, switch position %s\n", (buf[0]&1)?"low":"high", (buf[0]&2)?"low":"high", CLAMPED_LOOKUP(mode_selector_positions, buf[0]));
+		printf("Driving mode: %s\n", CLAMPED_LOOKUP(driving_modes, buf[1]));
+#endif
+	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0C00) {
+		/* Full scale should be 1023, although highest value seen in 
+		   bench testing was 1020 */
+		volts = ((float)buf[0]*256+buf[1])*5/1023;
+		printf("ATF temperature sensor voltage: %.2f V\n", volts);
+		/* Avoid divide by zero below */
+		if (5.0f-volts == 0.0f)
+			volts = 4.999;
+		/* Input has 1k to +5V, sensor acts as a potential divider */
+		printf("ATF temperature sensor resistance: %u ohms\n", (unsigned)((1000.0f*volts)/(5.0f-volts)));
+		/* Offs 11 (!) agrees with T vs R chart in Volvo Green Book */
+		deg_c = ((int16_t)buf[2]*256)+buf[3]-11;
+		printf("ATF temperature: %dC (%dF)\n", deg_c, deg_c*9/5+32);
 	}
 }
 
