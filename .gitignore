@@ -5,3 +5,4 @@ out/*
 .idea/
 CMakeSettings.json
 CMakeUserPresets.json
+*.uncrustify
