@@ -147,14 +147,22 @@ static struct diag_msg *dl2p_d2_request(struct diag_l2_conn *d_l2_conn, struct d
 		return NULL;
 	}
 
-	rv = dl2p_d2_recv(d_l2_conn, 1000, dl2p_d2_request_callback, &rmsg);
-	if (rv < 0) {
-		*errval = rv;
-		return NULL;
-	}
-	if (rmsg == NULL) {
-		*errval = DIAG_ERR_NOMEM;
-	}
+	do {
+		if (rmsg != NULL) {
+			diag_freemsg(rmsg);
+		}
+		rv = dl2p_d2_recv(d_l2_conn, 1000, dl2p_d2_request_callback, &rmsg);
+		if (rv < 0) {
+			*errval = rv;
+			return NULL;
+		}
+		if (rmsg == NULL) {
+			*errval = DIAG_ERR_NOMEM;
+			return NULL;
+		}
+		/* If we got routineNotCompleteOrServiceInProgress, loop until 
+		   the final response. */
+	} while (rmsg->len==3 && rmsg->data[0]==0x7e && rmsg->data[1]==msg->data[0] && rmsg->data[2]==0x23);
 
 	return rmsg;
 }
