@@ -252,7 +252,7 @@ static enum cli_retval cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 				}
 				printf("%s: ", text);
 				if (supported) {
-					printf("%sComplete\n", value?"":"NOT ");
+					printf("%sComplete\n", value?"NOT ":"");
 				} else {
 					printf("Not Supported\n");
 				}
