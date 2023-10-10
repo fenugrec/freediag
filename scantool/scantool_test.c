@@ -196,6 +196,8 @@ static enum cli_retval cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 	ecu_data *ep;
 	unsigned int i, j;
 	const char *text;
+	uint16_t incomplete_monitors;
+	int incomplete_continuous, incomplete_trip;
 
 	const char *test_names[] = {
 		"Misfire Monitoring",
@@ -230,6 +232,7 @@ static enum cli_retval cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 	}
 
 	/* And process results */
+	incomplete_monitors = 0;
 	for (j=0, ep=ecu_info; j<ecu_count; j++, ep++) {
 		if (ep->mode1_data[1].type == TYPE_GOOD) {
 			int supported, value;
@@ -242,10 +245,12 @@ static enum cli_retval cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 				if (i<4) {
 					supported = (ep->mode1_data[1].data[3]>>i)&1;
 					value = (ep->mode1_data[1].data[3]>>(i+4))&1;
-
 				} else {
 					supported = (ep->mode1_data[1].data[4]>>(i-4))&1;
 					value = (ep->mode1_data[1].data[5]>>(i-4))&1;
+				}
+				if (supported && value) {
+					incomplete_monitors |= 1<<i;
 				}
 				if (ecu_count > 1) {
 					printf("ECU %u: ", j);
@@ -259,5 +264,24 @@ static enum cli_retval cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 			}
 		}
 	}
+
+	incomplete_continuous = 0;
+	incomplete_trip = 0;
+	for (i=0; i<12; i++) {
+		if (incomplete_monitors & (1<<i)) {
+			if (i<4) {
+				incomplete_continuous++;
+			} else {
+				incomplete_trip++;
+			}
+		}
+	}
+	printf("Number of incomplete continuous monitors: ");
+	printf(incomplete_continuous?"%d\n":"None\n", incomplete_continuous);
+	printf("Number of incomplete non-continuous monitors: ");
+	printf(incomplete_trip?"%d\n":"None\n", incomplete_trip);
+	printf("Total number of incomplete monitors: ");
+	printf((incomplete_continuous+incomplete_trip)?"%d\n":"None\n", (incomplete_continuous+incomplete_trip));
+
 	return CMD_OK;
 }
