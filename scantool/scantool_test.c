@@ -194,7 +194,7 @@ static enum cli_retval cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 	int rv;
 	struct diag_l3_conn *d_conn;
 	ecu_data *ep;
-	unsigned int i;
+	unsigned int i, j;
 	const char *text;
 
 	const char *test_names[] = {
@@ -230,7 +230,7 @@ static enum cli_retval cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 	}
 
 	/* And process results */
-	for (i=0, ep=ecu_info; i<ecu_count; i++, ep++) {
+	for (j=0, ep=ecu_info; j<ecu_count; j++, ep++) {
 		if (ep->mode1_data[1].type == TYPE_GOOD) {
 			int supported, value;
 
@@ -248,7 +248,7 @@ static enum cli_retval cmd_test_readiness(UNUSED(int argc), UNUSED(char **argv))
 					value = (ep->mode1_data[1].data[5]>>(i-4))&1;
 				}
 				if (ecu_count > 1) {
-					printf("ECU %u: ", i);
+					printf("ECU %u: ", j);
 				}
 				printf("%s: ", text);
 				if (supported) {
