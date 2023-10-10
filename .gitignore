@@ -6,3 +6,4 @@ out/*
 CMakeSettings.json
 CMakeUserPresets.json
 *.uncrustify
+*.unc-backup*
