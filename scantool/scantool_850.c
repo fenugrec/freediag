@@ -687,6 +687,7 @@ static enum cli_retval cmd_850_ping(int argc, UNUSED(char **argv)) {
 static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf) {
 	static const char *mode_selector_positions[]={"Open","S","E","W","Unknown"};
 	static const char *driving_modes[]={"Economy","Sport","Winter","Unknown"};
+	static const char *warmup_states[]={"in progress or engine off","completed","not possible","status unknown"};
 	float volts;
 	int16_t deg_c;
 	uint8_t ecu = global_l2_conn->diag_l2_destaddr;
@@ -698,6 +699,12 @@ static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len)
 		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/255);
 	} else if (ns==NS_MEMORY && ecu==0x10 && addr==0x36) {
 		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/255);
+	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0A00) {
+		printf("Warm-up %s\n", CLAMPED_LOOKUP(warmup_states, (buf[0]>>2)&3));
+		printf("MIL %srequested by TCM\n", (buf[0]&0x10)?"":"not ");
+		/* Low 2 bits supposedly indicate drive cycle and trip 
+		   complete, but don't make sense - can get set without the 
+		   car ever moving */
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1000) {
 		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
 		printf("MAF sensor signal: %.2f V\n", (float)buf[0]*9460/8250*5/255);
