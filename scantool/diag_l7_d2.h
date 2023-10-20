@@ -4,7 +4,7 @@
  *	freediag - Vehicle Diagnostic Utility
  *
  *
- * Copyright (C) 2017 Adam Goldman
+ * Copyright (C) 2017, 2023 Adam Goldman
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ int diag_l7_d2_read(struct diag_l2_conn *d_l2_conn, enum l7_namespace ns, uint16
 int diag_l7_d2_dtclist(struct diag_l2_conn *d_l2_conn, int buflen, uint8_t *out);
 int diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn);
 int diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps);
+int diag_l7_d2_run_routine(struct diag_l2_conn *d_l2_conn, uint8_t id);
 
 #if defined(__cplusplus)
 }

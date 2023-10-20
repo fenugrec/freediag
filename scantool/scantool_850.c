@@ -2,7 +2,7 @@
  *      freediag - Vehicle Diagnostic Utility
  *
  *
- * Copyright (C) 2017 Adam Goldman
+ * Copyright (C) 2017, 2023 Adam Goldman
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -118,6 +118,7 @@ static enum cli_retval cmd_850_id(int argc, UNUSED(char **argv));
 static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv));
 static enum cli_retval cmd_850_cleardtc(int argc, UNUSED(char **argv));
 static enum cli_retval cmd_850_freeze(int argc, char **argv);
+static enum cli_retval cmd_850_resetsrl(int argc, UNUSED(char **argv));
 static enum cli_retval cmd_850_scan_all(int argc, UNUSED(char **argv));
 static enum cli_retval cmd_850_test(int argc, char **argv);
 
@@ -155,6 +156,8 @@ const struct cmd_tbl_entry v850_cmd_table[] = {
 	  cmd_850_cleardtc, 0, NULL},
 	{ "freeze", "freeze dtc1|all [dtc2 ...]", "Display freeze frame(s)",
 	  cmd_850_freeze, 0, NULL},
+	{ "resetsrl", "resetsrl", "Reset the Service Reminder Light",
+	  cmd_850_resetsrl, 0, NULL},
 	{ "test", "test <testname>", "Test vehicle components",
 	  cmd_850_test, 0, NULL},
 
@@ -1455,6 +1458,63 @@ static enum cli_retval cmd_850_cleardtc(int argc, UNUSED(char **argv)) {
 		printf("No DTCs to clear!\n");
 	} else if (rv == 1) {
 		printf("Done\n");
+	} else {
+		printf("Failed\n");
+	}
+
+done:
+	free(input);
+	return CMD_OK;
+}
+
+/*
+ * Reset the Service Reminder Light.
+ */
+static enum cli_retval cmd_850_resetsrl(int argc, UNUSED(char **argv)) {
+	char *input;
+	char *argvout[] = {"connect", "combi"};
+	int rv;
+	bool old_car;
+
+	if (!valid_arg_count(1, argc, 1)) {
+		return CMD_USAGE;
+	}
+
+	input = cli_basic_get_input("Are you sure you wish to reset the Service Reminder Light (y/n) ? ", stdin);
+	if (!input) {
+		return CMD_OK;
+	}
+
+	if ((strcasecmp(input, "yes") != 0) && (strcasecmp(input, "y")!=0)) {
+		printf("Not done\n");
+		goto done;
+	}
+
+	/* If talking to wrong ECU, disconnect first */
+	if (get_connection_status() != NOT_CONNECTED && global_l2_conn->diag_l2_destaddr!=0x51) {
+		printf("Disconnecting from %s first.\n", current_ecu_desc());
+		cmd_850_disconnect(1, NULL);
+	}
+
+	/* If not connected to combi, connect */
+	if (get_connection_status() == NOT_CONNECTED) {
+		if (cmd_850_connect(2, argvout) != CMD_OK) {
+			printf("Couldn't connect to combined instrument panel.\n");
+			goto done;
+		}
+	}
+
+	/* '96/'97 must be unlocked first, but '98 rejects unlock command */
+	old_car = (diag_l7_d2_io_control(global_l2_conn, 0x30, 0) == 0);
+
+	rv = diag_l7_d2_run_routine(global_l2_conn, 0x30);
+
+	if (rv == 0) {
+		printf("Done\n");
+	} else if (rv == DIAG_ERR_TIMEOUT && old_car) {
+		/* '96/'97 either don't respond after SRL reset, or respond 
+		   after a long delay? */
+		printf("Probably done\n");
 	} else {
 		printf("Failed\n");
 	}

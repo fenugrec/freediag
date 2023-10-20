@@ -2,7 +2,7 @@
  *      freediag - Vehicle Diagnostic Utility
  *
  *
- * Copyright (C) 2017 Adam Goldman
+ * Copyright (C) 2017, 2023 Adam Goldman
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,6 +62,7 @@ enum {
 	readDiagnosticTroubleCodes = 0xAE,
 	clearDiagnosticInformation = 0xAF,
 	inputOutputControlByLocalIdentifier = 0xB0,
+	startRoutineByLocalIdentifier = 0xB2,
 	readNVByLocalIdentifier = 0xB9
 } service_id;
 
@@ -339,13 +340,20 @@ int diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn) {
  * cycle depends on which output is specified.
  */
 int diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t reps) {
-	uint8_t req[] = { inputOutputControlByLocalIdentifier, id, 0x32, reps };
+	uint8_t long_req[] = { inputOutputControlByLocalIdentifier, id, 0x32, reps };
+	uint8_t short_req[] = { inputOutputControlByLocalIdentifier, id };
 	struct diag_msg msg = {0};
 	struct diag_msg *resp = NULL;
 	int rv;
 
-	msg.data = req;
-	msg.len = sizeof(req);
+	if (reps > 0) {
+		msg.data = long_req;
+		msg.len = sizeof(long_req);
+	} else {
+		msg.data = short_req;
+		msg.len = sizeof(short_req);
+	}
+
 	resp = diag_l2_request(d_l2_conn, &msg, &rv);
 	if (resp == NULL) {
 		return rv;
@@ -362,6 +370,31 @@ int diag_l7_d2_io_control(struct diag_l2_conn *d_l2_conn, uint8_t id, uint8_t re
 	 * progress. For now we return DIAG_ERR_ECUSAIDNO for any
 	 * error code.
 	 */
+	diag_freemsg(resp);
+	return DIAG_ERR_ECUSAIDNO;
+}
+
+/*
+ * Start a routine.
+ */
+int diag_l7_d2_run_routine(struct diag_l2_conn *d_l2_conn, uint8_t id) {
+	uint8_t req[] = { startRoutineByLocalIdentifier, id };
+	struct diag_msg msg = {0};
+	struct diag_msg *resp = NULL;
+	int rv;
+
+	msg.data = req;
+	msg.len = sizeof(req);
+	resp = diag_l2_request(d_l2_conn, &msg, &rv);
+	if (resp == NULL) {
+		return rv;
+	}
+
+	if (resp->len==2 && success_p(&msg, resp)) {
+		diag_freemsg(resp);
+		return 0;
+	}
+
 	diag_freemsg(resp);
 	return DIAG_ERR_ECUSAIDNO;
 }
