@@ -695,12 +695,12 @@ static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len)
 		printf("Engine Coolant Temperature: %dC (%dF)\n", buf[1]-80, (buf[1]-80)*9/5+32);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0300) {
 		/*ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref*/
-		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
+		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/255);
 	} else if (ns==NS_MEMORY && ecu==0x10 && addr==0x36) {
-		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
+		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/255);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1000) {
 		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
-		printf("MAF sensor signal: %.2f V\n", (float)buf[0]*9460/8250*5/256);
+		printf("MAF sensor signal: %.2f V\n", (float)buf[0]*9460/8250*5/255);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1800) {
 		printf("Short term fuel trim: %+.1f%%\n", (float)buf[0]*100/128-100);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1900) {
