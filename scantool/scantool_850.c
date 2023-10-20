@@ -685,11 +685,8 @@ static enum cli_retval cmd_850_ping(int argc, UNUSED(char **argv)) {
  * scaled value.
  */
 static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf) {
-#if 0
-	/* Bench tested, but not verified on vehicle */
 	static const char *mode_selector_positions[]={"Open","S","E","W","Unknown"};
 	static const char *driving_modes[]={"Economy","Sport","Winter","Unknown"};
-#endif
 	float volts;
 	int16_t deg_c;
 	uint8_t ecu = global_l2_conn->diag_l2_destaddr;
@@ -712,11 +709,8 @@ static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len)
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1A00) {
 		printf("Long term fuel trim, multiplicative: %+.1f%%\n", (float)buf[0]*100/128-100);
 	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0500) {
-#if 0
-		/* Bench tested, but not verified on vehicle */
 		printf("Mode selector: MS1 %s, MS2 %s, switch position %s\n", (buf[0]&1)?"low":"high", (buf[0]&2)?"low":"high", CLAMPED_LOOKUP(mode_selector_positions, buf[0]));
 		printf("Driving mode: %s\n", CLAMPED_LOOKUP(driving_modes, buf[1]));
-#endif
 	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0C00) {
 		/* Full scale should be 1023, although highest value seen in
 		   bench testing was 1020 */
