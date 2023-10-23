@@ -418,6 +418,20 @@ int diag_os_ipending(void) {
 
 }
 
+//diag_os_cursor_up : move the console cursor up the specified number of 
+//lines and to column 1
+void diag_os_cursor_up(unsigned int lines) {
+	printf("\033[%uF", lines);
+	fflush(stdout);
+}
+
+//diag_os_clrtoeol : clear the console text from the cursor to the end of 
+//the current line
+void diag_os_clrtoeol(void) {
+	fputs("\033[K", stdout);
+	fflush(stdout);
+}
+
 //diag_os_geterr : get OS-specific error string.
 //Either gets the last error if os_errno==0, or print the
 //message associated with the specified os_errno

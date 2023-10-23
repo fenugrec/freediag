@@ -150,6 +150,11 @@ bool diag_os_trylock(diag_mtx *mtx);
 /** unlock mutex */
 void diag_os_unlock(diag_mtx *mtx);
 
+/** move the console cursor up the specified number of lines and to column 1 */
+void diag_os_cursor_up(unsigned int lines);
+
+/** clear the console text from the cursor to the end of the current line */
+void diag_os_clrtoeol(void);
 
 #if defined(__cplusplus)
 }

@@ -240,6 +240,51 @@ int diag_os_ipending(void) {
 	return 0;
 }
 
+//diag_os_cursor_up : move the console cursor up the specified number of 
+//lines and to column 1
+void diag_os_cursor_up(unsigned int lines) {
+	HANDLE console;
+	CONSOLE_SCREEN_BUFFER_INFO buffer_info;
+	int rv;
+
+	console = GetStdHandle(STD_OUTPUT_HANDLE);
+	if ((console == INVALID_HANDLE_VALUE) || (console == NULL)) {
+		return;
+	}
+	rv = GetConsoleScreenBufferInfo(console, &buffer_info);
+	if (rv == 0) {
+		return;
+	}
+	buffer_info.dwCursorPosition.Y -= lines;
+	if (buffer_info.dwCursorPosition.Y < 0) {
+		buffer_info.dwCursorPosition.Y = 0;
+	}
+	buffer_info.dwCursorPosition.X = 0;
+	SetConsoleCursorPosition(console, buffer_info.dwCursorPosition);
+}
+
+//diag_os_clrtoeol : clear the console text from the cursor to the end of 
+//the current line
+void diag_os_clrtoeol(void) {
+	HANDLE console;
+	CONSOLE_SCREEN_BUFFER_INFO buffer_info;
+	int rv;
+
+	console = GetStdHandle(STD_OUTPUT_HANDLE);
+	if ((console == INVALID_HANDLE_VALUE) || (console == NULL)) {
+		return;
+	}
+	rv = GetConsoleScreenBufferInfo(console, &buffer_info);
+	if (rv == 0) {
+		return;
+	}
+	while (buffer_info.dwCursorPosition.X < buffer_info.dwSize.X-1) {
+		putchar(' ');
+		buffer_info.dwCursorPosition.X++;
+	}
+	fflush(stdout);
+}
+
 /** Adjust priority and OS time interval
  *
  * @param change_interval : if 1, use timeBeginPeriod
