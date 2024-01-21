@@ -27,6 +27,8 @@ set(SCANTOOL_TESTS
 	l3_j1979_j1850_1
 	l7_850_01
 	l7_850_02
+# interactive live / stream test, cannot automate currently
+#	l7_850_x01
 	)
 set(TESTSRC "${CMAKE_SOURCE_DIR}/tests")
 
