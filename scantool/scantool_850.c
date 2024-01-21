@@ -36,6 +36,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <stdarg.h>
 
 #include "diag.h"
 #include "diag_l1.h"
@@ -104,6 +105,9 @@ static struct dtc_table_entry dtc_table[] = {
 static bool have_read_dtcs = false;
 static struct diag_msg *ecu_id = NULL;
 
+static bool live_display_running = false;
+static int live_data_lines;
+
 static enum cli_retval cmd_850_help(int argc, char **argv);
 static enum cli_retval cmd_850_connect(int argc, char **argv);
 static enum cli_retval cmd_850_disconnect(int argc, UNUSED(char **argv));
@@ -138,11 +142,11 @@ const struct cmd_tbl_entry v850_cmd_table[] = {
 	  cmd_850_sendreq, 0, NULL},
 	{ "ping", "ping", "Verify communication with the ECU", cmd_850_ping,
 	  0, NULL},
-	{ "peek", "peek <addr1>[w|l][.addr2] [addr2 ...] [live]", "Display contents of RAM, once or continuously",
+	{ "peek", "peek <addr1>[w|l][.addr2] [addr2 ...] [live|stream]", "Display contents of RAM, once or continuously",
 	  cmd_850_peek, 0, NULL},
 	{ "dumpram", "dumpram <filename> [fast]", "Dump entire RAM contents to file (Warning: takes 20+ minutes)",
 	  cmd_850_dumpram, 0, NULL},
-	{ "read", "read <id1>|*<addr1> [id2 ...] [live]", "Display live data, once or continuously",
+	{ "read", "read <id1>|*<addr1> [id2 ...] [live|stream]", "Display live data, once or continuously",
 	  cmd_850_read, 0, NULL},
 	{ "adc", "adc id1 [id2 ...]", "Display ADC readings, once or continuously",
 	  cmd_850_adc, 0, NULL},
@@ -167,6 +171,28 @@ const struct cmd_tbl_entry v850_cmd_table[] = {
 
 static enum cli_retval cmd_850_help(int argc, char **argv) {
 	return cli_help_basic(argc, argv, v850_cmd_table);
+}
+
+/*
+ * Wrapper around printf. When live data display is running, increments the 
+ * line count and clears old text remaining on the line we just printed.
+ * Appends a newline to the output.
+ */
+static int printf_livedata(const char *format, ...) {
+	va_list ap;
+	int rv;
+
+	va_start(ap, format);
+	rv = vprintf(format, ap);
+	va_end(ap);
+
+	if (live_display_running) {
+		live_data_lines++;
+		diag_os_clrtoeol();
+	}
+
+	putchar('\n');
+	return rv;
 }
 
 /*
@@ -696,45 +722,45 @@ static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len)
 	uint8_t ecu = global_l2_conn->diag_l2_destaddr;
 
 	if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0200) {
-		printf("Engine Coolant Temperature: %dC (%dF)\n", buf[1]-80, (buf[1]-80)*9/5+32);
+		printf_livedata("Engine Coolant Temperature: %dC (%dF)", buf[1]-80, (buf[1]-80)*9/5+32);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0300) {
 		/*ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref*/
-		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/255);
+		printf_livedata("Battery voltage: %.1f V", (float)buf[0]*29750/8250*5/255);
 	} else if (ns==NS_MEMORY && ecu==0x10 && addr==0x36) {
-		printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/255);
+		printf_livedata("Battery voltage: %.1f V", (float)buf[0]*29750/8250*5/255);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0A00) {
-		printf("Warm-up %s\n", CLAMPED_LOOKUP(warmup_states, (buf[0]>>2)&3));
-		printf("MIL %srequested by TCM\n", (buf[0]&0x10)?"":"not ");
+		printf_livedata("Warm-up %s", CLAMPED_LOOKUP(warmup_states, (buf[0]>>2)&3));
+		printf_livedata("MIL %srequested by TCM", (buf[0]&0x10)?"":"not ");
 		/* Low 2 bits supposedly indicate drive cycle and trip 
 		   complete, but don't make sense - can get set without the 
 		   car ever moving */
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1000) {
 		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
-		printf("MAF sensor signal: %.2f V\n", (float)buf[0]*9460/8250*5/255);
+		printf_livedata("MAF sensor signal: %.2f V", (float)buf[0]*9460/8250*5/255);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1800) {
-		printf("Short term fuel trim: %+.1f%%\n", (float)buf[0]*100/128-100);
+		printf_livedata("Short term fuel trim: %+.1f%%", (float)buf[0]*100/128-100);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1900) {
 		/* possibly in units of 0.004 milliseconds (injection time) */
-		printf("Long term fuel trim, additive (unscaled): %+d\n", (signed int)buf[0]-128);
+		printf_livedata("Long term fuel trim, additive (unscaled): %+d", (signed int)buf[0]-128);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1A00) {
-		printf("Long term fuel trim, multiplicative: %+.1f%%\n", (float)buf[0]*100/128-100);
+		printf_livedata("Long term fuel trim, multiplicative: %+.1f%%", (float)buf[0]*100/128-100);
 	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0500) {
-		printf("Mode selector: MS1 %s, MS2 %s, switch position %s\n", (buf[0]&1)?"low":"high", (buf[0]&2)?"low":"high", CLAMPED_LOOKUP(mode_selector_positions, buf[0]));
-		printf("Driving mode: %s\n", CLAMPED_LOOKUP(driving_modes, buf[1]));
+		printf_livedata("Mode selector: MS1 %s, MS2 %s, switch position %s", (buf[0]&1)?"low":"high", (buf[0]&2)?"low":"high", CLAMPED_LOOKUP(mode_selector_positions, buf[0]));
+		printf_livedata("Driving mode: %s", CLAMPED_LOOKUP(driving_modes, buf[1]));
 	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0C00) {
 		/* Full scale should be 1023, although highest value seen in
 		   bench testing was 1020 */
 		volts = ((float)buf[0]*256+buf[1])*5/1023;
-		printf("ATF temperature sensor voltage: %.2f V\n", volts);
+		printf_livedata("ATF temperature sensor voltage: %.2f V", volts);
 		/* Avoid divide by zero below */
 		if (5.0f-volts == 0.0f) {
 			volts = 4.999;
 		}
 		/* Input has 1k to +5V, sensor acts as a potential divider */
-		printf("ATF temperature sensor resistance: %u ohms\n", (unsigned)((1000.0f*volts)/(5.0f-volts)));
+		printf_livedata("ATF temperature sensor resistance: %u ohms", (unsigned)((1000.0f*volts)/(5.0f-volts)));
 		/* Offs 11 (!) agrees with T vs R chart in Volvo Green Book */
 		deg_c = ((int16_t)buf[2]*256)+buf[3]-11;
-		printf("ATF temperature: %dC (%dF)\n", deg_c, deg_c*9/5+32);
+		printf_livedata("ATF temperature: %dC (%dF)", deg_c, deg_c*9/5+32);
 	}
 }
 
@@ -765,6 +791,9 @@ static int print_hexdump_line(FILE *f, uint16_t addr, int addr_chars, uint8_t *b
 		if (fprintf(f, " %02X", *buf++) < 0) {
 			return 1;
 		}
+	}
+	if (live_display_running) {
+		diag_os_clrtoeol();
 	}
 	if (fputc('\n', f) == EOF) {
 		return 1;
@@ -915,8 +944,20 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 	continuous = false;
 	count = argc - 1;
 
-	if (ns!=NS_NV && ns!=NS_FREEZE && strcasecmp(argv[argc-1], "live")==0) {
+	if (ns!=NS_NV && ns!=NS_FREEZE && strcasecmp(argv[argc-1], "stream")==0) {
 		continuous = true;
+		count--;
+		if (count < 1) {
+			return CMD_USAGE;
+		}
+	}
+
+	if (ns!=NS_NV && ns!=NS_FREEZE && strcasecmp(argv[argc-1], "live")==0) {
+		if (continuous) {
+			return CMD_USAGE;
+		}
+		continuous = true;
+		live_display_running = true;
 		count--;
 		if (count < 1) {
 			return CMD_USAGE;
@@ -925,6 +966,7 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 
 	rv = diag_calloc(&items, count);
 	if (rv) {
+		live_display_running = false;
 		return diag_ifwderr(rv);
 	}
 
@@ -963,6 +1005,7 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 
 	diag_os_ipending();
 	while (1) {
+		live_data_lines = 0;
 		for (i=0; i<count; i++) {
 			if (items[i].ns != NS_MEMORY) {
 				addr = items[i].start;
@@ -983,13 +1026,15 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 						       addr, NULL));
 				}
 				if (gotbytes == 0) {
-					printf("%02X: no data\n", addr);
+					printf_livedata("%02X: no data", addr);
 				} else if ((unsigned int)gotbytes > sizeof(buf)) {
 					print_hexdump_line(stdout, addr, 2, buf, sizeof(buf));
-					printf(" (%d bytes received, only first %zu shown)\n", gotbytes, sizeof(buf));
+					live_data_lines++;
+					printf_livedata(" (%d bytes received, only first %zu shown)", gotbytes, sizeof(buf));
 					interpret_block(items[i].ns, addr, sizeof(buf), buf);
 				} else {
 					print_hexdump_line(stdout, addr, 2, buf, gotbytes);
+					live_data_lines++;
 					interpret_block(items[i].ns, addr, gotbytes, buf);
 				}
 			} else {
@@ -1003,6 +1048,7 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 					}
 					if (gotbytes == ((len<8)?len:8)) {
 						print_hexdump_line(stdout, addr, 4, buf, (len<8)?len:8);
+						live_data_lines++;
 						interpret_block(NS_MEMORY, addr, (len<8)?len:8, buf);
 					} else {
 						printf("Error reading %s%04X\n", (ns==NS_LIVEDATA)?"*":"", addr);
@@ -1016,9 +1062,13 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 		if (!continuous || diag_os_ipending()) {
 			break;
 		}
+		if (live_display_running) {
+			diag_os_cursor_up(live_data_lines);
+		}
 	}
 
 done:
+	live_display_running = false;
 	free(items);
 	return CMD_OK;
 }
@@ -1031,8 +1081,9 @@ done:
  * read. Each item in the list can also be an address range with the starting
  * and ending addresses separated by ".".
  *
- * The word "live" can be added at the end to continuously read and display
- * the requested addresses until interrupted.
+ * The word "live" can be added at the end to continuously read the 
+ * requested addresses and update the display until interrupted, or "stream" 
+ * to continuously read and scroll the display.
  */
 static enum cli_retval cmd_850_peek(int argc, char **argv) {
 	return read_family(argc, argv, NS_MEMORY);
@@ -1046,8 +1097,9 @@ static enum cli_retval cmd_850_peek(int argc, char **argv) {
  * a live data parameter identifier; in this way, a list of "read" and "peek"
  * operations can be done in a single command.
  *
- * The word "live" can be added at the end to continuously read and display
- * the requested addresses until interrupted.
+ * The word "live" can be added at the end to continuously read the 
+ * requested addresses and update the display until interrupted, or "stream" 
+ * to continuously read and scroll the display.
  */
 static enum cli_retval cmd_850_read(int argc, char **argv) {
 	if (!valid_connection_status(CONNECTED_D2)) {
@@ -1062,8 +1114,9 @@ static enum cli_retval cmd_850_read(int argc, char **argv) {
  *
  * Takes a list of one-byte channel identifiers.
  *
- * The word "live" can be added at the end to continuously read and display
- * the requested readings until interrupted.
+ * The word "live" can be added at the end to continuously read the 
+ * requested addresses and update the display until interrupted, or "stream" 
+ * to continuously read and scroll the display.
  */
 static enum cli_retval cmd_850_adc(int argc, char **argv) {
 	if (!valid_connection_status(CONNECTED_KWP71)) {
