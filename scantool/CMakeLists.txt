@@ -109,10 +109,6 @@ set (SCANTOOL_SRCS scantool.c
 	scantool_test.c scantool_vag.c scantool_850.c scantool_dyno.c
 	scantool_obd.c ${FREEDIAG_RC})
 
-#and GLOB all the headers. This is *only* so that the headers end up in
-#the file list of IDE projects (at least Code::blocks)
-#but could be removed without impacting the build process
-file (GLOB SCANTOOL_HEADERS *.h)
 
 
 
