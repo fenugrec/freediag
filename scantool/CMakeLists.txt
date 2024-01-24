@@ -1,3 +1,19 @@
+## TOCHECK in docs : why not add_x($varname ...) ? (from IRC discussion)
+## 
+
+add_library(diag STATIC)
+add_library(cli STATIC)
+add_library(dyno STATIC)
+add_library(freediagcli STATIC)
+
+
+# diag_test binary
+add_executable(${DIAG_TEST_PROGNAME})
+target_link_libraries(diag_test diag)
+
+# freediag binary
+add_executable(${SCANTOOL_PROGNAME}  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
+
 
 #Based on the L0 and L2 options selected (see root CMakeLists.txt)
 #generate the "zone" string lists for diag_config.c.in, and
@@ -23,21 +39,19 @@ foreach (L2NAME IN LISTS L2LIST)
 	endif()
 endforeach()
 
-#integrate cppcheck checks if the binary is present.
-
 # WIP : unset so that a parent scope that submodule's freediag doesn't keep appending stuff to
 # the cache variable when re-generating
 #unset(CMAKE_C_CPPCHECK CACHE)
 
-find_program (CPPCHECK_BIN NAMES cppcheck)
+option(FREEDIAG_USE_CPPCHECK "Run cppcheck on freediag sources " Off)
 
-if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
-       # cppcheck is found in the path so use it.
-       # run find_program() again to populate the correct var names
-       find_program (CMAKE_C_CPPCHECK NAMES cppcheck)
-       list (
-        APPEND CMAKE_C_CPPCHECK
-            "--enable=warning"
+if (FREEDIAG_USE_CPPCHECK)
+   find_program (FREEDIAG_CPPCHECK NAMES cppcheck)
+   # ugly
+   if (NOT (FREEDIAG_CPPCHECK MATCHES "FREEDIAG_CPPCHECK-NOTFOUND"))
+	   list (
+		APPEND FREEDIAG_CPPCHECK
+			"--enable=warning"
 			"--enable=style"
 			"--enable=performance"
 			"--enable=information"
@@ -46,14 +60,14 @@ if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
 			"--suppress=missingIncludeSystem"
 			"--suppress=unmatchedSuppression"
 			"--suppress=variableScope"
-            "--inline-suppr"
-            "-I${CMAKE_BINARY_DIR}"
-            "-D__cppcheck__"
-       )
+			"--inline-suppr"
+			"-I${CMAKE_BINARY_DIR}"
+			"-D__cppcheck__"
+	   )
 	   if (WIN32)
-	      list (
-             APPEND CMAKE_C_CPPCHECK
-             "--platform=win32A"
+		  list (
+			 APPEND FREEDIAG_CPPCHECK
+			 "--platform=win32A"
 			 "-D_WIN32"
 			 #
 			 # This is to prevent cppcheck to include windows.h.
@@ -62,14 +76,18 @@ if (NOT (CPPCHECK_BIN MATCHES "NOTFOUND"))
 			 "-D_WINDOWS_"
 		  )
 	   else ()
-	      list (
-		     APPEND CMAKE_C_CPPCHECK
-		     "--platform=unix32"
-		     "-D__unix__"
-	      )
+		  list (
+			 APPEND FREEDIAG_CPPCHECK
+			 "--platform=unix32"
+			 "-D__unix__"
+		  )
 	   endif ()
-       #absolutely disgusting : force our customized CPPCHECK command line to propagate to global scope ?
-       #set(CMAKE_C_CPPCHECK "${CMAKE_C_CPPCHECK}" CACHE PATH "cppcheck command" FORCE)
+	  ## enable cppcheck on all targets
+	  set_property(TARGET
+		  diag cli dyno freediagcli ${SCANTOOL_PROGNAME} ${DIAG_TEST_PROGNAME}
+		  PROPERTY C_CPPCHECK ${FREEDIAG_CPPCHECK}
+		  )
+   endif()
 endif ()
 
 #and now generate diag_config.c ! (output in the build directory)
@@ -110,6 +128,13 @@ set (SCANTOOL_SRCS scantool.c
 	scantool_obd.c ${FREEDIAG_RC})
 
 
+### set target source files
+target_sources(diag PRIVATE ${LIBDIAG_SRCS})
+target_sources(dyno PRIVATE ${LIBDYNO_SRCS})
+target_sources(cli PRIVATE ${LIBCLI_SRCS})
+target_sources(freediagcli PRIVATE ${CLI_SRCS})
+target_sources(freediag PRIVATE ${SCANTOOL_SRCS})
+target_sources(diag_test PRIVATE ${DIAGTEST_SRCS})
 
 
 ### set CURFILE
@@ -127,11 +152,6 @@ foreach (F IN LISTS LIBDIAG_SRCS;LIBDYNO_SRCS;
 endforeach()
 
 
-### Now define targets.
-
-# libdiag and libdyno (required for binaries)
-
-add_library(diag STATIC ${LIBDIAG_SRCS})
 
 if (NOT WIN32)
 	#link to libmath (m); not required on win32 (msvcrt provides sin() etc)
@@ -145,21 +165,7 @@ endif ()
 #if required, link with -lrt (see top-level CMakeLists.txt)
 target_link_libraries(diag ${LIBRT})
 
-add_library(cli STATIC ${LIBCLI_SRCS})
 
-add_library(dyno STATIC ${LIBDYNO_SRCS})
-
-add_library(freediagcli STATIC ${CLI_SRCS})
-
-
-# diag_test binary
-add_executable(${DIAG_TEST_PROGNAME} ${DIAGTEST_SRCS})
-target_link_libraries(diag_test diag)
-install(TARGETS diag_test DESTINATION ${BIN_DESTDIR})
-
-# freediag binary
-
-add_executable(${SCANTOOL_PROGNAME}  ${SCANTOOL_SRCS} ${SCANTOOL_HEADERS})
 
 target_link_libraries(freediagcli diag cli)
 if (HAVE_LIBREADLINE)
@@ -169,6 +175,8 @@ endif ()
 
 target_link_libraries(freediag dyno freediagcli)
 
+
+install(TARGETS diag_test DESTINATION ${BIN_DESTDIR})
 install(TARGETS freediag DESTINATION ${BIN_DESTDIR})
 
 
