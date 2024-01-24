@@ -157,11 +157,9 @@ add_library(freediagcli STATIC ${CLI_SRCS})
 
 
 # diag_test binary
-if (BUILD_DIAGTEST)
-	add_executable(${DIAG_TEST_PROGNAME} ${DIAGTEST_SRCS})
-	target_link_libraries(diag_test diag)
-	install(TARGETS diag_test DESTINATION ${BIN_DESTDIR})
-endif ()
+add_executable(${DIAG_TEST_PROGNAME} ${DIAGTEST_SRCS})
+target_link_libraries(diag_test diag)
+install(TARGETS diag_test DESTINATION ${BIN_DESTDIR})
 
 # freediag binary
 

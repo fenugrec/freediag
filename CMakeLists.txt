@@ -185,8 +185,6 @@ endif()
 
 ###### Build Options
 
-option(BUILD_DIAGTEST "Build additional \"diag_test\" test suite (default=no)" OFF)
-
 if(WIN32)
 	#nothing special
 else()
