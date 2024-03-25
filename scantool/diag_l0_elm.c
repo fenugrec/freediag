@@ -47,7 +47,13 @@
 
 #define ELM_BUFSIZE 1000        //fit even max-length iso14230 frames, at 3 ASCII chars per byte.
 #define ELM_SLOWNESS    100     //Add this many ms to read timeouts, because ELMs are sloooow
-#define ELM_PURGETIME   400     //Time to wait (ms) for a response to "ATI" command
+#define ELM_PURGETIME	465	//Time to wait (ms) for a response to "ATI" command.
+				// - On 2017-11-23, jonesrh increased delay after ATI to precise ms delayed in volvo850diag for AT commands,
+				//   in hopes of avoiding OBDLink LX BT lockups which only occur 
+				//   sometime after freediag has done a disconnect and begun repeating the 3 ATI commands for the next ECU.
+				// - That OBDLink LX Bluetooth lockup behavior has not manifested as a pattern for any other software
+				//   that I've used during the past several years.  So the problem likely involves some sort of freediag timing issue.
+				// - As of 2017-12-11 it is unknown if this increase from 400 to 465 has helped anything.
 
 struct elm_device {
 	int protocol;           //current L1 protocol
@@ -395,6 +401,12 @@ static int elm_sendcmd(struct diag_l0_device *dl0d, const uint8_t *data, size_t 
 	if (buf[rv-1] != '>') {
 		//if last character isn't the input prompt, there is a problem
 		fprintf(stderr, FLFMT "ELM not ready (no prompt received): %s\nhex: ", FL, buf);
+		// In some situations, the hex is an unnecessary clutter,
+		// so it is conditional (as of 2017-12-07) -- jonesrh.
+		if (strcmp((char *)buf, "BUS INIT: ...ERROR") != 0) {
+			fprintf(stderr, "\nhex: ");
+			diag_data_dump(stderr, buf, rv);
+		}
 		diag_data_dump(stderr, buf, rv);
 		fprintf(stderr, "\n");
 		return diag_iseterr(DIAG_ERR_GENERAL);
@@ -670,6 +682,26 @@ static int elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	return 0;
 }
 
+// Determine if is D2 ECU (based on the WM message contents).
+//
+// There's probably a better name for this and/or a better place to put it
+// and/or a better way to check if the L2 protocol is D2.
+// That's an exercise for the reviewer.
+//
+static int
+is_d2( struct elm_device *dev, struct diag_l1_initbus_args *in)
+{
+	int d2 = 0;	// Assume is not D2.
+
+	if ((dev != NULL) && (dev->protocol & DIAG_L1_ISO9141) &&
+	    (dev->wm != NULL) && (dev->wm->data[0] == 0x82) &&
+	    ((dev->wm->data[1] & 0x80) == 0x00) && 
+	    (dev->wm->data[2] == 0x13) && (dev->wm->data[3] == 0xA1)) {
+		if ((in == NULL) || (dev->wm->data[1] == (in->addr & 0x7F)))
+			d2 = 1;	// Is D2.
+	}
+	return d2;
+}
 
 /*
  * Fastinit & slowinit:
@@ -700,7 +732,12 @@ static int elm_slowinit(struct diag_l0_device *dl0d) {
 	          FLFMT "ELM forced slowinit...\n", FL);
 
 	//huge timeout of 2.8s. Not sure if this is adequate
-	if (elm_sendcmd(dl0d, cmds, 5, 2800, NULL)) {
+	//
+	// - jonesrh increased to 2.9 sec on 2017-12-07 so "ERROR" appeared after "BUS INIT: ..."
+	//   when ignition off and ELM327 v1.5 USB clone is allowed to ATSI.
+	// - Users of other clone tools may need to increase slightly further to 3.0, 3.1, etc.
+	//
+	if (elm_sendcmd(dl0d, cmds, 5, 2900, NULL)) {	// On 2017-12-07, jonesrh increased from 2800 to 2900.
 		fprintf(stderr, FLFMT "Command ATSI failed\n", FL);
 		return diag_iseterr(DIAG_ERR_GENERAL);
 	}
@@ -712,17 +749,54 @@ static int elm_slowinit(struct diag_l0_device *dl0d) {
 //Only used to force clones to establish a connection... hack-grade because it assumes all ECUs support this.
 // non-OBD ECUs may not work with this. ELM clones suck...
 // TODO : add argument to allow either a 01 00 request (SID1 PID0, J1979) or 3E (iso14230 TesterPresent) request to force init.
+//
+// 2017-11-07  jonesrh	Init clones properly in elm_bogusinit when L2 protocol = "D2".
+//
+// 2017-12-02  jonesrh  Correct problem with not issuing D2 WM for ECUs whose parity forces
+//			their ATIIA init address to be different from the target address
+//			used by WM and ATSH (eg, VGLA and PSL were not init by my ELM327 v1.5 USB clone).
+//
 static int elm_bogusinit(struct diag_l0_device *dl0d, unsigned int timeout) {
 	int rv;
 	struct elm_device *dev;
 	uint8_t buf[MAXRBUF];
 	uint8_t generic_data[] = {0x01,0x00}; // J1979 request only
 	uint8_t iso9141_data[] = {0x68,0x6a,0xf1,0x01,0x00}; // with ISO9141 hdr
+	uint8_t d2wm_data[4];	// D2 WM must use this, since D2 use of iso9141_data fails the init.
 	const char *err_str;
 
 	dev = dl0d->l0_int;
 	if (dev->protocol & DIAG_L1_ISO9141) {
-		rv = elm_send(dl0d, iso9141_data, 5);
+		if (is_d2(dev,NULL)) {
+			// Is assumed to be D2 ECU.
+
+			// Use physical ECU-specific D2 WM = {0x82,0x??,0x13,0xA1}, eg, M44 WM = {0x82,0x7A,0x13,0xA1} followed by auto-generated checksum.
+			d2wm_data[0] = dev->wm->data[0]; 
+			d2wm_data[1] = dev->wm->data[1] & 0x7F;	// Must ensure both WM and ATSH have target addresses that do *not* have the high bit set --
+								// - At least that's the case for PSL (ECU 2E), 
+								//   and it is probably the case for most ECUs which require high bit set in ATIIA
+								//   (in order to avoid triggering the ABS light to blink).
+								// - However, the VGLA (ECU 2D) has been seen to be able to communicate in the following situations:
+								//   a) ATIIA 2D / ATWM 82 2D 13 A1 / ATSH xx 2D 13 -- volvo850diag (up thru v0.8), or
+								//   b) ATIIA AD / ATWM 82 2D 13 A1 / ATSH xx 2D 13 -- freediag, and volvo850diag (v0.9alpha??), or
+								//   c) ATIIA AD / ATWM 82 AD 13 A1 / ATSH xx AD 13 -- volvo850diag (v0.9alpha??) temporary VGLA Full Scan test.
+								// - I realize that the high bit should already be clear,
+								//   assuming a "connect vgla" or "connect 0x2D" command was issued.
+								//   But this C statement will ensure it is cleared for certain.
+								//   And the statement serves as a good place to document how VGLA can also work as cases a) and c) above.
+								// - These 3 stmts can be folded into a memcpy (after having generalized and folded the if into is_d2(),
+								//   but I've chosen to keep them here for extreme clarity of what is needed in the WM,
+								//   and as a check against someone futzing incorrectly with the is_d2() routine.
+			d2wm_data[2] = dev->wm->data[2]; d2wm_data[3] = dev->wm->data[3];
+
+			// The following elm_send() should first issue "ATSH 82 ?? 13" that it derives from the d2wm_data buffer, if necessary.
+			// Otherwise the scenario similar to b) above -- high bit set in ATIIA, yet high bit clear in both ATWM and ATSH -- will not apply for VGLA and PSL.
+
+			rv = elm_send(dl0d, d2wm_data, 4);
+	    } else {
+			// Use 0100 with ISO9141 hdr.
+			rv = elm_send(dl0d, iso9141_data, 5);
+		}
 	} else {
 		rv = elm_send(dl0d, generic_data, 2);
 	}
@@ -783,6 +857,20 @@ static int elm_updatewm(struct diag_l0_device *dl0d) {
 static int elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args *in) {
 	const uint8_t *buf;
 	int rv = DIAG_ERR_INIT_NOTSUPP;
+	int rv_slow_init = 0;		// 2017-12-06  Assists deciding if delay needed before elm_bogusinit() to ensure 2nd init attempt is more likely to succeed.
+	int allow_clones_to_ATSI = 1;	// 2017-12-06  Allow users to fairly easily enable/disable the "clone attempts ATSI" behavior.
+					//	       1 = Allow clones to attempt ATSI, then fallback to using elm_bogusinit() when necessary.
+					//	       0 = Do *not* allow clones to attempt ATSI.  Only use elm_bogusinit().
+					//		   This was the only possible clone behavior prior to 2017-12-06.
+					//	       * Ideally, there should be a CLI switch for this and it should be flagged in the ELM flags byte
+					//	         where ELM_32x_CLONE resides.
+					//	       * It is moot if the default setting for production is =0 to mimic the pre 2017-12-06 behavior.
+					//		 At least the user can easily change it.
+					//	       * I'll leave the value at =1 in any jonesrh-enhanced version of freediag that I make available,
+					//	         since that is what works best for my single ELM clone.
+					//	       * At least for the time being, this flag will only apply to DIAG_L1_INITBUS_5BAUD,
+					//		 until such time that it is known to make sense using it for DIAG_L1_INITBUS_FAST
+					//		 (and any other cases that might be applicable).
 	unsigned int timeout=0; //for bogus init
 
 	struct elm_device *dev;
@@ -797,7 +885,11 @@ static int elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 	}
 
 	if (dev->elmflags & ELM_32x_CLONE) {
-		printf("Note : explicit bus init not available on clones. Errors here are ignored.\n");
+		if (allow_clones_to_ATSI && in->type == DIAG_L1_INITBUS_5BAUD) {  /* 2017-12-07  Turn into 2 different messages (to tell if flag is set, and so message is more factual. */
+			printf("Note : attempting explicit bus init (even though ATSI might not be available on this clone). Errors here are oftentimes ignored.\n");  // 2017-12-07 jonesrh adds different, more factual msg.
+		} else {
+			printf("Note : explicit bus init assumed not available on clones. Errors here are oftentimes ignored.\n");  // 2017-11-23 jonesrh rewords to be more factual.
+		}
 		dev->elmflags &= ~ELM_INITDONE; //clear flag
 	}
 
@@ -895,11 +987,34 @@ static int elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 		}
 
 		//explicit init is not supported by clones
+		// Notes by jonesrh: 
+		//   1.	I beg to differ.  Explicit init is supported by at least some clones.
+		//	The most common clone version that kwpd3b0_interpreter.html has encountered, the ELM327 v1.5,
+		//	whether USB or Bluetooth, usually will connect successfully via ATSI to:
+		//	a) '96-'98 Volvo 850 D2 ECUs, and
+		//	b) to those cars' ECM/TCM for standard OBDII emission diagnostics (0100, 0101, 03, 07).
+		//	So the most common clone version *does* (very often) support explicit (L1 = ISO9141) slow init for the cars mentioned.
+		//   2.	The easiest way to test that is to move "1.5" temporarily into the elm327_official table.
+		//   3.	But I've agreed to retain this test in perpetuity,
+		//	because it forces me to "beef up" elm_bogusinit() as much as possible,
+		//	so the clone's D2 connection have the highest probability of succeeding (even when ATSI is not used),
+		//	and the clone's D2 communication exchange is as successful as possible when only the elm_bogusinit() call is used to connect.
+		//   4. However, on 2017-12-06, the allow_clones_to_ATSI flag was introduced so user can optionally allow a clone to attempt an ATSI,
+		//      before falling back if necessary on the elm_bogusinit() forced init via D2 WM.
+		//      * This way we have the best of both worlds:
+		//	- users whose ELM clone *does* indeed work with ATSI, ATKW, ATAL, etc.
+		//	  can set allow_clones_to_ATSI = 1 to
+		//	  use the ATSI, have a greater likelihood of connection success (since 2 attempts can be made),			//	  see fewer error messages, and consequently see more readable freediag output;
+		//	- users whose ELM clone cannot utilize ATSI, can set allow_clones_to_ATSI = 0 
+		//	  and revert to pre-2017-12-06 clone init behavior,
+		//	  **BUT** still be able to connect for a number of different clones 
+		//	  (due to jonesrh enhancements in 2017-11 and 2017-12 to both elm_initbus() and elm_bogusinit()).
 		if ((dev->elmflags & ELM_32x_CLONE)==0) {
 			rv = elm_slowinit(dl0d);
 			if (!rv) {
 				dev->elmflags |= ELM_INITDONE;
 			}
+			rv_slow_init = rv;  // 2017-12-06  Assists deciding if delay needed before elm_bogusinit() to ensure 2nd init attempt is more likely to succeed.
 		}
 		timeout=4200;           //slow init is slow !
 
@@ -931,7 +1046,20 @@ static int elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 		}
 
 		// enable receipt of >7 byte messages, if possible
-		if (dev->elmflags & ELM_INITDONE) {
+		//
+		// On 2017-11-23, jonesrh ensured ATAL is issued even for clones 
+		// (for which elm_slowinit() was not called above)
+		// when those clones are to be used with the D2 protocol
+		// and therefore will oftentimes require > 7 bytes of data.
+		//
+		// To Adam G and fenugrec: 
+		// The added (in->addr != 0x33) clearly is necessary for clones
+		// used by '96-'98 850/S70/V70/C70/XC70 using 5-baud D2 protocol.
+		// But is there some other more selective test that would not erroneously affect
+		// DIAG_L1_INITBUS_FAST devices or some other DIAG_L1_INITBUS_5BAUD devices
+		// that might not need or want ATAL?
+		//
+		if ((dev->elmflags & ELM_INITDONE) || (in->addr != 0x33)) {
 			buf=(uint8_t *) "ATAL\x0D";
 			rv=elm_sendcmd(dl0d, buf, 5, 500, NULL);
 			if (rv < 0) {
@@ -954,6 +1082,33 @@ static int elm_initbus(struct diag_l0_device *dl0d, struct diag_l1_initbus_args 
 		// Note that since we don't check for "DIAG_ERR_INIT_NOTSUPP" here, we allow the ELM to (possibly)
 		// carry out an incorrect init. I can't see when this can be a problem.
 		// Note : clones suck
+			//
+		// Comments by jonesrh on 2017-12-02:
+		// - There's actually more than the 2 choices mentioned above --
+		//   eg, can send the D2 keepalive (watchdog message) instead of 0100.
+		// - Furthermore, _recv() is already generalized well enough to ignore the "BUS INIT: " line
+		//   as long as it does not have errors.  For example, "BUS INIT: ...OK" is handled just fine.
+		// - See jonesrh changes in 2017-11 and 2017-12 
+		//   to allow his ELM327 v1.5 USB clone to work with elm_bogusinit().
+		// - Some clones behave acceptably well and *do* allow ATSI, ATAL, ATKW, etc.
+		// - As of 2017-12-02, for clones, I'm still bypassing the call to elm_slowinit()
+		//   (and thereby bypassing the ATKW for those clones) 
+		//   so that the elm_bogusinit() routine can be made more robust
+		//   to work with clones that *do* have D2 connect and communicate capabilities.
+		//
+		// On 2017-12-06, force 5.5 sec delay before calling bogusinit to increase chances of success
+		// (eg, in case ATSI has just failed, as far as the ELM is concerned, but the vehicle's ECU
+		// thinks the init worked).
+		//
+		if (rv_slow_init < 0) {
+			// Attempted elm_slowinit(), but it produced an error, so wait plenty of time for any "half-way" connections to disappear.
+			fprintf(stderr, FLFMT "Waiting 5.5 sec after ATSI failure before attempting to force init", FL);
+			if (is_d2(dev,in)) {
+				fprintf(stderr, " (using a D2 WM)");
+			}
+			fprintf(stderr, "...\n");
+			diag_os_millisleep(5500);
+		}
 		rv=elm_bogusinit(dl0d, timeout);
 		if (rv == 0) {
 			dev->elmflags |= ELM_INITDONE;
@@ -1089,12 +1244,27 @@ static int elm_send(struct diag_l0_device *dl0d, const void *data, size_t len) {
  *	-if any hexpair doesn't decode cleanly, discard message
  *	-just before returning any data, search for an error message match
  *	-still missing : if caller requests 1 byte, and the error is "FB ERROR", we'll still happily return 0xFB !
+ * new (on and after 2017-12-02) technique:
+ *	-if any hexpair doesn't decode cleanly, do one of two things:
+ *	     a)	UGLY BUT **VERY** PRACTICAL HACK:
+ *	        if the decoding problem is due to encountering " <DATA ERROR" suffix 
+ *	        **and** is for a D2 ecu 
+ *	        **and** if there are no other error messages involved, then:
+ *		- ignore (and discard) that " <DATA ERROR" suffix,
+ *		- assume the decoded data is valid (even though it likely involves 2 or more complete messages with valid checksums),
+ *		- return the data to the l1 caller, who will return it up to 
+ *		  the l2 caller, who will evaluate if the checksums are valid, 
+ *		  and who will decide what to do with concatenated responses --
+ *		  the most typical thing being ignoring any prefixed "7E xx 23" (temporary delay) responses;
+ *	     b)	if the decoding problem is for any other situation, then revert to the old technique of discarding the message.
+ *	-just before returning any data, search for an error message match
+ *	-still missing : if caller requests 1 byte, and the error is "FB ERROR", we'll still happily return 0xFB !
  *
  * TODO: improve "len" semantics for L0 interfaces that do framing, such as this. Currently this returns max 1 message, to
  * let L2 do another call to get further messages (typical case of multiple responses)
  */
 static int elm_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigned int timeout) {
-	int rv, xferd;
+	int rv, xferd, xferd_saved_when_data_error;
 	struct elm_device *dev = dl0d->l0_int;
 	uint8_t rxbuf[3*MAXRBUF +1];    //I think some hotdog code in L2/L3 calls _recv with MAXRBUF so this needs to be huge.
 	//the +1 is to \0-terminate the buffer for elm_parse_errors() to work
@@ -1115,6 +1285,7 @@ static int elm_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigne
 	wp=0;
 	rp=0;
 	xferd=0;
+	xferd_saved_when_data_error=0;  // Part of 2017-12-02 "try to use valid D2 concatenated messages suffixed with <DATA ERROR" hack.
 	rxbuf[0] = 0x00;        //null-terminate
 
 	DIAG_DBGM(diag_l0_debug, DIAG_DEBUG_READ, DIAG_DBGLEVEL_V,
@@ -1177,13 +1348,100 @@ static int elm_recv(struct diag_l0_device *dl0d, void *data, size_t len, unsigne
 		} else {
 			/* didn't scanf properly... error message ? ex. "NO DATA\r>"
 			 * NO DATA is pretty inoffensive; skip printing that one */
-			if (!(rxbuf[rp] == 'N' && rxbuf[rp+1] =='O')) {
-				fprintf(stderr, FLFMT "ELM sscanf failed to eat '%s'\n", FL, rxbuf);
+			int bypass_logging_elm_error_envir;
+			if (!(rxbuf[rp] == 'N' && rxbuf[rp+1] == 'O')) {
+				// This block has been expanded to clearly log the 2 bytes in order to help understand why
+				// the 2 bytes are not matching the subsequent ELM327 error message that is printed
+				// after the 20171114 changes occurred to adapt to intervening "7E xx 23" responses.
+				// - In particular, many cases are recorded of seeing "ST",
+				//   but the subsequently printed ELM327 error messages seem to be random -
+				//   eg, BUS ERROR, STOPPED, FB ERROR, etc.
+				// - I believe the introduction of the 2017-11-26 change to delay at least 60 ms
+				//   after most requests has eliminated the BUS ERROR and FB ERROR manifestations,
+				//   and has greatly lessened the STOPPED manifestations.
+				if (0) {	// The old logging method.
+					fprintf(stderr, FLFMT "ELM sscanf failed to eat '%s'\n", FL, rxbuf);
+				}
+				else if (!(rxbuf[rp] == '<' && rxbuf[rp+1] == 'D') || (diag_l1_debug & DIAG_DEBUG_DATA) || (diag_l0_debug & DIAG_DEBUG_DATA)) {
+					// STOPPED and all other errors (besides "NO DATA" and "<DATA ERROR") have their 1st two chars logged here.
+					// The "<DATA ERROR" case is almost bypassed like "NO DATA" (since it is transparently recovered from almost always),
+					//   but it's not totally bypassed here, since it is still logged when debugging is turned on.
+					fprintf(stderr, FLFMT "ELM sscanf failed to convert [", FL);
+					diag_data_dump(stderr, &rxbuf[rp], 2);
+					fprintf(stderr, "], ie, string '%s'\n", (char *) &rxbuf[rp]);
+					if ((0) && ((diag_l1_debug & DIAG_DEBUG_DATA) || (diag_l0_debug & DIAG_DEBUG_DATA))) {
+						// This is now unnecessary almost always [thus the (0)], since it shows an incomplete view of the entire buffer, 
+						// but is retained in case programmer needs it again, eg, to see rp and wp along with the buffer in hex,
+						// [and would thus temporarily change (0) to (1), or change && to ||, depending on the situation].
+						fprintf(stderr, FLFMT "rp=%d, wp=%d, rxbuf (thru wp) = [", FL, rp, wp);
+						diag_data_dump(stderr, rxbuf, wp);
+						fprintf(stderr, "]\n");
+					}
+				}
+				bypass_logging_elm_error_envir = 0;
+			} else {
+				bypass_logging_elm_error_envir = 1;
 			}
 			/* finish pulling the error message or whatever garbage */
 			rv = diag_tty_read(dev->tty_int, rxbuf+wp, sizeof(rxbuf) - wp, ELM_SLOWNESS);
 			if (rv >= 0) {
 				rxbuf[wp + rv] = 0x00;
+			}
+			if (!bypass_logging_elm_error_envir && ((diag_l1_debug & DIAG_DEBUG_DATA) || (diag_l0_debug & DIAG_DEBUG_DATA))) {
+				// The entire rxbuf is logged in a (usually) readable fashion here when debugging is turned on -- except for NO DATA -- 
+				// in order to get an overview of the entire buffer,
+				// including any previously converted hex pairs, any error message, and any subsequent garbage.
+				// I realize it is fuzzy about exactly what is discarded,
+				// but with the new reliability enhancements in late 2017-11,
+				// that's probably a moot point, since a quick recovery will usually be automatic,
+				// and since it's really better to see the entire buffer --
+				// both the portion shown in the original "ELM sscanf failed to eat" message, ie, up to the ELM error,
+				// in addition to the full ELM error message and any subsequent garbage,
+				// which by this time has been "eaten".
+				// This message is meant to follow the "ELM sscanf failed to convert" message,
+				// thus it is tied together with it via the bypass_logging_elm_error_envir flag.
+				if (rxbuf[rp] == '<' && rxbuf[rp+1] =='D')
+					fprintf(stderr, FLFMT "in rxbuf (as string, including error message, etc, shown on next line) = \n'%s'\n", FL, (char *) rxbuf);
+				else
+					fprintf(stderr, FLFMT "in rxbuf (as string, including error message, etc) = '%s'\n", FL, (char *) rxbuf);
+			}
+			if ((0) && !bypass_logging_elm_error_envir && ((diag_l1_debug & DIAG_DEBUG_DATA) || (diag_l0_debug & DIAG_DEBUG_DATA))) {
+				// This is probably superfluous now, even when DIAG_DEBUG_DATA is set [thus the (0)], 
+				// but is retained in case programmer needs it again for some quick debugging
+				// [and would thus temporarily change (0) to (1), or change && to ||, depending on the situation].
+				// This message is meant to follow the immediately preceding "in rxbuf (as string, including..." message.
+				if ((strcmp((char *)rxbuf,"STOPPED") != 0) && (strncmp((char *)&rxbuf[rp],"<DATA ERROR",11) != 0)) {
+					fprintf(stderr, FLFMT "in rxbuf (in hex) = [", FL);
+					diag_data_dump(stderr, rxbuf, strlen((char *) rxbuf));
+					fprintf(stderr, "]\n");
+				}
+			}
+			if (rxbuf[rp] == '<' && rxbuf[rp+1] == 'D') {
+				// Determine if D2 ECU using close to the same approach used in elm_bogusinit()
+				// [since I don't yet know how to retrieve the D2 info from L2 structures] --
+				// ie, if physical ECU-specific WM = {0x82,0x??,0x13,0xA1}, 
+				// eg, M44 WM = {0x82,0x7A,0x13,0xA1} -- before the auto-generated checksum --
+				// then assume this is a D2 ECU.
+				// ****************************************************************************************************
+				// To Adam G and/or fenugrec:
+				// 1. Should this kind of check for L1=ISO9141 / L2=D2 be performed better/legally/more appropriately/quicker via:
+				//        if ((global_cfg.L1proto == DIAG_L1_ISO9141) && (global_cfg.L2proto == DIAG_L2_PROT_D2))
+				//    without using dev, both here and in elm_bogusinit()?
+				//    It would require adding scantool_cli.h.
+				// 2. Is there a better way for elm_bogusinit() and elm_recv() to verify that this is a D2 ECU?
+				// 3. I couldn't figure out how to access in->addr, so the dev->wm->data[1] oriented test
+				//    used in elm_bogusinit():
+				//	  ((dev->wm->data[1] & 0x7F) == (in->addr & 0x7F))
+				//    became the mildly useful test:
+				//	  ((dev->wm->data[1] & 0x80) == 0x00)
+				//    which at least checks that the WM target's high bit is not set,
+				//    which should be the case for a D2 WM.
+				// 4. As of 2017-12-06, the D2 tests have been generalized and folded into is_d2().
+				// ****************************************************************************************************
+				if (is_d2(dev,NULL)) {
+					// Part of 2017-12-02 "try to use valid D2 concatenated messages suffixed with <DATA ERROR" hack.
+					xferd_saved_when_data_error = xferd;
+				}
 			}
 			xferd = DIAG_ERR_GENERAL;
 			goto pre_exit;
@@ -1202,8 +1460,11 @@ pre_exit:
 		if (strcmp(err, "NO DATA") == 0) {
 			return DIAG_ERR_TIMEOUT;
 		}
-		fprintf(stderr, FLFMT "ELM error %s\n", FL, err);
-		return diag_iseterr(DIAG_ERR_GENERAL);
+		if (strcmp(err, "<DATA ERROR") != 0) {
+			fprintf(stderr, FLFMT "ELM error: %s\n", FL, err);
+			return diag_iseterr(DIAG_ERR_GENERAL);
+		}
+		xferd = xferd_saved_when_data_error;  // Part of 2017-12-02 "try to use valid D2 concatenated messages suffixed with <DATA ERROR" hack.
 	}
 	return (xferd>0)? xferd:DIAG_ERR_TIMEOUT;
 }
@@ -1292,10 +1553,20 @@ static void elm_parse_cr(uint8_t *data, int len) {
 
 static int elm_ioctl(struct diag_l0_device *dl0d, unsigned cmd, void *data) {
 	int rv = 0;
+	struct elm_device *dev;
 
 	switch (cmd) {
 	case DIAG_IOCTL_IFLUSH:
-		//do nothing
+		// 2017-12-10  jonesrh  Add new receive buffer flushing (for same reason diag_tty_iflush was previously added to _sendcmd and _open).
+		//			- This should at least be used for D2 ECUs, so scantool_850.c can issue a L2 _IOCTL_IFLUSH before a retry,
+		//			  thereby hopefully eliminating the "at least one old response awaiting to be read" problem
+		//			  that begins after a STOPPED response.
+		if ((0) || ((diag_l1_debug & DIAG_DEBUG_DATA) || (diag_l0_debug & DIAG_DEBUG_DATA))) {
+			fprintf(stderr, "flushing any unread input...\n");
+		}
+		dev = (struct elm_device *)dl0d->l0_int;
+		diag_tty_iflush(dev->tty_int);	/* Flush unread input, if any. */
+
 		rv = 0;
 		break;
 	case DIAG_IOCTL_INITBUS:
