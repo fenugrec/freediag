@@ -1429,42 +1429,141 @@ static enum cli_retval cmd_850_freeze(int argc, char **argv) {
 /*
  * Query the ECU for identification and print the result.
  */
-// TODO
 static enum cli_retval cmd_850_id_d2(void) {
 	uint8_t buf[15];
 	int rv;
 	int i;
+	int idtry;
+	int maxidtry;
+	int id7ab901try;
+	int maxid7ab901try = 4;
+	int iddatetimetry;
+	int maxiddatetimetry = 7;
+	struct diag_l0_device *dl0d;
+	dl0d = global_dl0d;
 
-	rv = diag_l7_d2_read(global_l2_conn, NS_NV, 0xf0, sizeof(buf), buf);
-	if (rv < 0) {
-		printf("Couldn't read identification.\n");
-		return CMD_OK;
-	}
-	if (rv != sizeof(buf)) {
-		printf("Identification response was %d bytes, expected %zu\n", rv, sizeof(buf));
-		return CMD_OK;
-	}
-	if (buf[0] != 0) {
-		printf("First identification response byte was %02X, expected 0\n", buf[0]);
-		return CMD_OK;
-	}
-	if (!isprint(buf[5]) || !isprint(buf[6]) || !isprint(buf[7]) ||
-	    !isprint(buf[12]) || !isprint(buf[13]) || !isprint(buf[14])) {
-		printf("Unexpected characters in version response\n");
-		return CMD_OK;
+	if (global_l2_conn->diag_l2_destaddr == 0x51) {
+		maxidtry = 12;
+	} else {
+		maxidtry = 8;
 	}
 
-	printf("Hardware ID: P%02X%02X%02X%02X revision %.3s\n", buf[1], buf[2], buf[3], buf[4], buf+5);
-	printf("Software ID:  %02X%02X%02X%02X revision %.3s\n", buf[8], buf[9], buf[10], buf[11], buf+12);
-
-	if (global_l2_conn->diag_l2_destaddr == 0x7a) {
-		rv = diag_l7_d2_read(global_l2_conn, NS_NV, 1, sizeof(buf), buf);
+// Try up to maxidtry times to read the D2 ECU's id.
+	// - Especially for the COMBI, there are "7E B9 23" temporary delay
+	//   messages which make it more difficult to detect the id properly.
+	// - Simply retrying multiple times here is a brute force way to deal
+	//   with the problem (as compared to dealing with it in some of
+	//   the lower level routines).  This approach is the simplest
+	//   to understand.
+	// - The "7E B9 23" messages manifest in several different forms.
+	//   a) One "7E B9 23" message appears on a line by itself.
+	//   b) More than one "7E B9 23" messages appear concatenated on
+	//      a line by themselves, and they are succeeded by " <DATA ERROR".
+	//   c) One "7E B9 23" message appears at the start of a line,
+	//      followed by the proper "F9 F0" response, followed by
+	//      "<DATA ERROR".
+	//   d) More than one "7E B9 23" message appears at the start of a line,
+	//      followed by the proper "F9 F0" response, followed by
+	//      "<DATA ERROR".
+	// - This "brute force" loop will usually be able to read the id 
+	//   within the maximum loop iterations.
+	// - You could still use some magical "eating of '7E xx 23'"
+	//   responses at a lower level in addition to this brute force
+	//   approach.  That finetuning will be left as a future
+	//   "exercise for the reader".
+	for (idtry=1; idtry <= maxidtry; idtry++) {
+		buf[0] = 0;
+		rv = diag_l7_d2_read(global_l2_conn, NS_NV, 0xf0, sizeof(buf), buf);
 		if (rv < 0) {
+			printf("Couldn't read identification (on try #%d)", idtry);
+			if (idtry < maxidtry) {
+				printf(", retrying...\n");
+				diag_os_millisleep(600+(200*(idtry-1)));
+				// Following is 2017-12-07 experiment to flush old responses from accumulating after a failure.
+				(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+				continue;
+			}
+			printf(".\n");
 			return CMD_OK;
 		}
-		if (rv != 10) {
-			printf("Identification response was %d bytes, expected %d\n", rv, 10);
+		if (rv != sizeof(buf)) {
+			printf("Identification response was %d bytes, expected %zu\n", rv, sizeof(buf));
+			if (idtry < maxidtry) {
+				printf(", retrying...\n");
+				diag_os_millisleep(600+(200*(idtry-1)));
+				continue;
+			}
+			printf(".\n");
 			return CMD_OK;
+		}
+		if (buf[0] != 0) {
+			printf("First identification response byte was %02X, expected 0\n", buf[0]);
+			if (idtry < maxidtry) {
+				printf(", retrying...\n");
+				diag_os_millisleep(600+(200*(idtry-1)));
+				continue;
+			}
+			printf(".\n");
+			return CMD_OK;
+		}
+		break;
+	}
+
+	// Cases have been seen where the revision # contains 1 or more nulls.
+	// So handle these, don't just ignore them.
+	// List the revision #s as "???", then follow that with their representative hex values
+	//   (enclosed within brackets, with each hex value separated by a space).
+	if (!isprint(buf[5]) || !isprint(buf[6]) || !isprint(buf[7])) {
+		printf("Unexpected characters in hardware revision # bytes\n");
+		printf("Hardware ID: P%02X%02X%02X%02X revision ??? [where ??? = 0x%02X 0x%02X 0x%02X]\n", buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+	} else {
+		printf("Hardware ID: P%02X%02X%02X%02X revision %.3s\n", buf[1], buf[2], buf[3], buf[4], buf+5);
+	}
+	if (!isprint(buf[12]) || !isprint(buf[13]) || !isprint(buf[14])) {
+		printf("Unexpected characters in software revision # bytes\n");
+		printf("Software ID:  %02X%02X%02X%02X revision ??? [where ??? = 0x%02X 0x%02X 0x%02X]\n", buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14]);
+	} else { 
+		printf("Software ID:  %02X%02X%02X%02X revision %.3s\n", buf[8], buf[9], buf[10], buf[11], buf+12);
+	}
+
+	// Force a delay for ECUs that seem to need it sometimes after B9F0 so following actions work smoothly.
+	i = global_l2_conn->diag_l2_destaddr;
+	switch (i) {
+	case 0x2E:
+	case 0x51:
+		diag_os_millisleep(600);
+		break;
+	default:
+		delay_after_rsp_before_next_rqst( dl0d, idtry, 600, DELAY_AFTER_TRY_1_OK_BUT_NOT_115200, DELAY_AFTER_TRY_1_OK_BUT_IS_CLONE);
+		break;
+	}
+
+	if (global_l2_conn->diag_l2_destaddr == 0x7a) {
+		for (id7ab901try=1; id7ab901try <= maxid7ab901try; id7ab901try++) {
+			buf[0] = 0;
+			rv = diag_l7_d2_read(global_l2_conn, NS_NV, 1, sizeof(buf), buf);
+			if (rv < 0) {
+				printf("Couldn't read order number (on try #%d)", id7ab901try);
+				if (id7ab901try < maxid7ab901try) {
+					printf(", retrying...\n");
+					diag_os_millisleep(600+(200*(id7ab901try-1)));
+					(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+					continue;
+				}
+				printf(".\n");
+				return CMD_OK;
+			}
+			if (rv != 10) {
+				printf("Identification response was %d bytes, expected %d\n", rv, 10);
+				if (id7ab901try < maxid7ab901try) {
+					printf(", retrying...\n");
+					diag_os_millisleep(600+(200*(id7ab901try-1)));
+					continue;
+				}
+				printf(".\n");
+				return CMD_OK;
+			}
+			break;
 		}
 		for (i=0; i<10; i++) {
 			if (!isdigit(buf[i])) {
@@ -1473,6 +1572,72 @@ static enum cli_retval cmd_850_id_d2(void) {
 			}
 		}
 		printf("Order number: %c %.3s %.3s %.3s\n",buf[0], buf+1, buf+4, buf+7);
+	}
+
+	i = global_l2_conn->diag_l2_destaddr;
+	switch (i) {
+	case 0x11:
+	case 0x29:
+	case 0x2D:
+	case 0x51:
+	case 0x58:
+		for (iddatetimetry=1; iddatetimetry <= maxiddatetimetry; iddatetimetry++) {
+			buf[0] = 0;
+			rv = diag_l7_d2_read(global_l2_conn, NS_NV, 0xF1, sizeof(buf), buf);
+			if (rv < 0) {
+				printf("Couldn't read timestamp id (on try #%d)", iddatetimetry);
+				if (iddatetimetry < maxiddatetimetry) {
+					printf(", retrying...\n");
+					diag_os_millisleep(600+(200*(iddatetimetry-1)));
+					// Following is 2017-12-07 experiment to flush old responses from accumulating after a failure.
+					(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+					continue;
+				}
+				printf(".\n");
+				return CMD_OK;
+			}
+			if (rv != 7) {
+				printf("%s timestamp id response was %d bytes, expected %d (on try #%d)", ecu_desc_by_addr(i), rv, 7, iddatetimetry);
+				if (iddatetimetry < maxiddatetimetry) {
+					printf(", retrying...\n");
+					diag_os_millisleep(600+(200*(iddatetimetry-1)));
+					continue;
+				}
+				printf(".\n");
+				return CMD_OK;
+			}
+			if ( !( ((buf[0] == 0x19) && (buf[1] >= 0x95) && (buf[1] <= 0x99)) ||
+			        ((buf[0] == 0x20) && (buf[1] <= 0x04)) ) ) {
+				printf("Unexpected characters in %s timestamp id (on try #%d)", ecu_desc_by_addr(i), iddatetimetry);
+				if (iddatetimetry < maxiddatetimetry) {
+					printf(", retrying...\n");
+					diag_os_millisleep(600+(200*(iddatetimetry-1)));
+					continue;
+				}
+				printf(".\n");
+				return CMD_OK;
+			}
+			break;
+		}
+		printf("%s timestamp id: %02X%02X-%02X-%02X\n", ecu_desc_by_addr(i), buf[0], buf[1], buf[2], buf[3]);
+		break;
+	}
+
+	// Force a delay for ECUs that seem to need it sometimes after B9F1 (or M44's B901) so following actions work smoothly.
+	i = global_l2_conn->diag_l2_destaddr;
+	switch (i) {
+	case 0x51:
+		diag_os_millisleep(600);
+		break;
+	case 0x11:
+	case 0x29:
+	case 0x2D:
+	case 0x58:
+		delay_after_rsp_before_next_rqst( dl0d, iddatetimetry, 600, DELAY_AFTER_TRY_1_OK_BUT_NOT_115200, DELAY_AFTER_TRY_1_OK_BUT_IS_CLONE);
+		break;
+	case 0x7A:
+		delay_after_rsp_before_next_rqst( dl0d, id7ab901try, 600, DELAY_AFTER_TRY_1_OK_BUT_NOT_115200, DELAY_AFTER_TRY_1_OK_BUT_IS_CLONE);
+		break;
 	}
 
 	return CMD_OK;
