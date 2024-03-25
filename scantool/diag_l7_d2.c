@@ -316,6 +316,11 @@ int diag_l7_d2_cleardtc(struct diag_l2_conn *d_l2_conn) {
 		return 0;
 	}
 
+	/*
+	 * Slow down a bit to avoid STOPPED response.  No need to hurry.
+	 */
+	diag_os_millisleep(1000);
+
 	msg.data = req;
 	msg.len = sizeof(req);
 	resp = diag_l2_request(d_l2_conn, &msg, &rv);
