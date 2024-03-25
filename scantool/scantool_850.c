@@ -786,6 +786,7 @@ static enum cli_retval cmd_850_ping(int argc, UNUSED(char **argv)) {
  * If we know how to interpret a live data value, print out the description and
  * scaled value.
  */
+// TODO
 static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf) {
 	static const char *mode_selector_positions[]={"Open","S","E","W","Unknown"};
 	static const char *driving_modes[]={"Economy","Sport","Winter","Unknown"};
@@ -1345,16 +1346,36 @@ static enum cli_retval cmd_850_freeze_all(void) {
 	char *p;
 	int rv;
 	int i;
+	int idtcstry;
+	int maxidtcstry = 5;  // Note the lower max compared to cmd_850_dtc.
+	struct diag_l0_device *dl0d;
+	dl0d = global_dl0d;
 
 	if (!valid_connection_status(CONNECTED_D2)) {
 		return CMD_OK;
 	}
 
-	rv = diag_l7_d2_dtclist(global_l2_conn, sizeof(dtcs), dtcs);
+	for (idtcstry=1; idtcstry <= maxidtcstry; idtcstry++) {
+		dtcs[0] = 0x00;
+		rv = diag_l7_d2_dtclist(global_l2_conn, sizeof(dtcs), dtcs);
+		if (rv < 0) {
+			if (idtcstry < maxidtcstry) {
+				printf("Couldn't retrieve DTCs (on try #%d), retrying...\n", idtcstry);
+				diag_os_millisleep(500+(100*(idtcstry-1)));
+				continue;
+			}
+			// If failed on the final loop iteration, fallthru
+			// and let previous code deal with the persistent error.
+		}
+		break;
+	}
+	delay_after_rsp_before_next_rqst( dl0d, idtcstry, 500, DELAY_AFTER_TRY_1_OK_BUT_NOT_115200, DELAY_AFTER_TRY_1_OK_BUT_IS_CLONE);
+
 	if (rv < 0) {
 		printf("Couldn't retrieve DTCs.\n");
 		return CMD_OK;
 	}
+	have_read_dtcs = true;
 
 	if (rv == 0) {
 		printf("No stored DTCs.\n");
@@ -1408,6 +1429,7 @@ static enum cli_retval cmd_850_freeze(int argc, char **argv) {
 /*
  * Query the ECU for identification and print the result.
  */
+// TODO
 static enum cli_retval cmd_850_id_d2(void) {
 	uint8_t buf[15];
 	int rv;
@@ -1620,6 +1642,9 @@ static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	int rv;
 	int i;
 	int span;
+	int delays_used = 0;
+	int idtcstry;
+	int maxidtcstry = 6;
 	char *code, *desc;
 
 	if (!valid_arg_count(1, argc, 1)) {
@@ -1631,7 +1656,40 @@ static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	}
 
 	if (get_connection_status() == CONNECTED_D2) {
-		rv = diag_l7_d2_dtclist(global_l2_conn, sizeof(buf), buf);
+		// Try up to maxidtcstry (6) times to read the D2 ECU's dtcs.
+		// - Especially for the COMBI, there are "7E AE 23" temporary delay
+		//   messages which make it more difficult to detect the id properly.
+		// - Simply retrying multiple times here is a brute force way to deal
+		//   with the problem (as compared to dealing with it more directly
+		//   in the L0 and L2 routines).  This approach is the simplest
+		//   to understand.
+		// - The "7E AE 23" messages manifest in two different forms.
+		//   a) One "7E AE 23" message appears on a line by itself.
+		//   b) One "7E AE 23" message appears at the start of a line,
+		//      followed by the proper "EE 01" response, followed by
+		//      "<DATA ERROR".
+		// - But the primary problem is "old" "7E B9 23" messages
+		//   and residual "F9 F0" messages which have not been
+		//   "eaten" yet.
+		// - This "brute force" loop will usually be able to read the dtcs
+		//   within the maximum loop iterations.
+		delays_used = 1;
+		for (idtcstry=1; idtcstry <= maxidtcstry; idtcstry++) {
+			buf[0] = 0;
+			rv = diag_l7_d2_dtclist(global_l2_conn, sizeof(buf), buf);
+			if (rv < 0) {
+				if (idtcstry < maxidtcstry) {
+					printf("Couldn't retrieve DTCs (on try #%d), retrying...\n", idtcstry);
+					diag_os_millisleep(500+(100*(idtcstry-1)));
+					// Following is 2017-12-07 experiment to flush old responses from accumulating after a failure.
+					(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+					continue;
+				}
+				// If failed on the final loop iteration, fallthru
+				// and let previous code deal with the persistent error.
+			}
+			break;
+		}
 		span = 1;
 	} else {
 		rv = diag_l7_kwp71_dtclist(global_l2_conn, sizeof(buf), buf);
@@ -1646,6 +1704,7 @@ static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 
 	if (rv == 0) {
 		printf("No stored DTCs.\n");
+		if (delays_used) diag_os_millisleep(500);
 		return CMD_OK;
 	}
 
@@ -1654,6 +1713,7 @@ static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 		code = dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, buf[i], &desc);
 		printf("%s (%02X) %s\n", code, buf[i], desc);
 	}
+	if (delays_used) diag_os_millisleep(500);
 
 	return CMD_OK;
 }
