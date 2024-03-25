@@ -470,19 +470,19 @@ static int elm_open(struct diag_l0_device *dl0d, int iProtocol) {
 	}
 	// 2) identify valid VS clone devices.
 	rv=0;   // temp "device identified" flag
-	for (i=0; elm_clones[i]; i++) {
-		if (strstr((char *)rxbuf, elm_clones[i])) {
-			printf("Clone ELM found, v%s. Expect inferior performance\n", elm_clones[i]);
-			dev->elmflags |= ELM_32x_CLONE;
+	for (i=0; elm_official[i]; i++) {
+		if (strstr((char *)rxbuf, elm_official[i])) {
+			printf("Official ELM found, v%s\n", elm_official[i]);
 			rv=1;
 			break;
 		}
 	}
 
 	if (rv==0) {
-		for (i=0; elm_official[i]; i++) {
-			if (strstr((char *)rxbuf, elm_official[i])) {
-				printf("Official ELM found, v%s\n", elm_official[i]);
+		for (i=0; elm_clones[i]; i++) {
+			if (strstr((char *)rxbuf, elm_clones[i])) {
+				printf("Clone ELM found, v%s. Expect inferior performance\n", elm_clones[i]);
+				dev->elmflags |= ELM_32x_CLONE;
 				rv=1;
 				break;
 			}
