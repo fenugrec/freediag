@@ -52,6 +52,9 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
+#define DELAY_AFTER_TRY_1_OK_BUT_NOT_115200	140  // ms
+#define DELAY_AFTER_TRY_1_OK_BUT_IS_CLONE	140  // ms
+
 struct ecu_info {
 	uint8_t addr;
 	char *name;
@@ -107,6 +110,8 @@ static struct diag_msg *ecu_id = NULL;
 
 static bool live_display_running = false;
 static int live_data_lines;
+
+extern void delay_after_rsp_before_next_rqst( struct diag_l0_device *dl0d, int try, int min_delay_after_1st_fail, int delay_after_try_1_ok_but_not_115200, int delay_after_try_1_ok_but_is_clone);
 
 static enum cli_retval cmd_850_help(int argc, char **argv);
 static enum cli_retval cmd_850_connect(int argc, char **argv);
@@ -281,7 +286,7 @@ static char *current_ecu_desc(void) {
 
 	addr = global_l2_conn->diag_l2_destaddr;
 
-	if (addr > 0x7f) {
+	if ((addr < 0) || addr > 0x7f) {
 		return "???";
 	}
 
@@ -319,7 +324,22 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
 			if (suffix > 999) {
 				suffix = 999;
 			}
-			snprintf(printable, PRINTABLE_LEN, "%s-%03d", prefix, suffix);
+			if (suffix != 888) {
+				snprintf(printable, PRINTABLE_LEN, "%s-%03d", prefix, suffix);
+			}
+			else {	// *** Notes on this clause:
+				// *** - It introduces a 2nd case that produces XXX-???, besides
+				// ***   the obvious, natural, already existent case near the end of this function.
+				// *** - It is plausible to use this approach as long as there are *not* any
+				// ***   DTCs whose suffix is known to be 888.  I know of none at present.
+				// *** - It would have been nice if the suffix was a char string,
+				// ***   but it wasn't so the 888 suffix printable as "???" is my solution.
+				// Example: Equivalence ABS-888 to ABS-??? for some ABS DTCs
+				// - whose raw codes are thought to exist,
+				// - and whose partial description is thought to be known,
+				// - but whose Volvo 3-digit code is unknown.
+				snprintf(printable, PRINTABLE_LEN, "%s-???", prefix);
+			}
 			return printable;
 		}
 	}
@@ -390,6 +410,10 @@ static uint16_t dtc_raw_by_printable(char *printable) {
 	for (dtc_entry = dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
 		if (dtc_entry->ecu_addr == ecu_addr &&
 		    dtc_entry->dtc_suffix == suffix) {
+			if (dtc_entry->dtc_suffix == 888) {
+				/* filter the special 888 suffix, since it only applies to multiple DTCs per ECU in the present (2017-12-11) DTC table */
+				return 0xffff; /* probably best to not return one single raw value when there are multiple raw possibilities */
+			}
 			return dtc_entry->raw_value;
 		}
 	}
@@ -562,6 +586,13 @@ static enum cli_retval cmd_850_connect(int argc, char **argv) {
 		global_cfg.initmode = DIAG_L2_TYPE_SLOWINIT;
 	}
 
+	rv = diag_init();
+	if (rv != 0) {
+		fprintf(stderr, "diag_init failed\n");
+		diag_end();
+		return diag_iseterr(rv);
+	}
+
 	rv = diag_l2_open(dl0d, global_cfg.L1proto);
 	if (rv) {
 		fprintf(stderr, "cmd_850_connect: diag_l2_open failed\n");
@@ -652,6 +683,12 @@ static enum cli_retval cmd_850_sendreq(int argc, char **argv) {
 	unsigned int len;
 	unsigned int i;
 	int rv;
+	int isrtry = 1;
+	// int maxisrtry = 5;					// For possible future use.
+	int min_delay_after_1st_fail = 700; // in ms.
+	// int inc_delay_after_nth_fail = 100; // in ms.	// For possible future use.
+	static int pre_delay = 50; // in ms. This is static since it will increase as more sendreq failures occur.
+
 
 	if (!valid_arg_count(2, argc, sizeof(data) + 1)) {
 		return CMD_USAGE;
@@ -660,6 +697,13 @@ static enum cli_retval cmd_850_sendreq(int argc, char **argv) {
 	if (!valid_connection_status(CONNECTED_EITHER)) {
 		return CMD_OK;
 	}
+
+	// Delay a bit before starting, since jonesrh ELM327 v1.5 clone fails on sendreq sometimes.
+	// - pre_delay is adaptive.  It will increase by 10 ms after each sendreq failure.
+	if (pre_delay > 300)
+		fprintf(stderr, FLFMT "sendreq adaptive pre-delay =%d has gotten unexpectedly large...delaying for %d ms\n", FL, pre_delay, pre_delay);
+	diag_os_millisleep(pre_delay);	// Delay a bit before starting, since jonesrh ELM327 v1.5 clone fails on sendreq sometimes.
+					// - pre_delay is adaptive.  It will increase by 10 ms after each sendreq failure.
 
 	len = argc - 1;
 	for (i = 0; i < len; i++) {
@@ -673,6 +717,35 @@ static enum cli_retval cmd_850_sendreq(int argc, char **argv) {
 		printf("No data received\n");
 	} else if (rv != 0) {
 		printf("sendreq: failed error %d\n", rv);
+		pre_delay += 10; // Increase the pre-delay by 10 ms when each sendreq failure occurs.
+		isrtry++; // Fake having done a retry to force the long delay.
+	}
+
+		// Force a delay sometimes to lessen STOPPED messages on subsequent requests.
+	// - DELAY_AFTER_TRY_1_OK_... delays initially added 2017-12-02.
+	// - Delays should really be conditional on at least the symbolic representations of functions 0xAE, 0xB9, 0xA5, 0xAD, etc,
+	//   but since the latter 3 of those 4 functions already have freediag commands to accomplish those requests
+	//   (and the functions implementing those commands already have appropriate delays inserted),
+	//   for the time being, here we'll just focus on 0xAE requests.
+	// - Delays should really be conditional also on subfunction -- as dlyAE* values in volvo850diag's .js file suggests --
+	//   but we'll just ignore that for the time being.
+	// - For the time being, we are going to avoid complicating the above cmd_850_sendreq error handling with retries.
+	//   Let's wait until we are forced into it.  However, we *have* added the variables which will be needed by the retry code.
+	//   * One reason the retry code hasn't been added yet for sendreq is that none of the sendreq values are
+	//     interpreted at present (even though they are included in scripts for documentation purposes).
+	// - So far, the (fast) OBDLink SX USB doesn't seem to need any delay (or hardly any delay) for
+	//   the combi's sendreq 0xAE 0x02 and sendreq 0xAE 0x05, nor for the abs's sendreq 0xAE 0x03,
+	//   so delay_after_rsp_before_next_rqst is used to avoid delaying OBDLink SX USB (and other 115200 baud, non-clone devices),
+	//   or to delay them as absolutely little as possible.
+	// - It's not yet known how the (fast) OBDLink SX USB will fare with the M44 A7 sendreq's.
+	struct diag_l0_device *dl0d;	// For delay_after_rsp_before_next_rqst().
+	dl0d = global_dl0d;		// For delay_after_rsp_before_next_rqst().
+	delay_after_rsp_before_next_rqst( dl0d, isrtry, min_delay_after_1st_fail, DELAY_AFTER_TRY_1_OK_BUT_NOT_115200, DELAY_AFTER_TRY_1_OK_BUT_IS_CLONE);
+
+
+	// If there were errors, then flush the input buffer to increase chances of subsequent requests working.
+	if (rv < 0) {
+		(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
 	}
 
 	return CMD_OK;
@@ -929,7 +1002,18 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 	int i, rv;
 	bool continuous;
 	struct read_or_peek_item *items;
-	uint8_t buf[20];
+	uint8_t buf[7 + 7 + 4+66+1];	// 2017-11-23  jonesrh	Increased from 20 to 22 to handle m44's "read 0x82 0x83 0x85 0x86 0x87 0x89 0x8A" in the future.
+					//			Increased from 22 to 32 to handle aw50-42's "readnv 0xC0 0xC1 0xC2 0xC3" in the future.
+					//			Increased from 32 to 36 to handle srs's "read 0x01" in the future.
+					//			Increased from 36 to 66 to handle '98 ecc's "readnv 0xF2" in the future.
+					//			Increased from 66 (which is for longest non-header, non-checksum, data buffer
+					//				    to 85 (which is for two complete "7E xx 23" responses,
+					//						   plus the longest known D2 response -- ie, ecc's "readnv 0xF2".
+					//			This should greatly lessen the possibility of reading too little when concatenated "7E xx 23" response(s) occur.
+					//			Admittedly, this is overkill since only the data portion of a response should be returned.
+					//			  But it seems to me the extraction of the data portion of a response is not yet properly coded.
+					//			  Thus, the size increase from 20 to 85 has been introduced for the time being.
+					//			  We will see how it works.
 	uint16_t addr, len;
 	int gotbytes;
 
@@ -1003,14 +1087,124 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 		}
 	}
 
+	// Prepare for possibly having to adapt to D2 "7E xx 23" temporary delay messages disrupting the message flow.
+	int itry;
+	int maxitry = 1;
+	int min_delay_after_1st_fail = 0;   // in ms.
+	int inc_delay_after_nth_fail = 100; // in ms.
+	switch (ns) {
+		case NS_LIVEDATA:
+			if (global_l2_conn->diag_l2_destaddr == 0x51)
+				maxitry = 7;
+			else if (global_l2_conn->diag_l2_destaddr == 0x7A)
+				maxitry = 5;
+			else
+				maxitry = 3;
+			min_delay_after_1st_fail = 500;
+			inc_delay_after_nth_fail = 100;
+			break;
+		case NS_NV:
+			if (global_l2_conn->diag_l2_destaddr == 0x51)
+				maxitry = 9;
+			else
+				maxitry = 6;
+			min_delay_after_1st_fail = 600;
+			inc_delay_after_nth_fail = 100;
+			break;
+		case NS_FREEZE:
+			maxitry = 4;
+			min_delay_after_1st_fail = 600;
+			inc_delay_after_nth_fail = 200;
+			break;
+		default:
+			break;
+	}
+	struct diag_l0_device *dl0d;
+	dl0d = global_dl0d;
+
 	diag_os_ipending();
 	while (1) {
 		live_data_lines = 0;
 		for (i=0; i<count; i++) {
 			if (items[i].ns != NS_MEMORY) {
-				addr = items[i].start;
+				addr = items[i].start;	// Reminder: For NS_LIVEDATA, NS_NV, and NS_FREEZE:
+							//	     the 'addr' variable = the response's subfunction, ie, the 'LocalIdentifier',
+							//	     ie, the specific live data item #, specific non-volatile data item #, or the freeze frame's DTC #.
 				if (get_connection_status() == CONNECTED_D2) {
-					gotbytes = diag_l7_d2_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
+					//
+					//jonesrh believes this is reached only for D2 cases of NS_LIVEDATA, NS_NV, and NS_FREEZE.
+					// For those cases, on the '97-'98 S70/V70/C70/XC70, there is a problem of
+					// "7E xx 23" temporary delay responses sometimes occuring before the final response is received.
+					// [See discussion of this phenomenon in cmd_850_id_d2() and cmd_850_dtc().]
+					// Here we will deal with this "7E xx 23 disrupts normal message flow" problem
+					// similar to how the "id" and "dtc" commands dealt with it -- 
+					// simply retry the request when errors have been detected.
+					// However, we will only do the retries for live data, non-volatile data, or freeze frames,
+					// and only when live data is *NOT* being continuously scanned.
+					// There will be a different # of retries and a different delay afterwards based on:
+					//	a. the type of message, 
+					//	b. experience encountered while developing volvo850diag, and
+					//	c. experience encountered while enhancing freediag --
+					//	   at least up until the 2017-12-02 enhancement to "eat" / "squish out" the "7E xx 23" responses by:
+					//		1. in diag_l0_elm.c:
+					//			1a. not failing in diag_l0_elm.c when "<DATA ERROR" encountered,
+					//			1b. passing all hex pairs received in diag_l0_elm.c before "<DATA ERROR" to the caller;
+					//		2. in diag_l2_d2.c:
+					//			2a. squishing out of one (or more duplicate) "7E xx 23" response(s)
+					//			    that were concatenated together at the start of a single line from the ELM,
+					//			2b. if there is no other data from that line, then reissue the original request and repeat 2a,
+					//			2c. else if there is data remaining on the line, then handle that as diag_l2_d2.c did previously, but
+					//			2d. perform the checksum calculation on any data returned to the higher level caller,
+					//			    since the ELM's "<DATA ERROR" checksum error indicator is no longer used 
+					//			    to indicate date/checksum errors.
+					//	   Note #1: The need for all this retry oriented code in scantool_850.c was drastically,
+					//		    drastically lessened after the 2017-12-02 to squish "7E xx 23" responses!!!
+					//		    But there are still infrequent occasions when it is utilized --
+					//		    those usually being after STOPPED / NO DATA errors are encountered
+					//		    when a small forced delay has not yet been programmed in.
+					//	   Note #2: The high max try #s are due to the pre-2017-12-02 testing --
+					//		    when scantool_850.c was the entity to recover from "7E xx 23" responses
+					//		    causing a cumulatively worse situation when reading a series of NV data from the same ECU.
+					//		    They could probably be lowered somewhat, but I'm not going to do so.
+					//		    It works fine the way it is.
+					//	   Note #3: The min_delay_after_1st_fail values have been tried in the fire of years of volvo850diag
+					//		    experience.  Implementing them in freediag immediately solved a certain class of problems
+					//		    for my '98 S70 GLT communication (especially for the COMBI when reading lots of non-volatile data).
+					//		    Those problems have *not* returned.
+					//	   Note #4: The inc_delay_after_nth_fail values are experimental and could be adjusted if desired.
+					//	   Note #5. The use of delay_after_rsp_before_next_rqst() is experimental and
+					//		    the relatively small values for the (possibly optional) delays after try #1 OK
+					//		    allow freediag to still run much faster than volvo850diag when everything is running smoothly.
+					//
+					if (continuous || (maxitry <= 1)) {
+						gotbytes = diag_l7_d2_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
+					}
+					else {
+						for (itry=1; itry <= maxitry; itry++) {
+							buf[0] = 0;
+							gotbytes = diag_l7_d2_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
+							if (gotbytes < 0) {
+								if (itry < maxitry) {
+									printf("Error reading %02X (on try #%d), retrying...\n", addr, itry);
+									diag_os_millisleep(min_delay_after_1st_fail+(inc_delay_after_nth_fail*(itry-1)));
+									// Following is 2017-12-07 experiment to flush old responses from accumulating after a failure,
+									// which had to have an underlying 2017-12-10 enhancement of the _IOCTL_IFLUSH oriented code
+									// in diag_l0_elm.c so it actually does the desired flushing.  That had to be done
+									// before the following diag_l2_ioctl() did what was intended.
+									// - It works extremely well to eliminate the inappropriate accumulation of old responses.
+									// - It is now only infrequently that the try # will reach 3.
+									// - Hurray for our side!!!
+									(void)diag_l2_ioctl(global_l2_conn, DIAG_IOCTL_IFLUSH, NULL);
+									continue;
+								}
+								// If failed on the final loop iteration, fallthru
+								// and let previous code deal with the persistent error.
+							}
+							break;
+						}
+						delay_after_rsp_before_next_rqst( dl0d, itry, min_delay_after_1st_fail, DELAY_AFTER_TRY_1_OK_BUT_NOT_115200, 
+															DELAY_AFTER_TRY_1_OK_BUT_IS_CLONE);
+					}
 				} else {
 					gotbytes = diag_l7_kwp71_read(global_l2_conn, items[i].ns, addr, sizeof(buf), buf);
 				}
@@ -1502,7 +1696,9 @@ static enum cli_retval cmd_850_cleardtc(int argc, UNUSED(char **argv)) {
 	}
 
 	if (get_connection_status() == CONNECTED_D2) {
+		printf("Attempting to clear dtcs (after first reading them). It might take a few seconds...\n");
 		rv = diag_l7_d2_cleardtc(global_l2_conn);
+		diag_os_millisleep(1700);  // Experience with volvo850diag suggests to delay 1.7 sec before proceeding with anything else.
 	} else {
 		rv = diag_l7_kwp71_cleardtc(global_l2_conn);
 	}

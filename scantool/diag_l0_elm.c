@@ -187,6 +187,88 @@ void elm_del(struct diag_l0_device *dl0d) {
 	return;
 }
 
+void delay_after_rsp_before_next_rqst( struct diag_l0_device *dl0d, int try, int min_delay_after_1st_fail, int delay_after_try_1_ok_but_not_115200, int delay_after_try_1_ok_but_is_clone)
+{
+	// In D2 situations involving ELM327 where retries were needed, there's a greater likelihood that a delay is needed
+	// so subsequent actions will more likely work on the first attempt and/or will require fewer repetitions.
+	// - Hopefully, this will cut down on STOPPED, BUS ERROR, and FB ERROR errors:
+	//   * especially for the COMBI NV requests, and
+	//   * especially for slower devices (eg, those at 38400 baud), and
+	//   * especially for clones.
+	// - One or more "switch"es might need to be used to limit the delay to an even smaller class of situations.
+	// - This is a situation which has been eliminated in volvo850diag,
+	//   so the volvo850diag experience is used to set min_delay_after_1st_fail delays.
+	// - The delay after a successful first try is a brand new experimentation.
+	if (try > 1) {
+		// At least 1 retry was required for the previous request.
+		// - This should be fed delay times which volvo850diag has experienced do not produce any ELM errors >99% of the time,
+		//   thereby automatically throttling the next freediag request so it can more likely succeed on the first try.
+		diag_os_millisleep(min_delay_after_1st_fail);
+	}
+	else if (try == 1) {
+		// Previous request worked on the first try.
+		// - Put these in separate clauses in case need to change their values to different values
+		//   depending on the particular cases.
+		// - Behavior (as of 2017-11-24), before addition of this "try #1 OK" finetuning, is:
+		//   * OBDLink SX USB (115200 baud) -- 0 STOPPED responses encountered on subsequent request after the previous request worked on its first try.
+		//                                     Consequently, there should *not* be any added delay for that tool in this situation.
+		//   * ELM327 v1.5 USB clone (38400 baud) -- Almost every first try produces a STOPPED response, indicating freediag is responding too quickly.
+		//   * OBDLink LX BT (either 115200 or 38400 baud) -- More similar to OBDLink SX USB, but then OBDLink LX BT "locks up" and doesn't respond to any command/rqst.
+		// In first implementation, delay a fixed amount after the "success on 1st try" situation,
+		// **if** elmspeed is slower than 115200, or if device is clone.  In those two situations:
+		// - First tried a minimum of 60 ms, in case the ELM327 compatible is not enforcing the >= 55 ms constraint
+		//   between end of response reception and beginning of next request.
+		// - We will see how that lessens generation of STOPPED responses on my:
+		//   * ELM327 v1.5 USB clone, and
+		//   * OBDLink LX BT (when used at 38400 baud).
+		// - The 60 ms works fine almost always, but not always, so was increased on 2017-12-02 to 70 ms.
+		//   * Actually the caller gets to control that value, so look in scantool_850.c to see the increase to 70 ms (or whatever the latest value is).
+		// - A delay was added for the non-clone, 115200 baud devices on 2017-12-06, and it was initially set to only 10 ms.
+		//   It is rarely needed, so we'll start very low and increase it as the need dictates.
+		//   I'm inclined for the time being to *not* add it as another parameter.
+		//   * The error situation which necessitated this newly introduced 10 ms delay was a 2017-12-02 instance of COMBI A507 try #1 success,
+		//     but the following COMBI A509 failed with STOPPED on try #1 / NO DATA on try #2 / then had success on try #3.
+		//   * Note that if this newly introduced non-clone, 115200 baud, try #1 success delay eventually 
+		//     has to be increased to the clone delay or <115200 baud delay, then we should just:
+		//     - eliminate the delays passed in as parameters, 
+		//     - remove the clone and 115200 oriented code,
+		//     - move this routine from diag_l0_elm.c to scantool_850.c
+		//	 (where it was intended to go when originally conceived).
+		//     However, as of 2017-12-11, after multiple tests over 5 days, it appears to so far not need increasing above 10 ms.
+		// - The 70 ms was increased to 80 ms on 2017-12-07 after encountering ELM327 v1.5 USB clone STOPPED errors when "id" tried
+		//   after successful 1st try "dtc", where the clone had connected via ATSI (instead of via elm_bogusinit)).
+		// - The 80 ms was increased to 110 ms (in scantool_850.c) on 2017-12-10 after encountering ELM327 v1.5 USB clone STOPPED errors when "sendreq" tried
+		//   after successful 1st try "dtc", where the clone had connected via ATSI (instead of via elm_bogusinit)).
+		//   * That eliminated almost all the STOPPED errors, but they still show up sometimes
+		//     on the second scanned item after an ECU connects.
+		// - The 110 ms was increased to 140 ms later on 2017-12-11 after encountering ELM327 v1.5 USB clone STOPPED errors when combi live 04 tried
+		//   after successful 1st try combi live 03, where the clone had connected via ATSI (instead of via elm_bogusinit)).
+		if (dl0d == NULL)
+			return;
+		struct elm_device *dev;
+		dev = (struct elm_device *)dl0d->l0_int;
+		if (!dev)
+			return;
+		if (!(dev->elmflags & ELM_327_BASIC))
+			return;
+		if (dev->elmflags & ELM_32x_CLONE) {
+			if ((0) || ((diag_l0_debug & (DIAG_DEBUG_TIMER | DIAG_DEBUG_DATA)) == (DIAG_DEBUG_TIMER | DIAG_DEBUG_DATA)))
+				fprintf(stderr, FLFMT "delaying %d ms due to try #1 ok, but elm is clone\n", FL, (int) delay_after_try_1_ok_but_is_clone);
+			diag_os_millisleep(delay_after_try_1_ok_but_is_clone);
+		}
+		else if (dev->speed.val.i < 115200) {
+			if ((0) || ((diag_l0_debug & (DIAG_DEBUG_TIMER | DIAG_DEBUG_DATA)) == (DIAG_DEBUG_TIMER | DIAG_DEBUG_DATA)))
+				fprintf(stderr, FLFMT "delaying %d ms due to try #1 ok, but elm speed < 115200\n", FL, (int) delay_after_try_1_ok_but_not_115200);
+			diag_os_millisleep(delay_after_try_1_ok_but_not_115200);
+		}
+		else {
+			if ((0) || ((diag_l0_debug & (DIAG_DEBUG_TIMER | DIAG_DEBUG_DATA)) == (DIAG_DEBUG_TIMER | DIAG_DEBUG_DATA)))
+				fprintf(stderr, FLFMT "delaying %d ms due to try #1 ok, when elm speed >= 115200 and is *not* a clone\n", FL, (int) 10);
+			diag_os_millisleep(10);
+		}
+	}
+	return;
+}
 
 static void elm_close(struct diag_l0_device *dl0d) {
 	uint8_t buf[]="ATPC\x0D";
