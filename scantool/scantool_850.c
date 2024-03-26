@@ -107,6 +107,9 @@ static struct dtc_table_entry dtc_table[] = {
 
 static bool have_read_dtcs = false;
 static struct diag_msg *ecu_id = NULL;
+static char model_850_vs_svc70[100+1] = ""; // Car model (used in model-specific interpretations).  Should be long enough for "", "850", "SVC70", or "850SVC70".
+static int vehicle_mileage = 0;
+
 
 static bool live_display_running = false;
 static int live_data_lines;
@@ -780,61 +783,804 @@ static enum cli_retval cmd_850_ping(int argc, UNUSED(char **argv)) {
 	return CMD_OK;
 }
 
+//
+// Calculate Fahrenheit from Centigrade/Celsius.
+//
+static float
+ctof(uint8_t centi)
+{
+	return ((centi*1.8)+32);
+}
+
+//
+// Calculate estimated fuel level in gallons.
+//
+// Notes:
+//
+//   1.	The fuel level calculation seems to work best as:
+//	    (raw_fuel_level in hex / (float)0x42) * 17.6 gal
+//	or:
+//	    (raw_fuel_level in decimal / 66.0) * 17.6 gal
+//
+//	If the calculation needs adjusting, this routine is where to do it.
+//
+//   2.	If the raw_fuel_level in hex is FF
+//	(or is anything in the F0-FF range),
+//	then the fuel level will be forced to zero
+//	(rather than leaving it at an abnormally large value of 68.0 gallons 
+//	or some such absurdity, and rather than subtracting 256 from it
+//	to force a negative value).
+//
+static float
+fuel_level_in_gal(uint8_t raw_fuel_level)
+{
+	if (raw_fuel_level >= 0xF0) 
+		raw_fuel_level -= raw_fuel_level;
+	return ((raw_fuel_level / 66.0) * 17.6);
+}
+
+/*
+ * Get COMBI Flags description by the raw flags byte.
+ */
+static char *
+combi_flags_desc_by_raw(uint8_t flags)
+{
+	static char printable[1000+1]; // That should be ~3 times larger than enough.
+	char *d;
+	int iflags;
+
+	// Following info adapted from http://jonesrh.info/volvo850/ KWPD3B0 interpreter.
+	//
+	// - The descriptions are essentially jonesrh's summary of what all of the 8 COMBI Flags taken together essentially mean.
+	// - Any description which includes an "??" suggests each of the individual flags should be examined in detail
+	//   to determine exactly what state is being reflected in the COMBI Flags.
+
+	d = "";
+	iflags = flags & 0x00FF;
+
+	// 1996-1997 850 Examples
+	if (strcmp(model_850_vs_svc70, "SVC70") != 0) { /* ie, if model not "SVC70", ie, if possibly an 850. */
+		switch (iflags) {
+			case 0x7C:
+				d = "Engine off";	// By far and away, the most common value seen for 850.
+				break;
+			case 0x7E:
+				d = "Engine off, Fuel Pressure low (or Run out of gas)";
+				break;
+			case 0x70:
+				d = "Engine off, SERVICE and Low Fuel lights off [can be seen during Instrument Panel gauge test]";
+				break;
+			case 0x71:
+				d = "Engine on, Low Engine Oil Pressure";
+				break;
+			case 0x73:
+				d = "Engine on";
+				break;
+			case 0x77:
+				d = "Engine on, Low Fuel light on";
+				break;
+			case 0x79:
+				d = "Engine on, Low Engine Oil Pressure, SERVICE light on";
+				break;
+			case 0x7B:
+				d = "Engine on, SERVICE light on";
+				break;
+			case 0x7F:
+				d = "Engine on, SERVICE and Low Fuel lights on";
+				break;
+			case 0xF3:
+				d = "Engine on, Manipulation";
+				break;
+			case 0xF7:
+				// In 850, consistently observed in ECU 51 DTC 02 freeze frame.
+				// F7 has also been observed in SVC70, so examine the next major clause for that SVC70 F7 case,
+				//   and for the "850 vs. SVC70 model not yet known" F7 case.
+				if (strcmp(model_850_vs_svc70, "850") == 0)
+					d = "Engine on, Low Fuel light on, Manipulation";
+				break;
+			case 0xFF:
+				d = "Engine on, SERVICE and Low Fuel lights on, Manipulation";
+				break;
+			case 0x72:
+				d = "Engine on, Battery light on (alternator D+ voltage faulty)";
+				break;
+		}
+	}
+
+	// 1997-1998 S70/V70/C70/XC70 Examples.
+	if ((strlen(d) == 0) && (strcmp(model_850_vs_svc70, "850") != 0)) {  // ie, if 850 flags match not found and model not "850", ie, if possibly SVC70.
+		switch (iflags) {
+			case 0xE2:
+				d = "Engine off";	// By far and away, the most common value seen for S70/V70/C70/XC70.
+				break;
+			case 0x80:
+				d = "Engine on, Battery light on (alternator D+ voltage faulty) [after battery reconnect but before movement >= 2 km/h = 1 mph]";
+				break;
+			case 0x81:
+				d = "Engine on [after battery reconnect but before movement >= 2 km/h = 1 mph]";
+				break;
+			case 0x82:
+				d = "Engine off [after battery reconnect but before movement >= 2 km/h = 1 mph]";
+				break;
+			case 0x85:
+				d = "Engine on, Low Fuel light on [after battery reconnect but before movement >= 2 km/h = 1 mph]";
+				break;
+			case 0x86:
+				d = "Engine off, Low Fuel light on [after battery reconnect but before movement >= 2 km/h = 1 mph]";
+				break;
+			case 0x87:
+				d = "Engine on, Low Fuel light on, ??";
+				break;
+			case 0x89:
+				d = "Engine on, SERVICE light on [after battery reconnect but before movement >= 2 km/h = 1 mph]";
+				break;
+			case 0x8A:
+				d = "Engine off, SERVICE light on [after battery reconnect but before movement >= 2 km/h = 1 mph]";
+				break;
+			case 0x8D:
+				d = "Engine on, SERVICE and Low Fuel lights on [after battery reconnect but before movement >= 2 km/h = 1 mph]";
+				break;
+			case 0x8E:
+				d = "Engine off, SERVICE and Low Fuel lights on [after battery reconnect but before movement >= 2 km/h = 1 mph]";
+				break;
+			case 0xE0:
+				d = "Engine on, Battery light on (alternator D+ voltage faulty)";
+				break;
+			case 0xE1:
+				d = "Engine on";
+				break;
+			case 0xE3:
+				d = "Engine on, ??";
+				break;
+			case 0xE5:
+				d = "Engine on, Low Fuel light on";
+				break;
+			case 0xE6:
+				d = "Engine off, Low Fuel light on";
+				break;
+			case 0xE7:
+				d = "Engine on, Low Fuel light on, ??";
+				break;
+			case 0xE9:
+				d = "Engine on, SERVICE light on";
+				break;
+			case 0xEA:
+				d = "Engine off, SERVICE light on";
+				break;
+			case 0xEB:
+				d = "Engine on, SERVICE light on, ??";
+				break;
+			case 0xEF:
+				d = "Engine on, SERVICE and Low Fuel lights on, ??";
+				break;
+			case 0xF1:
+				// NOTE: F1 could plausibly appear in an 850 as 71 &-ed with Manipulation bit 7,
+				//       so this might need to be generalized in the future to include an 850SVC70 explanation here
+				//       and an 850 explanation in the "not explicitly SVC70" switch above.
+				//       But I'll wait till I see that case occur before adding it.
+				d = "Engine on, -5 C to +2 C 'snowflake' Temperature light on";
+				break;
+			case 0xF6:
+				d = "Engine off, Low Fuel light on, -5 C to +2 C 'snowflake' Temperature light on";
+				break;
+			case 0xF7:
+				if (strcmp(model_850_vs_svc70, "SVC70") == 0) {
+					d = "Engine on, Low Fuel light on, -5 C to +2 C 'snowflake' Temperature light on, ??";
+					// F7 has also been observed in 850, so examine the previous major clause for that 850 F7 case.
+				} else if ((strcmp(model_850_vs_svc70, "") == 0) || (strcmp(model_850_vs_svc70, "850SVC70") == 0)) {
+					// This is the ("either/or") nebulous COMBI Flags = F7 interpretation.
+					d = "Engine on, Low Fuel light on, Manipulation [850], or Engine on, Low Fuel light on, -5 C to +2 C 'snowflake' Temperature light on, ?? [S70/V70/C70/XC70]";
+				} else if (1) {
+					// Since the model is 850 and flags = 0xF7 should have already matched in the 1st clause,
+					// this is an inconsistency error which probably should be noted
+					// (though you could just leave out this else clause entirely and ignore the problem).
+					fprintf(stderr, FLFMT "combi_flags_desc_by_raw inconsistency error re flags 0xF7 vs. model - please inform programmer\n", FL);
+				}
+				break;
+			case 0xFB:
+				// NOTE: FB could plausibly appear in an 850 as 7B &-ed with Manipulation bit 7,
+				//       so this might need to be generalized in the future to include an 850SVC70 explanation here
+				//       and an 850 explanation in the "not explicitly SVC70" switch above.
+				//       But I'll wait till I see that case occur before adding it.
+				d = "Engine on, SERVICE light on, -5 C to +2 C 'snowflake' Temperature light on, ??";
+				break;
+		}
+	}
+
+	// Unknown Case Example.
+	if (strlen(d) == 0) {
+		// Was *not* one of the values previously seen (or anticipated).
+		d = "Unknown meaning";
+	}
+
+	// Possible interpretations for the individual COMBI Flags, based on value of model_850_vs_svc70.
+	// It might be a good idea to automatically display these when the summary description above contains "??" or "Unknown meaning".
+	// [That'll remain for a future addition, but at least they are here now as documentation].
+	//
+	//	bit 0 = 0 = D+ alternator voltage faulty, ie, Battery light on.
+	//	bit 0 = 1 = D+ alternator voltage OK.
+	//	bit 1 = 0 = ??Fuel Pressure faulty or Oil Pressure light on [850] or Fuel Pressure and Oil Pressure OK [S70/V70/C70/XC70]??.
+	//	bit 1 = 0 = ??Fuel Pressure faulty or Oil Pressure light on [850]??.
+	//	bit 1 = 0 = ??Fuel Pressure and Oil Pressure OK [S70/V70/C70/XC70]??.
+	//	bit 1 = 1 = ??Fuel Pressure and Oil Pressure OK [850] or Fuel Pressure faulty or Oil Pressure light on [S70/V70/C70/XC70]??.
+	//	bit 1 = 1 = ??Fuel Pressure and Oil Pressure OK [850]??.
+	//	bit 1 = 1 = ??Fuel Pressure faulty or Oil Pressure light on [S70/V70/C70/XC70]??.
+	//	bit 2 = 0 = Low Fuel light off.
+	//	bit 2 = 1 = Low Fuel light on.
+	//	bit 3 = 0 = SERVICE light off.
+	//	bit 3 = 1 = SERVICE light on.
+	//	bit 4 = 0 = Fuel Consumption signal to Trip Computer faulty [850] or (-5 C to +2 C) "snowflake" Temperature light off [S70/V70/C70/XC70].
+	//	bit 4 = 0 = Fuel Consumption signal to Trip Computer faulty [850].
+	//	bit 4 = 0 = (-5 C to +2 C) "snowflake" Temperature light off [S70/V70/C70/XC70].
+	//	bit 4 = 1 = Fuel Consumption signal to Trip Computer OK     [850] or (-5 C to +2 C) "snowflake" Temperature light on [S70/V70/C70/XC70].
+	//	bit 4 = 1 = Fuel Consumption signal to Trip Computer OK     [850].
+	//	bit 4 = 1 = (-5 C to +2 C) "snowflake" Temperature light on [S70/V70/C70/XC70].
+	//	bit 5 = 0 = 12-pulse output Speed Signal faulty.
+	//	bit 5 = 1 = 12-pulse output Speed Signal OK.
+	//	bit 6 = 0 = 48-pulse output Speed Signal faulty.
+	//	bit 6 = 1 = 48-pulse output Speed Signal OK.
+	//	bit 7 = 0 = Manipulation off (ie, Vehicle Speed Signal OK) [850] or ??Unknown meaning [S70/V70/C70/XC70]??.
+	//	bit 7 = 0 = Manipulation off (ie, Vehicle Speed Signal OK) [850].
+	//	bit 7 = 0 = ??Unknown meaning (since seen on SVC70 only once: for "91 13 51 ED 06 00 00 00 00 FF 00 00 00 00 00 00 00 00 00 E7") [S70/V70/C70/XC70]??.
+	//	bit 7 = 1 = Manipulation on (ie, Vehicle Speed Signal missing) [850] or Seems to always =1 on SVC70 [S70/V70/C70/XC70].
+	//	bit 7 = 1 = Manipulation on (ie, Vehicle Speed Signal missing) [850].
+	//	bit 7 = 1 = Seems to always =1 on SVC70 [S70/V70/C70/XC70].
+
+	sprintf(printable, "%s", d);
+	return printable;
+}
+
 #define CLAMPED_LOOKUP(table,index) table[MIN(ARRAY_SIZE(table)-1,(unsigned)(index))]
 
 /*
- * If we know how to interpret a live data value, print out the description and
- * scaled value.
+ * If we know how to interpret a memory data value, or any of the data values
+ * in a live data, non-volatile data, or freeze frame block, then 
+ * print out the description(s) and scaled value(s).
+ *
+ * 2017-12-06  jonesrh	Change so same data can be viewed from different ECUs' perspective.
+ *			- Requires knowing the presently connected ECU.
+ *			- Groups data according to ECU #, so they are easier to find.
+ *			- Similar data from different ECUs can be located by searching for part of the printf output,
+ *			  eg, to locate all perspectives of the battery voltage, search for "Battery",
+ *			  to locate all temperatures, search for "Temp", etc.
+ *			Change so non-NS_MEMORY addr is *not* shifted up by 8 bits by the caller,
+ *			  since there seems to be no need for that.
+ *
+ * 2017-12-07  jonesrh	Remove the UNUSED attribute on len parameter, since
+ *			  non-NS_MEMORY blocks may use the length to infer info.
+ *			Ahhh!  Now I see why the non-NS_MEMORY were coded with that 8-bit shift --
+ *			  the 10 bytes of an 850 COMBI E507 (live data 07) message would have been passed to
+ *			  interpret_value() as 10 addresses of: 0700, 0701, 0702, ..., 0708, 0709.
+ *			  I get it.  That's actually a very valid approach.  
+ *			  But that's *NOT* how I've transcoded the KWPD3B0 interpreter into interpret_value(),
+ *			  and I just don't want to (nor have the time to) alter the days of work already spent 
+ *			  making the guts of the KWPD3B0 interpreter work in this freediag 850 / ELM327 / D2 interpreter.
+ *			  So I've arbitrarily decided to let stand this architectural change to interpret_block(),
+ *			  since the old (pre-2017-12-06) implementation causes bogus interpretations
+ *			  when interpret_value() is called for a 2-byte data item.
+ *			Late 2017-12-07:
+ *			  For conditionalization simplicity, keep the old interpret_value() as is,
+ *			  and rename the jonesrh version of interpret_value() as interpret_value_or_msg().
+ *			  This also makes comparison between the fenugrec 2017-11-06 and jonesrh 2017-12-07
+ *			  versions easier to see.
  */
-// TODO
-static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len), uint8_t *buf) {
-	static const char *mode_selector_positions[]={"Open","S","E","W","Unknown"};
-	static const char *driving_modes[]={"Economy","Sport","Winter","Unknown"};
-	static const char *warmup_states[]={"in progress or engine off","completed","not possible","status unknown"};
-	float volts;
-	int16_t deg_c;
-	uint8_t ecu = global_l2_conn->diag_l2_destaddr;
+static void
+interpret_value_or_msg(enum l7_namespace ns, uint16_t addr, int len, uint8_t *buf)
+{
+	char *d;
+    static const char *mode_selector_positions[]={"Open","S","E","W","Unknown"};
+    static const char *driving_modes[]={"Economy","Sport","Winter","Unknown"};
+    static const char *warmup_states[]={"in progress or engine off","completed","not possible","status unknown"};
+    float volts;
+    int16_t deg_c;
+	uint8_t ecu_addr;
 
-	if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0200) {
-		printf_livedata("Engine Coolant Temperature: %dC (%dF)", buf[1]-80, (buf[1]-80)*9/5+32);
-	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0300) {
-		/*ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref*/
-		printf_livedata("Battery voltage: %.1f V", (float)buf[0]*29750/8250*5/255);
-	} else if (ns==NS_MEMORY && ecu==0x10 && addr==0x36) {
-		printf_livedata("Battery voltage: %.1f V", (float)buf[0]*29750/8250*5/255);
-	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0A00) {
-		printf_livedata("Warm-up %s", CLAMPED_LOOKUP(warmup_states, (buf[0]>>2)&3));
-		printf_livedata("MIL %srequested by TCM", (buf[0]&0x10)?"":"not ");
-		/* Low 2 bits supposedly indicate drive cycle and trip 
-		   complete, but don't make sense - can get set without the 
-		   car ever moving */
-	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1000) {
-		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
-		printf_livedata("MAF sensor signal: %.2f V", (float)buf[0]*9460/8250*5/255);
-	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1800) {
-		printf_livedata("Short term fuel trim: %+.1f%%", (float)buf[0]*100/128-100);
-	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1900) {
-		/* possibly in units of 0.004 milliseconds (injection time) */
-		printf_livedata("Long term fuel trim, additive (unscaled): %+d", (signed int)buf[0]-128);
-	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1A00) {
-		printf_livedata("Long term fuel trim, multiplicative: %+.1f%%", (float)buf[0]*100/128-100);
-	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0500) {
-		printf_livedata("Mode selector: MS1 %s, MS2 %s, switch position %s", (buf[0]&1)?"low":"high", (buf[0]&2)?"low":"high", CLAMPED_LOOKUP(mode_selector_positions, buf[0]));
-		printf_livedata("Driving mode: %s", CLAMPED_LOOKUP(driving_modes, buf[1]));
-	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0C00) {
-		/* Full scale should be 1023, although highest value seen in
-		   bench testing was 1020 */
-		volts = ((float)buf[0]*256+buf[1])*5/1023;
-		printf_livedata("ATF temperature sensor voltage: %.2f V", volts);
-		/* Avoid divide by zero below */
-		if (5.0f-volts == 0.0f) {
-			volts = 4.999;
+	ecu_addr = global_l2_conn->diag_l2_destaddr;
+
+	switch (ecu_addr) {
+	case 0x01:
+		if (ns==NS_LIVEDATA) {
+			switch (addr) {
+			case 0x09:
+				if (buf[0] == 0x00) {
+					d = "OFF = Stop (brake) light is not activated";
+				} else if (buf[0] == 0x24) {
+					d = "ON  = Stop (brake) light is activated";
+				} else if (buf[0] == 0x04) {
+					d = "In Transition (normal) = Normally short-lived transition state from either OFF->ON or ON->OFF";
+				} else if (buf[0] == 0x20) {
+					d = "In Transition (uncommon) = Uncommon state seen: a) when EBD-pressure sensor is activated, but Stop (brake) light is *not* activated, eg, when ABS-142 persists and brake lights fail, and b) also in 2 different bad ABS modules.";
+				} else {
+					d = "UNKNOWN";
+				}
+				printf("Brakes Status: %s\n", d);
+				break;
+			default:
+				// See xiaotec "850 OBD-II" Android app for other examples of ABS live data.
+				break;
+			}
+		} else if (ns==NS_NV) {
+			// Not presently understood (except for B9F0, which can be interpreted via "id" command).
+		} else if (ns==NS_FREEZE) {
+			// These are partially understood.  They could be added when time permits.
 		}
-		/* Input has 1k to +5V, sensor acts as a potential divider */
-		printf_livedata("ATF temperature sensor resistance: %u ohms", (unsigned)((1000.0f*volts)/(5.0f-volts)));
-		/* Offs 11 (!) agrees with T vs R chart in Volvo Green Book */
-		deg_c = ((int16_t)buf[2]*256)+buf[3]-11;
-		printf_livedata("ATF temperature: %dC (%dF)", deg_c, deg_c*9/5+32);
+		break;
+	case 0x10:
+		if (ns==NS_MEMORY && addr==0x36) {
+			printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
+		}
+		break;
+	case 0x51:
+		if (ns==NS_LIVEDATA) {
+			switch (addr) {
+			case 0x01:
+				printf("Vehicle Speed: %d km/h = %.0f mph\n", buf[0], buf[0]/1.609344);
+				break;
+			case 0x02:
+				printf("Fuel Level (from A5%02X): %.2f gal\n", addr, fuel_level_in_gal(buf[0]));
+				break;
+			case 0x03:
+				printf("Fuel Level (from A5%02X): %.2f gal\n", addr, fuel_level_in_gal(buf[0]));
+				break;
+			case 0x04:
+				printf("Engine Coolant Temperature: %dC = %.0fF\n", buf[0]-40, ctof(buf[0]-40));
+				break;
+			case 0x05:
+				// Multiplier derived by jonesrh comparison of OBDII 010C vs. COMBI A505 values when idle was steady, etc.
+				printf("Engine RPM: %.0f rpm\n", buf[0]*32.3077);
+				break;
+			case 0x06:
+				printf("COMBI Flags: %02X = %d -> %s\n", buf[0], (int) buf[0], combi_flags_desc_by_raw(buf[0]));
+				break;
+			case 0x07:
+				// To be included in the future, since it involves multiple values, most of which can be seen in COMBI live data involving a single item.
+				// A507 is the quickest way to get a summary of the COMBI live data, including the Vehicle Mileage.
+				// 850 combi's E507 is (almost always) 10 bytes long; S70/V70/C70/XC70 combi's E507 is (almost always) 13 bytes long.
+				// Consequently, for the time being, it's main use will be to infer the model.
+				if (len == 10)
+					strcpy(model_850_vs_svc70, "850");
+				else if (len == 13)
+					strcpy(model_850_vs_svc70, "SVC70");
+				else
+					printf("combi live data 07 has invalid length = %d (not equal 10 or 13)\n", len);
+				break;
+			case 0x08:
+				printf("Fuel Level (from A5%02X): %.2f gal\n", addr, fuel_level_in_gal(buf[0]));
+				break;
+			case 0x09:
+				// To be included in the future, since it involves multiple values, most of which can be seen in COMBI live data involving a single item.
+				// This appears to be a precursor to the COMBI FFs.
+				// 850 combi's E509 is (almost always) 10 bytes long; S70/V70/C70/XC70 combi's E509 is (almost always) 13 bytes long.
+				// Consequently, for the time being, it's main use will be to infer the model.
+				if (len == 10)
+					strcpy(model_850_vs_svc70, "850");
+				else if (len == 13)
+					strcpy(model_850_vs_svc70, "SVC70");
+				else
+					printf("combi live data 09 has invalid length = %d (not equal 10 or 13)\n", len);
+				break;
+			case 0x0A:
+				// Apparently, is only used by '97-'98 S70/V70/C70/XC70.
+				printf("Ambient Temp to COMBI (instantaneous): %dC = %.0fF%s\n", 
+					buf[0]-50, ctof(buf[0]-50),
+					((buf[0] == 255) ? " [sensor possibly disconnected from its connector]" : ""));
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			case 0x0B:
+				// Apparently, is only used by '97-'98 S70/V70/C70/XC70.
+				// Assume is a 2-byte, little endian count of pulses/sec.
+				// We don't presently have a clue how that translates to an Instantaneous MPG (or an Average MPG).
+				printf("Fuel Consumption: %d pulses/sec\n", (buf[1]*256)+buf[0]);
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			case 0x0C:
+				// Apparently, is only used by '97-'98 S70/V70/C70/XC70.
+				printf("Ambient Temp to COMBI (damped): %dC = %.0fF%s\n",
+					buf[0]-50, ctof(buf[0]-50),
+					((buf[0] == 255) ? " [sensor possibly disconnected from its connector]" : ""));
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			}
+		} else if (ns==NS_NV) {
+			float fuel_lvl_adj_US_gal;
+			float fuel_lvl_adj_L;
+			int local_b903_minus_b904_calculated = 0;
+			int b904_miles, b903_minus_b904_miles;
+			switch (addr) {
+			case 0x01:
+				// To be added in the future.
+				// See http://jonesrh.info/volvo850/elm327_reads_volvo_850_svc70_mileage.html#b901
+				// for the data from which inferences can be made.
+				break;
+			case 0x02:
+				// Not presently understood.  Only seen on S70/V70/C70/XC70.
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			case 0x03:
+				vehicle_mileage = ((buf[1]*256)+buf[0])*10;
+				printf("Vehicle Mileage: %d miles = %.0f km\n", vehicle_mileage, vehicle_mileage*1.609344);
+				break;
+			case 0x04:
+				b904_miles = ((buf[1]*256)+buf[0])*10;
+				if (vehicle_mileage > 0) {
+					b903_minus_b904_miles = vehicle_mileage - b904_miles;
+					if (b903_minus_b904_miles >= 0)
+						local_b903_minus_b904_calculated = 1;
+				}
+				printf("Mileage at Service Light Reset: %d miles = %.0f km\n", b904_miles, b904_miles*1.609344);
+				if (local_b903_minus_b904_calculated) {
+					printf("Mileage since Service Light Reset: %d miles = %.0f km [calculated from B903 - B904]\n",
+						b903_minus_b904_miles, b903_minus_b904_miles*1.609344);
+				}
+				break;
+			case 0x05:
+				// In this initial implementation,
+				// have decided to *not* use the suffixes of estimated rounded miles
+				// as the online KWPD3B0 interpreter displays for some standard USA limits.
+				printf("Service Reminder Interval Mileage: %d km = %.0f miles\n", buf[0]*500, (buf[0]*500)/1.609344);
+				break;
+			case 0x06:
+				// Have decided to only display the Days calculation, not the pseudo-Months or pseudo-Years calculation.
+				printf("Days since Service Light Reset: %.2f days\n", ((buf[1]*256)+buf[0])/4.0);
+				break;
+			case 0x07:
+				// Have decided to only display the Days calculation, not the pseudo-Months or pseudo-Years calculation.
+				printf("Service Reminder Interval Days: %.2f days\n", ((buf[1]*256)+buf[0])/4.0);
+				break;
+			case 0x08:
+				printf("Engine Hours since Service Light Reset: %d hours\n", (buf[1]*256)+buf[0]);
+				break;
+			case 0x09:
+				printf("Service Reminder Interval Engine Hours: %d hours\n", (buf[1]*256)+buf[0]);
+				break;
+			case 0x0A:
+				// Not presently understood well enough to worry about adding it here.
+				// It's raw data will serve as sufficient documentation of "lost" mileage (in some form or another).
+				// See http://jonesrh.info/volvo850/elm327_reads_volvo_850_svc70_mileage.html#b90a for further details.
+				break;
+			case 0x0B:
+				// Not presently understood.
+				break;
+			case 0x0C:
+				// Not presently understood well enough to worry about adding it here.
+				// It's raw data will serve as sufficient documentation.
+				// See http://jonesrh.info/volvo850/elm327_reads_volvo_850_svc70_mileage.html#b90c for further details.
+				break;
+			case 0x0D:
+				// Fuel Level Adjustment scaling factors determined from much jonesrh experimentation.
+				printf("Fuel Level Adjustment: ");
+				if (strcmp(model_850_vs_svc70, "850") == 0) {
+					if (buf[0] == 0x00)
+						printf("none");
+					else
+						printf("Unknown (since non-zero B90D has never been observed on 850)");
+				} else if (strcmp(model_850_vs_svc70, "SVC70") == 0) {
+					fuel_lvl_adj_US_gal = (5 - buf[0]) * 0.056;
+					fuel_lvl_adj_L = fuel_lvl_adj_US_gal * 3.785412;
+					printf("%+.3f US gal = %+.3f L", fuel_lvl_adj_US_gal, fuel_lvl_adj_L);
+				} else {	/* This applies to model_850_vs_svc70 = "", "850SVC70", or anything else. */
+					fuel_lvl_adj_US_gal = (5 - buf[0]) * 0.056;
+					fuel_lvl_adj_L = fuel_lvl_adj_US_gal * 3.785412;
+					if (buf[0] == 0x00)
+						printf("none (if 850), else %+.3f US gal = %+.3f L (if SVC70)", fuel_lvl_adj_US_gal, fuel_lvl_adj_L);
+					else
+						printf("%+.3f US gal = %+.3f L (if SVC70), else Unknown (if 850)", fuel_lvl_adj_US_gal, fuel_lvl_adj_L);
+				}
+				printf("\n");
+				// Should see one of the following formats...
+				// For 850...
+				// 	Fuel Level Adjustment: none
+				// 	Fuel Level Adjustment: Unknown (since non-zero B90D has never been observed on 850)
+				// For SVC70:
+				// 	Fuel Level Adjustment: +0.280 US gal = +1.060 L
+				// 	Fuel Level Adjustment: +0.ddd US gal = +0.ddd L
+				// 	Fuel Level Adjustment:  0.000 US gal =  0.000 L
+				// 	Fuel Level Adjustment: -d.ddd US gal = -d.ddd L
+				// 	Fuel Level Adjustment: -d.ddd US gal = -dd.ddd L
+				// For indeterminate 850 vs. SVC70:
+				// 	Fuel Level Adjustment: none (if 850), else +0.280 US gal = +1.060 L (if SVC70)
+				// 	Fuel Level Adjustment: +0.ddd US gal = +0.ddd L (if SVC70), else Unknown (if 850)
+				// 	Fuel Level Adjustment:  0.000 US gal =  0.000 L (if SVC70), else Unknown (if 850)
+				// 	Fuel Level Adjustment: -d.ddd US gal = -d.ddd L (if SVC70), else Unknown (if 850)
+				// 	Fuel Level Adjustment: -d.ddd US gal = -dd.ddd L (if SVC70), else Unknown (if 850)
+				break;
+			case 0x0E:
+				// Not presently understood well enough to worry about adding it here.
+				// It's raw data will serve as sufficient documentation.
+				// See http://jonesrh.info/volvo850/elm327_reads_volvo_850_svc70_mileage.html#b90e for further details.
+				break;
+			case 0x0F:
+				// Not presently understood.  Only seen on S70/V70/C70/XC70.
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			case 0x10:
+				// Not presently understood.  Only seen on S70/V70/C70/XC70.
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			case 0x12:
+				// Not presently understood.  Only seen on S70/V70/C70/XC70.
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			case 0x13:
+				// Not presently understood.  Only seen on S70/V70/C70/XC70.
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			case 0x14:
+				// Not presently understood.  Only seen on S70/V70/C70/XC70.
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			case 0x15:
+				// Not presently understood.  Only seen on S70/V70/C70/XC70.
+				strcpy(model_850_vs_svc70, "SVC70");
+				break;
+			}
+		} else if (ns==NS_FREEZE) {
+			// These are well understood and could be added when time permits.
+		}
+		break;
+	case 0x6E:
+		if (ns==NS_LIVEDATA) {
+			switch (addr) {
+			case 0x01:
+				// Contains "Gear-Shift Position Sensors (A/B/C/PA)" and "Gear-Shift Position".
+				// - We will only interpret "Gear-Shift Position" in the initial implementation.
+				switch (buf[1]) {
+				case 0:	 d = "P (Park)   "; break;
+				case 1:	 d = "R (Reverse)"; break;
+				case 2:	 d = "N (Neutral)"; break;
+				case 3:	 d = "D (Drive)  "; break;
+				case 4:	 d = "3 (3rd)    "; break;
+				case 5:	 d = "L (Low)    "; break;
+				default: d = "OR/OD/OL (Undefined R, D, or L -- between positions, or improper gear position sensor adjustment) or ERROR (wrong combination of gear shift sensor signals -- see DTC)";
+					break;
+				}
+				printf("Gear-Shift Position: %s\n", d);
+				break;
+			case 0x02:
+				if ((buf[0] == 0x00) && (buf[0] == 0x00)) {
+					d = "OFF = Stop (brake) light is not activated";
+				} else if ((buf[0] == 0x01) && (buf[1] == 0x01)) {
+					d = "ON  = Stop (brake) light is activated";
+				} else {
+					d = "UNKNOWN";
+				}
+				printf("Brakes Status: %s\n", d);
+				break;
+			case 0x05:
+				printf_livedata("Mode selector: MS1 %s, MS2 %s, switch position %s", (buf[0]&1)?"low":"high", (buf[0]&2)?"low":"high", CLAMPED_LOOKUP(mode_selector_positions, buf[0]));
+				printf_livedata("Driving mode: %s", CLAMPED_LOOKUP(driving_modes, buf[1]));
+
+				if ((buf[0] == 0x02) && (buf[1] == 0x00)) {
+					d = "E - ECON   - Economy mode";
+				} else if ((buf[0] == 0x01) && (buf[1] == 0x01)) {
+					d = "S - SPORT  - Sport mode";
+				} else if ((buf[0] == 0x01) && (buf[1] == 0x02)) {
+					d = "W - WINTER - Winter/Wet mode [pressing WINTER or W button again will revert to Sport mode]";
+				} else if ((buf[0] == 0x02) && (buf[1] == 0x02)) {
+					d = "W - WINTER - Winter/Wet mode [pressing WINTER or W button again will revert to Economy mode]";
+				} else if ((buf[0] == 0x00) && (buf[1] == 0x00)) {
+					d = "UNKNOWN (defaults to Economy mode) [Seen in 1 car which has ECU 6E DTC 35 -> AT-114 -- Mode Selector Switch, circuit malfunction]";
+				} else if ((buf[0] == 0x03) && (buf[1] == 0x00)) {
+					d = "ERROR (defaults to Economy mode) [Seen once in LIVE data log of rapidly scanning XantheFIN app *v0.5d*, before transitioning to one of the WINTER settings, so maybe it is some sort of WINTER precursor]";
+				} else {
+					d = "UNKNOWN E/S/W Mode Selector position or program";
+				}
+				printf("Mode Selection (E/S/W): %s\n", d);
+				break;
+			case 0x0B:
+				printf("Battery voltage: %.2f V\n", ((buf[2]*256)+buf[1])/2543.848);
+				break;
+			case 0x0C:
+				// move
+				/* Full scale should be 1023, although highest value seen in
+		   		bench testing was 1020 */
+				volts = ((float)buf[0]*256+buf[1])*5/1023;
+				printf_livedata("ATF temperature sensor voltage: %.2f V", volts);
+				/* Avoid divide by zero below */
+				if (5.0f-volts == 0.0f) {
+					volts = 4.999;
+				}
+				/* Input has 1k to +5V, sensor acts as a potential divider */
+				printf_livedata("ATF temperature sensor resistance: %u ohms", (unsigned)((1000.0f*volts)/(5.0f-volts)));
+				/* Offs 11 (!) agrees with T vs R chart in Volvo Green Book */
+				deg_c = ((int16_t)buf[2]*256)+buf[3]-11;
+				printf_livedata("ATF temperature: %dC (%dF)", deg_c, deg_c*9/5+32);
+				// Old calculation follows:
+				// This is a jonesrh inferred formula which has NOT been validated well.
+				// You might want to do some controlled experiments to determine for yourself
+				// how to calculate the ATF Temperature.
+				// printf("ATF Temperature: %dC = %.0fF\n", buf[3]-13, ctof(buf[3]-13));
+				break;
+			case 0x03:
+				printf("Engine RPM:      %d rpm [ie, Engine RPM (derived from ECM's load signal)]\n", (buf[0]*256)+buf[1]);
+				break;
+			case 0x10:
+				printf("Trans Input RPM: %d rpm [ie, Transmission Input RPM (after torque converter)]\n", (buf[0]*256)+buf[1]);
+				break;
+			case 0x40:
+				if (buf[0] == 0x00) {
+					d = "OFF (according to jonesrh analysis)";
+				} else if (buf[0] == 0x01) {
+					d = "ON  (according to jonesrh analysis)";
+				} else {
+					d = "INVALID (according to jonesrh analysis)";
+				}
+				printf("Arrow Warning Light Status: %s\n", d);
+				break;
+			case 0x41:
+				if (buf[0] == 0x00) {
+					d = "OFF (according to XantheFIN app *v0.5d*)";
+				} else if (buf[0] == 0x01) {
+					d = "ON  (according to XantheFIN app *v0.5d*)";
+				} else {
+					d = "???????";
+				}
+				printf("Arrow Warning Light Status: %s\n", d);
+				break;
+			case 0x71:
+				// Might be added in future.
+				break;
+			case 0x72:
+				// Might be added in future.
+				break;
+			default:
+				// See xiaotec "850 OBD-II" Android app for other examples of AW 50-42 live data.
+				break;
+			}
+		} else if (ns==NS_FREEZE) {
+			// Some items in the AW50 FF are understood and could be added when time permits.
+		} else if (ns==NS_NV) {
+			// Do not understand how to interpret any of these.
+		}
+		break;
+	case 0x7A:
+		if (ns==NS_LIVEDATA) {
+			switch (addr) {
+			case 0x01:
+				printf("Engine RPM: %.0f rpm\n", buf[0]*30.0);
+				break;
+			case 0x02:
+				printf("Engine Coolant Temperature: %dC = %.0fF\n", buf[1]-80, ctof(buf[1]-80));
+				break;
+			case 0x03:
+				// These 2 approaches appear to be synonymous.
+				// I choose the latter due to its single computation
+				// (and due to the fact that both bytes seem to always be equal).
+				////// ECU pin A27, MCU P7.1 input, divider ratio 8250/29750, 5Vref.
+				////printf("Battery voltage: %.1f V\n", (float)buf[0]*29750/8250*5/256);
+				// Scaling came from M44-scaling-RAM.pdf.
+				printf("Battery voltage: %.1f V\n", buf[1]*0.0704);
+				break;
+			case 0x05:
+				printf("Vehicle Speed: %d km/h = %.0f mph\n", buf[0], buf[0]/1.609344);
+				break;
+			case 0x09:
+				// Scaling came from M44-scaling-RAM.pdf.
+				// - This needs to be thoroughly tested with real data and
+				//   compared between OBDII and ECU 7A (maybe using the following):
+				printf("Ignition Timing Advance: %+.2f degrees%s\n", (-0.75*buf[0])+78.00,
+					((buf[0] == 0) ? " [engine is probably not running]" : ""));
+				break;
+			case 0x0A:
+				// originally from interpret_value()
+				printf_livedata("Warm-up %s", CLAMPED_LOOKUP(warmup_states, (buf[0]>>2)&3));
+				printf_livedata("MIL %srequested by TCM", (buf[0]&0x10)?"":"not ");
+				/* Low 2 bits supposedly indicate drive cycle and trip 
+		   		complete, but don't make sense - can get set without the 
+		   		car ever moving */
+				break;
+			case 0x0B:
+				// Quite complicated, planned for a future release.
+				break;
+			case 0x0C:
+				// Temperatures derived from M44's Ambient Temp sensor.
+				// Planned for a future release.
+				break;
+			case 0x10:
+				// ECU pin A4, MCU P7.4 input, divider ratio 8250/9460.
+				printf("MAF sensor signal: %.2f V [from Adam Goldman's analysis]\n", (float)buf[0]*9460/8250*5/256);
+				// M44-scaling-RAM.pdf says 1st byte * 0.0196 (which is different from Adam G's analysis).
+				printf("MAF sensor signal: %.2f V [from M44-scaling-RAM.pdf]\n", (float)buf[0]*0.0196);
+				// M44-scaling-RAM.pdf says 2nd byte * 1.6 kg/h.
+				// grams per second multiplier (0.2778) is inverse of 3.6 multipler used when converting from g/sec to kg/h.
+				printf("MAF: %.1f kg/h = %.2f g/s\n", (float)buf[1]*1.6, (float)buf[1]*1.6*0.2778);
+				break;
+			case 0x18:
+				// originally from interpret_value()
+				printf_livedata("Short term fuel trim: %+.1f%%", (float)buf[0]*100/128-100);
+				break;
+			case 0x19:
+				// originally from interpret_value()
+				/* possibly in units of 0.004 milliseconds (injection time) */
+				printf_livedata("Long term fuel trim, additive (unscaled): %+d", (signed int)buf[0]-128);
+				break;
+			case 0x1A:
+				// originally from interpret_value()
+				printf_livedata("Long term fuel trim, multiplicative: %+.1f%%", (float)buf[0]*100/128-100);
+				break;
+			default:
+				// See the following for many other examples that could be added here.
+				// - rkam's "gold mine" post of M4.4 live data at:
+				//       http://volvospeed.com/vs_forum/topic/159506-tuners-rejoice-free-tuning-for-m44/?page=39#comment-2250775
+				// - the more detailed spreadsheet of Motronic 4.4 scaling data displayed in:
+				//       M44-scaling-RAM.pdf
+				// There is a lot, lot more that needs adding in this switch !!!
+				break;
+			} // end switch
+		} else if (ns==NS_FREEZE) {
+			// Portions of the M44 freeze frame are understood now, so they could be added here.
+			//
+			// Here's some excerpts from the KWPD3B0 interpreter to aid you in adding some M44 freeze frame (FF) value interpretations to this clause.
+			//
+			// - Remember that "addr" in this interpret_value_or_msg() function is the response's subfunction code,
+			//   which for a FF means the DTC # for which the FF is for.
+			//   In the example below, addr = "5E".
+			// - What the KWPD3B0 interpreter refers to as "data slot #"s begin their numbering 
+			//   **after** the 3 header bytes, ED (positive ack to AD request), and DTC # (whose FF was requested).
+			//
+			// M44 FF Example (from log OBDII_ELM327_279_*.txt, as it would normally appear in an ELM327 terminal emulator):
+			//
+			//	>AD5E00
+			//	98 13 7A ED 5E 00 21 52 00 41 23 50 01 72 03 6C 1C 0F B4 BF 00 61 02 00 00 00 7A 
+			//						     ^^ ^^ ^^ ^^ ^^ ^^ 
+			//						     ^^ RPM  ECT ^^
+			//						     ^^          ^^
+			//						     ^^         BATT
+			//						     ^^
+			//                                       Ambient Temp to M44 (damped) [should point at the 6C]
+			//
+			//****************************************************************************
+			//***** vvv This is intended to help in above M44 FF layout analysis vvv *****
+			//****************************************************************************
+			//         data
+			//         slot
+			//          # (beginning after the DTC #)
+			//         ----
+			//             -- ED, ie, positive ack of AD.
+			//             -- DTC # that freeze frame is for.
+			//        - 00 -- probably either 00 or 01
+			//        - 01 -- ??
+			//        - 02 -- ?? Adam Goldman benchtesting revealed: SAS open relay coil (and shorted to ground relay coil) = 52, SAS shorted to +12V relay coil = 51.
+			//        - 03 -- ??
+			//          ..
+			//          ..
+			//        - 10 -- Ambient Temp to M44 (damped) (ie, ECU 7A A50C byte #2).
+			//        - 11 -- Engine RPM (ie, ECU 7A A501).
+			//        - 12 -- ??Internal Load Signal (maybe)?? (ie, ECU 7A A512).
+			//        - 13 -- Engine Coolant Temp (ECT) (ie, ECU 7A A502 byte #2).
+			//        - 14 -- Battery Voltage (ie, ECU 7A A503).
+			//        - 15 -- ??Vehicle Speed (maybe)?? (ie, ECU 7A A505).
+			//        - 16 -- ??
+			//          ..
+			//          ..
+			//        - 20 -- ??
+			//        - 21 -- checksum
+			//        ----------------------------------------------------
+			//      * List of values in M44 freeze frame according to OTP Volvo 850 DVD which have **not** already been listed above:
+			//  - Throttle position - WOT (Wide Open Throttle, Partially Open, Closed Throttle Position.
+			//  - Fuel Shut-off (when RPM is maxed out) - Yes/No.
+			//  - Fuel Trim - Open Loop / Closed Loop, Fuel Trim Active / Closed Loop, Fuel Trim Active, but rear H02S not connected.
+			//  - Drive Cycle Completed - Yes (fuel trim started) / No.
+			//  - Trip Completed - Yes (all diagnostic functions done at least once during that trip) / No.
+			//  - Warm-up Cycle Completed - Yes / No / Not Possible (since engine started with ECT > 40 C, ie, 104 F).
+			//  - Transmission Gear Selector Position - P/N, R/D/3/L.
+			//  - Flywheel Adaptation - Complete / Not Complete.
+			//  - EVAP Canister - Normal (or low) / High.
+			//  - Fuel Trim - Complete / Not Complete (ie, Fuel Trim Idle and Fuel Trim Part have not completed adaptation).
+			//  - SAS Pump - Off / On.
+			//      * Most of that data is binary and is contained in ECU 7A A50A and A50B.
+			//****************************************************************************
+			//***** ^^^ This is intended to help in above M44 FF layout analysis ^^^ *****
+			//****************************************************************************
+			//
+			// I suggest in the interpretation to bypass including a summary line which describes the FF,
+			// since freediag has typically already done that.  Then just use one printf per line for each value to be interpreted,
+			// but briefly include the DTC # on each of those lines.
+		} else if (ns==NS_NV) {
+			// The other ECU 7A B9xx data, if ever added to freediag, would probably be added in cmd_850_id() instead of here.
+			// I suspect this clause will wind up being empty.
+		}
+		break;
 	}
 }
 
@@ -842,14 +1588,16 @@ static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len)
  * Try to interpret all the live data values in the buffer.
  */
 static void interpret_block(enum l7_namespace ns, uint16_t addr, int len, uint8_t *buf) {
-	int i;
-
-	if (ns != NS_MEMORY) {
-		addr <<= 8;
-	}
-
-	for (i=0; i<len; i++) {
-		interpret_value(ns, addr+i, len-i, buf+i);
+	if (ns == NS_MEMORY) {
+		// Each item in a memory buffer is interpreted separately.
+		int i;
+		for (i=0; i<len; i++) {
+			interpret_value_or_msg(ns, addr+i, len-i, buf+i);
+		}
+	} else {
+		// All items in non-memory buffers (ie, live data, non-volatile data, freeze frames) are all interpreted at the same time,
+		// **and** the len **MAY BE USED TO INFER THINGS**.
+		interpret_value_or_msg(ns, addr, len, buf);
 	}
 }
 
