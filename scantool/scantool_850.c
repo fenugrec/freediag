@@ -52,55 +52,9 @@
 #include "scantool.h"
 #include "scantool_cli.h"
 
-struct ecu_info {
-	uint8_t addr;
-	const char *name;
-	const char *desc;
-	const char *dtc_prefix;
-};
-
-static const struct ecu_info ecu_list[] = {
-	{0x01, "abs", "antilock brakes", "ABS"},
-#if 0
-	/*
-	 * Don't have an M4.3 ECU to test. Will probably need separate DTC and
-	 * live data tables for M4.3.
-	 */
-	{0x10, "m43", "Motronic M4.3 engine management (DLC pin 3)", "EFI"}, /* 12700bps, KWP71 */
-#endif
-	{0x10, "m44old", "Motronic M4.4 engine management (old protocol)", "EFI"},
-	{0x11, "msa", "MSA 15.7 engine management (diesel vehicles)","EFI"},
-	/* 0x13 - Volvo Scan Tool tester address */
-#if 0
-	{0x15, "m18", "Motronic M1.8 engine management (960)", "EFI"}, /* 4800bps, KWP71 */
-#endif
-	{0x18, "add", "912-D fuel-driven heater (cold climate option)", "HEA"},
-	{0x29, "ecc", "electronic climate control", "ECC"},
-	{0x2d, "vgla", "alarm", "GLA"},
-	{0x2e, "psl", "left power seat", "PSL"},
-	{0x2f, "psr", "right power seat", "PSR"},
-	/* 0x33 - J1979 OBD2 */
-	{0x41, "immo", "immobilizer", "IMM"},
-	{0x51, "combi", "combined instrument panel", "CI"},
-	{0x58, "srs", "airbags", "SRS"},
-	{0x6e, "aw50", "AW50-42 transmission", "AT"},
-	{0x7a, "m44", "Motronic M4.4 engine management", "EFI"},
-	{0, NULL, NULL, NULL}
-};
-
-struct dtc_table_entry {
-	uint8_t ecu_addr;
-	uint8_t raw_value;
-	uint16_t dtc_suffix;
-	const char *desc;
-};
-
-static const struct dtc_table_entry dtc_table[] = {
-	{0x6e, 0x13, 332, "Torque converter lock-up solenoid open circuit"},
-	{0x10, 0x54, 445, "Pulsed secondary air injection system pump signal"},
-	{0x7a, 0x54, 445, "Pulsed secondary air injection system pump signal"},
-	{0, 0, 0, NULL}
-};
+#include "scantool_850/dtc.h"
+#include "scantool_850/ecu.h"
+#include "scantool_850/basic.h"
 
 static bool have_read_dtcs = false;
 static struct diag_msg *ecu_id = NULL;
@@ -299,6 +253,7 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) 
 	static char *empty="";
 	const struct ecu_info *ecu_entry;
 	const struct dtc_table_entry *dtc_entry;
+	const struct ecu_dtc_table_map_entry *ecu_dtc_entry;
 	const char *prefix;
 	uint16_t suffix;
 
@@ -310,17 +265,24 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) 
 		}
 	}
 
-	for (dtc_entry = dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
-		if (dtc_entry->ecu_addr == addr && dtc_entry->raw_value == raw) {
-			suffix = dtc_entry->dtc_suffix;
-			if (desc != NULL) {
-				*desc = dtc_entry->desc;
+	for (ecu_dtc_entry = ecu_dtc_map; ecu_dtc_entry->ecu_addr != 0; ecu_dtc_entry++) {
+		if (ecu_dtc_entry->ecu_addr == addr) {
+			break;
+		}
+	}
+	if (ecu_dtc_entry->ecu_addr != 0) {
+		for (dtc_entry = ecu_dtc_entry->dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
+			if (dtc_entry->raw_value == raw) {
+				suffix = dtc_entry->dtc_suffix;
+				if (desc != NULL) {
+					*desc = dtc_entry->desc;
+				}
+				if (suffix > 999) {
+					suffix = 999;
+				}
+				snprintf(printable, PRINTABLE_LEN, "%s-%03d", prefix, suffix);
+				return printable;
 			}
-			if (suffix > 999) {
-				suffix = 999;
-			}
-			snprintf(printable, PRINTABLE_LEN, "%s-%03d", prefix, suffix);
-			return printable;
 		}
 	}
 
@@ -359,6 +321,7 @@ static uint16_t dtc_raw_by_printable(const char *printable) {
 	uint16_t suffix;
 	char *p, *q, *r;
 	const struct dtc_table_entry *dtc_entry;
+	const struct ecu_dtc_table_map_entry *ecu_dtc_entry;
 	uint8_t ecu_addr;
 
 	/* extract prefix and suffix from string */
@@ -387,9 +350,17 @@ static uint16_t dtc_raw_by_printable(const char *printable) {
 
 	/* find suffix */
 	ecu_addr = global_l2_conn->diag_l2_destaddr;
-	for (dtc_entry = dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
-		if (dtc_entry->ecu_addr == ecu_addr &&
-		    dtc_entry->dtc_suffix == suffix) {
+	for (ecu_dtc_entry = ecu_dtc_map; ecu_dtc_entry->ecu_addr != 0; ecu_dtc_entry++) {
+		if (ecu_dtc_entry->ecu_addr == ecu_addr) {
+			break;
+		}
+	}
+	if (ecu_dtc_entry->ecu_addr == 0) {
+		// ECU not found
+		return 0xffff;
+	}
+	for (dtc_entry = ecu_dtc_entry->dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
+		if (dtc_entry->dtc_suffix == suffix) {
 			return dtc_entry->raw_value;
 		}
 	}
