@@ -54,6 +54,7 @@
 
 #include "scantool_850/dtc.h"
 #include "scantool_850/ecu.h"
+#include "scantool_850/xiaotec.h"
 
 static bool have_read_dtcs = false;
 static struct diag_msg *ecu_id = NULL;
