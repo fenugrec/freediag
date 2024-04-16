@@ -84,12 +84,15 @@ static const char *elm327_errors[] = {"BUS BUSY", "FB ERROR", "DATA ERROR", "<DA
 	                              "ACT ALERT", "BUFFER FULL", "BUS ERROR", "CAN ERROR", "LP ALERT",
 	                              "LV RESET", "<RX ERROR", "STOPPED", "UNABLE TO CONNECT", "ERR", NULL};
 
-// authentic VS clone identification strings.
-// I know of no elm323 clones. 327 clones may not support some commands (atfi, atsi, atkw) and thus need fallback methods
+/* authentic VS clone identification strings.
+ * I know of no elm323 clones. 327 clones may not support some commands (atfi, atsi, atkw) and thus need fallback methods.
+ * version strings should be ordered to test the longer strings first, e.g. '1.4a' before '1.4', as long
+ * as we use strstr() to match against the response.
+ */
 static const char *elm323_official[] = {"2.0",NULL};    //authentic 323 firmware versions, possibly incomplete list
 static const char *elm323_clones[] = {NULL};    //known cloned versions
 static const char *elm327_official[] = {"1.0a", "1.0", "1.1", "1.2a", "1.2", "1.3a", "1.3", "1.4b", "2.0", NULL};
-static const char *elm327_clones[] = {"1.4", "1.4a", "1.5a", "1.5", "2.1", NULL};
+static const char *elm327_clones[] = {"1.4a", "1.4", "1.5a", "1.5", "2.1", NULL};
 
 // baud rates for host to elm32x communication. Start with user-specified speed, then try common values
 #define ELM_CUSTOMSPEED ((unsigned) -1)
