@@ -54,12 +54,12 @@
 
 struct ecu_info {
 	uint8_t addr;
-	char *name;
-	char *desc;
-	char *dtc_prefix;
+	const char *name;
+	const char *desc;
+	const char *dtc_prefix;
 };
 
-static struct ecu_info ecu_list[] = {
+static const struct ecu_info ecu_list[] = {
 	{0x01, "abs", "antilock brakes", "ABS"},
 #if 0
 	/*
@@ -92,10 +92,10 @@ struct dtc_table_entry {
 	uint8_t ecu_addr;
 	uint8_t raw_value;
 	uint16_t dtc_suffix;
-	char *desc;
+	const char *desc;
 };
 
-static struct dtc_table_entry dtc_table[] = {
+static const struct dtc_table_entry dtc_table[] = {
 	{0x6e, 0x13, 332, "Torque converter lock-up solenoid open circuit"},
 	{0x10, 0x54, 445, "Pulsed secondary air injection system pump signal"},
 	{0x7a, 0x54, 445, "Pulsed secondary air injection system pump signal"},
@@ -214,8 +214,8 @@ static char *capitalize(const char *in) {
 /*
  * Look up an ECU by name.
  */
-static struct ecu_info *ecu_info_by_name(const char *name) {
-	struct ecu_info *ecu;
+static const struct ecu_info *ecu_info_by_name(const char *name) {
+	const struct ecu_info *ecu;
 
 	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
 		if (strcasecmp(name, ecu->name) == 0) {
@@ -230,7 +230,7 @@ static struct ecu_info *ecu_info_by_name(const char *name) {
  * Get an ECU's address by name.
  */
 static int ecu_addr_by_name(const char *name) {
-	struct ecu_info *ecu;
+	const struct ecu_info *ecu;
 	unsigned long int i;
 	char *p;
 
@@ -255,8 +255,8 @@ static int ecu_addr_by_name(const char *name) {
 /*
  * Get an ECU's description by address.
  */
-static char *ecu_desc_by_addr(uint8_t addr) {
-	struct ecu_info *ecu;
+static const char *ecu_desc_by_addr(uint8_t addr) {
+	const struct ecu_info *ecu;
 	static char buf[7];
 
 	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
@@ -272,7 +272,7 @@ static char *ecu_desc_by_addr(uint8_t addr) {
 /*
  * Get the description of the currently connected ECU.
  */
-static char *current_ecu_desc(void) {
+static const char *current_ecu_desc(void) {
 	uint8_t addr;
 
 	if (global_state < STATE_CONNECTED) {
@@ -293,13 +293,13 @@ static char *current_ecu_desc(void) {
  * byte value. Optionally, also get a description of the DTC.
  * Returns a static buffer that will be reused on the next call.
  */
-static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
+static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) {
 #define PRINTABLE_LEN   8       //including 0-termination
 	static char printable[PRINTABLE_LEN];
 	static char *empty="";
-	struct ecu_info *ecu_entry;
-	struct dtc_table_entry *dtc_entry;
-	char *prefix;
+	const struct ecu_info *ecu_entry;
+	const struct dtc_table_entry *dtc_entry;
+	const char *prefix;
 	uint16_t suffix;
 
 	prefix = "???";
@@ -334,8 +334,8 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, char **desc) {
 /*
  * Get the DTC prefix for the currently connected ECU.
  */
-static char *current_dtc_prefix(void) {
-	struct ecu_info *ecu;
+static const char *current_dtc_prefix(void) {
+	const struct ecu_info *ecu;
 
 	if (global_state < STATE_CONNECTED) {
 		return "???";
@@ -354,11 +354,11 @@ static char *current_dtc_prefix(void) {
  * Get a DTC byte value by the printable designation. Returns 0xffff on
  * failure.
  */
-static uint16_t dtc_raw_by_printable(char *printable) {
+static uint16_t dtc_raw_by_printable(const char *printable) {
 	char prefix[8];
 	uint16_t suffix;
 	char *p, *q, *r;
-	struct dtc_table_entry *dtc_entry;
+	const struct dtc_table_entry *dtc_entry;
 	uint8_t ecu_addr;
 
 	/* extract prefix and suffix from string */
@@ -401,7 +401,7 @@ static uint16_t dtc_raw_by_printable(char *printable) {
  * present in the vehicle.
  */
 static void print_ecu_list(void) {
-	struct ecu_info *ecu;
+	const struct ecu_info *ecu;
 
 	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
 		printf(" %s\t%s\n", ecu->name, capitalize(ecu->desc));
@@ -621,7 +621,7 @@ static enum cli_retval cmd_850_connect(int argc, char **argv) {
  * Close the current connection.
  */
 static enum cli_retval cmd_850_disconnect(int argc, UNUSED(char **argv)) {
-	char *desc;
+	const char *desc;
 
 	if (!valid_arg_count(1, argc, 1)) {
 		return CMD_USAGE;
@@ -783,7 +783,7 @@ static void interpret_block(enum l7_namespace ns, uint16_t addr, int len, uint8_
  * Print one line of a hex dump, with an address followed by one or more
  * values.
  */
-static int print_hexdump_line(FILE *f, uint16_t addr, int addr_chars, uint8_t *buf, uint16_t len) {
+static int print_hexdump_line(FILE *f, uint16_t addr, int addr_chars, const uint8_t *buf, uint16_t len) {
 	if (fprintf(f, "%0*X:", addr_chars, addr) < 0) {
 		return 1;
 	}
@@ -810,7 +810,7 @@ struct read_or_peek_item {
 /*
  * Parse an address argument on a peek command line.
  */
-static int parse_peek_arg(char *arg, struct read_or_peek_item *item) {
+static int parse_peek_arg(const char *arg, struct read_or_peek_item *item) {
 	char *p, *q;
 
 	item->ns = NS_MEMORY;
@@ -837,7 +837,7 @@ static int parse_peek_arg(char *arg, struct read_or_peek_item *item) {
 /*
  * Parse an identifier argument on a read command line.
  */
-static int parse_read_arg(char *arg, struct read_or_peek_item *item) {
+static int parse_read_arg(const char *arg, struct read_or_peek_item *item) {
 	char *p;
 
 	if (arg[0] == '*') {
@@ -860,7 +860,7 @@ static int parse_read_arg(char *arg, struct read_or_peek_item *item) {
 /*
  * Parse an identifier argument on an adc command line.
  */
-static int parse_adc_arg(char *arg, struct read_or_peek_item *item) {
+static int parse_adc_arg(const char *arg, struct read_or_peek_item *item) {
 	char *p;
 
 	item->ns = NS_ADC;
@@ -875,7 +875,7 @@ static int parse_adc_arg(char *arg, struct read_or_peek_item *item) {
 /*
  * Parse an identifier argument on a readnv command line.
  */
-static int parse_readnv_arg(char *arg, struct read_or_peek_item *item) {
+static int parse_readnv_arg(const char *arg, struct read_or_peek_item *item) {
 	char *p;
 
 	item->ns = NS_NV;
@@ -890,7 +890,7 @@ static int parse_readnv_arg(char *arg, struct read_or_peek_item *item) {
 /*
  * Parse an identifier argument on a freeze command line.
  */
-static int parse_freeze_arg(char *arg, struct read_or_peek_item *item) {
+static int parse_freeze_arg(const char *arg, struct read_or_peek_item *item) {
 	char *p;
 
 	item->ns = NS_FREEZE;
@@ -1426,7 +1426,8 @@ static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	int rv;
 	int i;
 	int span;
-	char *code, *desc;
+	char *code;
+	const char *desc;
 
 	if (!valid_arg_count(1, argc, 1)) {
 		return CMD_USAGE;
@@ -1587,7 +1588,7 @@ done:
  * same car.
  */
 static enum cli_retval cmd_850_scan_all(int argc, UNUSED(char **argv)) {
-	struct ecu_info *ecu;
+	const struct ecu_info *ecu;
 	char *argvout[2];
 	char buf[4];
 
