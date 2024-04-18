@@ -11,9 +11,9 @@ struct dtc_table_entry {
 };
 
 struct ecu_dtc_table_map_entry {
-    uint8_t ecu_addr;
-    // NULL terminated
-    const struct dtc_table_entry *dtc_table;
+	uint8_t ecu_addr;
+	// NULL terminated
+	const struct dtc_table_entry *dtc_table;
 };
 
 #endif // __SCANTOOL_850_DTC_H__
