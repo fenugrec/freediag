@@ -128,7 +128,7 @@ static enum cli_retval cmd_850_help(int argc, char **argv) {
 }
 
 /*
- * Wrapper around printf. When live data display is running, increments the 
+ * Wrapper around printf. When live data display is running, increments the
  * line count and clears old text remaining on the line we just printed.
  * Appends a newline to the output.
  */
@@ -701,9 +701,9 @@ static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len)
 		printf_livedata("Battery voltage: %.1f V", (float)buf[0]*29750/8250*5/255);
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x0A00) {
 		printf_livedata("Warm-up %s", CLAMPED_LOOKUP(warmup_states, (buf[0]>>2)&3));
-		printf_livedata("MIL %srequested by TCM", (buf[0]&0x10)?"":"not ");
-		/* Low 2 bits supposedly indicate drive cycle and trip 
-		   complete, but don't make sense - can get set without the 
+		printf_livedata("MIL %srequested by TCM", (buf[0]&0x10) ? "" : "not ");
+		/* Low 2 bits supposedly indicate drive cycle and trip
+		   complete, but don't make sense - can get set without the
 		   car ever moving */
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1000) {
 		/* ECU pin A4, MCU P7.4 input, divider ratio 8250/9460 */
@@ -716,7 +716,7 @@ static void interpret_value(enum l7_namespace ns, uint16_t addr, UNUSED(int len)
 	} else if (ns==NS_LIVEDATA && ecu==0x7a && addr==0x1A00) {
 		printf_livedata("Long term fuel trim, multiplicative: %+.1f%%", (float)buf[0]*100/128-100);
 	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0500) {
-		printf_livedata("Mode selector: MS1 %s, MS2 %s, switch position %s", (buf[0]&1)?"low":"high", (buf[0]&2)?"low":"high", CLAMPED_LOOKUP(mode_selector_positions, buf[0]));
+		printf_livedata("Mode selector: MS1 %s, MS2 %s, switch position %s", (buf[0]&1) ? "low" : "high", (buf[0]&2) ? "low" : "high", CLAMPED_LOOKUP(mode_selector_positions, buf[0]));
 		printf_livedata("Driving mode: %s", CLAMPED_LOOKUP(driving_modes, buf[1]));
 	} else if (ns==NS_LIVEDATA && ecu==0x6e && addr==0x0C00) {
 		/* Full scale should be 1023, although highest value seen in
@@ -1013,19 +1013,19 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 				len = (items[i].end - items[i].start) + 1;
 				while (len > 0) {
 					if (get_connection_status() == CONNECTED_D2) {
-						gotbytes = diag_l7_d2_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
+						gotbytes = diag_l7_d2_read(global_l2_conn, NS_MEMORY, addr, (len<8) ? len : 8, buf);
 					} else {
-						gotbytes = diag_l7_kwp71_read(global_l2_conn, NS_MEMORY, addr, (len<8)?len:8, buf);
+						gotbytes = diag_l7_kwp71_read(global_l2_conn, NS_MEMORY, addr, (len<8) ? len : 8, buf);
 					}
-					if (gotbytes == ((len<8)?len:8)) {
-						print_hexdump_line(stdout, addr, 4, buf, (len<8)?len:8);
+					if (gotbytes == ((len<8) ? len : 8)) {
+						print_hexdump_line(stdout, addr, 4, buf, (len<8) ? len : 8);
 						live_data_lines++;
-						interpret_block(NS_MEMORY, addr, (len<8)?len:8, buf);
+						interpret_block(NS_MEMORY, addr, (len<8) ? len : 8, buf);
 					} else {
-						printf("Error reading %s%04X\n", (ns==NS_LIVEDATA)?"*":"", addr);
+						printf("Error reading %s%04X\n", (ns==NS_LIVEDATA) ? "*" : "", addr);
 						goto done;
 					}
-					len -= (len<8)?len:8;
+					len -= (len<8) ? len : 8;
 					addr += 8;
 				}
 			}
@@ -1052,8 +1052,8 @@ done:
  * read. Each item in the list can also be an address range with the starting
  * and ending addresses separated by ".".
  *
- * The word "live" can be added at the end to continuously read the 
- * requested addresses and update the display until interrupted, or "stream" 
+ * The word "live" can be added at the end to continuously read the
+ * requested addresses and update the display until interrupted, or "stream"
  * to continuously read and scroll the display.
  */
 static enum cli_retval cmd_850_peek(int argc, char **argv) {
@@ -1068,8 +1068,8 @@ static enum cli_retval cmd_850_peek(int argc, char **argv) {
  * a live data parameter identifier; in this way, a list of "read" and "peek"
  * operations can be done in a single command.
  *
- * The word "live" can be added at the end to continuously read the 
- * requested addresses and update the display until interrupted, or "stream" 
+ * The word "live" can be added at the end to continuously read the
+ * requested addresses and update the display until interrupted, or "stream"
  * to continuously read and scroll the display.
  */
 static enum cli_retval cmd_850_read(int argc, char **argv) {
@@ -1085,8 +1085,8 @@ static enum cli_retval cmd_850_read(int argc, char **argv) {
  *
  * Takes a list of one-byte channel identifiers.
  *
- * The word "live" can be added at the end to continuously read the 
- * requested addresses and update the display until interrupted, or "stream" 
+ * The word "live" can be added at the end to continuously read the
+ * requested addresses and update the display until interrupted, or "stream"
  * to continuously read and scroll the display.
  */
 static enum cli_retval cmd_850_adc(int argc, char **argv) {
@@ -1366,7 +1366,7 @@ static enum cli_retval cmd_850_dumpram(int argc, char **argv) {
 			happy = 0;
 		}
 		if ((addr&0x1f) == 0) {
-			printf("\r%04X %s", addr, happy?":)":":/");
+			printf("\r%04X %s", addr, happy ? ":)" : ":/");
 			fflush(stdout);
 		}
 		if (addr == 0xfff8) {
@@ -1537,7 +1537,7 @@ static enum cli_retval cmd_850_resetsrl(int argc, UNUSED(char **argv)) {
 	if (rv == 0) {
 		printf("Done\n");
 	} else if (rv == DIAG_ERR_TIMEOUT && old_car) {
-		/* '96/'97 either don't respond after SRL reset, or respond 
+		/* '96/'97 either don't respond after SRL reset, or respond
 		   after a long delay? */
 		printf("Probably done\n");
 	} else {
