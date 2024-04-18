@@ -5,7 +5,7 @@
 #include "../scantool_850/dtc.h"
 #include "../scantool_850/ecu.h"
 
-static struct dtc_table_entry dtc_list_01[] = {
+static const struct dtc_table_entry dtc_list_01[] = {
     {0x10, 311, "Left Front Wheel Sensor, open/short [or bad ABS module solders or ignition switch].", NULL},
     {0x11, 321, "Left Front Wheel Sensor, irregular > 25 mph (ie, interference or excess oscillation > 40 km/h) [or bad ABS module solders or ignition switch].", NULL},
     {0x13, 211, "Left Front Wheel Sensor, wrong wheel speed (ie, signal absent yet circuit intact, or signal absent when moving off) [or bad ABS module solders or ignition switch].", NULL},
@@ -44,7 +44,7 @@ static struct dtc_table_entry dtc_list_01[] = {
     {0x83, 445, "??ABS Module, either inlet or return valve circuit fault [or bad wiring, bad ABS module solders, combination relay, hydraulic modulator, ignition switch, or bad ABS module]??.", NULL},
     {0, 0, NULL, NULL},
 };
-static struct dtc_table_entry dtc_list_11[] = {
+static const struct dtc_table_entry dtc_list_11[] = {
     {0x00, 131, "Engine Speed (RPM) signal.", NULL},
     {0x01, 719, "Secondary Engine Speed signal.", NULL},
     {0x02, 132, "Battery Voltage.", NULL},
@@ -86,7 +86,7 @@ static struct dtc_table_entry dtc_list_11[] = {
     {0xFE, 131, "Engine Speed (RPM) signal.", NULL},
     {0, 0, NULL, NULL},
 };
-static struct dtc_table_entry dtc_list_29[] = {
+static const struct dtc_table_entry dtc_list_29[] = {
     {0x30, 314, "Passenger side temp damper motor, no position change [according to xiaotec \"850 OBD-II\" V1.2.9 app]; or might be Floor/Defrost Damper Motor Shorted To Ground Or Power [see \"ac heater system auto.pdf\"].", NULL},
     {0x35, 412, "Driver's (or passenger's) side interior temperature sensor inlet fan shorted to earth (or signal too low) [see \"ac heater system auto.pdf\"].", NULL},
     {0x36, 413, "Driver's (or passenger's) side interior temperature sensor inlet fan, no control voltage (or signal too high) [see \"ac heater system auto.pdf\"].", NULL},
@@ -94,7 +94,7 @@ static struct dtc_table_entry dtc_list_29[] = {
     {0x38, 411, "Blower fan seized or drawing excess current [or blower fan obstruction, or power stage surge protector problem (ECC-419)].", NULL},
     {0, 0, NULL, NULL},
 };
-static struct dtc_table_entry dtc_list_41[] = {
+static const struct dtc_table_entry dtc_list_41[] = {
     {0x01, 112, "Internal EEPROM memory fault.", NULL},
     {0x06, 223, "Comm fault from Transponder to IMMO Control Module.", NULL},
     {0x07, 336, "Control circuit to VGLA, fault in VGLA or LED circuit (P600).", NULL},
@@ -113,7 +113,7 @@ static struct dtc_table_entry dtc_list_41[] = {
     {0xF8, 336, "Control circuit to VGLA, fault in VGLA or LED circuit (P600).", NULL},
     {0, 0, NULL, NULL},
 };
-static struct dtc_table_entry dtc_list_51[] = {
+static const struct dtc_table_entry dtc_list_51[] = {
     {0x01, 222, "Vehicle Speed Signal too high.", NULL},
     {0x02, 221, "Vehicle Speed Signal missing [usually due to bad ABS module solders] [P0500].", NULL},
     {0x03, 114, "Fuel Level sensor stuck / signal constant for 94 miles.", NULL},
@@ -134,7 +134,7 @@ static struct dtc_table_entry dtc_list_51[] = {
     {0x20, 232, "COMBI is not yet programmed.", NULL},
     {0, 0, NULL, NULL},
 };
-static struct dtc_table_entry dtc_list_58[] = {
+static const struct dtc_table_entry dtc_list_58[] = {
     {0x01, 112, "Crash Sensor Module internal fault.", NULL},
     {0x02, 211, "Driver Airbag short circuit (in contact reel and/or in SRS harness to airbag, connectors, or igniter).", NULL},
     {0x03, 212, "Driver Airbag open circuit (in SRS harness, connector, or airbag).", NULL},
@@ -197,32 +197,16 @@ static struct ecu_info ecu_list[] = {
     { .addr = 0x41, .desc = "IMM", .dtc_prefix = "IMM" },
     { .addr = 0x51, .desc = "CI", .dtc_prefix = "CI" },
     { .addr = 0x58, .desc = "SRS", .dtc_prefix = "SRS" },
+    {0, NULL, NULL, NULL}
 };
-static struct ecu_dtc_table_map_entry ecu_dtc_map[] = {
-    {
-        .ecu_addr = 0x01,
-        .dtc_table = dtc_list_01
-    },
-    {
-        .ecu_addr = 0x11,
-        .dtc_table = dtc_list_11
-    },
-    {
-        .ecu_addr = 0x29,
-        .dtc_table = dtc_list_29
-    },
-    {
-        .ecu_addr = 0x41,
-        .dtc_table = dtc_list_41
-    },
-    {
-        .ecu_addr = 0x51,
-        .dtc_table = dtc_list_51
-    },
-    {
-        .ecu_addr = 0x58,
-        .dtc_table = dtc_list_58
-    },
+
+static const struct ecu_dtc_table_map_entry ecu_dtc_map[] = {
+    {0x01, dtc_list_01},
+    {0x11, dtc_list_11},
+    {0x29, dtc_list_29},
+    {0x41, dtc_list_41},
+    {0x51, dtc_list_51},
+    {0x58, dtc_list_58},
     {0, NULL},
 };
 

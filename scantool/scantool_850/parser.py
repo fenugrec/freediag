@@ -182,13 +182,15 @@ def main():
         print('static struct ecu_info ecu_list[] = {')
         for ecu in ecus:
             print('    { .addr = 0x' + ecu.address + ', .desc = "' + ecu.description + '", .dtc_prefix = "' + ecu.prefix + '" },')
+        print('    {0, NULL, NULL, NULL}')
         print('};')
+        print()
 
         suffix_template = suffix_template_file.read()
         suffix_template = suffix_template.replace('{{name}}', name.upper())
         suffix_template = suffix_template.replace('{{ecu_list}}', '\n'.join(ecu_list))
         print(suffix_template)
 
-# Example call: python3 parser.py richard export_2024-04-06_frobbed.txt templates/ frobbed > frobbed.h
-# Example call: python3 parser.py aleksi DTC_List_850OBDII_D2.txt templates/ xiaotec > xiaotec.h
+# Example call: python3 parser.py richard sources/export_2024-04-06_frobbed.txt templates/ frobbed > frobbed.h
+# Example call: python3 parser.py aleksi sources/DTC_List_850OBDII_D2.txt templates/ xiaotec > xiaotec.h
 main()
