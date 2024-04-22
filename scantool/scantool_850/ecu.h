@@ -12,4 +12,13 @@ struct ecu_info {
 
 extern const struct ecu_info ecu_list[];
 
+/* find ECU info by address; NULL if not found */
+const struct ecu_info *ecu_info_by_addr(uint8_t addr);
+
+/** Look up an ECU by name; NULL if not found
+ */
+const struct ecu_info *ecu_info_by_name(const char *name);
+
+
 #endif // __SCANTOOL_850_ECU_H__
+

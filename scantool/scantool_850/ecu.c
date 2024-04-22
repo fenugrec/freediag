@@ -1,5 +1,33 @@
 #include <stdlib.h>
+#include <stdint.h>
+
+#include "../diag.h"
 #include "ecu.h"
+
+const struct ecu_info *ecu_info_by_addr(uint8_t addr) {
+	const struct ecu_info *ecu_entry;
+	for (ecu_entry = ecu_list; ecu_entry->name != NULL; ecu_entry++) {
+		if (addr == ecu_entry->addr) {
+			return ecu_entry;
+		}
+	}
+	return NULL;
+}
+
+
+const struct ecu_info *ecu_info_by_name(const char *name) {
+	const struct ecu_info *ecu;
+
+	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
+		if (strcasecmp(name, ecu->name) == 0) {
+			return ecu;
+		}
+	}
+
+	return NULL;
+}
+
+
 
 const struct ecu_info ecu_list[] = {
 	{0x01, "abs", "antilock brakes", "ABS"},

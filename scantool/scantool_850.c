@@ -164,20 +164,6 @@ static char *capitalize(const char *in) {
 	return buf;
 }
 
-/*
- * Look up an ECU by name.
- */
-static const struct ecu_info *ecu_info_by_name(const char *name) {
-	const struct ecu_info *ecu;
-
-	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
-		if (strcasecmp(name, ecu->name) == 0) {
-			return ecu;
-		}
-	}
-
-	return NULL;
-}
 
 /*
  * Get an ECU's address by name.
@@ -212,10 +198,9 @@ static const char *ecu_desc_by_addr(uint8_t addr) {
 	const struct ecu_info *ecu;
 	static char buf[7];
 
-	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
-		if (addr == ecu->addr) {
-			return ecu->desc;
-		}
+	ecu = ecu_info_by_addr(addr);
+	if (ecu) {
+		return ecu->desc;
 	}
 
 	sprintf(buf, "ECU %02X", addr);
@@ -257,13 +242,10 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) 
 	uint16_t suffix;
 
 	prefix = "???";
-	for (ecu_entry = ecu_list; ecu_entry->name != NULL; ecu_entry++) {
-		if (addr == ecu_entry->addr) {
-			prefix = ecu_entry->dtc_prefix;
-			break;
-		}
+	ecu_entry = ecu_info_by_addr(addr);
+	if (ecu_entry) {
+		prefix = ecu_entry->dtc_prefix;
 	}
-
 	for (ecu_dtc_entry = ecu_dtc_map; ecu_dtc_entry->ecu_addr != 0; ecu_dtc_entry++) {
 		if (ecu_dtc_entry->ecu_addr == addr) {
 			break;
@@ -302,10 +284,9 @@ static const char *current_dtc_prefix(void) {
 		return "???";
 	}
 
-	for (ecu = ecu_list; ecu->name != NULL; ecu++) {
-		if (global_l2_conn->diag_l2_destaddr == ecu->addr) {
-			return ecu->dtc_prefix;
-		}
+	ecu = ecu_info_by_addr(global_l2_conn->diag_l2_destaddr);
+	if (ecu) {
+		return ecu->dtc_prefix;
 	}
 
 	return "???";
