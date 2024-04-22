@@ -16,4 +16,6 @@ struct ecu_dtc_table_map_entry {
 	const struct dtc_table_entry *dtc_table;
 };
 
+extern const struct ecu_dtc_table_map_entry ecu_dtc_map[];
+
 #endif // __SCANTOOL_850_DTC_H__

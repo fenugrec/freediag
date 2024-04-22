@@ -125,6 +125,7 @@ set (CLI_SRCS scantool_cli.c scantool_diag.c scantool_set.c
 	scantool_debug.c)
 set (SCANTOOL_SRCS scantool.c
 	scantool_test.c scantool_vag.c scantool_850.c scantool_dyno.c
+	scantool_850/dtc.c scantool_850/ecu.c
 	scantool_obd.c ${FREEDIAG_RC})
 
 
