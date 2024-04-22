@@ -237,7 +237,7 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) 
 	static char *empty="";
 	const struct ecu_info *ecu_entry;
 	const struct dtc_table_entry *dtc_entry;
-	const struct ecu_dtc_table_map_entry *ecu_dtc_entry;
+	const struct dtc_table_entry *dtc_map;
 	const char *prefix;
 	uint16_t suffix;
 
@@ -246,13 +246,9 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) 
 	if (ecu_entry) {
 		prefix = ecu_entry->dtc_prefix;
 	}
-	for (ecu_dtc_entry = ecu_dtc_map; ecu_dtc_entry->ecu_addr != 0; ecu_dtc_entry++) {
-		if (ecu_dtc_entry->ecu_addr == addr) {
-			break;
-		}
-	}
-	if (ecu_dtc_entry->ecu_addr != 0) {
-		for (dtc_entry = ecu_dtc_entry->dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
+	dtc_map = dtctable_by_addr(addr);
+	if (dtc_map) {
+		for (dtc_entry = dtc_map; dtc_entry->dtc_suffix != 0; dtc_entry++) {
 			if (dtc_entry->raw_value == raw) {
 				suffix = dtc_entry->dtc_suffix;
 				if (desc != NULL) {
@@ -301,8 +297,7 @@ static uint16_t dtc_raw_by_printable(const char *printable) {
 	uint16_t suffix;
 	char *p, *q, *r;
 	const struct dtc_table_entry *dtc_entry;
-	const struct ecu_dtc_table_map_entry *ecu_dtc_entry;
-	uint8_t ecu_addr;
+	const struct dtc_table_entry *dtc_map;
 
 	/* extract prefix and suffix from string */
 	if (strlen(printable) > sizeof(prefix) - 1) {
@@ -329,17 +324,11 @@ static uint16_t dtc_raw_by_printable(const char *printable) {
 	}
 
 	/* find suffix */
-	ecu_addr = global_l2_conn->diag_l2_destaddr;
-	for (ecu_dtc_entry = ecu_dtc_map; ecu_dtc_entry->ecu_addr != 0; ecu_dtc_entry++) {
-		if (ecu_dtc_entry->ecu_addr == ecu_addr) {
-			break;
-		}
-	}
-	if (ecu_dtc_entry->ecu_addr == 0) {
-		// ECU not found
+	dtc_map = dtctable_by_addr(global_l2_conn->diag_l2_destaddr);
+	if (dtc_map == NULL) {
 		return 0xffff;
 	}
-	for (dtc_entry = ecu_dtc_entry->dtc_table; dtc_entry->dtc_suffix != 0; dtc_entry++) {
+	for (dtc_entry = dtc_map; dtc_entry->dtc_suffix != 0; dtc_entry++) {
 		if (dtc_entry->dtc_suffix == suffix) {
 			return dtc_entry->raw_value;
 		}

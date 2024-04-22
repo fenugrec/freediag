@@ -18,4 +18,9 @@ struct ecu_dtc_table_map_entry {
 
 extern const struct ecu_dtc_table_map_entry ecu_dtc_map[];
 
+/** find DTC table by ECU address. NULL if not found */
+const struct dtc_table_entry *dtctable_by_addr(uint8_t addr);
+
+
 #endif // __SCANTOOL_850_DTC_H__
+
