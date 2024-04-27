@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "dtc.h"
+#include "config.h"
 
 const struct dtc_table_entry *dtctable_by_addr(uint8_t addr) {
 	const struct ecu_dtc_table_map_entry *ecu_dtc_entry;
@@ -11,6 +12,7 @@ const struct dtc_table_entry *dtctable_by_addr(uint8_t addr) {
 	return NULL;
 }
 
+#ifdef DEFAULT_850_DTC
 static const struct dtc_table_entry aw50_dtc[] = {
 	{0x13, 332, "Torque converter lock-up solenoid open circuit", NULL},
 	{0, 0, NULL, NULL},
@@ -32,4 +34,4 @@ const struct ecu_dtc_table_map_entry ecu_dtc_map[] = {
 	{0x7a, m44_dtc},
 	{0, NULL},
 };
-
+#endif

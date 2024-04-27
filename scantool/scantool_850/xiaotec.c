@@ -1,11 +1,12 @@
-#ifndef __SCANTOOL_850_DTC_XIAOTEC_H__
-#define __SCANTOOL_850_DTC_XIAOTEC_H__
-
 #include <stdlib.h>
-#include "../scantool_850/dtc.h"
-#include "../scantool_850/ecu.h"
+#include "dtc.h"
+#include "ecu.h"
+#include "config.h"
 
-static const struct dtc_table_entry dtc_list_01[] = {
+#ifdef __SCANTOOL_850_DTC_XIAOTEC__
+
+
+const struct dtc_table_entry dtc_list_01[] = {
     {0x05, 313, "ABS-313: Left Rear Wheel Sensor, open/short? [or bad ABS module solders or ignition switch]", NULL},
     {0x30, 313, "ABS-313: Left Rear Wheel Sensor, open/short? [or bad ABS module solders or ignition switch]", NULL},
     {0x10, 311, "ABS-311: Left Front Wheel Sensor, open/short? [or bad ABS module solders or ignition switch]", NULL},
@@ -45,7 +46,7 @@ static const struct dtc_table_entry dtc_list_01[] = {
     {0x83, 445, "ABS-445: ABS Module, either inlet or return valve circuit fault [or bad wiring, bad ABS module solders, combination relay, hydraulic modulator, ignition switch, or bad ABS module]??", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_02[] = {
+const struct dtc_table_entry dtc_list_02[] = {
     {0x01, 131, "DSA-131 Torque reduction signal, signal faulty", NULL},
     {0x02, 231, "DSA-231 Throttle position sensor signal, signal missing ", NULL},
     {0x03, 232, "DSA-232 Throttle position sensor signal, signal faulty", NULL},
@@ -65,7 +66,7 @@ static const struct dtc_table_entry dtc_list_02[] = {
     {0x11, 112, "DSA-112 Control Module, EEPROM fault", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_11[] = {
+const struct dtc_table_entry dtc_list_11[] = {
     {0x00, 131, "EFI-131: Engine Speed (RPM) signal", NULL},
     {0x01, 719, "EFI-719: Secondary Engine Speed signal", NULL},
     {0x02, 132, "EFI-132: Battery Voltage", NULL},
@@ -106,7 +107,7 @@ static const struct dtc_table_entry dtc_list_11[] = {
     {0x36, 732, "EFI-732: Accelerator Pedal Position sensor signal", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_18[] = {
+const struct dtc_table_entry dtc_list_18[] = {
     {0x31, 801, "HEA-801: Coolant Temperature Sensor, Signal too High", NULL},
     {0x32, 802, "HEA-802: Coolant Temperature Sensor, Signal too Low", NULL},
     {0x33, 803, "HEA-803: Coolant Temperature Sensor, Signal faulty", NULL},
@@ -137,7 +138,7 @@ static const struct dtc_table_entry dtc_list_18[] = {
     {0x51, 898, "HEA-898: Factory set DTC, no fault with heater", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_29[] = {
+const struct dtc_table_entry dtc_list_29[] = {
     {0x0A, 221, "ECC-221: Air distribution damper motor position sensor Signal Low", NULL},
     {0x0B, 222, "ECC-222: Air distribution damper motor position sensor Signal High", NULL},
     {0x13, 322, "ECC-322: Air distribution damper motor position, no position change", NULL},
@@ -180,7 +181,7 @@ static const struct dtc_table_entry dtc_list_29[] = {
     {0x51, 442, "ECC-442: Program downloading, control module. Faulty", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_2d[] = {
+const struct dtc_table_entry dtc_list_2d[] = {
     {0x41, 114, "GLA-114: Control Module, Fault in EEPROM", NULL},
     {0x42, 512, "GLA-512: Drivers Door Lock Switch, Unlocking Signal too Low / Short to Ground", NULL},
     {0x43, 521, "GLA-521: Drivers Central Locking Switch, Signal too Low / Short to Ground", NULL},
@@ -212,7 +213,7 @@ static const struct dtc_table_entry dtc_list_2d[] = {
     {0x6E, 455, "GLA-455: Immobilizer, VGLA code Signal Faulty", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_2e[] = {
+const struct dtc_table_entry dtc_list_2e[] = {
     {0x01, 112, "PS-112: Legroom Motor 1, Pot signal too high", NULL},
     {0x02, 121, "PS-121: Backrest Motor 2, Pot signal too high", NULL},
     {0x03, 122, "PS-122: Seat Rear Edge Motor 3, Pot signal too high", NULL},
@@ -244,7 +245,7 @@ static const struct dtc_table_entry dtc_list_2e[] = {
     {0x1D, 332, "PS-332: Original position not stored", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_2f[] = {
+const struct dtc_table_entry dtc_list_2f[] = {
     {0x01, 112, "PS-112: Legroom Motor 1, Pot signal too high", NULL},
     {0x02, 121, "PS-121: Backrest Motor 2, Pot signal too high", NULL},
     {0x03, 122, "PS-122: Seat Rear Edge Motor 3, Pot signal too high", NULL},
@@ -276,7 +277,7 @@ static const struct dtc_table_entry dtc_list_2f[] = {
     {0x1D, 332, "PS-332: Original position not stored", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_41[] = {
+const struct dtc_table_entry dtc_list_41[] = {
     {0x01, 112, "IMM-112: Internal EEPROM memory fault", NULL},
     {0x02, 211, "IMM-211/213: Comm fault with engine ECU", NULL},
     {0x03, 212, "IMM-212/233: No Contact with Antenna.\nOr wrong antenna. Ex. Immo2 on 850 has 8??, Immo3 on S/V40 has 3.3??, V70 has 5?? as rough resistance measurement.\nAntenna is tuned inside IMMO with capacitors and resistors for antennas inductivity to create LC circuit.\nOther reasons:\nThe cable between control module Pin #9 or #10 is short to gnd or +12V.", NULL},
@@ -302,7 +303,7 @@ static const struct dtc_table_entry dtc_list_41[] = {
     {0xF8, 336, "IMM-336: Control circuit to VGLA, fault in VGLA or LED circuit", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_51[] = {
+const struct dtc_table_entry dtc_list_51[] = {
     {0x01, 222, "CI-222: Vehicle Speed signal too high", NULL},
     {0x02, 221, "CI-221: Vehicle speed signal missing [bad ABS module solders?]", NULL},
     {0x03, 114, "CI-114: Fuel Level sensor stuck", NULL},
@@ -462,7 +463,7 @@ static const struct dtc_table_entry dtc_list_51[] = {
     {0x78, 452, "ROP-452: Control Module, handling fault during Self Test", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_62[] = {
+const struct dtc_table_entry dtc_list_62[] = {
     {0x10, 112, "RTI-112: Control Module, Internal Fault Memory circuits", NULL},
     {0x20, 113, "RTI-113: Control Module, Internal Fault, Internal comms", NULL},
     {0x30, 114, "RTI-114: Control Module, Internal Fault, Display screen comms", NULL},
@@ -476,7 +477,7 @@ static const struct dtc_table_entry dtc_list_62[] = {
     {0x70, 141, "RTI-141: TMC/FM receiver, faulty signal", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_6e[] = {
+const struct dtc_table_entry dtc_list_6e[] = {
     {0x02, 122, "AT-122: Shift Solenoid S1 circuit, open [eg, bad wiring or solenoid, or low/dirty fluid]", NULL},
     {0x03, 121, "AT-121: Shift Solenoid S1 circuit, short to ground [eg, bad wiring, solenoid, or TCM (ie, ECU 6E), or low/dirty fluid]", NULL},
     {0x08, 222, "AT-222: Shift solenoid S2 circuit", NULL},
@@ -520,7 +521,7 @@ static const struct dtc_table_entry dtc_list_6e[] = {
     {0xE0, 527, "AT-527: Control Module Communication", NULL},
     {0, 0, NULL, NULL},
 };
-static const struct dtc_table_entry dtc_list_7a[] = {
+const struct dtc_table_entry dtc_list_7a[] = {
     {0x0A, 422, "EFI-422: Atmospheric pressure sensor signal", NULL},
     {0x0F, 122, "EFI-122: Intake Air Temperature (IAT) Sensor Faulty", NULL},
     {0x12, 414, "EFI-414: Boost pressure regulation", NULL},
@@ -665,7 +666,7 @@ static const struct dtc_table_entry dtc_list_7a[] = {
     {0x1D, 666, "EFI-666: DTC in transmission CM", NULL},
     {0, 0, NULL, NULL},
 };
-static struct ecu_info ecu_list[] = {
+const struct ecu_info ecu_list[] = {
     { .addr = 0x01, .desc = "ABS", .dtc_prefix = "ABS" },
     { .addr = 0x02, .desc = "DSA", .dtc_prefix = "DSA" },
     { .addr = 0x11, .desc = "MSA15.7", .dtc_prefix = "EFI" },
@@ -685,7 +686,7 @@ static struct ecu_info ecu_list[] = {
     {0, NULL, NULL, NULL}
 };
 
-static const struct ecu_dtc_table_map_entry ecu_dtc_map[] = {
+const struct ecu_dtc_table_map_entry ecu_dtc_map[] = {
     {0x01, dtc_list_01},
     {0x02, dtc_list_02},
     {0x11, dtc_list_11},
@@ -702,4 +703,4 @@ static const struct ecu_dtc_table_map_entry ecu_dtc_map[] = {
     {0, NULL},
 };
 
-#endif // __SCANTOOL_850_DTC_XIAOTEC_H__
+#endif // __SCANTOOL_850_DTC_XIAOTEC__

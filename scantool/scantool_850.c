@@ -54,11 +54,6 @@
 
 #include "scantool_850/dtc.h"
 #include "scantool_850/ecu.h"
-#include "scantool_850/basic.h"
-// DTC list from richard jones
-// #include "scantool_850/frobbed.h"
-// DTC list from aleksi (xiaotec) / Android 850 OBD2 app
-// #include "scantool_850/xiaotec.h"
 
 static bool have_read_dtcs = false;
 static struct diag_msg *ecu_id = NULL;

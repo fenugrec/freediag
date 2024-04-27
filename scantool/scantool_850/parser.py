@@ -153,7 +153,9 @@ def main():
     
     with (open(directory + '/dtc.mustache', 'r') as dtc_template_file,
           open(directory + '/dtc_list.mustache', 'r') as dtc_list_template_file,
-          open(directory + '/ecu.mustache', 'r') as ecu_template_file,
+          open(directory + '/ecu_entry.mustache', 'r') as ecu_template_file,
+          open(directory + '/ecu_item.mustache', 'r') as ecu_item_template_file,
+          open(directory + '/ecu_list.mustache', 'r') as ecu_list_template_file,
           open(directory + '/prefix.mustache', 'r') as prefix_template_file,
           open(directory + '/suffix.mustache', 'r') as suffix_template_file):
 
@@ -165,11 +167,11 @@ def main():
         dtc_list_template = dtc_list_template_file.read()
         ecu_template = ecu_template_file.read()
 
-        ecu_list = []
+        dtc_ecu_list = []
         for ecu in ecu_map.keys():
             out = ecu_template.replace('{{ecu}}', ecu)
             out = out.replace('{{dtc_table}}', 'dtc_list_' + ecu.lower())
-            ecu_list.append(out)
+            dtc_ecu_list.append(out)
 
             dtcs = ecu_map[ecu]
             dtc_list = []
@@ -179,18 +181,24 @@ def main():
             out = out.replace('{{dtc_list_name}}', 'dtc_list_' + ecu.lower())
             print(out)
         
-        print('static struct ecu_info ecu_list[] = {')
+        ecu_list_template = ecu_list_template_file.read()
+        ecu_item_template = ecu_item_template_file.read()
+
+        ecu_list = []
         for ecu in ecus:
-            print('    { .addr = 0x' + ecu.address + ', .desc = "' + ecu.description + '", .dtc_prefix = "' + ecu.prefix + '" },')
-        print('    {0, NULL, NULL, NULL}')
-        print('};')
+            ecu_list.append(ecu_item_template
+                .replace('{{ecu_address}}', ecu.address)
+                .replace('{{ecu_description}}', ecu.description)
+                .replace('{{ecu_prefix}}', ecu.prefix))
+#            ecu_list.append('    { .addr = 0x' + ecu.address + ', .desc = "' + ecu.description + '", .dtc_prefix = "' + ecu.prefix + '" },')
+        print(ecu_list_template.replace('{{ecu_list}}', '\n'.join(ecu_list)))
         print()
 
         suffix_template = suffix_template_file.read()
         suffix_template = suffix_template.replace('{{name}}', name.upper())
-        suffix_template = suffix_template.replace('{{ecu_list}}', '\n'.join(ecu_list))
+        suffix_template = suffix_template.replace('{{ecu_list}}', '\n'.join(dtc_ecu_list))
         print(suffix_template)
 
-# Example call: python3 parser.py richard sources/export_2024-04-06_frobbed.txt templates/ frobbed > frobbed.h
-# Example call: python3 parser.py aleksi sources/DTC_List_850OBDII_D2.txt templates/ xiaotec > xiaotec.h
+# Example call: python3 parser.py richard sources/export_2024-04-06_frobbed.txt templates/ frobbed > frobbed.c
+# Example call: python3 parser.py aleksi sources/DTC_List_850OBDII_D2.txt templates/ xiaotec > xiaotec.c
 main()
