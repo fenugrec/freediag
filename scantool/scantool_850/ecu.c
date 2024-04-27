@@ -3,6 +3,7 @@
 
 #include "../diag.h"
 #include "ecu.h"
+#include "config.h"
 
 const struct ecu_info *ecu_info_by_addr(uint8_t addr) {
 	const struct ecu_info *ecu_entry;
@@ -28,6 +29,7 @@ const struct ecu_info *ecu_info_by_name(const char *name) {
 }
 
 
+#ifdef DEFAULT_850_ECU
 
 const struct ecu_info ecu_list[] = {
 	{0x01, "abs", "antilock brakes", "ABS"},
@@ -58,3 +60,4 @@ const struct ecu_info ecu_list[] = {
 	{0, NULL, NULL, NULL}
 };
 
+#endif
