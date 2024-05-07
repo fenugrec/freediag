@@ -27,10 +27,16 @@ static const struct dtc_table_entry m44_dtc[] = {
 	{0, 0, NULL, NULL},
 };
 
+static const struct dtc_table_entry immo_dtc[] = {
+	{0x03,  -1, "No Contact with Antenna", NULL},
+	{0, 0, NULL, NULL},
+};
+
 const struct ecu_dtc_table_map_entry ecu_dtc_map[] = {
 	{0x6e, aw50_dtc},
 	{0x10, m44_old_dtc},
 	{0x7a, m44_dtc},
+	{0x41, immo_dtc},
 	{0, NULL},
 };
 

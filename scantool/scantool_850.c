@@ -239,7 +239,7 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) 
 	const struct dtc_table_entry *dtc_entry;
 	const struct dtc_table_entry *dtc_map;
 	const char *prefix;
-	uint16_t suffix;
+	int16_t suffix;
 
 	prefix = "???";
 	ecu_entry = ecu_info_by_addr(addr);
@@ -257,7 +257,11 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) 
 				if (suffix > 999) {
 					suffix = 999;
 				}
-				snprintf(printable, PRINTABLE_LEN, "%s-%03d", prefix, suffix);
+				if (suffix >= 0) {
+					snprintf(printable, PRINTABLE_LEN, "%s-%03d", prefix, suffix);
+				} else {
+					snprintf(printable, PRINTABLE_LEN, "%s-???", prefix);
+				}
 				return printable;
 			}
 		}
