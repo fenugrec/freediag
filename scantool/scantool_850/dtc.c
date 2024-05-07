@@ -12,6 +12,7 @@ const struct dtc_table_entry *dtctable_by_addr(uint8_t addr) {
 }
 
 static const struct dtc_table_entry aw50_dtc[] = {
+	{0x02, 122, "Shift Solenoid S1 circuit, open", NULL},
 	{0x13, 332, "Torque converter lock-up solenoid open circuit", NULL},
 	{0, 0, NULL, NULL},
 };
