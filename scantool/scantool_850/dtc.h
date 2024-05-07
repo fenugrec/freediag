@@ -5,7 +5,7 @@
 
 struct dtc_table_entry {
 	uint8_t raw_value;
-	uint16_t dtc_suffix;
+	int16_t dtc_suffix;
 	const char *desc;
 	const char *tips;
 };
