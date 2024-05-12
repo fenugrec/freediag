@@ -25,6 +25,8 @@ static const struct dtc_table_entry m44_old_dtc[] = {
 
 static const struct dtc_table_entry m44_dtc[] = {
 	{0x54, 445, "Pulsed secondary air injection system pump signal", NULL},
+	{0x6E, 131, "RPM sensor signal missing",
+	            "on gearbox casing, also known as Crankshaft sensor, should get reading of 200 to 400 Ohms with multimeter. Two pole connector."},
 	{0, 0, NULL, NULL},
 };
 

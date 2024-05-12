@@ -107,7 +107,7 @@ const struct cmd_tbl_entry v850_cmd_table[] = {
 	  cmd_850_readnv, 0, NULL},
 	{ "id", "id", "Display ECU identification",
 	  cmd_850_id, 0, NULL},
-	{ "dtc", "dtc", "Retrieve DTCs",
+	{ "dtc", "dtc [tips]", "Retrieve DTCs",
 	  cmd_850_dtc, 0, NULL},
 	{ "cleardtc", "cleardtc", "Clear DTCs from ECU",
 	  cmd_850_cleardtc, 0, NULL},
@@ -231,7 +231,7 @@ static const char *current_ecu_desc(void) {
  * byte value. Optionally, also get a description of the DTC.
  * Returns a static buffer that will be reused on the next call.
  */
-static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) {
+static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc, const char **tips) {
 #define PRINTABLE_LEN   8       //including 0-termination
 	static char printable[PRINTABLE_LEN];
 	static char *empty="";
@@ -242,6 +242,9 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) 
 	int16_t suffix;
 
 	prefix = "???";
+	if (tips != NULL) {
+		*tips = NULL;
+	}
 	ecu_entry = ecu_info_by_addr(addr);
 	if (ecu_entry) {
 		prefix = ecu_entry->dtc_prefix;
@@ -253,6 +256,9 @@ static char *dtc_printable_by_raw(uint8_t addr, uint8_t raw, const char **desc) 
 				suffix = dtc_entry->dtc_suffix;
 				if (desc != NULL) {
 					*desc = dtc_entry->desc;
+				}
+				if (tips != NULL) {
+					*tips = dtc_entry->tips;
 				}
 				if (suffix > 999) {
 					suffix = 999;
@@ -967,7 +973,7 @@ static enum cli_retval read_family(int argc, char **argv, enum l7_namespace ns) 
 					       dtc_printable_by_raw(
 						       global_l2_conn
 						       ->diag_l2_destaddr,
-						       addr, NULL));
+						       addr, NULL, NULL));
 				}
 				if (gotbytes == 0) {
 					printf_livedata("%02X: no data", addr);
@@ -1371,10 +1377,18 @@ static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	int i;
 	int span;
 	char *code;
-	const char *desc;
+	const char *desc, *tips;
 	bool unconfirmed = false;
+	bool have_tips = false;
+	bool show_tips = false;
 
-	if (!valid_arg_count(1, argc, 1)) {
+	if (!valid_arg_count(1, argc, 2)) {
+		return CMD_USAGE;
+	}
+
+	if (argc == 2 && strcasecmp(argv[1], "tips") == 0) {
+		show_tips = true;
+	} else if (argc == 2) {
 		return CMD_USAGE;
 	}
 
@@ -1403,15 +1417,29 @@ static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 
 	printf("Stored DTCs:\n");
 	for (i=0; i<rv; i+=span) {
-		code = dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, buf[i], &desc);
+		code = dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, buf[i], &desc, &tips);
 		printf("%s (%02X) %s\n", code, buf[i], desc);
 		if (desc[0] != '\0' && desc[strlen(desc)-1] == '?') {
 			unconfirmed = true;
+		}
+		if (tips != NULL) {
+			have_tips = true;
+			if (show_tips) {
+				printf("%s\n", tips);
+			}
 		}
 	}
 
 	if (unconfirmed) {
 		printf("Warning: descriptions and DTC suffixes for lines ending in ? are unconfirmed\n");
+	}
+
+	if (have_tips && !show_tips) {
+		printf("Tips are available for %s. Use \"dtc tips\" to show them.\n", (rv > span) ? "some of these DTCs" : "this DTC");
+	}
+
+	if (show_tips && !have_tips) {
+		printf("No tips are available for %s.\n", (rv > span) ? "these DTCs" : "this DTC");
 	}
 
 	return CMD_OK;
