@@ -1372,6 +1372,7 @@ static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	int span;
 	char *code;
 	const char *desc;
+	bool unconfirmed = false;
 
 	if (!valid_arg_count(1, argc, 1)) {
 		return CMD_USAGE;
@@ -1404,6 +1405,13 @@ static enum cli_retval cmd_850_dtc(int argc, UNUSED(char **argv)) {
 	for (i=0; i<rv; i+=span) {
 		code = dtc_printable_by_raw(global_l2_conn->diag_l2_destaddr, buf[i], &desc);
 		printf("%s (%02X) %s\n", code, buf[i], desc);
+		if (desc[0] != '\0' && desc[strlen(desc)-1] == '?') {
+			unconfirmed = true;
+		}
+	}
+
+	if (unconfirmed) {
+		printf("Warning: descriptions and DTC suffixes for lines ending in ? are unconfirmed\n");
 	}
 
 	return CMD_OK;
