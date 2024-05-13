@@ -300,7 +300,7 @@ static const char *current_dtc_prefix(void) {
 
 /*
  * Get a DTC byte value by the printable designation. Returns 0xffff on
- * failure.
+ * failure. Where multiple matching DTCs exist, returns the first.
  */
 static uint16_t dtc_raw_by_printable(const char *printable) {
 	char prefix[8];
