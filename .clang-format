@@ -1,0 +1,16 @@
+# WIP, not currently used.
+BasedOnStyle: llvm
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AlwaysBreakBeforeMultilineStrings: true
+AlwaysBreakAfterReturnType: None
+ContinuationIndentWidth: 4
+IndentPPDirectives: AfterHash
+IndentWidth: 4
+UseTab: ForContinuationAndIndentation
+ColumnLimit: 92
+SortIncludes: false
+PenaltyBreakComment: 0
+PenaltyBreakString: 0
+PenaltyReturnTypeOnItsOwnLine: 0
+
